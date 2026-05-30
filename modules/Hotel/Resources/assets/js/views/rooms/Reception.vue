@@ -873,15 +873,24 @@
 
 .room-container {
     display: grid !important;
-    gap: 16px !important;
-    /* auto-fit + minmax garantiza que las cards se ajusten al
-       espacio disponible sin importar el viewport, evitando
-       columnas con ancho insuficiente para los botones. */
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)) !important;
+    gap: 14px !important;
+    /* Máximo 4 columnas; se reduce gradualmente en pantallas más
+       angostas hasta llegar a 1 columna en móvil. */
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
     align-items: stretch;
     justify-content: start;
 }
 
+@media (max-width: 1199px) {
+    .room-container {
+        grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    }
+}
+@media (max-width: 899px) {
+    .room-container {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    }
+}
 @media (max-width: 599px) {
     .room-container {
         grid-template-columns: 1fr !important;
@@ -904,8 +913,8 @@
 .room-container .room-el-card,
 .hotel-rooms .room-el-card.el-card {
     width: 100%;
-    height: 280px !important;
-    min-height: 280px;
+    height: 230px !important;
+    min-height: 230px;
     display: flex;
     flex-direction: column;
     border-radius: 14px !important;
@@ -1120,8 +1129,8 @@
 @media (max-width: 991px) {
     .room-container .room-el-card,
     .hotel-rooms .room-el-card.el-card {
-        height: 270px !important;
-        min-height: 270px;
+        height: 220px !important;
+        min-height: 220px;
     }
     .room-container .room-el-card .card-rent h2 {
         font-size: 22px;
@@ -1135,8 +1144,8 @@
 @media (max-width: 599px) {
     .room-container .room-el-card,
     .hotel-rooms .room-el-card.el-card {
-        height: 240px !important;
-        min-height: 240px;
+        height: 210px !important;
+        min-height: 210px;
     }
     .room-container .room-el-card .el-card__body {
         padding: 12px !important;
