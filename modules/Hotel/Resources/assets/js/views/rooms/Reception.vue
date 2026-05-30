@@ -1115,6 +1115,9 @@
 }
 
 /* Info de cliente reservado */
+.reservation-customer-info {
+    margin-top: 10px;
+}
 .reservation-customer-info p {
     margin: 4px 0 !important;
     font-size: 13px !important;
@@ -1123,6 +1126,14 @@
     align-items: center;
     flex-wrap: wrap;
     gap: 4px;
+}
+
+/* Separación entre el nombre de la habitación (h2) y el bloque
+   de información del cliente (OCUPADO / reserva / limpieza). */
+.room-container .room-el-card .card-rent h2 + div,
+.room-container .room-el-card .card-rent h2 + .reservation-customer-info,
+.room-container .room-el-card .card-rent h2 + .cleaning-with-guest {
+    margin-top: 10px;
 }
 
 /* ----- Responsive: tablets ----- */
