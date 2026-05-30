@@ -174,8 +174,7 @@
                                 <!-- <h4>{{ ro.status }}</h4> -->
 
                                    <span v-if="!ro.has_reservation" class="text-muted">{{ ro.category.description }}</span>
-                                   <br v-if="ro.has_reservation">
-                                   <h2 class="mt-0" :style="ro.has_reservation ? 'padding-top:10px' : 'padding-top:0px'">
+                                   <h2 class="mt-0">
                                     <svg  xmlns="http://www.w3.org/2000/svg"  width="32"  height="32"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-door"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M14 12v.01" /><path d="M3 21h18" /><path d="M6 21v-16a2 2 0 0 1 2 -2h8a2 2 0 0 1 2 2v16" /></svg>
                                       <b>{{ ro.name }}</b>
                                       <!-- Indicador de deuda al lado del nombre (solo si está disponible) -->
@@ -183,8 +182,7 @@
                                           Falta pagar: {{ getFormattedDebt(ro) }}
                                       </span>
                                     </h2>
-                                   <p v-if="!ro.has_reservation" class="description">{{ ro.description }}</p>
-                                   <br v-if="!ro.description">
+                                   <p v-if="!ro.has_reservation && ro.description" class="description">{{ ro.description }}</p>
                                    
                                    <!-- Mostrar información del cliente para habitaciones con reserva -->
                                    <div v-if="ro.has_reservation && ro.rent && ro.rent.customer" class="reservation-customer-info">
@@ -241,8 +239,6 @@
                                             <span class="badge badge-warning ml-2" style="margin-left:6px">Limpieza rápida</span>
                                         </p>
                                     </div>
-                                    <br v-else>
-                                    <br v-if="!ro.rent || !ro.rent.customer">
                                     <el-button
                                         v-if="canManageCleaning && !ro.has_cleaner_assigned"
                                         :disabled="loading"
@@ -903,12 +899,13 @@
 }
 
 /* Sobrescribimos la regla global `.hotel-rooms .el-card { height: 180px }`
-   de theme.css que obligaba a una altura fija y recortaba el contenido. */
+   de theme.css. Altura FIJA para que TODAS las cards sean uniformes
+   (armonía visual independiente del estado/contenido). */
 .room-container .room-el-card,
 .hotel-rooms .room-el-card.el-card {
     width: 100%;
-    height: auto !important;
-    min-height: 260px;
+    height: 280px !important;
+    min-height: 280px;
     display: flex;
     flex-direction: column;
     border-radius: 14px !important;
@@ -927,9 +924,10 @@
     flex: 1;
     display: flex;
     flex-direction: column;
-    padding: 16px !important;
+    padding: 14px !important;
     min-height: 0;
-    gap: 8px;
+    gap: 0;
+    overflow: hidden;
 }
 
 .room-container .room-el-card .card-rent {
@@ -937,15 +935,23 @@
     display: flex;
     flex-direction: column;
     min-height: 0;
-    gap: 6px;
+    gap: 4px;
 }
 
-/* Título / número de habitación: tamaño adaptable */
+/* La categoría (Matrimonial / Doble) — chip pequeño sobre el título */
+.room-container .room-el-card .card-rent > .text-muted {
+    font-size: 12px;
+    line-height: 1.2;
+    opacity: 0.85;
+    margin-bottom: 0;
+}
+
+/* Título / número de habitación: tamaño adaptable, sin padding extra */
 .room-container .room-el-card .card-rent h2 {
-    margin: 0;
+    margin: 0 !important;
     padding: 0 !important;
-    font-size: clamp(20px, 2.2vw, 28px);
-    line-height: 1.15;
+    font-size: clamp(22px, 2.2vw, 30px);
+    line-height: 1.1;
     display: flex;
     align-items: center;
     flex-wrap: wrap;
@@ -955,14 +961,20 @@
 
 .room-container .room-el-card .card-rent h2 svg {
     flex-shrink: 0;
-    width: 26px;
-    height: 26px;
+    width: 28px;
+    height: 28px;
 }
 
 .room-container .room-el-card .card-rent p {
     margin: 0;
     word-break: break-word;
     overflow-wrap: break-word;
+    line-height: 1.35;
+}
+
+.room-container .room-el-card .card-rent p.description {
+    font-size: 12px;
+    opacity: 0.85;
 }
 
 /* El footer de acciones SIEMPRE pegado al fondo */
@@ -1106,8 +1118,13 @@
 
 /* ----- Responsive: tablets ----- */
 @media (max-width: 991px) {
+    .room-container .room-el-card,
+    .hotel-rooms .room-el-card.el-card {
+        height: 270px !important;
+        min-height: 270px;
+    }
     .room-container .room-el-card .card-rent h2 {
-        font-size: 20px;
+        font-size: 22px;
     }
     .room-container .room-el-card .room-top-right-elements {
         max-width: 50%;
@@ -1116,11 +1133,13 @@
 
 /* ----- Responsive: móvil ----- */
 @media (max-width: 599px) {
-    .room-container .room-el-card {
-        min-height: 200px;
+    .room-container .room-el-card,
+    .hotel-rooms .room-el-card.el-card {
+        height: 240px !important;
+        min-height: 240px;
     }
     .room-container .room-el-card .el-card__body {
-        padding: 14px !important;
+        padding: 12px !important;
     }
     .room-container .room-el-card .card-rent h2 {
         font-size: 22px;
