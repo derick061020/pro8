@@ -1,0 +1,582 @@
+<template>
+    <div class="purchases">
+        <div class="page-header pe-0">
+            <h2>
+                <a href="/purchases">
+                    <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        style="margin-top: -5px;"
+                        width="24"
+                        height="24"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        class="icon icon-tabler icons-tabler-outline icon-tabler-shopping-bag"
+                    >
+                        <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                        <path
+                            d="M6.331 8h11.339a2 2 0 0 1 1.977 2.304l-1.255 8.152a3 3 0 0 1 -2.966 2.544h-6.852a3 3 0 0 1 -2.965 -2.544l-1.255 -8.152a2 2 0 0 1 1.977 -2.304z"
+                        />
+                        <path d="M9 11v-5a3 3 0 0 1 6 0v5" />
+                    </svg>
+                </a>
+            </h2>
+            <ol class="breadcrumbs">
+                <li class="active"><span>Compras</span></li>
+            </ol>
+            <div class="right-wrapper pull-right">
+                <a
+                    :href="`/${resource}/create`"
+                    class="btn btn-custom btn-sm  mt-2 me-2"
+                    ><i class="fa fa-plus-circle"></i> Nuevo</a
+                >
+                <button
+                    @click.prevent="clickImport()"
+                    type="button"
+                    class="btn btn-custom btn-sm  mt-2 me-2"
+                >
+                    <i class="fa fa-upload"></i> Importar
+                </button>
+            </div>
+        </div>
+        <div class="card tab-content-default row-new mb-0">
+            <div class="data-table-visible-columns">
+                <el-dropdown :hide-on-click="false">
+                    <el-button type="secondary">
+                        Mostrar columnas<i
+                            class="el-icon-arrow-down el-icon--right"
+                        ></i>
+                    </el-button>
+                    <el-dropdown-menu slot="dropdown">
+                        <el-dropdown-item
+                            v-for="(column, index) in columns"
+                            :key="index"
+                        >
+                            <el-checkbox
+                                v-model="column.visible"
+                                @change="saveColumnVisibility"
+                                >{{ column.title }}</el-checkbox
+                            >
+                        </el-dropdown-item>
+                    </el-dropdown-menu>
+                </el-dropdown>
+            </div>
+            <div class="card-body">
+                <data-table :resource="resource">
+                    <tr slot="heading">
+                        <!-- <th>#</th> -->
+                        <th class="text-start">F. Emisión</th>
+                        <th
+                            class="text-center"
+                            v-if="columns.date_of_due.visible"
+                        >
+                            F. Vencimiento
+                        </th>
+                        <th>Proveedor</th>
+                        <th>Estado</th>
+                        <th>Estado de pago</th>
+                        <th>Número</th>
+                        <th>Productos</th>
+                        <th>Pagos</th>
+                        <!-- <th>F. Pago</th> -->
+                        <!-- <th>Estado</th> -->
+                        <th class="text-center">Moneda</th>
+                        <th class="text-end" v-if="columns.guides.visible">
+                            Guía
+                        </th>
+                        <th
+                            class="text-end"
+                            v-if="columns.purchase_order.visible"
+                        >
+                            Orden de compra
+                        </th>
+                        <!-- <th class="text-end">T.Exportación</th> -->
+                        <th
+                            v-if="columns.total_free.visible"
+                            class="text-end"
+                        >
+                            T.Gratuita
+                        </th>
+                        <th
+                            v-if="columns.total_unaffected.visible"
+                            class="text-end"
+                        >
+                            T.Inafecta
+                        </th>
+                        <th
+                            v-if="columns.total_exonerated.visible"
+                            class="text-end"
+                        >
+                            T.Exonerado
+                        </th>
+                        <th
+                            v-if="columns.total_taxed.visible"
+                            class="text-end"
+                        >
+                            T.Gravado
+                        </th>
+                        <th v-if="columns.total_igv.visible" class="text-end">
+                            T.Igv
+                        </th>
+                        <th v-if="columns.total_perception.visible">
+                            Percepcion
+                        </th>
+                        <th class="text-end">Total</th>
+                        <!-- <th class="text-center">Descargas</th> -->
+                        <th class="text-end">Acciones</th>
+                    </tr>
+                    <tr slot-scope="{ index, row }" :class="{'anulate_color': row.state_type_id === '11'}">
+                        <!-- <td>{{ index }}</td> -->
+                        <td class="text-start">
+                            {{ formatDate(row.date_of_issue) }}
+                        </td>
+                        <td
+                            v-if="columns.date_of_due.visible"
+                            class="text-center"
+                            :class="{
+                                'text-danger':
+                                    row.state_type_payment_description !=
+                                        'Pagado' &&
+                                    isDateWarning(row.date_of_due)
+                            }"
+                        >
+                            {{ formatDate(row.date_of_due) }}
+                        </td>
+                        <td>
+                            {{ row.supplier_name }}<br /><small
+                                v-text="row.supplier_number"
+                            ></small>
+                        </td>
+                        <td>{{ row.state_type_description }}</td>
+                        <td
+                            :class="
+                                row.state_type_payment_description == 'Pagado'
+                                    ? 'text-success'
+                                    : 'text-warning'
+                            "
+                        >
+                            {{ row.state_type_payment_description }}
+                        </td>
+                        <td>
+                            {{ row.number }}<br />
+                            <small
+                                v-text="row.document_type_description"
+                            ></small
+                            ><br />
+                        </td>
+                        <td>
+                            <el-popover
+                                placement="right"
+                                width="400"
+                                trigger="click"
+                            >
+                                <el-table :data="row.items">
+                                    <el-table-column
+                                        width="80"
+                                        property="key"
+                                        label="#"
+                                    ></el-table-column>
+                                    <!-- <el-table-column width="220" property="description" label="Nombre"></el-table-column> -->
+
+                                    <el-table-column width="220" label="Nombre">
+                                        <template slot-scope="scope">
+                                            <template
+                                                v-if="
+                                                    scope.row.name_product_pdf
+                                                "
+                                            >
+                                                <span
+                                                    v-html="
+                                                        scope.row
+                                                            .name_product_pdf
+                                                    "
+                                                ></span>
+                                            </template>
+                                            <template v-else>
+                                                {{ scope.row.description }}
+                                            </template>
+                                        </template>
+                                    </el-table-column>
+
+                                    <el-table-column
+                                        width="90"
+                                        property="quantity"
+                                        label="Cantidad"
+                                    ></el-table-column>
+                                </el-table>
+                                <el-button
+                                    class="second-buton"
+                                    slot="reference"
+                                >
+                                    <i class="fa fa-eye"></i
+                                ></el-button>
+                            </el-popover>
+                        </td>
+                        <!-- <td>{{ row.payment_method_type_description }}</td> -->
+                        <!-- <td>
+                            <template v-for="(it,ind) in row.payments">
+                                {{it.payment_method_type_description}} - {{it.payment}}
+                            </template>
+                        </td> -->
+                        <!-- <td>{{ row.state_type_description }}</td> -->
+                        <td class="text-end">
+                            <button
+                                v-if="row.state_type_id != '11'"
+                                type="button"
+                                style="min-width: 41px"
+                                class="btn waves-effect waves-light btn-xs btn-info m-1__2"
+                                @click.prevent="clickPurchasePayment(row.id)"
+                            >
+                                Pagos
+                            </button>
+                        </td>
+
+                        <td class="text-center">{{ row.currency_type_id }}</td>
+                        <td class="text-center" v-if="columns.guides.visible">
+                            <span v-for="(item, i) in row.guides" :key="i">
+                                {{ item.number }} <br />
+                            </span>
+                        </td>
+                        <!-- <td class="text-end">{{ row.total_exportation }}</td> -->
+                        <td
+                            v-if="columns.purchase_order.visible"
+                            class="text-end"
+                        >
+                            <span v-if="row.purchase_order"
+                                >{{ row.purchase_order.prefix }}-{{
+                                    row.purchase_order.id
+                                }}</span
+                            >
+                        </td>
+                        <td
+                            v-if="columns.total_free.visible"
+                            class="text-end"
+                        >
+                            {{row.currency_type_id === 'PEN' ? 'S/' : '$'}}
+                            {{ row.total_free }}
+                        </td>
+                        <td
+                            v-if="columns.total_unaffected.visible"
+                            class="text-end"
+                        >
+                            {{row.currency_type_id === 'PEN' ? 'S/' : '$'}}
+                            {{ row.total_unaffected }}
+                        </td>
+                        <td
+                            v-if="columns.total_exonerated.visible"
+                            class="text-end"
+                        >
+                            {{row.currency_type_id === 'PEN' ? 'S/' : '$'}}
+                            {{ row.total_exonerated }}
+                        </td>
+                        <td
+                            v-if="columns.total_taxed.visible"
+                            class="text-end"
+                        >
+                            {{row.currency_type_id === 'PEN' ? 'S/' : '$'}}
+                            {{ row.total_taxed }}
+                        </td>
+                        <td v-if="columns.total_igv.visible" class="text-end">
+                            {{row.currency_type_id === 'PEN' ? 'S/' : '$'}}
+                            {{ row.total_igv }}
+                        </td>
+                        <td
+                            v-if="columns.total_perception.visible"
+                            class="text-end"
+                        >
+                            {{row.currency_type_id === 'PEN' ? 'S/' : '$'}}
+                            {{
+                                row.total_perception ? row.total_perception : 0
+                            }}
+                        </td>
+                        <td class="text-end">{{row.currency_type_id === 'PEN' ? 'S/' : '$'}} {{ row.total }}</td>
+                        <td class="text-end">
+                            <el-dropdown trigger="click" @command="handleCommand($event, row)">
+                                <el-button class="btn-dropdown">
+                                    <i class="fas fa-ellipsis-v"></i>
+                                    <i class="fas fa-ellipsis-h" style="display: none;"></i>
+                                </el-button>
+
+                                <template #dropdown>
+                                    <el-dropdown-menu>
+                                        <el-dropdown-item
+                                            v-if="permissions.edit_purchase && row.state_type_id != '11'"
+                                            command="edit"
+                                        >
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-edit me-2"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M7 7h-1a2 2 0 0 0 -2 2v9a2 2 0 0 0 2 2h9a2 2 0 0 0 2 -2v-1" /><path d="M20.385 6.585a2.1 2.1 0 0 0 -2.97 -2.97l-8.415 8.385v3h3l8.385 -8.415" /><path d="M16 5l3 3" /></svg>
+                                            Editar
+                                        </el-dropdown-item>
+
+                                        <el-dropdown-item command="options">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-settings me-2"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M10.325 4.317c.426 -1.756 2.924 -1.756 3.35 0a1.724 1.724 0 0 0 2.573 1.066c1.543 -.94 3.31 .826 2.37 2.37a1.724 1.724 0 0 0 1.065 2.572c1.756 .426 1.756 2.924 0 3.35a1.724 1.724 0 0 0 -1.066 2.573c.94 1.543 -.826 3.31 -2.37 2.37a1.724 1.724 0 0 0 -2.572 1.065c-.426 1.756 -2.924 1.756 -3.35 0a1.724 1.724 0 0 0 -2.573 -1.066c-1.543 .94 -3.31 -.826 -2.37 -2.37a1.724 1.724 0 0 0 -1.065 -2.572c-1.756 -.426 -1.756 -2.924 0 -3.35a1.724 1.724 0 0 0 1.066 -2.573c-.94 -1.543 .826 -3.31 2.37 -2.37c1 .608 2.296 .07 2.572 -1.065z" /><path d="M9 12a3 3 0 1 0 6 0a3 3 0 0 0 -6 0" /></svg>
+                                            Opciones
+                                        </el-dropdown-item>
+
+                                        <el-dropdown-item :disabled="disableGuideBtn" command="guide">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-truck me-2">
+                                                <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+                                                <path d="M7 17m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"></path>
+                                                <path d="M17 17m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"></path>
+                                                <path d="M5 17h-2v-11a1 1 0 0 1 1 -1h9v12m-4 0h6m4 0h2v-6h-8m0 -5h5l3 5"></path>
+                                            </svg>
+                                            Guía
+                                        </el-dropdown-item>
+
+                                        <el-dropdown-item v-if="permissions.annular_purchase && row.state_type_id != '11' || permissions.delete_purchase && row.state_type_id == '11'" divided></el-dropdown-item>
+
+                                        <el-dropdown-item
+                                            v-if="permissions.annular_purchase && row.state_type_id != '11'"
+                                            command="anulate"
+                                            class="option-delete text-danger"
+                                        >
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-circle-x me-2"><path stroke="none" d="M0 0h24v24H0z" fill="none"></path><path d="M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0"></path><path d="M10 10l4 4m0 -4l-4 4"></path></svg>
+                                            Anular
+                                        </el-dropdown-item>
+
+                                        <el-dropdown-item
+                                            v-if="permissions.delete_purchase && row.state_type_id == '11'"
+                                            command="delete"
+                                            class="option-delete text-danger"
+                                        >
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-trash me-2"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M4 7l16 0" /><path d="M10 11l0 6" /><path d="M14 11l0 6" /><path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2 -2l1 -12" /><path d="M9 7v-3a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v3" /></svg>
+                                            Eliminar
+                                        </el-dropdown-item>
+                                    </el-dropdown-menu>
+                                </template>
+                            </el-dropdown>
+                        </td>
+
+                        <!-- <td class="text-end">
+                            <button type="button" class="btn waves-effect waves-light btn-xs btn-danger"
+                                    @click.prevent="clickVoided(row.id)"
+                                    v-if="row.btn_voided">Anular</button>
+                            <a :href="`/${resource}/note/${row.id}`" class="btn waves-effect waves-light btn-xs btn-warning"
+                               v-if="row.btn_note">Nota</a>
+                            <button type="button" class="btn waves-effect waves-light btn-xs btn-info"
+                                    @click.prevent="clickResend(row.id)"
+                                    v-if="row.btn_resend">Reenviar</button>
+                            <button type="button" class="btn waves-effect waves-light btn-xs btn-info"
+                                    @click.prevent="clickConsultCdr(row.id)"
+                                    v-if="row.btn_consult_cdr">Consultar CDR</button>
+                            <button type="button" class="btn waves-effect waves-light btn-xs btn-info"
+                                    @click.prevent="clickOptions(row.id)">Opciones</button>
+                        </td> -->
+                    </tr>
+                </data-table>
+            </div>
+
+            <!-- <documents-voided :showDialog.sync="showDialogVoided"
+                            :recordId="recordId"></documents-voided>
+
+            <document-options :showDialog.sync="showDialogOptions"
+                              :recordId="recordId"
+                              :showClose="true"></document-options> -->
+
+            <purchase-import
+                :showDialog.sync="showImportDialog"
+            ></purchase-import>
+        </div>
+
+        <tenant-guides-modal
+            :show.sync="showModalGuide"
+            :id="recordId"
+            :type="'purchases'"
+        ></tenant-guides-modal>
+        <purchase-payments
+            :showDialog.sync="showDialogPurchasePayments"
+            :purchaseId="recordId"
+            :external="true"
+        ></purchase-payments>
+
+        <purchase-options
+            :showDialog.sync="showDialogOptions"
+            :recordId="recordId"
+            :showClose="true"
+        ></purchase-options>
+    </div>
+</template>
+
+<script>
+import { mapActions, mapState } from "vuex";
+
+// import DocumentsVoided from './partials/voided.vue'
+// import DocumentOptions from './partials/options.vue'
+import DataTable from "../../../components/DataTable.vue";
+import { deletable } from "../../../mixins/deletable";
+import PurchaseImport from "./import.vue";
+import PurchasePayments from "@viewsModulePurchase/purchase_payments/payments.vue";
+import PurchaseOptions from "./partials/options.vue";
+
+export default {
+    mixins: [deletable],
+    // components: {DocumentsVoided, DocumentOptions, DataTable},
+    components: {
+        DataTable,
+        PurchaseImport,
+        PurchasePayments,
+        PurchaseOptions
+    },
+    props: ["typeUser", "configuration"],
+    data() {
+        return {
+            disableGuideBtn: true,
+            showModalGuide: false,
+            showDialogVoided: false,
+            resource: "purchases",
+            recordId: null,
+            showDialogOptions: false,
+            showDialogPurchasePayments: false,
+            showImportDialog: false,
+            columns: {
+                date_of_due: {
+                    title: "F. Vencimiento",
+                    visible: false
+                },
+                total_free: {
+                    title: "T.Gratuita",
+                    visible: false
+                },
+                total_unaffected: {
+                    title: "T.Inafecta",
+                    visible: false
+                },
+                total_exonerated: {
+                    title: "T.Exonerado",
+                    visible: false
+                },
+                total_taxed: {
+                    title: "T.Gravado",
+                    visible: false
+                },
+                total_igv: {
+                    title: "T.Igv",
+                    visible: false
+                },
+                total_perception: {
+                    title: "Percepcion",
+                    visible: false
+                },
+                guides: {
+                    title: "Guias",
+                    visible: false
+                },
+                purchase_order: {
+                    title: "Orden de Compra",
+                    visible: false
+                }
+            },
+            permissions: {}
+        };
+    },
+    computed: {
+        ...mapState(["document_types_guide", "warehouses"])
+    },
+    async created() {
+        this.loadColumnVisibility();
+        this.$store.commit("setConfiguration", this.configuration);
+        this.$store.commit("setTypeUser", this.typeUser);
+        await this.$http.get(`/${this.resource}/tables`).then(response => {
+            this.permissions = response.data.permissions;
+        });
+        this.getDocumentTypes();
+    },
+    methods: {
+        formatDate(date) {
+            if (!date) return null;
+            return moment(date).format("DD-MM-YYYY");
+        },
+        saveColumnVisibility() {
+            localStorage.setItem(
+                "columnVisibilityPurchases",
+                JSON.stringify(this.columns)
+            );
+        },
+        loadColumnVisibility() {
+            const savedColumns = localStorage.getItem(
+                "columnVisibilityPurchases"
+            );
+            if (savedColumns) {
+                this.columns = JSON.parse(savedColumns);
+            }
+        },
+        getItemDescription(scope) {
+            return scope.row.name_product_pdf
+                ? scope.row.name_product_pdf
+                : scope.row.description;
+        },
+        ...mapActions(["loadConfiguration"]),
+        clickPurchasePayment(recordId) {
+            this.recordId = recordId;
+            this.showDialogPurchasePayments = true;
+        },
+        clickVoided(recordId = null) {
+            this.recordId = recordId;
+            this.showDialogVoided = true;
+        },
+        clickDownload(download) {
+            window.open(download, "_blank");
+        },
+        clickOptions(recordId = null) {
+            this.recordId = recordId;
+            this.showDialogOptions = true;
+        },
+        handleCommand(command, row) {
+            switch (command) {
+                case "edit":
+                    if (row.state_type_id != "11")
+                        window.location.href = `/${this.resource}/create/${row.id}`;
+                    break;
+                case "anulate":
+                    if (row.state_type_id != "11") this.clickAnulate(row.id);
+                    break;
+                case "delete":
+                    if (row.state_type_id == "11") this.clickDelete(row.id);
+                    break;
+                case "options":
+                    this.clickOptions(row.id);
+                    break;
+                case "guide":
+                    if (!this.disableGuideBtn) this.clickGuide(row.id);
+                    break;
+                case "payments":
+                    if (row.state_type_id != "11") this.clickPurchasePayment(row.id);
+                    break;
+            }
+        },
+        clickGuide(recordId = null) {
+            this.recordId = recordId;
+            this.showModalGuide = true;
+        },
+        clickAnulate(id) {
+            this.anular(`/${this.resource}/anular/${id}`).then(() =>
+                this.$eventHub.$emit("reloadData")
+            );
+        },
+        clickDelete(id) {
+            this.delete(`/${this.resource}/delete/${id}`).then(() =>
+                this.$eventHub.$emit("reloadData")
+            );
+        },
+        clickImport() {
+            this.showImportDialog = true;
+        },
+        getDocumentTypes() {
+            this.$http
+                .post("/dispatches/getDocumentType")
+                .then(result => {
+                    this.$store.commit("setDocumentTypesGuide", result.data);
+                })
+                .then(() => {
+                    this.disableGuideBtn = !this.disableGuideBtn;
+                });
+        },
+        isDateWarning(date_due) {
+            let today = Date.now();
+            return moment(date_due).isBefore(today);
+        }
+    }
+};
+</script>
