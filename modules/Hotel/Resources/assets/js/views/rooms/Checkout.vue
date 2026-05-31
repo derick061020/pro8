@@ -1815,17 +1815,30 @@ export default {
             const json = r.item && (r.item.unit_price ?? r.item.unit_price_value);
             return parseFloat(json) || 0;
         },
+        getTotalExtensionNights() {
+            // Suma de noches de TODAS las extensiones HAB (pagadas y con deuda),
+            // porque el backend incrementa rent.duration por cada extensión sin
+            // importar su estado de pago.
+            return this.getSourceRentItemsForCheckout()
+                .filter(it => it.type === 'HAB' && this.isExtensionItem(it))
+                .reduce((sum, it) => sum + this.getRawItemQuantity(it), 0);
+        },
         getRoomItemQuantity(r) {
             if (!r) return 0;
             let baseQuantity = this.getRawItemQuantity(r);
 
             // Compatibilidad con registros antiguos: la columna quantity se
             // inicializó con default 1 y en algunos casos históricos nunca se
-            // sincronizó con la duración real del alquiler.
+            // sincronizó con la duración real del alquiler. Usamos rent.duration
+            // como piso, pero RESTANDO las noches de extensiones: rent.duration
+            // es acumulativo (incluye extensiones) y éstas se cuentan aparte como
+            // items propios. Sin esta resta se inflaba la fila base (p.ej. 1
+            // noche se mostraba como 2) y el precio unitario salía mal (70 → 35).
             if (!this.isExtensionItem(r) && (this.roomItems || []).length === 1) {
                 const rentDuration = parseFloat(this.currentRent && this.currentRent.duration);
                 if (Number.isFinite(rentDuration) && rentDuration > 0) {
-                    baseQuantity = Math.max(baseQuantity, rentDuration);
+                    const baseDuration = Math.max(0, rentDuration - this.getTotalExtensionNights());
+                    baseQuantity = Math.max(baseQuantity, baseDuration);
                 }
             }
 
