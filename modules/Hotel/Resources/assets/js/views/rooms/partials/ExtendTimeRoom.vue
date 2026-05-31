@@ -273,13 +273,13 @@ export default {
       return total;
     },
     totalConsumption() {
-      // Suma de todos los items del rent (excluyendo los pseudo-items de tipo PAY)
-      // + arrears, siguiendo la misma fórmula que Checkout.vue. El item HAB ya
-      // fue mutado por updateItemWithNewDuration/changeJsonItem para reflejar
-      // el total con la extensión, así que esto incluye consumo previo + extensión.
-      const itemsTotal = this.getCurrentRoomCons();
+      // Consumo total tras la extensión = consumo previo (items actuales sin
+      // mutar, excluyendo pseudo-items PAY) + la extensión que se está creando
+      // + arrears. getCurrentRoomCons() ya NO incluye la extensión porque el
+      // item original ya no se muta, por eso la sumamos aquí explícitamente.
+      const previo = this.getCurrentRoomCons();
       const arrears = parseFloat(this.room?.rent?.arrears) || 0;
-      return itemsTotal + arrears;
+      return previo + this.extensionTotal + arrears;
     },
     savedPaymentsTotal() {
       // Suma neta (positivos - devoluciones); los amounts ya vienen con signo
@@ -385,6 +385,8 @@ export default {
           this.form.price_per_day = parseFloat(rate.price);
         }
       }
+      // Propagar el nuevo precio al item (clon) que se enviará al backend.
+      this.updateItemWithNewPrice();
     },
     getRateTypeLabel(type) {
       const types = {
@@ -503,10 +505,10 @@ export default {
       this.form.output_date = newDateTime.format('YYYY-MM-DD');
       this.form.output_time = newDateTime.format('HH:mm');
 
-      // Actualizar el item con la nueva duración
+      // Actualizar el item (clon) con la nueva duración. No volvemos a llamar a
+      // getItem() aquí: reclonaría desde room.rent.items y reiniciaría
+      // price_per_day, descartando la tarifa que el usuario haya seleccionado.
       this.updateItemWithNewDuration();
-
-      this.getItem();
     },
     updateItemWithNewDuration() {
       // Calcular duración total (actual + adicionales)
@@ -594,12 +596,17 @@ export default {
           console.log('Precio encontrado en room.rent.items:', precio);
           console.log('Item usado:', mainItem);
           this.form.price_per_day = precio;
-          
-          // IMPORTANTE: Configurar el item para el envío
-          this.item = mainItem;
-          this.item_debt = mainItem;
-          this.form.item = mainItem;
-          
+
+          // IMPORTANTE: Clonar el item para el envío. NUNCA asignar la referencia
+          // directa de room.rent.items, porque updateItemWithNewDuration /
+          // updateItemWithNewPrice mutan item.total para reflejar la extensión y
+          // eso corrompería el "consumo previo" (getCurrentRoomCons lee de
+          // room.rent.items) provocando un doble conteo en la tarifa final.
+          const clone = JSON.parse(JSON.stringify(mainItem));
+          this.item = clone;
+          this.item_debt = clone;
+          this.form.item = clone;
+
           console.log('Item configurado para envío:', this.form.item);
           return;
         }
@@ -757,7 +764,14 @@ export default {
       const currentDuration = this.room.rent?.duration || 0;
       const additionalDays = this.form.duration || 0;
       const totalDuration = currentDuration + additionalDays;
-      
+
+      // Asegurar que el precio que verá el backend (request.item.item.unit_price)
+      // sea exactamente el price_per_day mostrado en pantalla, así la tarifa
+      // guardada coincide con la calculada en la vista.
+      if (this.form.item && this.form.item.item) {
+        this.form.item.item.unit_price = parseFloat(this.form.price_per_day) || 0;
+      }
+
       const formData = {
         ...this.form,
         duration: totalDuration, // Enviar duración total, no solo adicionales
