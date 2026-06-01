@@ -1740,30 +1740,84 @@ export default {
             });
 
             const baseRoomItems = this.roomItems;
-            const paidExtensions = this.getSourceRentItemsForCheckout()
-                .filter(it => this.isPaidHabExtension(it))
+
+            // Todas las extensiones HAB (pagadas y con deuda), no solo las pagadas:
+            // las noches extendidas deben consolidarse en una sola línea aunque
+            // todavía no se hayan pagado.
+            const extensions = this.getSourceRentItemsForCheckout()
+                .filter(it => it.type === 'HAB' && this.isExtensionItem(it))
                 .slice()
                 .sort((a, b) => (a.id || 0) - (b.id || 0));
 
-            paidExtensions.forEach((extensionItem) => {
-                const extensionRow = rowByRentItemId[extensionItem.id];
-                if (!extensionRow || extensionRow._invoiced) return;
-
+            // Agrupar las extensiones por el item HAB base al que pertenecen.
+            const groupsByBaseId = {};
+            extensions.forEach((extensionItem) => {
                 const targetRoomItem = this.resolveBaseRoomItemForExtension(extensionItem, baseRoomItems);
                 if (!targetRoomItem || !targetRoomItem.id) return;
+                (groupsByBaseId[targetRoomItem.id] = groupsByBaseId[targetRoomItem.id] || [])
+                    .push(extensionItem);
+            });
 
-                const baseRow = rowByRentItemId[targetRoomItem.id];
-                if (!baseRow || baseRow._invoiced) return;
+            Object.keys(groupsByBaseId).forEach((baseId) => {
+                // Filas de extensión aún no facturadas (las ya facturadas pertenecen
+                // a otro comprobante y no deben tocarse).
+                const extensionRows = groupsByBaseId[baseId]
+                    .map(ext => rowByRentItemId[ext.id])
+                    .filter(row => row && !row._merged_into && !row._invoiced);
 
-                this.mergeDocumentRowTotals(baseRow, extensionRow);
-                baseRow._rent_item_ids = _.uniq([
-                    ...(baseRow._rent_item_ids || []),
-                    ...(extensionRow._rent_item_ids || [extensionItem.id]),
-                ]);
-                extensionRow._merged_into = baseRow._rent_item_id;
+                if (extensionRows.length === 0) return;
+
+                const baseRow = rowByRentItemId[baseId];
+
+                // Destino de la consolidación:
+                //  - el item base de la habitación si está disponible y todavía no
+                //    se facturó (habitación + extensiones salen como una sola línea);
+                //  - de lo contrario, la primera fila de extensión (caso típico: el
+                //    comprobante de la habitación ya se emitió y solo se facturan las
+                //    extensiones nuevas, que deben verse como un único item).
+                const targetRow = (baseRow && !baseRow._invoiced) ? baseRow : extensionRows[0];
+
+                extensionRows.forEach((extensionRow) => {
+                    if (extensionRow === targetRow) return;
+
+                    this.mergeDocumentRowTotals(targetRow, extensionRow);
+                    targetRow._rent_item_ids = _.uniq([
+                        ...(targetRow._rent_item_ids || []),
+                        ...(extensionRow._rent_item_ids || []),
+                    ]);
+                    extensionRow._merged_into = targetRow._rent_item_id;
+                });
+
+                // Si el destino es una extensión (la habitación ya fue facturada por
+                // separado), reescribir su descripción para que refleje el total de
+                // noches consolidadas en lugar de la cantidad de la primera fila.
+                if (targetRow !== baseRow) {
+                    this.relabelConsolidatedExtensionRow(targetRow);
+                }
             });
 
             return rows.filter(row => !row._merged_into);
+        },
+        relabelConsolidatedExtensionRow(row) {
+            const quantity = parseFloat(row && row.quantity) || 0;
+            if (quantity <= 0 || !row.item) return;
+
+            // Unidad de tiempo según el tipo de renta.
+            let unit = 'noche(s)';
+            const period = this.currentRent && this.currentRent.rental_period_type;
+            if (period === 'hour') unit = 'hora(s)';
+            else if (period === 'month') unit = 'mes(es)';
+
+            // Conservar el prefijo "Extensión <habitación>" de la descripción
+            // original y reemplazar solo la cantidad por el total consolidado.
+            const original = row.item.description || row.item.full_description || 'Extensión';
+            const prefix = String(original).split(' - ')[0] || 'Extensión';
+            const name = `${prefix} - ${quantity} ${unit}`;
+
+            row.item.description = name;
+            row.item.full_description = name;
+            row.item.name_product_pdf = name;
+            row.name_product_pdf = name;
         },
         mergeDocumentRowTotals(targetRow, sourceRow) {
             const numericFields = [

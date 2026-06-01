@@ -79,62 +79,31 @@
                         >
                         </el-input>
                     </div>
-                    <!-- filtro de status con contadores -->
+                    <!-- filtro de status con contadores y colores por estado -->
                     <div class="col-md-3 col-sm-12 pb-2 text-end ms-auto">
                         <el-select
                             v-model="hotel_status_room"
                             :disabled="loading"
                             clearable
                             placeholder="Estado"
+                            popper-class="status-select-dropdown"
+                            :class="['status-select', 'status-select-' + (hotel_status_room || 'all')]"
                             style="width: 100%;"
                             @change="onFilterByStatus"
+                            @clear="onFilterByStatus('')"
                         >
                             <el-option
-                                label="Todos"
-                                value=""
+                                v-for="opt in statusOptions"
+                                :key="opt.value"
+                                :label="`${opt.label} (${opt.count})`"
+                                :value="opt.value"
                             >
-                                <span>Todos</span>
-                                <span class="status-count-badge">{{ statusCounts.total }}</span>
-                            </el-option>
-                            <el-option
-                                v-for="st in roomStatus"
-                                :key="st"
-                                :label="`${st} (${statusCounts[st] || 0})`"
-                                :value="st"
-                            >
-                                <span>{{ st }}</span>
-                                <span class="status-count-badge">{{ statusCounts[st] || 0 }}</span>
-                            </el-option>
-                            <el-option label="RESERVADA" value="RESERVADA">
-                                <span>RESERVADA</span>
-                                <span class="status-count-badge">{{ statusCounts.RESERVADA || 0 }}</span>
+                                <span class="status-opt-dot" :style="{ background: opt.color }"></span>
+                                <span class="status-opt-label">{{ opt.label }}</span>
+                                <span class="status-count-badge">{{ opt.count }}</span>
                             </el-option>
                         </el-select>
                     </div>
-                </div>
-
-                <!-- Resumen rápido de contadores -->
-                <div class="status-summary-bar">
-                    <span class="ss-chip ss-available" @click="onFilterByStatus('DISPONIBLE')">
-                        <span class="ss-dot"></span>Disponibles
-                        <span class="ss-num">{{ statusCounts.DISPONIBLE || 0 }}</span>
-                    </span>
-                    <span class="ss-chip ss-occupied" @click="onFilterByStatus('OCUPADO')">
-                        <span class="ss-dot"></span>Ocupadas
-                        <span class="ss-num">{{ statusCounts.OCUPADO || 0 }}</span>
-                    </span>
-                    <span class="ss-chip ss-cleaning" @click="onFilterByStatus('LIMPIEZA')">
-                        <span class="ss-dot"></span>Limpieza
-                        <span class="ss-num">{{ statusCounts.LIMPIEZA || 0 }}</span>
-                    </span>
-                    <span class="ss-chip ss-maintenance" @click="onFilterByStatus('MANTENIMIENTO')">
-                        <span class="ss-dot"></span>Mantenimiento
-                        <span class="ss-num">{{ statusCounts.MANTENIMIENTO || 0 }}</span>
-                    </span>
-                    <span class="ss-chip ss-reserved" @click="onFilterByStatus('RESERVADA')">
-                        <span class="ss-dot"></span>Reservadas
-                        <span class="ss-num">{{ statusCounts.RESERVADA || 0 }}</span>
-                    </span>
                 </div>
                 <div class="room-container mt-3">
                     <div v-for="ro in filteredItems"
@@ -1305,47 +1274,36 @@
     margin-left: 8px;
 }
 
-/* Barra resumen de contadores por estado, debajo de los filtros */
-.status-summary-bar {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    margin: 8px 0 0 0;
-    padding: 8px 0;
+/* Punto de color por estado dentro de cada opción del desplegable */
+.status-opt-dot {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    margin-right: 8px;
+    vertical-align: middle;
 }
-.status-summary-bar .ss-chip {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 4px 12px;
-    border-radius: 999px;
-    background: #f3f4f6;
-    color: #374151;
-    border: 1px solid #e5e7eb;
-    font-size: 12px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: transform .15s ease, box-shadow .15s ease;
+.status-opt-label {
+    vertical-align: middle;
 }
-.status-summary-bar .ss-chip:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+
+/* Color del borde izquierdo del select según el estado seleccionado,
+   para reflejar el color del estado activo en el propio control. */
+.status-select .el-input__inner {
+    border-left-width: 4px;
 }
-.status-summary-bar .ss-dot {
-    width: 10px; height: 10px; border-radius: 50%;
+.status-select-all .el-input__inner { border-left-color: #9ca3af; }
+.status-select-DISPONIBLE .el-input__inner { border-left-color: #22c55e; }
+.status-select-OCUPADO .el-input__inner { border-left-color: #ef4444; }
+.status-select-LIMPIEZA .el-input__inner { border-left-color: #06b6d4; }
+.status-select-MANTENIMIENTO .el-input__inner { border-left-color: #f59e0b; }
+.status-select-RESERVADA .el-input__inner { border-left-color: #8b5cf6; }
+
+/* Resaltado de la opción seleccionada en el popper del desplegable */
+.status-select-dropdown .el-select-dropdown__item .status-count-badge {
+    float: none;
+    margin-left: 8px;
 }
-.status-summary-bar .ss-num {
-    background: rgba(0,0,0,0.08);
-    border-radius: 999px;
-    padding: 0 8px;
-    line-height: 18px;
-    font-weight: 700;
-}
-.ss-available .ss-dot { background: #22c55e; }
-.ss-occupied .ss-dot { background: #ef4444; }
-.ss-cleaning .ss-dot { background: #06b6d4; }
-.ss-maintenance .ss-dot { background: #f59e0b; }
-.ss-reserved .ss-dot { background: #8b5cf6; }
 
 /* Indicador de observaciones - ajustado para estar en el contenedor */
 .observations-indicator {
@@ -1820,6 +1778,37 @@ export default {
                 if (counts[st] !== undefined) counts[st]++;
             });
             return counts;
+        },
+        statusOptions() {
+            // Lista de estados para el desplegable, con color y contador.
+            // Incluye "Todos" + los estados reales + el estado virtual RESERVADA.
+            const colors = {
+                DISPONIBLE: '#22c55e',
+                OCUPADO: '#ef4444',
+                LIMPIEZA: '#06b6d4',
+                MANTENIMIENTO: '#f59e0b',
+                RESERVADA: '#8b5cf6',
+            };
+            const counts = this.statusCounts;
+            const options = [
+                { value: '', label: 'Todos', color: '#9ca3af', count: counts.total },
+            ];
+            (this.roomStatus || []).forEach(st => {
+                options.push({
+                    value: st,
+                    label: st,
+                    color: colors[st] || '#9ca3af',
+                    count: counts[st] || 0,
+                });
+            });
+            // RESERVADA es virtual (no viene en roomStatus): se agrega al final.
+            options.push({
+                value: 'RESERVADA',
+                label: 'RESERVADA',
+                color: colors.RESERVADA,
+                count: counts.RESERVADA || 0,
+            });
+            return options;
         },
         filteredItems() {
             // Filtra por estado seleccionado en el cliente para que los
