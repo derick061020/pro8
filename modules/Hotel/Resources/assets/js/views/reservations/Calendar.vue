@@ -472,6 +472,102 @@ export default {
             })
             return groups
         },
+
+        /* ── Índices memoizados para el render ──
+         * Antes los métodos getDayAvailability / getCategoryDayStats /
+         * getRoomBars se ejecutaban por celda EN CADA render, recorriendo
+         * habitaciones × reservas y re-parseando fechas. Eso hacía la vista
+         * muy lenta. Ahora se precalcula todo una sola vez por cambio de
+         * datos (reservas/habitaciones/días) y el template solo hace lookups.
+         */
+        visibleRange() {
+            const ws = new Date(this.startDate); ws.setHours(0, 0, 0, 0)
+            const we = new Date(ws); we.setDate(ws.getDate() + this.visibleDays - 1)
+            return { wsT: ws.getTime(), weT: we.getTime() }
+        },
+        // Reservas con fechas ya parseadas a milisegundos (evita re-parsear
+        // strings dentro de los bucles de render).
+        parsedReservations() {
+            return this.reservations.map(r => {
+                const s = this.parseDate(r.start_date)
+                const e = this.parseDate(r.end_date)
+                return { res: r, roomId: String(r.hotel_room_id), sT: s.getTime(), eT: e.getTime() }
+            })
+        },
+        // dateStr -> Set de habitaciones ocupadas ese día (solo filteredRooms).
+        occupiedRoomsByDay() {
+            const map = {}
+            const dayList = this.days.map(d => ({ key: d.dateStr, t: d.date.getTime() }))
+            dayList.forEach(d => { map[d.key] = new Set() })
+            const roomIdSet = new Set(this.filteredRooms.map(r => String(r.id)))
+            this.parsedReservations.forEach(p => {
+                if (!roomIdSet.has(p.roomId)) return
+                for (let i = 0; i < dayList.length; i++) {
+                    const t = dayList[i].t
+                    if (t >= p.sT && t <= p.eT) map[dayList[i].key].add(p.roomId)
+                }
+            })
+            return map
+        },
+        dayAvailabilityMap() {
+            const total = this.filteredRooms.length
+            const map = {}
+            this.days.forEach(d => {
+                const set = this.occupiedRoomsByDay[d.dateStr]
+                const occupied = total && set ? set.size : 0
+                map[d.dateStr] = {
+                    available: total - occupied,
+                    occupied,
+                    pct: total ? (occupied / total) * 100 : 0,
+                }
+            })
+            return map
+        },
+        // `${group.id}_${dateStr}` -> { available, occupied } por categoría/día.
+        categoryStatsByDay() {
+            const map = {}
+            this.roomGroups.forEach(group => {
+                const ids = group.rooms.map(r => String(r.id))
+                const total = group.rooms.length
+                this.days.forEach(d => {
+                    const occSet = this.occupiedRoomsByDay[d.dateStr]
+                    let occupied = 0
+                    if (occSet) ids.forEach(id => { if (occSet.has(id)) occupied++ })
+                    map[`${group.id}_${d.dateStr}`] = { available: total - occupied, occupied }
+                })
+            })
+            return map
+        },
+        // roomId -> array de barras ya posicionadas para el rango visible.
+        barsByRoom() {
+            const { wsT, weT } = this.visibleRange
+            const barColors = [
+                'bar-sky', 'bar-teal', 'bar-emerald', 'bar-amber',
+                'bar-rose', 'bar-violet', 'bar-lime', 'bar-orange'
+            ]
+            const map = {}
+            this.parsedReservations.forEach(p => {
+                const r = p.res
+                if (p.eT < wsT || p.sT > weT) return
+                const visStartT = p.sT < wsT ? wsT : p.sT
+                const visEndT = p.eT > weT ? weT : p.eT
+                const startIdx = Math.round((visStartT - wsT) / 864e5)
+                const span = Math.round((visEndT - visStartT) / 864e5) + 1
+                const leftPx = startIdx * this.dayCellWidth + 2
+                const widthPx = span * this.dayCellWidth - 4
+                // Color determinista por id de reserva: estable entre renders y
+                // navegaciones, sin mutar estado durante el render.
+                const colorClass = barColors[(parseInt(r.id, 10) || 0) % barColors.length]
+                if (!map[p.roomId]) map[p.roomId] = []
+                map[p.roomId].push({
+                    ...r,
+                    colorClass,
+                    isMultiGuest: false,
+                    style: { left: leftPx + 'px', width: widthPx + 'px' },
+                })
+            })
+            return map
+        },
     },
     created() {
         this.goToday()
@@ -602,24 +698,7 @@ export default {
 
         /* ── Availability Stats ── */
         getDayAvailability(day) {
-            const total = this.filteredRooms.length
-            if (!total) return { available: 0, occupied: 0, pct: 0 }
-            let occupied = 0
-            const dayDate = day.date
-            this.filteredRooms.forEach(room => {
-                const hasRes = this.reservations.some(r => {
-                    if (r.hotel_room_id != room.id) return false
-                    const s = this.parseDate(r.start_date)
-                    const e = this.parseDate(r.end_date)
-                    return dayDate >= s && dayDate <= e
-                })
-                if (hasRes) occupied++
-            })
-            return {
-                available: total - occupied,
-                occupied,
-                pct: (occupied / total) * 100,
-            }
+            return this.dayAvailabilityMap[day.dateStr] || { available: 0, occupied: 0, pct: 0 }
         },
         getPctClass(pct) {
             if (pct >= 100) return 'pct-full'
@@ -628,22 +707,9 @@ export default {
             return 'pct-low'
         },
         getCategoryDayStats(group, day) {
-            const rooms = group.rooms
-            const total = rooms.length
-            let occupied = 0
-            const dayDate = day.date
-            rooms.forEach(room => {
-                const hasRes = this.reservations.some(r => {
-                    if (r.hotel_room_id != room.id) return false
-                    const s = this.parseDate(r.start_date)
-                    const e = this.parseDate(r.end_date)
-                    return dayDate >= s && dayDate <= e
-                })
-                if (hasRes) occupied++
-            })
-            // Price: get from daily sales total for this category
-            const price = this.getCategoryDayPrice(group, day)
-            return { available: total - occupied, price }
+            const s = this.categoryStatsByDay[`${group.id}_${day.dateStr}`]
+                || { available: group.rooms.length, occupied: 0 }
+            return { available: s.available, price: this.getCategoryDayPrice(group, day) }
         },
         getRoomCategoryPrice(catId) {
             // Try to find price from room rates
@@ -710,46 +776,9 @@ export default {
 
         /* ── Bar Calculation ── */
         getRoomBars(roomId) {
-            const ws = this.startDate
-            const weDate = new Date(this.startDate)
-            weDate.setDate(ws.getDate() + this.visibleDays - 1)
-            const bars = []
-            const barColors = [
-                'bar-sky', 'bar-teal', 'bar-emerald', 'bar-amber',
-                'bar-rose', 'bar-violet', 'bar-lime', 'bar-orange'
-            ]
-
-            this.reservations.forEach(r => {
-                if (r.hotel_room_id != roomId) return
-                const rStart = this.parseDate(r.start_date)
-                const rEnd = this.parseDate(r.end_date)
-                if (rEnd < ws || rStart > weDate) return
-
-                const visStart = rStart < ws ? ws : rStart
-                const visEnd = rEnd > weDate ? weDate : rEnd
-                const startIdx = this.daysBetween(ws, visStart)
-                const span = this.daysBetween(visStart, visEnd) + 1
-
-                // Assign a consistent color based on reservation id
-                if (!this.barColorIndex[r.id]) {
-                    const idx = Object.keys(this.barColorIndex).length % barColors.length
-                    this.barColorIndex[r.id] = barColors[idx]
-                }
-
-                const leftPx = startIdx * this.dayCellWidth + 2
-                const widthPx = span * this.dayCellWidth - 4
-
-                bars.push({
-                    ...r,
-                    colorClass: this.barColorIndex[r.id],
-                    isMultiGuest: false,
-                    style: {
-                        left: leftPx + 'px',
-                        width: widthPx + 'px',
-                    }
-                })
-            })
-            return bars
+            // El cálculo y posicionamiento de barras ya está memoizado en el
+            // computed barsByRoom; aquí solo se hace lookup.
+            return this.barsByRoom[roomId] || []
         },
         getBarClass(bar) {
             // Si es una reserva, mostrar con color especial

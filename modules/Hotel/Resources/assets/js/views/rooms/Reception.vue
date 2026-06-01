@@ -173,7 +173,7 @@
                             <div class="card-rent">
                                 <!-- <h4>{{ ro.status }}</h4> -->
 
-                                   <span v-if="!ro.has_reservation" class="text-muted">{{ ro.category.description }}</span>
+                                   <span v-if="!ro.has_reservation" class="text-muted">{{ ro.category?.description }}</span>
                                    <h2 class="mt-0">
                                     <svg  xmlns="http://www.w3.org/2000/svg"  width="32"  height="32"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-door"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M14 12v.01" /><path d="M3 21h18" /><path d="M6 21v-16a2 2 0 0 1 2 -2h8a2 2 0 0 1 2 2v16" /></svg>
                                       <b>{{ ro.name }}</b>
@@ -192,36 +192,14 @@
                                                <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2"></path>
                                            </svg>
                                            <strong> {{ ro.rent.customer.name }}</strong>
-                                           <span v-if="ro.rent.customer.person_type_id || ro.status == 'DISPONIBLE'" class="customer-type-badge ml-2" style="height: 100%;margin-left: 10px;">
-                                               {{ ro.rent.customer.person_type.description }}
+                                           <span v-if="ro.rent.customer.person_type && (ro.rent.customer.person_type_id || ro.status == 'DISPONIBLE')" class="customer-type-badge ml-2" style="height: 100%;margin-left: 10px;">
+                                               {{ ro.rent.customer.person_type?.description }}
                                            </span>
                                        </p>
                                        
                                        <!-- Contador regresivo para reservas -->
                                        <div class="room-top-right-elements" style="margin-top: 10px;">
-                                           <div class="rent-countdown-simple" v-if="ro.rent && timeRemaining[ro.id]">
-                                               <div class="countdown-display">
-                                                   <div class="countdown-unit">
-                                                       <div class="countdown-value">{{ timeRemaining[ro.id].days }}</div>
-                                                       <div class="countdown-label">{{ timeRemaining[ro.id].days === 1 ? 'día' : 'días' }}</div>
-                                                   </div>
-                                                   <div class="countdown-separator"></div>
-                                                   <div class="countdown-unit">
-                                                       <div class="countdown-value">{{ String(timeRemaining[ro.id].hours).padStart(2, '0') }}</div>
-                                                       <div class="countdown-label">{{ timeRemaining[ro.id].hours === 1 ? 'hora' : 'hora' }}</div>
-                                                   </div>
-                                                   <div class="countdown-separator"></div>
-                                                   <div class="countdown-unit">
-                                                       <div class="countdown-value">{{ String(timeRemaining[ro.id].minutes).padStart(2, '0') }}</div>
-                                                       <div class="countdown-label">{{ timeRemaining[ro.id].minutes === 1 ? 'min' : 'min' }}</div>
-                                                   </div>
-                                                   <div class="countdown-separator"></div>
-                                                   <div class="countdown-unit">
-                                                       <div class="countdown-value">{{ String(timeRemaining[ro.id].seconds).padStart(2, '0') }}</div>
-                                                       <div class="countdown-label">{{ timeRemaining[ro.id].seconds === 1 ? 'seg' : 'seg' }}</div>
-                                                   </div>
-                                               </div>
-                                           </div>
+                                           <room-countdown v-if="ro.rent" :rent="ro.rent"></room-countdown>
                                        </div>
                                    </div>
 
@@ -278,8 +256,8 @@
                                         <p :style="ro.rent.license_plate ? 'margin: 0;' : ''">
                                         <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-user"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0" /><path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2" /></svg>
                                     <span class="">{{ ro.rent.customer.name }}</span>
-                                    <span v-if="ro.rent.customer.person_type_id" class="customer-type-badge ml-2" style="height: 100%;margin-left: 10px;">
-                                        {{ ro.rent.customer.person_type.description }}
+                                    <span v-if="ro.rent.customer.person_type && ro.rent.customer.person_type_id" class="customer-type-badge ml-2" style="height: 100%;margin-left: 10px;">
+                                        {{ ro.rent.customer.person_type?.description }}
                                     </span><br>
                                     <span class="license-plate-display" v-if="ro.rent.license_plate">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -293,29 +271,7 @@
                                     <!-- Contenedor para contador y tooltip en esquina superior derecha -->
                                     <div class="room-top-right-elements">
                                         <!-- Contador regresivo -->
-                                    <div class="rent-countdown-simple" v-if="ro.rent && timeRemaining[ro.id]">
-                                        <div class="countdown-display">
-                                            <div class="countdown-unit">
-                                                <div class="countdown-value">{{ timeRemaining[ro.id].days }}</div>
-                                                <div class="countdown-label">{{ timeRemaining[ro.id].days === 1 ? 'día' : 'días' }}</div>
-                                            </div>
-                                            <div class="countdown-separator"></div>
-                                            <div class="countdown-unit">
-                                                <div class="countdown-value">{{ String(timeRemaining[ro.id].hours).padStart(2, '0') }}</div>
-                                                <div class="countdown-label">{{ timeRemaining[ro.id].hours === 1 ? 'hora' : 'hora' }}</div>
-                                            </div>
-                                            <div class="countdown-separator"></div>
-                                            <div class="countdown-unit">
-                                                <div class="countdown-value">{{ String(timeRemaining[ro.id].minutes).padStart(2, '0') }}</div>
-                                                <div class="countdown-label">{{ timeRemaining[ro.id].minutes === 1 ? 'min' : 'min' }}</div>
-                                            </div>
-                                            <div class="countdown-separator"></div>
-                                            <div class="countdown-unit">
-                                                <div class="countdown-value">{{ String(timeRemaining[ro.id].seconds).padStart(2, '0') }}</div>
-                                                <div class="countdown-label">{{ timeRemaining[ro.id].seconds === 1 ? 'seg' : 'seg' }}</div>
-                                            </div>
-                                        </div>
-                                    </div>
+                                    <room-countdown v-if="ro.rent" :rent="ro.rent"></room-countdown>
                                         <!-- Indicador de observaciones -->
                                         <div 
                                             v-if="ro.rent && ro.rent.notes" 
@@ -1716,12 +1672,14 @@
 import ExtendTimeRoom from './partials/ExtendTimeRoom.vue';
 import ModalRoomRates from "./RoomRates.vue";
 import ReceptionExport from './partials/ReceptionExport.vue';
+import RoomCountdown from './partials/RoomCountdown.vue';
 
 export default {
     components: {
         ModalRoomRates,
         ExtendTimeRoom,
         ReceptionExport,
+        RoomCountdown,
     },
     props: {
         roomStatus: {
@@ -2280,16 +2238,23 @@ export default {
             this.observationTooltip.visible = false;
         },
         initializeCountdown() {
+            // El contador visible (segundos) lo maneja ahora cada tarjeta con el
+            // componente <room-countdown>, que tiene su propio timer y NO
+            // re-renderiza toda la grilla. Aquí solo mantenemos timeRemaining
+            // para el COLOR de la tarjeta (onGetColorStatus: morado ≤1h, rojo al
+            // vencer), que tolera baja frecuencia. Pasar de 1s a 20s reduce
+            // drásticamente los re-render de toda la vista de recepción.
             this.updateCountdown();
             this.countdownInterval = setInterval(() => {
                 this.updateCountdown();
-            }, 1000); // Actualizar cada segundo
+            }, 20000); // Solo para el color de estado
         },
         updateCountdown() {
             const now = new Date();
             
             this.items.forEach(room => {
-                if ((room.status === 'OCUPADO' || room.has_reservation) && room.rent) {
+                if ((room.status === 'OCUPADO' || room.has_reservation) && room.rent
+                    && room.rent.output_date && room.rent.output_time) {
                     // Parsear la fecha de salida (YYYY-MM-DD)
                     const dateParts = room.rent.output_date.split('-');
                     const year = parseInt(dateParts[0]);
