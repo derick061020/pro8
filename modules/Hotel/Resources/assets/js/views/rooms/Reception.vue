@@ -1827,11 +1827,24 @@ export default {
             // muestre solo lo elegido. Soporta filtro virtual "RESERVADA".
             const source = Array.isArray(this.items) ? this.items : [];
             const st = this.hotel_status_room;
-            if (!st) return source;
-            if (st === 'RESERVADA') {
-                return source.filter(r => !!r.is_active_reservation);
+
+            let result;
+            if (!st) {
+                result = source.slice();
+            } else if (st === 'RESERVADA') {
+                result = source.filter(r => !!r.is_active_reservation);
+            } else {
+                result = source.filter(r => !r.is_active_reservation && r.status === st);
             }
-            return source.filter(r => !r.is_active_reservation && r.status === st);
+
+            // Ordenar por número de habitación de forma natural: 1, 2, 3, 11,
+            // 12, 101 (no alfabética, que pondría "101" antes que "11").
+            return result.sort((a, b) =>
+                String(a.name ?? '').localeCompare(String(b.name ?? ''), undefined, {
+                    numeric: true,
+                    sensitivity: 'base',
+                })
+            );
         },
         changePreview() {
             if (!this.selectedRoom?.rent || !this.selectedNewRate) return null;
