@@ -125,7 +125,7 @@
                             <div
                                 v-if="ro.reservations_count > 0 && !(ro.is_active_reservation && ro.reservations_count === 1)"
                                 class="reservations-count-chip"
-                                :style="(ro.has_reservation || ro.status !== 'DISPONIBLE') ? 'margin-top:40px;' : ''"
+                                
                                 :class="{ 'chip-on-reserved': ro.is_active_reservation }"
                                 @click.stop="onOpenReservationsList(ro)"
                                 :title="`${ro.reservations_count} reserva${ro.reservations_count === 1 ? '' : 's'} vigente${ro.reservations_count === 1 ? '' : 's'} — clic para ver detalle`"
@@ -167,7 +167,7 @@
                                        </p>
                                        
                                        <!-- Contador regresivo para reservas -->
-                                       <div class="room-top-right-elements" style="margin-top: 10px;">
+                                       <div class="room-top-right-elements" >
                                            <room-countdown v-if="ro.rent" :rent="ro.rent"></room-countdown>
                                        </div>
                                    </div>
