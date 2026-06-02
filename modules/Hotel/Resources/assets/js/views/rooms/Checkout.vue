@@ -2058,7 +2058,77 @@ export default {
                 this.loading = false;
             }
         },
+        consolidateRoomNightsForDocument() {
+            const items = Array.isArray(this.document.items) ? this.document.items : [];
+            const roomItemId = this.room && this.room.item_id;
+            if (!roomItemId || items.length === 0) return;
+
+            // Campos numéricos a acumular en la fila destino. Aunque
+            // onUpdateItemsWithExtras recalcula la fila a partir de
+            // quantity/total, sumamos todos para mantener la fila coherente.
+            const sumFields = [
+                'quantity',
+                'total',
+                'total_value',
+                'total_base_igv',
+                'total_igv',
+                'total_taxes',
+                'total_charge',
+                'total_discount',
+                'total_plastic_bag_taxes',
+                'total_without_rounding',
+                'total_value_without_rounding',
+                'total_base_igv_without_rounding',
+                'total_igv_without_rounding',
+                'total_taxes_without_rounding',
+            ];
+
+            let target = null;
+            const result = [];
+
+            items.forEach((it) => {
+                // Solo se fusionan las noches de la habitación activa que aún no
+                // se han facturado. Productos, otras habitaciones y noches ya
+                // facturadas (que pertenecen a otro comprobante) no se tocan.
+                const isPendingRoomNight = it && it.item_id === roomItemId && !it._invoiced;
+
+                if (!isPendingRoomNight) {
+                    result.push(it);
+                    return;
+                }
+
+                if (!target) {
+                    target = it;
+                    result.push(it);
+                    return;
+                }
+
+                sumFields.forEach((field) => {
+                    target[field] = (parseFloat(target[field]) || 0) + (parseFloat(it[field]) || 0);
+                });
+                if (target.item) {
+                    target.item.quantity = target.quantity;
+                }
+
+                // Conservar todos los ids de items de renta para marcarlos como
+                // facturados luego (mark-items-invoiced).
+                target._rent_item_ids = _.uniq([
+                    ...(Array.isArray(target._rent_item_ids) ? target._rent_item_ids : [target._rent_item_id].filter(Boolean)),
+                    ...(Array.isArray(it._rent_item_ids) ? it._rent_item_ids : [it._rent_item_id].filter(Boolean)),
+                ]);
+            });
+
+            this.document.items = result;
+        },
         async onGenerateInvoice() {
+            // Consolidar en una sola línea las noches de la misma habitación que
+            // todavía no se han facturado (habitación base + extensiones hechas
+            // de forma individual). Sin esto, cada noche/extensión sale como un
+            // item separado en el comprobante. Se hace ANTES de
+            // onUpdateItemsWithExtras para que la suma de noches (quantity) se
+            // refleje en la descripción "Habitación X x N noche(s)".
+            this.consolidateRoomNightsForDocument();
+
             await this.onUpdateItemsWithExtras();
 
             const allItems = this.document.items || [];
