@@ -2830,11 +2830,26 @@ export default {
 
 /* En las habitaciones RESERVADAS el contador regresivo ocupa la esquina
    superior derecha (top:10px, ~37px de alto). Colocamos el chip de
-   reservas JUSTO DEBAJO de él en vez de mandarlo a la esquina inferior. */
+   reservas JUSTO DEBAJO de él, alineado al mismo borde derecho, en vez
+   de mandarlo a la esquina inferior. */
 .has-reservation .reservations-count-chip {
     top: 54px;
     bottom: auto;
     right: 10px;
+}
+
+/* Tablet/móvil: el contador se achica y sube (top:8px), así que el chip
+   debe acercarse para seguir quedando justo debajo y no dejar un hueco. */
+@media (max-width: 991px) {
+    .has-reservation .reservations-count-chip {
+        top: 50px;
+    }
+}
+@media (max-width: 599px) {
+    .has-reservation .reservations-count-chip {
+        top: 40px;
+        right: 8px;
+    }
 }
 
 /* Modal de reservas */
