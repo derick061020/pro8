@@ -2833,21 +2833,16 @@ export default {
    reservas JUSTO DEBAJO de él, alineado al mismo borde derecho, en vez
    de mandarlo a la esquina inferior. */
 .has-reservation .reservations-count-chip {
-    top: 54px;
+    top: 42px;
     bottom: auto;
     right: 10px;
 }
 
-/* Tablet/móvil: el contador se achica y sube (top:8px), así que el chip
-   debe acercarse para seguir quedando justo debajo y no dejar un hueco. */
-@media (max-width: 991px) {
-    .has-reservation .reservations-count-chip {
-        top: 50px;
-    }
-}
+/* Móvil: el contador se achica y sube (top:8px), así que el chip se
+   acerca para seguir quedando inmediatamente debajo, sin hueco. */
 @media (max-width: 599px) {
     .has-reservation .reservations-count-chip {
-        top: 40px;
+        top: 36px;
         right: 8px;
     }
 }
