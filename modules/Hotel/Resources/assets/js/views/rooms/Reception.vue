@@ -2820,13 +2820,21 @@ export default {
     background: rgba(255,255,255,0.92);
 }
 
-/* Posicionamiento del contador cuando la habitación está ocupada */
-.has-reservation .reservations-count-chip,
+/* Posicionamiento del chip de reservas cuando la habitación está ocupada */
 .occupied-monthly .reservations-count-chip,
 .ready-checkin .reservations-count-chip {
     top: auto;
     bottom: 8px;
     right: 8px;
+}
+
+/* En las habitaciones RESERVADAS el contador regresivo ocupa la esquina
+   superior derecha (top:10px, ~37px de alto). Colocamos el chip de
+   reservas JUSTO DEBAJO de él en vez de mandarlo a la esquina inferior. */
+.has-reservation .reservations-count-chip {
+    top: 54px;
+    bottom: auto;
+    right: 10px;
 }
 
 /* Modal de reservas */
