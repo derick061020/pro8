@@ -2735,6 +2735,16 @@ export default {
     color: white !important;
 }
 
+/* El badge "RESERVADA" (absolute, arriba-izquierda) y el contador
+   (absolute, arriba-derecha) se superponen sobre el nombre de la
+   habitación, que está en el flujo normal arrancando en la misma zona.
+   Reservamos espacio en la parte superior del contenido para que el
+   nombre/número de habitación fluya DEBAJO de ambos y no quede tapado. */
+.has-reservation .card-rent,
+.ready-checkin .card-rent {
+    padding-top: 42px;
+}
+
 /* Estilo para habitaciones listas para check-in (color verde) */
 .ready-checkin {
     background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
