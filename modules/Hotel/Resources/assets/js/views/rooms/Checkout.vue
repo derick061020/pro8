@@ -171,7 +171,7 @@
                     
                     <div class="row card-body shadow-none mb-2">
                         <div class="col-12">
-                            <div class="table-responsive">
+                            <div class="table-responsive table-responsive--full">
                                 <table class="table text-end">
                                     <tbody>
                                     <tr class="text-start">
@@ -1338,20 +1338,22 @@ export default {
             // Solo productos pagados.
             // Las extensiones pagadas de HAB se muestran unificadas con la
             // fila de habitación principal.
-            return (this.currentRent.items || []).filter(it => {
+            const items = (this.currentRent.items || []).filter(it => {
                 if (it.payment_status !== 'PAID') return false;
                 return it.type === 'PRO';
             });
+            return this.groupSimilarRentItems(items);
         },
         rentDebtItems()
         {
             // Cargos pendientes = productos con deuda + extensiones HAB con deuda.
-            return (this.currentRent.items || []).filter(it => {
+            const items = (this.currentRent.items || []).filter(it => {
                 if (it.payment_status !== 'DEBT') return false;
                 if (it.type === 'PRO') return true;
                 if (it.type === 'HAB' && this.isExtensionItem(it)) return true;
                 return false;
             });
+            return this.groupSimilarRentItems(items);
         },
         roomItems()
         {
@@ -1604,6 +1606,47 @@ export default {
             if (currentItems.length > 0) return currentItems;
 
             return Array.isArray(this.rentItems) ? this.rentItems : [];
+        },
+        groupSimilarRentItems(items) {
+            // Agrupa productos iguales (mismo id de producto, o mismo nombre y
+            // precio unitario) sumando sus cantidades y totales. Solo se agrupan
+            // items dentro de la misma lista (pagados con pagados, no pagados con
+            // no pagados); cada lista se procesa por separado.
+            const list = Array.isArray(items) ? items : [];
+            const groups = [];
+            const indexByKey = {};
+
+            list.forEach(it => {
+                const product = it.item || {};
+                const innerProduct = product.item || {};
+                const productId = innerProduct.id != null ? innerProduct.id : null;
+                const description = (innerProduct.description || '').toString().trim().toLowerCase();
+                const unitPrice = parseFloat(product.input_unit_price_value) || 0;
+
+                // Clave de agrupación: por id de producto si existe, si no por
+                // nombre. Siempre combinada con el precio unitario para no mezclar
+                // el mismo producto vendido a precios distintos.
+                const key = `${productId != null ? 'id:' + productId : 'desc:' + description}|price:${unitPrice.toFixed(2)}`;
+
+                if (indexByKey[key] === undefined) {
+                    // Clon superficial para no mutar el item original del store.
+                    const clone = Object.assign({}, it, {
+                        item: Object.assign({}, product),
+                    });
+                    indexByKey[key] = groups.length;
+                    groups.push(clone);
+                    return;
+                }
+
+                const target = groups[indexByKey[key]];
+                const targetProduct = target.item;
+                targetProduct.quantity = (parseFloat(targetProduct.quantity) || 0)
+                    + (parseFloat(product.quantity) || 0);
+                targetProduct.total = (parseFloat(targetProduct.total) || 0)
+                    + (parseFloat(product.total) || 0);
+            });
+
+            return groups;
         },
         isExtensionItem(item) {
             if (!item) return false;
@@ -3761,6 +3804,13 @@ td{
 .table-responsive {
     max-height: 300px;
     overflow-y: auto;
+}
+
+/* Vista completa del consumo en checkout (como pro7): sin recorte ni barra
+   de desplazamiento interna, la tabla crece según su contenido. */
+.table-responsive--full {
+    max-height: none;
+    overflow-y: visible;
 }
 
 .table-responsive table {
