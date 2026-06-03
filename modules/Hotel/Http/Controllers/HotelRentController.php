@@ -296,6 +296,41 @@ class HotelRentController extends Controller
 	 * @param  HotelRentItem $item
 	 * @return void
 	 */
+	/**
+	 *
+	 * Registrar el pago en caja/finanzas (pago global) usando el destino
+	 * seleccionado, igual que en el resto del sistema. Si no hay destino no se
+	 * registra el movimiento de caja (compatibilidad con pagos antiguos).
+	 *
+	 * @param  HotelRentItemPayment $payment
+	 * @param  string|int|null      $paymentDestinationId
+	 * @return void
+	 */
+	private function registerRentPaymentInCash(HotelRentItemPayment $payment, $paymentDestinationId)
+	{
+		if (empty($paymentDestinationId)) {
+			return;
+		}
+
+		// Validar que la caja esté abierta antes de registrar el ingreso.
+		if ($paymentDestinationId === 'cash') {
+			$cash = $this->getCash();
+			if (!$cash || empty($cash['cash_id'])) {
+				throw new \Exception('La caja se encuentra cerrada. Debes abrirla antes de registrar el pago.');
+			}
+		}
+
+		// Evitar duplicar el pago global al editar un pago existente.
+		$payment->load('global_payment');
+		if ($payment->global_payment) {
+			$payment->global_payment()->delete();
+		}
+
+		$this->createGlobalPayment($payment, [
+			'payment_destination_id' => $paymentDestinationId,
+		]);
+	}
+
 	public function saveHotelRentItemPayment($rent_payment, HotelRentItem $item)
 	{
 		if($item->isPaid())
@@ -1719,6 +1754,18 @@ class HotelRentController extends Controller
             $received = $request->input('received', 0);
             $change = $request->input('change', 0);
             $paymentId = $request->input('payment_id'); // Para edición
+
+            // Método de pago: priorizar el id real del sistema enviado desde la
+            // vista (se sincroniza automáticamente con los métodos configurados).
+            // Se mantiene el mapeo legacy por compatibilidad si no llega el id.
+            $paymentMethodTypeId = $request->input('payment_method_type_id');
+            if (empty($paymentMethodTypeId)) {
+                $paymentMethodTypeId = $this->getPaymentMethodTypeId($method);
+            }
+
+            // Destino del pago (caja general o cuenta bancaria) para registrar el
+            // movimiento en finanzas/caja como en el resto del sistema.
+            $paymentDestinationId = $request->input('payment_destination_id');
             
             // Determinar si es edición o creación
             $isEditing = !empty($paymentId);
@@ -1737,11 +1784,14 @@ class HotelRentController extends Controller
                 
                 // Actualizar datos del pago
                 $payment->payment = $amount;
-                $payment->payment_method_type_id = $this->getPaymentMethodTypeId($method);
+                $payment->payment_method_type_id = $paymentMethodTypeId;
                 $payment->reference = $reference;
                 $payment->change = $change;
                 $payment->save();
-                
+
+                // Re-sincronizar el movimiento de caja con el nuevo método/destino.
+                $this->registerRentPaymentInCash($payment, $paymentDestinationId);
+
                 // No crear nuevos items, solo actualizar el pago existente
                 $debtItem = null; // Para evitar lógica de creación abajo
                 
@@ -1796,15 +1846,17 @@ class HotelRentController extends Controller
                         ];
                         $creditItem->save();
 
-                        $paymentMethodId = $this->getPaymentMethodTypeId($method);
                         $creditPayment = new HotelRentItemPayment();
                         $creditPayment->hotel_rent_item_id = $creditItem->id;
                         $creditPayment->payment = $amount;
-                        $creditPayment->payment_method_type_id = $paymentMethodId;
+                        $creditPayment->payment_method_type_id = $paymentMethodTypeId;
                         $creditPayment->reference = $reference;
                         $creditPayment->change = 0;
                         $creditPayment->date_of_payment = \Carbon\Carbon::now()->format('Y-m-d H:i:s');
                         $creditPayment->save();
+
+                        // Registrar el adelanto en caja/finanzas.
+                        $this->registerRentPaymentInCash($creditPayment, $paymentDestinationId);
 
                         DB::connection('tenant')->commit();
 
@@ -1847,12 +1899,15 @@ class HotelRentController extends Controller
                     $payment = new HotelRentItemPayment();
                     $payment->hotel_rent_item_id = $debtItem->id;
                     $payment->payment = $paymentAmount;
-                    $payment->payment_method_type_id = $this->getPaymentMethodTypeId($method);
+                    $payment->payment_method_type_id = $paymentMethodTypeId;
                     $payment->reference = $reference;
                     $payment->change = 0; // El cambio se maneja a nivel general
                     $payment->date_of_payment = \Carbon\Carbon::now()->format('Y-m-d H:i:s');
                     $payment->save();
-                    
+
+                    // Registrar el pago en caja/finanzas.
+                    $this->registerRentPaymentInCash($payment, $paymentDestinationId);
+
                     \Log::info("Pago creado para item {$debtItem->id}: {$paymentAmount}");
                     
                     // Actualizar estado del item si está completamente pagado

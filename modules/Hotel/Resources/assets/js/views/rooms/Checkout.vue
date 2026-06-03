@@ -835,146 +835,105 @@
             </div>
         </el-dialog>
 
-        <!-- Modal de Pagos Interactivos -->
+        <!-- Modal de Pagos (rediseño minimalista) -->
         <el-dialog
-            title="Procesar Pagos"
-            width="50%"
+            :title="paymentForm.payment_index !== null ? 'Editar pago' : (totalDebt > 0 ? 'Registrar pago' : 'Agregar adelanto de pago')"
+            width="420px"
             :visible.sync="showPaymentModal"
             :close-on-click-modal="false"
             :close-on-press-escape="false"
+            custom-class="payment-dialog"
             append-to-body
         >
-            <div class="form-body">
-                <div class="row mb-3">
-                    <div class="col-12">
-                        <div class="alert alert-warning">
-                            <strong>Deuda actual:</strong> S/ {{ totalDebt | toDecimals }}
-                        </div>
+            <div class="pay-modal">
+                <!-- Resumen de deuda -->
+                <div class="pay-debt">
+                    <span class="pay-debt__label">{{ totalDebt > 0 ? 'Deuda pendiente' : 'Sin deuda' }}</span>
+                    <span class="pay-debt__amount" :class="{ 'is-zero': totalDebt <= 0 }">
+                        S/ {{ Math.max(totalDebt, 0) | toDecimals }}
+                    </span>
+                </div>
+
+                <!-- Monto recibido -->
+                <div class="pay-field">
+                    <label>Monto recibido</label>
+                    <el-input
+                        v-model="paymentForm.received"
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        placeholder="0.00"
+                        @input="calculateChange"
+                        size="medium"
+                    >
+                        <template slot="prepend">S/</template>
+                    </el-input>
+                </div>
+
+                <!-- Método de pago (sincronizado con el sistema) y caja/destino -->
+                <div class="pay-grid">
+                    <div class="pay-field">
+                        <label>Método de pago</label>
+                        <el-select
+                            v-model="paymentForm.payment_method_type_id"
+                            placeholder="Seleccionar"
+                            style="width: 100%"
+                            size="medium"
+                        >
+                            <el-option
+                                v-for="option in paymentMethodTypes"
+                                :key="option.id"
+                                :label="option.description"
+                                :value="option.id"
+                            ></el-option>
+                        </el-select>
+                    </div>
+                    <div class="pay-field">
+                        <label>Destino (caja)</label>
+                        <el-select
+                            v-model="paymentForm.payment_destination_id"
+                            placeholder="Seleccionar"
+                            style="width: 100%"
+                            size="medium"
+                        >
+                            <el-option
+                                v-for="option in paymentDestinations"
+                                :key="option.id"
+                                :label="option.description"
+                                :value="option.id"
+                            ></el-option>
+                        </el-select>
                     </div>
                 </div>
-                <div class="row">
-                    <div class="col-12 col-md-6">
-                        <div class="form-group">
-                            <label class="control-label">Dinero Recibido del Cliente</label>
-                            <el-input
-                                v-model="paymentForm.received"
-                                type="number"
-                                step="0.01"
-                                min="0"
-                                placeholder="Ej: 150.00"
-                                @input="calculateChange"
-                                class="payment-input"
-                                size="large"
-                            >
-                                <template slot="prepend">S/</template>
-                            </el-input>
-                            <small class="text-muted">Dinero que entrega el cliente</small>
-                        </div>
-                    </div>
-                    <div class="col-12 col-md-6">
-                        <div class="form-group">
-                            <label class="control-label">Vuelto</label>
-                            <el-input
-                                :value="paymentForm.change"
-                                type="number"
-                                step="0.01"
-                                readonly
-                                :class="getChangeClass()"
-                                class="payment-input"
-                                size="large"
-                            >
-                                <template slot="prepend">S/</template>
-                            </el-input>
-                            <small class="text-muted">Dinero a devolver al cliente</small>
-                        </div>
-                    </div>
+
+                <!-- Referencia -->
+                <div class="pay-field">
+                    <label>Referencia <span class="pay-optional">(opcional)</span></label>
+                    <el-input
+                        v-model="paymentForm.reference"
+                        placeholder="N° de operación, últimos 4 dígitos…"
+                        size="medium"
+                    ></el-input>
                 </div>
-                <div class="row mt-3">
-                    <div class="col-12 col-md-6">
-                        <div class="form-group">
-                            <label class="control-label">Método de Pago</label>
-                            <el-select v-model="paymentForm.method" placeholder="Seleccionar método" style="width: 100%" size="large">
-                                <el-option label="Efectivo" value="cash"></el-option>
-                                <el-option label="Tarjeta de Crédito" value="credit_card"></el-option>
-                                <el-option label="Tarjeta de Débito" value="debit_card"></el-option>
-                                <el-option label="Transferencia" value="transfer"></el-option>
-                                <el-option label="Yape/Plin" value="yape_plin"></el-option>
-                            </el-select>
-                        </div>
-                    </div>
-                    <div class="col-12 col-md-6">
-                        <div class="form-group">
-                            <label class="control-label">Referencia (Opcional)</label>
-                            <el-input
-                                v-model="paymentForm.reference"
-                                placeholder="N° de operación, última 4 dígitos, etc."
-                                size="large"
-                            ></el-input>
-                        </div>
-                    </div>
-                </div>
-                <div class="row mt-3">
-                    <div class="col-12">
-                        <div class="payment-summary" :class="getPaymentSummaryClass()">
-                            <div class="payment-icon">
-                                <svg v-if="paymentForm.change > 0" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                                    <polyline points="7,10 12,15 17,10"></polyline>
-                                    <line x1="12" y1="15" x2="12" y2="3"></line>
-                                </svg>
-                                <svg v-else xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <circle cx="12" cy="12" r="10"></circle>
-                                    <line x1="12" y1="8" x2="12" y2="12"></line>
-                                    <line x1="12" y1="16" x2="12.01" y2="16"></line>
-                                </svg>
-                            </div>
-                            <div class="payment-text">
-                                <h5>{{ getPaymentMessage() }}</h5>
-                                <p class="mb-0">{{ getPaymentSubMessage() }}</p>
-                            </div>
-                        </div>
-                    </div>
+
+                <!-- Vuelto -->
+                <div class="pay-change" :class="getPaymentSummaryClass()" v-if="paymentForm.received > 0">
+                    <span class="pay-change__label">{{ getPaymentMessage() }}</span>
+                    <span class="pay-change__amount">S/ {{ Math.abs(paymentForm.change) | toDecimals }}</span>
                 </div>
             </div>
-            <div slot="footer" class="dialog-footer text-right">
-                <el-button @click="showPaymentModal = false" size="small">Cancelar</el-button>
-                <el-button 
-                    type="success" 
+
+            <div slot="footer" class="pay-footer">
+                <el-button @click="showPaymentModal = false" size="small" plain>Cancelar</el-button>
+                <el-button
+                    type="success"
                     @click="savePayment"
                     :disabled="!canSavePayment"
                     :loading="loadingPayment"
                     size="small"
+                    icon="el-icon-check"
                 >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
-                        <polyline points="17 21 17 13 7 13 7 21"></polyline>
-                        <polyline points="7 3 7 8 15 8"></polyline>
-                    </svg>
-                    Guardar Pago
-                </el-button>
-                <!-- Botón para procesar vuelto cuando hay cambio positivo -->
-                <el-button 
-                    v-if="paymentForm.change > 0"
-                    type="warning" 
-                    @click="processChange"
-                    size="small"
-                >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                        <polyline points="7,10 12,15 17,10"></polyline>
-                        <line x1="12" y1="15" x2="12" y2="3"></line>
-                    </svg>
-                    Dar Vuelto
-                </el-button>
-                <el-button 
-                    @click="clearPaymentForm"
-                    size="small"
-                >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M3 6h18"></path>
-                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                    </svg>
-                    Limpiar
+                    {{ paymentForm.payment_index !== null ? 'Actualizar' : 'Guardar pago' }}
                 </el-button>
             </div>
         </el-dialog>
@@ -1005,8 +964,8 @@
                                 <td>{{ formatDateTime(payment.created_at) }}</td>
                                 <td class="text-success fw-bold">S/ {{ payment.amount | toDecimals }}</td>
                                 <td>
-                                    <el-tag :type="getPaymentMethodTagType(payment.method)" size="small">
-                                        {{ getMethodLabel(payment.method) }}
+                                    <el-tag :type="getPaymentMethodTagType(payment.payment_method_type_id)" size="small">
+                                        {{ getMethodLabel(payment.payment_method_type_id) }}
                                     </el-tag>
                                 </td>
                                 <td>{{ payment.reference || '-' }}</td>
@@ -1377,9 +1336,11 @@ export default {
             return items.length ? items[items.length - 1].id : (this.room && this.room.id);
         },
         canSavePayment() {
-            // Permitir guardar siempre que haya dinero recibido y método seleccionado
-            return (this.paymentForm.received > 0) && 
-                   this.paymentForm.method && 
+            // Permitir guardar siempre que haya dinero recibido, método de pago
+            // y destino (caja) seleccionados.
+            return (parseFloat(this.paymentForm.received) > 0) &&
+                   !!this.paymentForm.payment_method_type_id &&
+                   !!this.paymentForm.payment_destination_id &&
                    !this.loadingPayment;
         },
         totalSavedPayments() {
@@ -1463,7 +1424,8 @@ export default {
             paymentForm: {
                 received: 0,
                 change: 0,
-                method: 'cash',
+                payment_method_type_id: null,
+                payment_destination_id: null,
                 reference: '',
                 payment_index: null // Para edición de pagos
             },
@@ -1512,6 +1474,10 @@ export default {
 
         this.form.establishment_id = this.config.establishment.id;
         this.form.date_of_issue = moment().format("YYYY-MM-DD");
+
+        // Inicializar el formulario de pago con el método y la caja por defecto.
+        this.clearPaymentForm();
+
         await this.getPercentageIgv();
 
         this.room.item = await calculateRowItem(this.room.item, "PEN", 3, this.percentage_igv);
@@ -1549,7 +1515,7 @@ export default {
                         id: payment.id,
                         document_id: null,
                         date_of_payment: moment(payment.created_at).format("YYYY-MM-DD"),
-                        payment_method_type_id: this.getPaymentMethodTypeId(payment.method),
+                        payment_method_type_id: payment.payment_method_type_id || "01",
                         payment_destination_id: (cash)? cash.id : null,
                         reference: payment.reference,
                         payment: parseFloat(payment.amount),
@@ -2411,26 +2377,6 @@ export default {
                     this.axiosError(error);
                 });
         },
-        getPaymentMethodFromId(methodId) {
-            const methodMap = {
-                '01': 'cash',
-                '02': 'credit_card',
-                '03': 'debit_card',
-                '04': 'transfer',
-                '05': 'yape_plin'
-            };
-            return methodMap[methodId] || 'cash';
-        },
-        getPaymentMethodTypeId(method) {
-            const methodMap = {
-                'cash': '01',
-                'credit_card': '02', 
-                'debit_card': '03',
-                'transfer': '04',
-                'yape_plin': '05'
-            };
-            return methodMap[method] || '01'; // Default to cash if not found
-        },
         async loadRentData() {
             try {
                 console.log('Cargando datos del rent ID:', this.currentRent.id);
@@ -2474,7 +2420,7 @@ export default {
                             return {
                                 id: payment.id,
                                 amount: payment.payment,
-                                method: this.getPaymentMethodFromId(payment.payment_method_type_id),
+                                payment_method_type_id: payment.payment_method_type_id,
                                 reference: payment.reference,
                                 created_at: payment.date_of_payment,
                                 change: payment.change
@@ -3225,7 +3171,8 @@ export default {
                 const payload = {
                     hotel_rent_id: this.currentRent.id,
                     amount: receivedAmount, // Usar el monto completo recibido
-                    method: this.paymentForm.method,
+                    payment_method_type_id: this.paymentForm.payment_method_type_id,
+                    payment_destination_id: this.paymentForm.payment_destination_id,
                     reference: this.paymentForm.reference,
                     received: this.paymentForm.received,
                     change: this.paymentForm.change
@@ -3271,11 +3218,27 @@ export default {
                 this.loadingPayment = false;
             }
         },
+        getDefaultPaymentValues() {
+            // Primer método de pago del sistema y caja general (o primer destino).
+            const method = (this.paymentMethodTypes && this.paymentMethodTypes.length)
+                ? this.paymentMethodTypes[0].id
+                : null;
+
+            let destination = null;
+            if (this.paymentDestinations && this.paymentDestinations.length) {
+                const cash = _.find(this.paymentDestinations, { id: 'cash' });
+                destination = cash ? cash.id : this.paymentDestinations[0].id;
+            }
+
+            return { method, destination };
+        },
         clearPaymentForm() {
+            const { method, destination } = this.getDefaultPaymentValues();
             this.paymentForm = {
                 received: 0,
                 change: 0,
-                method: 'cash',
+                payment_method_type_id: method,
+                payment_destination_id: destination,
                 reference: '',
                 payment_index: null // Limpiar índice de edición
             };
@@ -3386,9 +3349,11 @@ export default {
         async editPayment(payment, index) {
             try {
                 // Cargar los datos del pago en el formulario de pago
+                const { destination } = this.getDefaultPaymentValues();
                 this.paymentForm.amount = parseFloat(payment.amount);
                 this.paymentForm.received = parseFloat(payment.amount); // Cargar también el campo received
-                this.paymentForm.method = payment.method;
+                this.paymentForm.payment_method_type_id = payment.payment_method_type_id;
+                this.paymentForm.payment_destination_id = payment.payment_destination_id || destination;
                 this.paymentForm.reference = payment.reference || '';
                 this.paymentForm.payment_index = index; // Guardar el índice para referencia
                 
@@ -3403,7 +3368,8 @@ export default {
                 console.log('Datos de pago cargados para edición:', {
                     amount: this.paymentForm.amount,
                     received: this.paymentForm.received,
-                    method: this.paymentForm.method,
+                    payment_method_type_id: this.paymentForm.payment_method_type_id,
+                    payment_destination_id: this.paymentForm.payment_destination_id,
                     reference: this.paymentForm.reference,
                     change: this.paymentForm.change
                 });
@@ -3450,25 +3416,21 @@ export default {
                 this.loadingCustomerObservations = false;
             }
         },
-        getMethodLabel(method) {
-            const labels = {
-                'cash': 'Efectivo',
-                'credit_card': 'Tarjeta de Crédito',
-                'debit_card': 'Tarjeta de Débito',
-                'transfer': 'Transferencia',
-                'yape_plin': 'Yape/Plin'
-            };
-            return labels[method] || method;
+        getMethodLabel(methodTypeId) {
+            // Resolver la descripción desde los métodos reales del sistema.
+            const found = _.find(this.paymentMethodTypes, { id: methodTypeId });
+            return found ? found.description : (methodTypeId || '-');
         },
-        getPaymentMethodTagType(method) {
+        getPaymentMethodTagType(methodTypeId) {
+            // Color del tag según el código estándar de SUNAT (01..08).
             const types = {
-                'cash': 'success',
-                'credit_card': 'primary',
-                'debit_card': 'info',
-                'transfer': 'warning',
-                'yape_plin': 'danger'
+                '01': 'success', // Efectivo
+                '02': 'primary', // Tarjeta de crédito
+                '03': 'info',    // Tarjeta de débito
+                '04': 'warning', // Transferencia
+                '05': 'danger',  // Yape/Plin u otros
             };
-            return types[method] || 'info';
+            return types[methodTypeId] || 'info';
         },
         formatDateTime(dateTime, time = null) {
             if (time) {
@@ -3799,6 +3761,103 @@ td{
 
 .payment-summary.payment-info .payment-icon svg {
     color: #909399;
+}
+
+/* ===== Modal de pago minimalista ===== */
+.payment-dialog .el-dialog__header {
+    padding: 18px 22px 10px;
+}
+.payment-dialog .el-dialog__title {
+    font-size: 16px;
+    font-weight: 600;
+}
+.payment-dialog .el-dialog__body {
+    padding: 10px 22px 4px;
+}
+
+.pay-modal {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.pay-debt {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 14px;
+    background: #f7f8fa;
+    border: 1px solid #ebeef5;
+    border-radius: 8px;
+}
+.pay-debt__label {
+    font-size: 13px;
+    color: #909399;
+}
+.pay-debt__amount {
+    font-size: 18px;
+    font-weight: 700;
+    color: #f56c6c;
+}
+.pay-debt__amount.is-zero {
+    color: #67c23a;
+}
+
+.pay-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+.pay-field > label {
+    font-size: 13px;
+    font-weight: 500;
+    color: #606266;
+    margin: 0;
+}
+.pay-optional {
+    font-weight: 400;
+    color: #c0c4cc;
+}
+
+.pay-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+}
+
+.pay-change {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 14px;
+    border-radius: 8px;
+    font-weight: 600;
+}
+.pay-change.payment-success {
+    background: #f0f9eb;
+    color: #67c23a;
+}
+.pay-change.payment-warning {
+    background: #fdf6ec;
+    color: #e6a23c;
+}
+.pay-change__label {
+    font-size: 13px;
+}
+.pay-change__amount {
+    font-size: 16px;
+}
+
+.pay-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+}
+
+@media (max-width: 480px) {
+    .pay-grid {
+        grid-template-columns: 1fr;
+    }
 }
 
 .table-responsive {
