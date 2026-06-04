@@ -488,6 +488,14 @@
                                         <br/>
                                         <b class="h5">{{ (form.total_to_pay).toFixed(2) }}</b>
                                     </h6>
+                                    <div v-if="advancePaidFromReservation > 0" class="mt-1">
+                                        <small class="text-success d-block">
+                                            Adelanto de la reserva: - S/ {{ advancePaidFromReservation.toFixed(2) }}
+                                        </small>
+                                        <small class="d-block">
+                                            <b>Saldo a cobrar: S/ {{ saldoPendiente.toFixed(2) }}</b>
+                                        </small>
+                                    </div>
                                 </div>
 
                                 <div>
@@ -538,13 +546,13 @@
                                         type="number"
                                         step="0.01"
                                         min="0.01"
-                                        :max="form.total_to_pay"
+                                        :max="saldoPendiente"
                                         placeholder="0.00"
                                     >
                                         <template slot="prepend">S/</template>
                                     </el-input>
                                     <small class="text-muted">
-                                        Falta pagar: S/ {{ Math.max(0, (parseFloat(form.total_to_pay) || 0) - (parseFloat(form.rent_payment.payment) || 0)).toFixed(2) }}
+                                        Falta pagar: S/ {{ Math.max(0, saldoPendiente - (parseFloat(form.rent_payment.payment) || 0)).toFixed(2) }}
                                     </small>
                                 </div>
 
@@ -810,6 +818,7 @@ export default {
             },
             rate: null,
             rate_unit_value: 0,
+            advancePaidFromReservation: 0, // Adelanto ya abonado en la reserva (check-in)
             loading: false,
             submitted: false,
             submittedMessage: '',
@@ -882,6 +891,13 @@ export default {
         isAdvance()
         {
             return this.form.payment_status === 'ADVANCE';
+        },
+        // Saldo pendiente considerando el adelanto ya abonado en la reserva.
+        saldoPendiente()
+        {
+            const total = parseFloat(this.form.total_to_pay) || 0;
+            const advance = parseFloat(this.advancePaidFromReservation) || 0;
+            return Math.max(0, total - advance);
         },
         ...mapState([
             'config',
@@ -1185,25 +1201,30 @@ export default {
             this.form.input_time = this.reservation.input_time || '12:00';
             this.form.output_date = this.reservation.output_date;
             this.form.output_time = this.reservation.output_time || '12:00';
-            
+
+            // Adelanto ya abonado en la reserva (se descuenta del saldo a cobrar).
+            // Debe quedar fijado ANTES de onSelectedRate() para que el monto a
+            // cobrar por defecto parta del saldo, no del total.
+            this.advancePaidFromReservation = parseFloat(this.reservation.advance_paid) || 0;
+
             // Cargar tarifa
             if (this.reservation.hotel_rate_id) {
                 this.form.hotel_rate_id = this.reservation.hotel_rate_id;
                 this.onSelectedRate();
             }
-            
+
             // Cargar personas
             if (this.reservation.data_persons) {
                 this.form.data_persons = this.reservation.data_persons;
             }
-            
+
             // Establecer que es un check-in de reserva
             this.form.is_checkin_from_reservation = true;
             this.form.reservation_id = this.reservation.id;
-            
+
             // Actualizar duración
             this.updateDuration();
-            
+
             console.log('Datos de reserva cargados en el formulario');
         },
         async loadReservationForEdit(reservationId) {
@@ -1603,7 +1624,8 @@ export default {
         },
         setTotalPayment()
         {
-            this.form.rent_payment.payment = this.form.total_to_pay
+            // Si hay un adelanto abonado en la reserva, sólo se cobra el saldo.
+            this.form.rent_payment.payment = this.saldoPendiente
         },
         onUpdateOutputDate() {
             console.log('=== DEBUG onUpdateOutputDate ===');

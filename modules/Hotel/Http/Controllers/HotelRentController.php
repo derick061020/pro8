@@ -48,7 +48,7 @@ class HotelRentController extends Controller
 
 		if ($isCheckin) {
 			// Buscar la reserva activa para esta habitación
-			$reservation = HotelRent::with('customer', 'items')
+			$reservation = HotelRent::with('customer', 'items.payments')
 				->where('hotel_room_id', $roomId)
 				->where('is_reserve', true)
 				->orderBy('id', 'DESC')
@@ -57,6 +57,16 @@ class HotelRentController extends Controller
 			if (!$reservation) {
 				return redirect()->back()->with('error', 'No se encontró una reserva para check-in');
 			}
+
+			// Adelanto ya abonado en la reserva (suma de pagos de sus items).
+			// Se expone al frontend para mostrarlo y descontarlo del saldo.
+			$advancePaid = 0;
+			foreach ($reservation->items as $resItem) {
+				if ($resItem->payments) {
+					$advancePaid += (float) $resItem->payments->payment;
+				}
+			}
+			$reservation->advance_paid = round($advancePaid, 2);
 		}
 
 		return view('hotel::rooms.rent', compact('room', 'affectation_igv_types','series', 'reservation'));
@@ -286,7 +296,22 @@ class HotelRentController extends Controller
 			} else {
 				$this->saveHotelRentItemPayment($request->rent_payment, $item);
 			}
-			
+
+			// Check-in de una reserva con adelanto: trasladar los pagos (adelantos)
+			// que ya estaban registrados en la reserva original al nuevo item, para
+			// que el monto abonado figure en el checkout y reduzca el saldo. Se
+			// reasignan (no se duplican) para no contar el ingreso dos veces.
+			if ($isCheckinFromReservation && $sourceReservationId) {
+				$reservationItemIds = HotelRentItem::where('hotel_rent_id', $sourceReservationId)
+					->pluck('id');
+				if ($reservationItemIds->isNotEmpty()) {
+					HotelRentItemPayment::whereIn('hotel_rent_item_id', $reservationItemIds)
+						->update(['hotel_rent_item_id' => $item->id]);
+					// Si el adelanto cubre el total del item, marcarlo como pagado.
+					$this->applyAdvanceCreditToDebtItems($rent);
+				}
+			}
+
 			// Si es renta como pagado, redirigir a recepción
 			if ($request->payment_status === 'PAID') {
 				return response()->json([
