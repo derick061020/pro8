@@ -382,12 +382,18 @@ class HotelReservationCalendarController extends Controller
                 ], 422);
             }
 
+            // El adelanto es un pago parcial: la reserva queda como DEBT pero
+            // se registra el monto adelantado.
+            $isAdvancePayment = $request->payment_status === 'ADVANCE';
+            $effectivePaymentStatus = $isAdvancePayment ? 'DEBT' : $request->payment_status;
+
             $data = $request->only(
                 'customer_id', 'customer', 'notes', 'license_plate', 'travel_reason',
                 'adults', 'children', 'towels', 'hotel_room_id', 'hotel_rate_id',
-                'duration', 'quantity_persons', 'payment_status', 'output_date',
+                'duration', 'quantity_persons', 'output_date',
                 'output_time', 'input_date', 'input_time', 'data_persons'
             );
+            $data['payment_status'] = $effectivePaymentStatus;
             $data['is_reserve'] = true;
             $data['status'] = 'ACTIVE';
             $data['establishment_id'] = $room->establishment_id;
@@ -398,7 +404,7 @@ class HotelReservationCalendarController extends Controller
             $order = new HotelRentOrder();
             $order->hotel_rent_id = $rent->id;
             $order->order_number = 1;
-            $order->order_status = $request->payment_status;
+            $order->order_status = $effectivePaymentStatus;
             $order->sale_note_id = $request->sale_note_id;
             $order->establishment_id = $room->establishment_id;
             $order->save();
@@ -410,12 +416,14 @@ class HotelReservationCalendarController extends Controller
                 $item->hotel_rent_id = $rent->id;
                 $item->item_id = $request->product['item_id'];
                 $item->item = $request->product;
-                $item->payment_status = $request->payment_status;
+                $item->payment_status = $effectivePaymentStatus;
                 $item->hotel_rent_order_id = $order->id;
                 $item->save();
 
-                // Registrar pago si aplica
-                if ($request->payment_status === 'PAID' && $request->rent_payment) {
+                // Registrar pago si aplica (pago completo o adelanto parcial)
+                if (($request->payment_status === 'PAID' || $isAdvancePayment)
+                    && $request->rent_payment
+                    && ($request->rent_payment['payment'] ?? 0) > 0) {
                     $this->saveReservationPayment($request->rent_payment, $item);
                 }
             }
@@ -766,7 +774,10 @@ class HotelReservationCalendarController extends Controller
      */
     private function saveReservationPayment($rentPayment, HotelRentItem $item)
     {
-        if ($item->payment_status === 'PAID') {
+        // Registrar el pago tanto si la reserva está pagada (PAID) como si solo
+        // se registró un adelanto (item en DEBT con un monto parcial abonado).
+        if (in_array($item->payment_status, ['PAID', 'DEBT'], true)
+            && ($rentPayment['payment'] ?? 0) > 0) {
             $item->payments()->create([
                 'date_of_payment' => date('Y-m-d'),
                 'payment_method_type_id' => $rentPayment['payment_method_type_id'],

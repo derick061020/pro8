@@ -148,14 +148,22 @@ class HotelRentController extends Controller
 			\Log::info('Is from calendar source: ' . $isFromCalendarSource);
 			\Log::info('All request data: ' . json_encode($request->all()));
 			
-			if ($isReservation || $isFromCalendar || ($hasGetParams && $isIframe) || $isFromCalendarSource) {
-				$request->merge(['is_reserve' => true]);
-				$request->merge(['payment_status' => 'PENDING']); // Las reservas empiezan como pendientes
-				\Log::info('Reserva detectada - is_reserve set to true');
-			}
-			
+			// Capturar el estado de pago solicitado por el usuario ANTES de cualquier
+			// override por reserva, para no perder la intención de adelanto.
 			$requestedPaymentStatus = $request->input('payment_status');
 			$isAdvancePayment = $requestedPaymentStatus === 'ADVANCE';
+
+			if ($isReservation || $isFromCalendar || ($hasGetParams && $isIframe) || $isFromCalendarSource) {
+				$request->merge(['is_reserve' => true]);
+				// Las reservas empiezan como pendientes, salvo que el usuario registre
+				// un adelanto: en ese caso la reserva queda como DEBT (pago parcial) y
+				// el adelanto se registra más abajo.
+				if (!$isAdvancePayment) {
+					$request->merge(['payment_status' => 'PENDING']);
+				}
+				\Log::info('Reserva detectada - is_reserve set to true');
+			}
+
 			if ($isAdvancePayment) {
 				// El adelanto es un pago parcial: la renta se mantiene en DEBT.
 				$request->merge(['payment_status' => 'DEBT']);
