@@ -102,7 +102,16 @@ class HotelRentController extends Controller
 				$request->input('output_date') . ' ' . ($request->input('output_time') ?: '12:00')
 			);
 
-			$conflict = HotelRent::findOverlappingRent($roomId, $newStart, $newEnd);
+			// Check-in que proviene de una reserva existente: la reserva de origen
+			// cubre el mismo rango de fechas, por lo que NO debe contar como un
+			// conflicto consigo misma. La excluimos del chequeo de solapamiento.
+			$isCheckinFromReservation = (bool) $request->input('is_checkin_from_reservation', false);
+			$sourceReservationId      = $request->input('reservation_id');
+			$excludeReservationId     = ($isCheckinFromReservation && $sourceReservationId)
+				? $sourceReservationId
+				: null;
+
+			$conflict = HotelRent::findOverlappingRent($roomId, $newStart, $newEnd, $excludeReservationId);
 			if ($conflict) {
 				DB::connection('tenant')->rollBack();
 				$cStart = Carbon::parse($conflict->input_date . ' ' . ($conflict->input_time ?: '14:00'))->format('d/m/Y H:i');
@@ -192,6 +201,18 @@ class HotelRentController extends Controller
 			} else {
 				// Para reservas, mantener la habitación como disponible
 				\Log::info('Reserva creada, manteniendo habitación como DISPONIBLE');
+			}
+
+			// Si este check-in convirtió una reserva en renta real, finalizar la
+			// reserva de origen para no dejar un registro duplicado que vuelva a
+			// bloquear la habitación en validaciones, calendario y reportes.
+			if ($isCheckinFromReservation && $sourceReservationId) {
+				$originalReservation = HotelRent::find($sourceReservationId);
+				if ($originalReservation && $originalReservation->is_reserve && $originalReservation->id !== $rent->id) {
+					$originalReservation->status = 'FINALIZADO';
+					$originalReservation->save();
+					\Log::info('Reserva de origen finalizada tras check-in', ['reservation_id' => $sourceReservationId, 'rent_id' => $rent->id]);
+				}
 			}
 
 			// Inicializar variable $order para evitar undefined
