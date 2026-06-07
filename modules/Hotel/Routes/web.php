@@ -112,6 +112,8 @@ if ($hostname) {
             Route::delete('calendar/{id}/delete', 'HotelReservationCalendarController@deleteReservation');
             Route::get('calendar/daily-sales-total', 'HotelReservationCalendarController@getDailySalesTotal');
             Route::get('calendar/category-daily-sales-total', 'HotelReservationCalendarController@getCategoryDailySalesTotal');
+            // Totales de ventas de todo el rango en una sola petición (reemplaza el fan-out anterior)
+            Route::get('calendar/sales-totals', 'HotelReservationCalendarController@getSalesTotals');
         });
     });
   });

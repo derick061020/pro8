@@ -836,6 +836,51 @@ class HotelReservationCalendarController extends Controller
     }
 
     /**
+     * Totales de ventas para TODO el rango visible en una sola petición.
+     *
+     * Antes el frontend pedía un endpoint por cada día (totales generales) y
+     * otro por cada día × categoría, generando ~16 + categorías×16 peticiones
+     * HTTP por cada render del calendario. Esto causaba el retardo grande al
+     * cargar. Aquí se resuelve todo con 2 consultas agrupadas.
+     */
+    public function getSalesTotals(Request $request)
+    {
+        $request->validate([
+            'start_date' => 'required|date',
+            'end_date'   => 'required|date',
+        ]);
+
+        $startDate = $request->get('start_date');
+        $endDate   = $request->get('end_date');
+
+        // Totales generales por día
+        $daily = HotelRentItem::join('hotel_rent_item_payments', 'hotel_rent_items.id', '=', 'hotel_rent_item_payments.hotel_rent_item_id')
+            ->whereBetween('hotel_rent_item_payments.date_of_payment', [$startDate, $endDate])
+            ->groupBy('day')
+            ->selectRaw('DATE(hotel_rent_item_payments.date_of_payment) as day, SUM(hotel_rent_item_payments.payment) as total')
+            ->pluck('total', 'day');
+
+        // Totales por categoría y día
+        $byCategoryRows = HotelRentItem::join('hotel_rent_item_payments', 'hotel_rent_items.id', '=', 'hotel_rent_item_payments.hotel_rent_item_id')
+            ->join('hotel_rents', 'hotel_rent_items.hotel_rent_id', '=', 'hotel_rents.id')
+            ->join('hotel_rooms', 'hotel_rents.hotel_room_id', '=', 'hotel_rooms.id')
+            ->whereBetween('hotel_rent_item_payments.date_of_payment', [$startDate, $endDate])
+            ->groupBy('day', 'hotel_rooms.hotel_category_id')
+            ->selectRaw('DATE(hotel_rent_item_payments.date_of_payment) as day, hotel_rooms.hotel_category_id as category_id, SUM(hotel_rent_item_payments.payment) as total')
+            ->get();
+
+        $byCategory = [];
+        foreach ($byCategoryRows as $row) {
+            $byCategory["{$row->day}_{$row->category_id}"] = (float) $row->total;
+        }
+
+        return response()->json([
+            'daily'       => $daily,
+            'by_category' => $byCategory,
+        ]);
+    }
+
+    /**
      * Obtener destinos de pago
      */
     private function getPaymentDestinations()

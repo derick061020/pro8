@@ -570,7 +570,14 @@ export default {
         },
     },
     created() {
-        this.goToday()
+        // Fijar la fecha y construir los días SIN cargar (loadData hace la carga
+        // de reservas una sola vez; antes goToday + loadData cargaban 2 veces).
+        const t = new Date()
+        t.setHours(0, 0, 0, 0)
+        const s = new Date(t)
+        s.setDate(t.getDate() - 2)
+        this.startDate = s
+        this.buildDays()
         this.loadData()
     },
     mounted() {
@@ -724,47 +731,29 @@ export default {
             return Number(val).toFixed(2)
         },
         async loadDailySalesTotals() {
-            this.dailySalesTotals = {}
-            this.categoryDailySales = {}
-            
-            const promises = []
-            
-            // Load overall daily sales totals
-            this.days.forEach(day => {
-                promises.push(
-                    this.$http.get('/hotels/reservations/calendar/daily-sales-total', {
-                        params: { date: this.toStr(day.date) }
-                    }).then(response => {
-                        this.$set(this.dailySalesTotals, this.toStr(day.date), parseFloat(response.data.total || 0));
-                    }).catch(e => {
-                        console.error('Error getting daily sales total for', this.toStr(day.date), ':', e);
-                        this.$set(this.dailySalesTotals, this.toStr(day.date), 0);
-                    })
-                )
-            })
-            
-            // Load category-specific daily sales totals
-            this.categories.forEach(category => {
-                this.days.forEach(day => {
-                    promises.push(
-                        this.$http.get('/hotels/reservations/calendar/category-daily-sales-total', {
-                            params: { 
-                                date: this.toStr(day.date),
-                                category_id: category.id
-                            }
-                        }).then(response => {
-                            const key = `${this.toStr(day.date)}_${category.id}`
-                            this.$set(this.categoryDailySales, key, parseFloat(response.data.total || 0));
-                        }).catch(e => {
-                            console.error('Error getting category daily sales total for', category.id, this.toStr(day.date), ':', e);
-                            const key = `${this.toStr(day.date)}_${category.id}`
-                            this.$set(this.categoryDailySales, key, 0);
-                        })
-                    )
+            // Una sola petición para todo el rango (antes era 1 por día + 1 por
+            // día×categoría → decenas/cientos de requests que enlentecían la carga).
+            try {
+                const endDate = new Date(this.startDate)
+                endDate.setDate(this.startDate.getDate() + this.visibleDays - 1)
+                const response = await this.$http.get('/hotels/reservations/calendar/sales-totals', {
+                    params: { start_date: this.toStr(this.startDate), end_date: this.toStr(endDate) }
                 })
-            })
-            
-            await Promise.all(promises);
+                const daily = response.data?.daily || {}
+                const byCategory = response.data?.by_category || {}
+
+                const dailyOut = {}
+                Object.keys(daily).forEach(k => { dailyOut[k] = parseFloat(daily[k] || 0) })
+                const catOut = {}
+                Object.keys(byCategory).forEach(k => { catOut[k] = parseFloat(byCategory[k] || 0) })
+
+                this.dailySalesTotals = dailyOut
+                this.categoryDailySales = catOut
+            } catch (e) {
+                console.error('Error getting sales totals:', e)
+                this.dailySalesTotals = {}
+                this.categoryDailySales = {}
+            }
         },
         getDaySalesTotal(day) {
             return this.dailySalesTotals[this.toStr(day.date)] || 0;
