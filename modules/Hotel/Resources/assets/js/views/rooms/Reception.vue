@@ -137,16 +137,16 @@
                             <div class="card-rent">
                                 <!-- <h4>{{ ro.status }}</h4> -->
 
-                                   <span v-if="!ro.has_reservation" class="text-muted">{{ ro.category?.description }}</span>
+                                   <span class="text-muted">{{ ro.category?.description }}</span>
                                    <h2 class="mt-0">
                                     <svg  xmlns="http://www.w3.org/2000/svg"  width="32"  height="32"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-door"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M14 12v.01" /><path d="M3 21h18" /><path d="M6 21v-16a2 2 0 0 1 2 -2h8a2 2 0 0 1 2 2v16" /></svg>
                                       <b>{{ ro.name }}</b>
-                                      <!-- Indicador de deuda al lado del nombre (solo si está disponible) -->
-                                      <span v-if="ro.status !== 'DISPONIBLE' && !ro.has_reservation && getRoomDebt(ro) > 0" class="debt-indicator-inline">
+                                      <!-- Indicador de deuda al lado del nombre (ocupada o reservada con deuda) -->
+                                      <span v-if="(ro.status !== 'DISPONIBLE' || ro.is_active_reservation) && getRoomDebt(ro) > 0" class="debt-indicator-inline">
                                           Falta pagar: {{ getFormattedDebt(ro) }}
                                       </span>
                                     </h2>
-                                   <p v-if="!ro.has_reservation && ro.description" class="description">{{ ro.description }}</p>
+                                   <p v-if="ro.description" class="description">{{ ro.description }}</p>
 
                                 <template v-if="ro.status === 'LIMPIEZA'">
                                     <!-- Si hay un rent activo (limpieza rápida sobre habitación
@@ -264,6 +264,7 @@
                                             v-if="ro.is_active_reservation"
                                             title="Hacer check-in"
                                             class="btn btn-block btn-success px-0 py-2 w-100"
+                                            style="color: black !important;"
                                             @click="onCheckIn(ro)"
                                         >Check-in
                                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-user-check"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0" /><path d="M6 21v-2a4 4 0 0 1 4 -4h4" /><path d="M15 19l2 2l4 -4" /></svg>
@@ -2665,10 +2666,10 @@ export default {
     border-color: #6c757d !important;
 }
 
-/* Estilo para habitaciones con reserva (color celeste) */
+/* Estilo para habitaciones con reserva (celeste tirando a azul) */
 .has-reservation {
-    background: linear-gradient(135deg, #38bdf8 0%, #0ea5e9 100%) !important;
-    border: 2px solid #0284c7 !important;
+    background: linear-gradient(135deg, #0ea5e9 0%, #0369a1 100%) !important;
+    border: 2px solid #075985 !important;
     color: white !important;
     position: relative;
     overflow: hidden;
