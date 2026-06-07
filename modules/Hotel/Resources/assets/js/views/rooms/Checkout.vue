@@ -3141,7 +3141,7 @@ export default {
         getPaymentMessage() {
             const change = parseFloat(this.paymentForm.change) || 0;
             if (change > 0) {
-                return '¡Pago Correcto!';
+                return 'Vuelto';
             } else if (change < 0) {
                 return 'Falta dinero';
             }

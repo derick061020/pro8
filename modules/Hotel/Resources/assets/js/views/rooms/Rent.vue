@@ -540,7 +540,7 @@
                                     v-if="isAdvance"
                                     class="col-6 col-md-3 form-group mb-3"
                                 >
-                                    <label class="control-label mt-0">Monto del adelanto</label>
+                                    <label class="control-label mt-0">{{ form.is_checkin_from_reservation ? 'Monto por pagar' : 'Monto del adelanto' }}</label>
                                     <el-input
                                         v-model="form.rent_payment.payment"
                                         type="number"
