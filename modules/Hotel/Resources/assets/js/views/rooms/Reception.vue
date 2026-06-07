@@ -334,7 +334,7 @@
         
         <!-- Modal para opciones de habitación ocupada -->
         <el-dialog
-            title="Opciones de habitación ocupada"
+            :title="selectedRoom ? `Opciones - ${selectedRoom.name}` : 'Opciones de habitación ocupada'"
             :visible.sync="showOccupiedOptionsModal"
             width="600px"
             :close-on-click-modal="false"
@@ -2005,7 +2005,13 @@ export default {
                 .post("/hotels/reception/search", form)
                 .then((response) => {
                     this.items = response.data.rooms;
-                    
+
+                    // Re-apuntar las referencias que mantenemos (modales abiertos
+                    // o reabiertos) a los objetos frescos del servidor. Sin esto,
+                    // roomToExtend/selectedRoom quedan con la data previa y, p.ej.,
+                    // el modal de "Extender estadía" no refleja la última extensión.
+                    this.syncHeldRoomRefs();
+
                     // Cargar limpiezas activas para determinar si tienen limpiador asignado
                     this.$http.get('/hotels/reception/active-cleanings')
                         .then(cleaningResponse => {
@@ -2104,6 +2110,17 @@ export default {
             if(this.roomToExtend){
                 this.openDialogExtendTimeRoom = true
             }
+        },
+        syncHeldRoomRefs() {
+            // Re-vincula las referencias de habitación que conservamos fuera de
+            // la lista (usadas por modales) al objeto recién traído del servidor,
+            // emparejando por id. Así los modales reabiertos muestran data fresca.
+            const findFresh = (ref) => {
+                if (!ref || !ref.id) return ref;
+                return this.items.find(r => r.id === ref.id) || ref;
+            };
+            this.roomToExtend = findFresh(this.roomToExtend);
+            this.selectedRoom = findFresh(this.selectedRoom);
         },
         onRefresh() {
             this.searchRooms()

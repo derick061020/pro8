@@ -272,9 +272,25 @@ class HotelRentController extends Controller
 				$timeUnit = 'mes(es)';
 			}
 
-			// Modificar la descripción del item para incluir la unidad de tiempo
+			// Modificar la descripción del item para incluir la unidad de tiempo.
+			// El sufijo debe aplicarse tanto a la descripción "externa" (la que ven
+			// las vistas del checkout) como a la descripción "anidada"
+			// ($product['item']['description']), que es la que termina en el XML/PDF
+			// del comprobante (Facturalo lee $it->item->description). Si solo se
+			// modifica la externa, el comprobante muestra "Habitación X" sin noches.
+			$durationSuffix = ' x ' . $request->input('duration') . ' ' . $timeUnit;
+
 			if (isset($product['description'])) {
-				$product['description'] = $product['description'] . ' x ' . $request->input('duration') . ' ' . $timeUnit;
+				$product['description'] = $product['description'] . $durationSuffix;
+			}
+
+			if (isset($product['item']) && is_array($product['item'])) {
+				if (isset($product['item']['description'])) {
+					$product['item']['description'] = $product['item']['description'] . $durationSuffix;
+				}
+				if (isset($product['item']['name_product_pdf']) && !empty($product['item']['name_product_pdf'])) {
+					$product['item']['name_product_pdf'] = $product['item']['name_product_pdf'] . $durationSuffix;
+				}
 			}
 
 			$item->item = $product;
@@ -1864,19 +1880,55 @@ class HotelRentController extends Controller
                 $isRefund = $amount < 0;
                 
                 if ($isRefund) {
-                    // Para devoluciones: buscar el último item pagado para asociar
+                    // Para devoluciones / vuelto: buscar un item al cual asociar el
+                    // pago negativo. Se prioriza el último item pagado; si no existe,
+                    // se usa cualquier item base disponible del alquiler.
                     $debtItem = HotelRentItem::where('hotel_rent_id', $rent->id)
                         ->where('payment_status', 'PAID')
                         ->where('type', '!=', 'PAY')
                         ->orderBy('id', 'desc')
                         ->first();
-                        
-                    if (!$debtItem) {
+
+                    $refundItemId = $debtItem
+                        ? $debtItem->id
+                        : $this->resolvePaymentItemId($rent);
+
+                    if (!$refundItemId) {
+                        DB::connection('tenant')->rollBack();
                         return response()->json([
                             'success' => false,
-                            'message' => 'No hay items pagados para aplicar esta devolución'
-                        ], 400);
+                            'message' => 'No se pudo registrar la devolución porque no se encontró un item para asociar el vuelto.'
+                        ], 422);
                     }
+
+                    // El destino del vuelto sale de caja (egreso). Si no llega el
+                    // destino desde la vista, se asume caja general.
+                    if (empty($paymentDestinationId)) {
+                        $paymentDestinationId = 'cash';
+                    }
+
+                    // Registrar la devolución como un pago negativo asociado al item.
+                    $refundPayment = new HotelRentItemPayment();
+                    $refundPayment->hotel_rent_item_id = $refundItemId;
+                    $refundPayment->payment = $amount; // negativo
+                    $refundPayment->payment_method_type_id = $paymentMethodTypeId;
+                    $refundPayment->reference = $reference;
+                    $refundPayment->change = 0;
+                    $refundPayment->date_of_payment = \Carbon\Carbon::now()->format('Y-m-d H:i:s');
+                    $refundPayment->save();
+
+                    // Registrar el egreso en caja/finanzas.
+                    $this->registerRentPaymentInCash($refundPayment, $paymentDestinationId);
+
+                    DB::connection('tenant')->commit();
+
+                    return response()->json([
+                        'success'      => true,
+                        'message'      => 'Vuelto/devolución registrado correctamente.',
+                        'payment_id'   => $refundPayment->id,
+                        'total_amount' => $amount,
+                        'is_refund'    => true,
+                    ], 200);
                 } else {
                     // Para pagos normales: buscar todos los items con deuda
                     $debtItems = HotelRentItem::where('hotel_rent_id', $rent->id)

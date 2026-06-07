@@ -3309,7 +3309,8 @@ export default {
                     }
                 } catch (error) {
                     console.error('Error al procesar devolución:', error);
-                    this.$message.error('Error al procesar la devolución');
+                    const serverMessage = error?.response?.data?.message;
+                    this.$message.error(serverMessage || 'Error al procesar la devolución');
                 } finally {
                     this.loadingRefund = false;
                 }
