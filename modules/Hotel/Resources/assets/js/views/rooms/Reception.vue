@@ -2668,7 +2668,7 @@ export default {
 
 /* Estilo para habitaciones con reserva (celeste tirando a azul) */
 .has-reservation {
-    background: #0ea5e9  !important;
+    background: linear-gradient(135deg, #0ea5e9 0%, #0369a1 100%) !important;
     border: 2px solid #075985 !important;
     color: white !important;
     position: relative;
