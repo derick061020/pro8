@@ -1147,6 +1147,14 @@ export default {
                 this.form.data_persons = this.reservation.data_persons;
             }
 
+            // Cargar otros datos guardados en la reserva (placa, motivo, etc.)
+            this.form.adults = this.reservation.adults || this.form.adults;
+            this.form.children = this.reservation.children || this.form.children;
+            this.form.towels = this.reservation.towels || this.form.towels;
+            this.form.license_plate = this.reservation.license_plate || '';
+            this.form.travel_reason = this.reservation.travel_reason || '';
+            this.form.notes = this.reservation.notes || '';
+
             // Establecer que es un check-in de reserva
             this.form.is_checkin_from_reservation = true;
             this.form.reservation_id = this.reservation.id;
