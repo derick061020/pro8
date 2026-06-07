@@ -2242,7 +2242,7 @@ $showTransfer = collect($vc_module_levels)->intersect(['inventory', 'inventory_d
         align-items: center;
         justify-content: center;
         margin-left: auto;
-        margin-right: 10px;
+        margin-right: 20px;
         min-width: 20px;
         height: 20px;
         padding: 2px 6px;
