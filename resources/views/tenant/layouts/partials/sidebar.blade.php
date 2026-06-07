@@ -2268,4 +2268,28 @@ $showTransfer = collect($vc_module_levels)->intersect(['inventory', 'inventory_d
         background-color: #c82333;
         box-shadow: 0 2px 6px rgba(220, 53, 69, 0.4);
     }
+
+    /* Mantener el contador visible y como insignia sobre el icono cuando el sidebar está contraído */
+    html.sidebar-left-collapsed .sidebar-left .nav-main a span.hotel-rooms-counter {
+        visibility: visible;
+        right: 14px;
+        top: 8px;
+        min-width: 16px;
+        height: 16px;
+        padding: 1px 4px;
+        font-size: 10px;
+        border-radius: 8px;
+    }
+
+    /* Al expandirse por hover, vuelve a su posición normal a la derecha de la etiqueta */
+    html.sidebar-left-collapsed .sidebar-left .nano:hover .nav-main a span.hotel-rooms-counter,
+    html.sidebar-left-collapsed .sidebar-left .nano.hovered .nav-main a span.hotel-rooms-counter {
+        right: 40px;
+        top: auto;
+        min-width: 20px;
+        height: 20px;
+        padding: 2px 6px;
+        font-size: 11px;
+        border-radius: 10px;
+    }
 </style>
