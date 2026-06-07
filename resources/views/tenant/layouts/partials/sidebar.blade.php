@@ -249,7 +249,7 @@ $showTransfer = collect($vc_module_levels)->intersect(['inventory', 'inventory_d
                                 </svg>
                                 <span>Hoteles</span>
                                 @if($occupiedRoomsCount > 0)
-                                    <span class="hotel-rooms-counter ml-2">{{ $occupiedRoomsCount }}</span>
+                                    <span class="hotel-rooms-counter">{{ $occupiedRoomsCount }}</span>
                                 @endif
                             </a>
                             <ul class="nav nav-children">
@@ -2236,10 +2236,16 @@ $showTransfer = collect($vc_module_levels)->intersect(['inventory', 'inventory_d
     }
 
     /* Estilos para contador de habitaciones ocupadas */
+    .nav-parent > a.nav-link:has(.hotel-rooms-counter) {
+        display: flex;
+        align-items: center;
+    }
+
     .hotel-rooms-counter {
         display: inline-flex;
         align-items: center;
         justify-content: center;
+        margin-left: auto;
         min-width: 20px;
         height: 20px;
         padding: 2px 6px;
