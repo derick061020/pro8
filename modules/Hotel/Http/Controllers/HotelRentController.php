@@ -903,10 +903,17 @@ class HotelRentController extends Controller
       $arrears = request('arrears');
       $arrears = is_numeric($arrears) ? (int) $arrears : 0;
 
+      // Registrar la salida real: se sobreescribe output_date/output_time con
+      // el momento exacto en que se marca el checkout, para que el reporte
+      // muestre la hora real de salida (no la programada).
+      $checkoutAt = Carbon::now();
+
       $rent->update([
         'arrears'        => $arrears,
         'payment_status' => 'PAID',
         'status'         => 'FINALIZADO',
+        'output_date'    => $checkoutAt->format('Y-m-d'),
+        'output_time'    => $checkoutAt->format('H:i:s'),
       ]);
 
       foreach ($items as $item) {
