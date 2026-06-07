@@ -114,11 +114,6 @@
                             shadow="never"
                             class="room-el-card"
                         >
-                            <!-- Badge "Reservada" solo cuando hay una reserva activa (en ventana) -->
-                            <div v-if="ro.is_active_reservation" class="reservation-indicator">
-                                Reservada
-                            </div>
-
                             <!-- Chip-contador de reservas vigentes.
                                  Se oculta cuando la habitación ya muestra el badge "Reservada"
                                  y solo existe esa reserva (sería redundante). -->
@@ -152,46 +147,6 @@
                                       </span>
                                     </h2>
                                    <p v-if="!ro.has_reservation && ro.description" class="description">{{ ro.description }}</p>
-                                   
-                                   <!-- Mostrar información del cliente para habitaciones con reserva -->
-                                   <div v-if="ro.has_reservation && ro.rent && ro.rent.customer" class="reservation-customer-info">
-                                       <p style="margin: 5px 0; font-size: 14px;">
-                                           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                               <path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0"></path>
-                                               <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2"></path>
-                                           </svg>
-                                           <strong> {{ ro.rent.customer.name }}</strong>
-                                           <span v-if="ro.rent.customer.person_type && (ro.rent.customer.person_type_id || ro.status == 'DISPONIBLE')" class="customer-type-badge ml-2" style="height: 100%;margin-left: 10px;">
-                                               {{ ro.rent.customer.person_type?.description }}
-                                           </span>
-                                           <br v-if="ro.rent.license_plate">
-                                           <span class="license-plate-display" v-if="ro.rent.license_plate">
-                                               <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                                   <path d="M5 17a2 2 0 0 1 2 -2h10a2 2 0 0 1 2 2v2a2 2 0 0 1 -2 2h-10a2 2 0 0 1 -2 -2z"></path>
-                                                   <path d="M7 9v0a2 2 0 0 1 2 -2h6a2 2 0 0 1 2 2v0"></path>
-                                                   <circle cx="12" cy="15" r="1"></circle>
-                                               </svg>
-                                               {{ ro.rent.license_plate }}
-                                           </span>
-                                       </p>
-
-                                       <!-- Contador regresivo + indicador de observaciones para reservas -->
-                                       <div class="room-top-right-elements" >
-                                           <room-countdown v-if="ro.rent" :rent="ro.rent"></room-countdown>
-                                           <div
-                                               v-if="ro.rent && ro.rent.notes"
-                                               class="observations-indicator"
-                                               @mouseenter="showObservationTooltip(ro, $event)"
-                                               @mouseleave="hideObservationTooltip"
-                                           >
-                                               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                                   <circle cx="12" cy="12" r="10"></circle>
-                                                   <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
-                                                   <line x1="12" y1="17" x2="12.01" y2="17"></line>
-                                               </svg>
-                                           </div>
-                                       </div>
-                                   </div>
 
                                 <template v-if="ro.status === 'LIMPIEZA'">
                                     <!-- Si hay un rent activo (limpieza rápida sobre habitación
@@ -241,7 +196,7 @@
                                     <p class="text-center">Debe cambiar el estado a <b>Disponible</b> en el módulo Habitaciones.</p>
                                 </template>
 
-                                <template v-if="ro.status === 'OCUPADO'">
+                                <template v-if="ro.status === 'OCUPADO' || (ro.is_active_reservation && ro.status === 'DISPONIBLE')">
                                     <div>
                                         <p :style="ro.rent.license_plate ? 'margin: 0;' : ''">
                                         <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-user"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0" /><path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2" /></svg>
@@ -304,15 +259,26 @@
                                         </button>
                                     </div>
                                     <div class="col-9" style="padding-right:0px;">
+                                        <!-- Habitación reservada: el botón hace Check-in -->
                                         <button
+                                            v-if="ro.is_active_reservation"
+                                            title="Hacer check-in"
+                                            class="btn btn-block btn-success px-0 py-2 w-100"
+                                            @click="onCheckIn(ro)"
+                                        >Check-in
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-user-check"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0" /><path d="M6 21v-2a4 4 0 0 1 4 -4h4" /><path d="M15 19l2 2l4 -4" /></svg>
+                                        </button>
+                                        <!-- Habitación ocupada: abre el modal de opciones -->
+                                        <button
+                                            v-else
                                             title="Opciones de habitación ocupada"
                                             :class="[
                                                 'btn btn-block px-0 py-2 w-100',
-                                                ro.rent && ro.rent.rental_period_type === 'month' 
-                                                    ? 'btn-secondary' 
+                                                ro.rent && ro.rent.rental_period_type === 'month'
+                                                    ? 'btn-secondary'
                                                     : 'btn-danger'
                                             ]"
-                                            :style="ro.rent && ro.rent.rental_period_type === 'month' 
+                                            :style="ro.rent && ro.rent.rental_period_type === 'month'
                                                 ? 'background-color: white !important; color: #6c757d !important; border: 1px solid #6c757d !important;'
                                                 : 'background-color: white !important; color: black !important;'"
                                             @click="showOccupiedModalWithDebug(ro)"
@@ -322,46 +288,8 @@
                                     </div>
                                 </div>
                                 </template>
-                                <!-- Footer de RESERVADA: mismos botones que OCUPADO (Agregar productos +
-                                     opciones) + el botón de Check-in para ingresar al huésped reservado. -->
-                                <div v-if="ro.is_active_reservation" class="reserved-actions">
-                                    <div class="row reserved-actions-row" style="margin-right:0px;margin-left:0px;">
-                                        <div class="col-3" style="padding-left:0px;">
-                                            <button
-                                                title="Agregar productos"
-                                                class="btn btn-block btn-danger px-0 py-2 w-100"
-                                                data-toggle="tooltip"
-                                                @click="onGoToAddProducts(ro)"
-                                            >
-                                            <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-hotel-service"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M8.5 10a1.5 1.5 0 0 1 -1.5 -1.5a5.5 5.5 0 0 1 11 0v10.5a2 2 0 0 1 -2 2h-7a2 2 0 0 1 -2 -2v-2c0 -1.38 .71 -2.444 1.88 -3.175l4.424 -2.765c1.055 -.66 1.696 -1.316 1.696 -2.56a2.5 2.5 0 1 0 -5 0a1.5 1.5 0 0 1 -1.5 1.5z" /></svg>
-                                            </button>
-                                        </div>
-                                        <div class="col-9" style="padding-right:0px;">
-                                            <button
-                                                title="Opciones de habitación reservada"
-                                                class="btn btn-block px-0 py-2 w-100"
-                                                style="background-color: white !important; color: black !important;"
-                                                @click="showOccupiedModalWithDebug(ro)"
-                                            >Reservado
-                                            <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-door-exit"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M13 12v.01" /><path d="M3 21h18" /><path d="M5 21v-16a2 2 0 0 1 2 -2h7.5m2.5 10.5v7.5" /><path d="M14 7h7m-3 -3l3 3l-3 3" /></svg>
-                                            </button>
-                                        </div>
-                                    </div>
-                                    <el-button
-                                        v-if="canManageRooms"
-                                        class="btn btn-block btn-success w-100"
-                                        @click="onCheckIn(ro)"
-                                    >
-                                          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-user-check">
-                                            <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                                            <path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0" />
-                                            <path d="M6 21v-2a4 4 0 0 1 4 -4h4" />
-                                            <path d="M15 19l2 2l4 -4" />
-                                        </svg> Check-in
-                                    </el-button>
-                                </div>
                                 <el-button
-                                    v-else-if="(ro.status === 'DISPONIBLE' || (ro.status === 'OCUPADO' && ro.has_reservation)) && canManageRooms"
+                                    v-if="ro.status === 'DISPONIBLE' && !ro.is_active_reservation && canManageRooms"
                                     class="btn btn-block btn-success w-100"
                                     style="margin-top: 27px;"
                                     @click="onToRent(ro)"
@@ -1014,31 +942,6 @@
    con contenido cuando el botón hereda height del row anterior. */
 .room-container .room-el-card .card-rent > .el-button[style*="margin-top: 27px"] {
     margin-top: auto !important;
-}
-
-/* Footer de habitaciones RESERVADAS: replica el layout de OCUPADO
-   (fila de 2 botones: Agregar productos + opciones) y añade debajo el
-   botón de Check-in. Todo anclado al fondo de la card. */
-.room-container .room-el-card .card-rent > .reserved-actions {
-    margin-top: auto !important;
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    width: 100%;
-}
-.room-container .room-el-card .card-rent .reserved-actions-row {
-    display: flex;
-    flex-wrap: nowrap;
-    gap: 6px;
-    width: 100%;
-    margin: 0 !important;
-}
-.room-container .room-el-card .card-rent .reserved-actions-row > [class*="col-"] {
-    padding: 0 !important;
-}
-.room-container .room-el-card .card-rent .reserved-actions .el-button {
-    margin: 0 !important;
-    width: 100%;
 }
 
 /* Reposicionamos el countdown: en lugar de absolute en la esquina
@@ -2790,28 +2693,15 @@ export default {
     background: linear-gradient(90deg, #fbbf24, #f59e0b);
 }
 
-.has-reservation::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 4px;
-    background: linear-gradient(90deg, #fbbf24, #f59e0b);
-}
-
 .has-reservation .card-rent h2,
 .has-reservation .card-rent p,
 .has-reservation .card-rent span {
     color: white !important;
 }
 
-/* El badge "RESERVADA" (absolute, arriba-izquierda) y el contador
-   (absolute, arriba-derecha) se superponen sobre el nombre de la
-   habitación, que está en el flujo normal arrancando en la misma zona.
-   Reservamos espacio en la parte superior del contenido para que el
-   nombre/número de habitación fluya DEBAJO de ambos y no quede tapado. */
-.has-reservation .card-rent,
+/* El contador (absolute, arriba-derecha) se superpone sobre el nombre de
+   la habitación. Reservamos espacio en la parte superior del contenido
+   para que el nombre/número fluya DEBAJO y no quede tapado. */
 .ready-checkin .card-rent {
     padding-top: 42px;
 }
