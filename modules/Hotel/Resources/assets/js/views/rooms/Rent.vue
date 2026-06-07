@@ -1018,114 +1018,43 @@ export default {
             this.form.quantity_persons = adults + children;
         },
         updateDuration() {
-            if (!this.form.input_date) return;
-            
-            const checkInDateTime = moment(`${this.form.input_date} ${this.form.input_time || '12:00'}`);
-            
+            if (!this.form.input_date || !this.form.output_date) return;
+
+            // La duración (cantidad) se deriva de las fechas elegidas. Se respeta
+            // la fecha de salida tal como la seleccionó el usuario (incluso si es
+            // la misma que la de entrada) y se garantiza un mínimo de 1 unidad
+            // según el tipo de renta: 1 día, 1 hora o 1 mes.
+            let newDuration;
+
             if (this.form.rental_period_type === 'hour') {
-                // Para renta por hora: la duración es en horas
-                const hours = this.form.duration || 1;
-                const checkOutDateTime = checkInDateTime.clone().add(hours, 'hours');
-                
-                // Actualizar solo si hay cambios para evitar bucles
-                if (this.form.output_date !== checkOutDateTime.format('YYYY-MM-DD') || 
-                    this.form.output_time !== checkOutDateTime.format('HH:mm')) {
-                    this.form.output_date = checkOutDateTime.format('YYYY-MM-DD');
-                    this.form.output_time = checkOutDateTime.format('HH:mm');
-                }
-                
+                const checkIn = moment(`${this.form.input_date} ${this.form.input_time || '12:00'}`);
+                const checkOut = moment(`${this.form.output_date} ${this.form.output_time || '12:00'}`);
+                const minutes = checkOut.diff(checkIn, 'minutes');
+                // Cualquier diferencia menor a 1 hora cuenta como 1 hora.
+                newDuration = Math.max(1, Math.ceil(minutes / 60));
+
             } else if (this.form.rental_period_type === 'month') {
-                // Para renta por mes: la duración es en meses
-                const months = this.form.duration || 1;
-                const checkOutDateTime = checkInDateTime.clone().add(months, 'months');
-                
-                // Actualizar solo si hay cambios para evitar bucles
-                if (this.form.output_date !== checkOutDateTime.format('YYYY-MM-DD') || 
-                    this.form.output_time !== checkOutDateTime.format('HH:mm')) {
-                    this.form.output_date = checkOutDateTime.format('YYYY-MM-DD');
-                    this.form.output_time = checkOutDateTime.format('HH:mm');
+                const checkIn = moment(this.form.input_date, 'YYYY-MM-DD');
+                const checkOut = moment(this.form.output_date, 'YYYY-MM-DD');
+                let months = checkOut.diff(checkIn, 'months');
+                // Si sobra una fracción de mes, se redondea hacia arriba.
+                if (checkOut.isAfter(checkIn.clone().add(months, 'months'))) {
+                    months += 1;
                 }
-                
+                newDuration = Math.max(1, months);
+
             } else {
-                // Para renta estándar por día: mantener duración y ajustar fecha de salida
-                const currentDuration = this.form.duration || 1;
-                const checkOutDateTime = checkInDateTime.clone().add(currentDuration, 'days');
-                
-                // Actualizar fecha de salida manteniendo la misma cantidad de noches
-                // Para renta por día, usar siempre 12:00 como hora de salida
-                const newOutputTime = '12:00';
-                if (this.form.output_date !== checkOutDateTime.format('YYYY-MM-DD') || 
-                    this.form.output_time !== newOutputTime) {
-                    this.form.output_date = checkOutDateTime.format('YYYY-MM-DD');
-                    this.form.output_time = newOutputTime;
-                }
-                
-                // Si hay una fecha de salida específica, recalcular duración
-                if (this.form.output_date && this.form.output_date !== checkOutDateTime.format('YYYY-MM-DD')) {
-                    const existingCheckOutDateTime = moment(`${this.form.output_date} ${this.form.output_time || '12:00'}`);
-                    const hoursDiff = existingCheckOutDateTime.diff(checkInDateTime, 'hours');
-                    let days = Math.ceil(hoursDiff / 24);
-                    days = Math.max(1, days);
-                    
-                    // Actualizar solo si hay cambios para evitar bucles
-                    if (this.form.duration !== days) {
-                        this.form.duration = days;
-                    }
-                }
+                // Renta por día/noches: se cuenta por diferencia de calendario.
+                // Misma fecha de entrada y salida => mínimo 1 día.
+                const checkIn = moment(this.form.input_date, 'YYYY-MM-DD').startOf('day');
+                const checkOut = moment(this.form.output_date, 'YYYY-MM-DD').startOf('day');
+                const days = checkOut.diff(checkIn, 'days');
+                newDuration = Math.max(1, days);
             }
-        },
-        onUpdateOutputDate() {
-            if (!this.form.input_date || !this.form.input_time) return;
-            
-            const checkInDateTime = moment(`${this.form.input_date} ${this.form.input_time || '12:00'}`);
-            const rentalType = this.form.rental_period_type;
-            let checkOutDateTime;
-            
-            if (rentalType === 'hour') {
-                // RENTA POR HORA: calcular salida basada en horas
-                const hours = this.form.duration || 1;
-                checkOutDateTime = checkInDateTime.clone().add(hours, 'hours');
-                
-                // Para renta por hora, la salida debe ser como mínimo el mismo día
-                if (checkOutDateTime.isBefore(checkInDateTime)) {
-                    checkOutDateTime = checkInDateTime.clone().add(1, 'hour');
-                }
-                
-            } else if (rentalType === 'month') {
-                // RENTA POR MES: calcular salida basada en meses
-                const months = this.form.duration || 1;
-                checkOutDateTime = checkInDateTime.clone().add(months, 'months');
-                
-                // Para renta por mes, la salida es el mismo día del mes siguiente
-                // Por ejemplo: entra 15 Ene, 1 mes → sale 15 Feb
-                checkOutDateTime.date(checkInDateTime.date());
-                
-            } else {
-                // RENTA POR DÍA/NOCHES: calcular salida basada en días
-                const days = this.form.duration || 1;
-                checkOutDateTime = checkInDateTime.clone().add(days, 'days');
-            }
-            
-            // Actualizar solo si los valores realmente cambiaron para evitar bucles infinitos
-            const newOutputDate = checkOutDateTime.format('YYYY-MM-DD');
-            // Para renta por día, usar siempre 12:00 como hora de salida
-            const newOutputTime = rentalType === 'day' ? '12:00' : checkOutDateTime.format('HH:mm');
-            
-            if (this.form.output_date !== newOutputDate || this.form.output_time !== newOutputTime) {
-                this.form.output_date = newOutputDate;
-                this.form.output_time = newOutputTime;
-                
-                // Si es renta por día/noches y la fecha de salida cambió, recalcular duración
-                if (rentalType === 'day' && this.form.output_date && this.form.output_date !== newOutputDate) {
-                    const existingCheckOutDateTime = moment(`${this.form.output_date} ${this.form.output_time || '12:00'}`);
-                    const hoursDiff = existingCheckOutDateTime.diff(checkInDateTime, 'hours');
-                    const calculatedDays = Math.max(1, Math.ceil(hoursDiff / 24));
-                    
-                    // Actualizar duración solo si es diferente
-                    if (this.form.duration !== calculatedDays) {
-                        this.form.duration = calculatedDays;
-                    }
-                }
+
+            // Actualizar solo si cambió, para no disparar bucles con los watchers.
+            if (this.form.duration !== newDuration) {
+                this.form.duration = newDuration;
             }
         },
         async loadReservationData() {
@@ -1628,27 +1557,27 @@ export default {
             this.form.rent_payment.payment = this.saldoPendiente
         },
         onUpdateOutputDate() {
-            console.log('=== DEBUG onUpdateOutputDate ===');
-            console.log('rental_period_type:', this.form.rental_period_type);
-            console.log('input_date:', this.form.input_date);
-            console.log('input_time:', this.form.input_time);
-            console.log('duration:', this.form.duration);
-            console.log('output_time ANTES:', this.form.output_time);
-            
             if (!this.form.input_date) return;
-            
-            const checkInDateTime = moment(`${this.form.input_date} ${this.form.input_time || '12:00'}`);
-            const newDate = checkInDateTime.add(this.form.duration, "days");
-            this.form.output_date = newDate.format('YYYY-MM-DD');
-            
-            // Para renta por día, usar siempre 12:00 como hora de salida
-            const newOutputTime = this.form.rental_period_type === 'day' ? '12:00' : newDate.format('HH:mm');
-            this.form.output_time = newOutputTime;
-            
-            console.log('newDate.format(HH:mm):', newDate.format('HH:mm'));
-            console.log('newOutputTime calculado:', newOutputTime);
-            console.log('output_time DESPUÉS:', this.form.output_time);
-            console.log('=== FIN DEBUG onUpdateOutputDate ===');
+
+            const checkIn = moment(`${this.form.input_date} ${this.form.input_time || '12:00'}`);
+            const duration = Math.max(1, this.form.duration || 1);
+
+            // La salida se calcula sumando la duración en la unidad que
+            // corresponde al tipo de renta (horas, meses o días).
+            let checkOut;
+            if (this.form.rental_period_type === 'hour') {
+                checkOut = checkIn.clone().add(duration, 'hours');
+            } else if (this.form.rental_period_type === 'month') {
+                checkOut = checkIn.clone().add(duration, 'months');
+            } else {
+                checkOut = checkIn.clone().add(duration, 'days');
+            }
+
+            this.form.output_date = checkOut.format('YYYY-MM-DD');
+            // Para renta por día, usar siempre 12:00 como hora de salida.
+            this.form.output_time = this.form.rental_period_type === 'day'
+                ? '12:00'
+                : checkOut.format('HH:mm');
         },
         onSelectedRate() {
             const rate = this.room.rates
