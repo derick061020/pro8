@@ -2235,11 +2235,7 @@ $showTransfer = collect($vc_module_levels)->intersect(['inventory', 'inventory_d
         100% { background-position: -200% 0; }
     }
 
-    /* Estilos para contador de habitaciones ocupadas */
-    .nav-parent > a.nav-link:has(.hotel-rooms-counter) {
-        display: flex;
-        align-items: center;
-    }
+
 
     .hotel-rooms-counter {
         display: inline-flex;
