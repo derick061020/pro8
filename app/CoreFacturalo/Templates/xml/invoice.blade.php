@@ -565,6 +565,8 @@
         <cac:Item>
             @if($row->name_product_xml)
             <cbc:Description><![CDATA[{{ $row->name_product_xml }}]]></cbc:Description>
+            @elseif($row->name_product_pdf)
+            <cbc:Description><![CDATA[{{ strip_tags($row->name_product_pdf) }}]]></cbc:Description>
             @else
             <cbc:Description><![CDATA[{{ $row->item->description }}]]></cbc:Description>
             @endif

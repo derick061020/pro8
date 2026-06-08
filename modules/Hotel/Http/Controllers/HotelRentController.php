@@ -450,7 +450,17 @@ class HotelRentController extends Controller
         $unitPrice = (float) ($request->price_per_day ?? 0);
       }
       $quantity   = $additional > 0 ? $additional : 1;
-      $totalExt   = round($unitPrice * $quantity, 4);
+
+      // Total de la extensión. Si el front envía un total personalizado
+      // (extension_total editable), se usa tal cual y el precio unitario se
+      // deriva de él; si no, se calcula como precio × cantidad.
+      $customTotal = (float) ($request->extension_total ?? 0);
+      if ($customTotal > 0) {
+        $totalExt  = round($customTotal, 4);
+        $unitPrice = $quantity > 0 ? round($totalExt / $quantity, 4) : $totalExt;
+      } else {
+        $totalExt  = round($unitPrice * $quantity, 4);
+      }
 
       $room = HotelRoom::find($rent->hotel_room_id);
       $roomName = $room ? $room->name : 'Habitación';
@@ -553,7 +563,12 @@ class HotelRentController extends Controller
 
       // Procesar pago si se incluye - se aplica a la extensión recién creada
       if ($request->include_payment && $request->payment_amount > 0) {
-        $paymentMethodId = $this->getPaymentMethodId($request->payment_method);
+        // Preferir el id real del método de pago enviado por el front (tomado de
+        // la API de métodos de pago); compatibilidad con el flujo antiguo que
+        // enviaba un alias de texto en payment_method.
+        $paymentMethodId = $request->filled('payment_method_type_id')
+          ? $request->payment_method_type_id
+          : $this->getPaymentMethodId($request->payment_method);
 
         if (!$paymentMethodId) {
           throw new \Exception('No se encontró un método de pago válido. Por favor, configure los métodos de pago en el sistema.');

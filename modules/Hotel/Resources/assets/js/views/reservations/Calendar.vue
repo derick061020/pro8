@@ -43,6 +43,14 @@
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
                     </button>
                 </div>
+
+                <!-- Period selector: día / semana / quincena / mes -->
+                <div class="rcal-period-btns">
+                    <button class="rcal-pbtn" :class="{ active: periodMode === 'day' }" @click="applyPeriod('day')">Día</button>
+                    <button class="rcal-pbtn" :class="{ active: periodMode === 'week' }" @click="applyPeriod('week')">Semana</button>
+                    <button class="rcal-pbtn" :class="{ active: periodMode === 'fortnight' }" @click="applyPeriod('fortnight')">Quincena</button>
+                    <button class="rcal-pbtn" :class="{ active: periodMode === 'month' }" @click="applyPeriod('month')">Mes</button>
+                </div>
             </div>
 
             <div class="rcal-tb-center">
@@ -83,9 +91,9 @@
                                     <span class="rcal-dh-dayname">{{ day.shortName }} {{ day.dayNumber }}</span>
                                 </div>
                                 <div class="rcal-dh-pct" :class="getPctClass(getDayAvailability(day).pct)">
-                                    {{ getDayAvailability(day).pct.toFixed(2) }}%
+                                    {{ getDayAvailability(day).pct.toFixed(periodMode === 'month' ? 0 : 2) }}%
                                 </div>
-                                <div class="rcal-dh-sales" :class="{ 'dh-sales-today': day.isToday }">
+                                <div v-if="periodMode !== 'month'" class="rcal-dh-sales" :class="{ 'dh-sales-today': day.isToday }">
                                     <small>Ventas: S/ {{ formatPrice(getDaySalesTotal(day)) }}</small>
                                 </div>
                             </div>
@@ -388,7 +396,8 @@ export default {
         return {
             // View
             viewMode: 'calendar',
-            visibleDays: 16,
+            periodMode: 'fortnight', // 'day' | 'week' | 'fortnight' | 'month'
+            visibleDays: 15,
             dayCellWidth: 90,
             roomColWidth: 160,
             startDate: null,
@@ -438,6 +447,10 @@ export default {
             if (!this.days.length) return ''
             const first = this.days[0].date
             const last = this.days[this.days.length - 1].date
+            if (this.periodMode === 'day') {
+                const t = first.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+                return t.charAt(0).toUpperCase() + t.slice(1)
+            }
             const mOpts = { month: 'long', year: 'numeric' }
             if (first.getMonth() === last.getMonth()) {
                 let t = first.toLocaleDateString('es-ES', mOpts)
@@ -572,11 +585,7 @@ export default {
     created() {
         // Fijar la fecha y construir los días SIN cargar (loadData hace la carga
         // de reservas una sola vez; antes goToday + loadData cargaban 2 veces).
-        const t = new Date()
-        t.setHours(0, 0, 0, 0)
-        const s = new Date(t)
-        s.setDate(t.getDate() - 2)
-        this.startDate = s
+        this.computePeriod(this.periodMode, new Date())
         this.buildDays()
         this.loadData()
     },
@@ -603,30 +612,75 @@ export default {
         isSameDay(a, b) { return a.toDateString() === b.toDateString() },
         isWeekend(d) { return d.getDay() === 0 || d.getDay() === 6 },
 
-        /* ── Navigation ── */
+        /* ── Period / Navigation ── */
+        // Calcula startDate + visibleDays + ancho de celda según el modo de
+        // vista (día/semana/quincena/mes), tomando `anchor` como referencia.
+        computePeriod(mode, anchor) {
+            const a = anchor ? new Date(anchor) : (this.startDate ? new Date(this.startDate) : new Date())
+            a.setHours(0, 0, 0, 0)
+            this.periodMode = mode
+            if (mode === 'day') {
+                this.visibleDays = 1
+                this.dayCellWidth = 320
+                this.startDate = a
+            } else if (mode === 'week') {
+                this.visibleDays = 7
+                this.dayCellWidth = 150
+                // Alinear al lunes de la semana del anchor
+                const dow = a.getDay()
+                const diff = dow === 0 ? -6 : 1 - dow
+                const s = new Date(a); s.setDate(a.getDate() + diff)
+                this.startDate = s
+            } else if (mode === 'month') {
+                this.visibleDays = new Date(a.getFullYear(), a.getMonth() + 1, 0).getDate()
+                this.dayCellWidth = 48
+                this.startDate = new Date(a.getFullYear(), a.getMonth(), 1)
+            } else { // fortnight (quincena)
+                this.visibleDays = 15
+                this.dayCellWidth = 90
+                // Empezar 2 días antes para que HOY quede visible cerca del borde
+                const s = new Date(a); s.setDate(a.getDate() - 2)
+                this.startDate = s
+            }
+        },
+        applyPeriod(mode) {
+            this.computePeriod(mode, this.startDate)
+            this.buildDays()
+            this.loadReservations()
+            this.scrollToToday()
+        },
         goToday() {
-            const t = new Date()
-            t.setHours(0, 0, 0, 0)
-            // Start 2 days before today so today is visible and near left
-            const s = new Date(t)
-            s.setDate(t.getDate() - 2)
-            this.startDate = s
+            this.computePeriod(this.periodMode, new Date())
+            this.buildDays()
+            this.loadReservations()
+            this.scrollToToday()
+        },
+        navigatePrev() { this.shiftPeriod(-1) },
+        navigateNext() { this.shiftPeriod(1) },
+        shiftPeriod(dir) {
+            const s = new Date(this.startDate)
+            if (this.periodMode === 'month') {
+                const m = new Date(s.getFullYear(), s.getMonth() + dir, 1)
+                this.startDate = m
+                this.visibleDays = new Date(m.getFullYear(), m.getMonth() + 1, 0).getDate()
+            } else {
+                const step = this.periodMode === 'day' ? 1 : (this.periodMode === 'week' ? 7 : 15)
+                s.setDate(s.getDate() + dir * step)
+                this.startDate = s
+            }
             this.buildDays()
             this.loadReservations()
         },
-        navigatePrev() {
-            const s = new Date(this.startDate)
-            s.setDate(s.getDate() - 7)
-            this.startDate = s
-            this.buildDays()
-            this.loadReservations()
-        },
-        navigateNext() {
-            const s = new Date(this.startDate)
-            s.setDate(s.getDate() + 7)
-            this.startDate = s
-            this.buildDays()
-            this.loadReservations()
+        // Desplaza el scroll horizontal para dejar la columna de HOY a la vista.
+        scrollToToday() {
+            this.$nextTick(() => {
+                const el = this.$refs.calScroll
+                if (!el) return
+                const idx = this.days.findIndex(d => d.isToday)
+                if (idx < 0) { el.scrollLeft = 0; return }
+                const target = idx * this.dayCellWidth - el.clientWidth / 2 + this.roomColWidth
+                el.scrollTo({ left: Math.max(0, target), behavior: 'smooth' })
+            })
         },
         buildDays() {
             const dayNames = ['DOM', 'LUN', 'MAR', 'MIÉ', 'JUE', 'VIE', 'SÁB']
@@ -1181,6 +1235,16 @@ export default {
 .rcal-nav-btn:hover { background: #fff; color: #111; box-shadow: 0 1px 3px rgba(0,0,0,.1); }
 .rcal-nav-today { width: auto; padding: 0 14px; font-weight: 700; font-size: 12px; letter-spacing: .3px; }
 
+/* Period selector (día/semana/quincena/mes) */
+.rcal-period-btns { display: flex; align-items: center; background: #f3f4f6; border-radius: 6px; padding: 2px; gap: 1px; }
+.rcal-pbtn {
+    border: none; background: transparent; cursor: pointer;
+    padding: 0 12px; height: 30px; border-radius: 5px;
+    font-size: 12px; font-weight: 600; color: #6b7280; transition: all .12s;
+}
+.rcal-pbtn:hover { background: #fff; color: #111; }
+.rcal-pbtn.active { background: #4f46e5; color: #fff; box-shadow: 0 1px 3px rgba(79,70,229,.3); }
+
 .rcal-month-title { font-size: 15px; font-weight: 700; color: #111827; }
 
 .rcal-select {
@@ -1215,6 +1279,8 @@ export default {
     overflow-x: auto;
     overflow-y: auto;
     max-height: calc(100vh - 240px);
+    scroll-behavior: smooth;
+    overscroll-behavior-x: contain;
 }
 .rcal-scroll::-webkit-scrollbar { width: 8px; height: 8px; }
 .rcal-scroll::-webkit-scrollbar-track { background: #f9fafb; }

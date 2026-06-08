@@ -100,9 +100,10 @@
             <div class="col-12 col-md-4 form-group">
               <label class="control-label">Total extensión</label>
               <el-input
-                :value="extensionTotal"
+                v-model="extensionTotal"
                 type="number"
-                readonly
+                placeholder="0.00"
+                @input="onExtensionTotalChange"
               >
                 <template slot="prepend">S/</template>
               </el-input>
@@ -118,7 +119,7 @@
                   <strong>Tarifa final tras la extensión:</strong>
                   <small class="d-block text-muted">
                     Consumo previo (S/ {{ getCurrentRoomCons().toFixed(2) }})
-                    + extensión (S/ {{ extensionTotal.toFixed(2) }})
+                    + extensión (S/ {{ extensionTotalNumber.toFixed(2) }})
                     − pagado (S/ {{ savedPaymentsTotal.toFixed(2) }})
                   </small>
                 </div>
@@ -154,12 +155,13 @@
                 <div class="col-12 col-md-4">
                     <div class="form-group">
                         <label class="control-label">Método de pago</label>
-                        <el-select v-model="form.payment_method" style="width: 100%">
-                            <el-option label="Efectivo" value="cash"></el-option>
-                            <el-option label="Tarjeta de Crédito" value="credit_card"></el-option>
-                            <el-option label="Tarjeta de Débito" value="debit_card"></el-option>
-                            <el-option label="Transferencia" value="transfer"></el-option>
-                            <el-option label="Yape/Plin" value="yape_plin"></el-option>
+                        <el-select v-model="form.payment_method_type_id" filterable style="width: 100%" placeholder="Seleccione método">
+                            <el-option
+                                v-for="option in payment_method_types"
+                                :key="option.id"
+                                :value="option.id"
+                                :label="option.description"
+                            ></el-option>
                         </el-select>
                     </div>
                 </div>
@@ -239,7 +241,7 @@ export default {
         price_per_day: 0,
         include_payment: false,
         payment_amount: 0,
-        payment_method: 'cash',
+        payment_method_type_id: null,
         payment_reference: ''
       },
       showDialog: false,
@@ -251,6 +253,11 @@ export default {
       selectedRateId: null,
       selectedRate: null,
       savedPayments: [],
+      // Total de la extensión. Editable: el usuario puede sobrescribirlo y el
+      // precio por período se deriva (total / duración). Ya no es computed.
+      extensionTotal: 0,
+      // Métodos de pago traídos de la API (igual que Rent.vue), no hardcodeados.
+      payment_method_types: [],
     }
   },
   computed: {
@@ -267,10 +274,9 @@ export default {
       if (this.periodType === 'month') return 'mes';
       return 'día';
     },
-    extensionTotal() {
-      // Calcular solo los períodos adicionales (form.duration son períodos adicionales)
-      const total = (parseFloat(this.form.price_per_day) || 0) * Math.max(0, this.form.duration || 0);
-      return total;
+    extensionTotalNumber() {
+      // Helper numérico seguro (extensionTotal puede venir como string del input)
+      return parseFloat(this.extensionTotal) || 0;
     },
     totalConsumption() {
       // Consumo total tras la extensión = consumo previo (items actuales sin
@@ -279,7 +285,7 @@ export default {
       // item original ya no se muta, por eso la sumamos aquí explícitamente.
       const previo = this.getCurrentRoomCons();
       const arrears = parseFloat(this.room?.rent?.arrears) || 0;
-      return previo + this.extensionTotal + arrears;
+      return previo + this.extensionTotalNumber + arrears;
     },
     savedPaymentsTotal() {
       // Suma neta (positivos - devoluciones); los amounts ya vienen con signo
@@ -300,7 +306,7 @@ export default {
     finalRateAfterExtension() {
       // Tarifa final = consumo previo + extensión - pagos hechos
       const consumed = parseFloat(this.getCurrentRoomCons()) || 0;
-      const ext = parseFloat(this.extensionTotal) || 0;
+      const ext = this.extensionTotalNumber;
       const paid = parseFloat(this.savedPaymentsTotal) || 0;
       return Math.max(0, consumed + ext - paid);
     }
@@ -364,11 +370,12 @@ export default {
         price_per_day: 0,
         include_payment: false,
         payment_amount: 0,
-        payment_method: 'cash',
+        payment_method_type_id: this.payment_method_types.length ? this.payment_method_types[0].id : null,
         payment_reference: '',
         item: {}
       }
       this.item = {}
+      this.extensionTotal = 0;
       this.selectedRateId = null;
       this.selectedRate = null;
     },
@@ -385,6 +392,8 @@ export default {
           this.form.price_per_day = parseFloat(rate.price);
         }
       }
+      // Recalcular el total con la tarifa seleccionada.
+      this.recalcExtensionTotal();
       // Propagar el nuevo precio al item (clon) que se enviará al backend.
       this.updateItemWithNewPrice();
     },
@@ -412,6 +421,10 @@ export default {
       console.log('Room completo:', this.room);
       console.log('Rent data:', this.room.rent);
       
+      // Cargar métodos de pago desde la API (igual que Rent.vue) antes de armar
+      // el formulario, para poder fijar el método por defecto desde la BD.
+      await this.getPaymentMethods();
+
       // Inicializar formulario con datos actuales
       this.form = {
         output_date: this.room.rent?.output_date || moment().format("YYYY-MM-DD"),
@@ -420,7 +433,7 @@ export default {
         price_per_day: 0,
         include_payment: false,
         payment_amount: 0,
-        payment_method: 'cash',
+        payment_method_type_id: this.payment_method_types.length ? this.payment_method_types[0].id : null,
         payment_reference: ''
       }
 
@@ -505,6 +518,9 @@ export default {
       this.form.output_date = newDateTime.format('YYYY-MM-DD');
       this.form.output_time = newDateTime.format('HH:mm');
 
+      // Recalcular el total de la extensión con la nueva cantidad de períodos.
+      this.recalcExtensionTotal();
+
       // Actualizar el item (clon) con la nueva duración. No volvemos a llamar a
       // getItem() aquí: reclonaría desde room.rent.items y reiniciaría
       // price_per_day, descartando la tarifa que el usuario haya seleccionado.
@@ -537,8 +553,31 @@ export default {
     },
     calculateTotal() {
       // Este método se llama cuando cambia el precio por día
-      // Actualizar el item con el nuevo precio
+      // Recalcular el total de la extensión y actualizar el item con el nuevo precio
+      this.recalcExtensionTotal();
       this.updateItemWithNewPrice();
+    },
+    recalcExtensionTotal() {
+      // Total = precio por período × períodos adicionales (form.duration)
+      this.extensionTotal = _.round(
+        (parseFloat(this.form.price_per_day) || 0) * Math.max(0, this.form.duration || 0),
+        2
+      );
+    },
+    onExtensionTotalChange(value) {
+      // El usuario sobrescribe el total de la extensión: derivamos el precio por
+      // período (total / períodos adicionales) y marcamos tarifa personalizada.
+      const total = parseFloat(value) || 0;
+      const dur = Math.max(1, this.form.duration || 1);
+      this.form.price_per_day = _.round(total / dur, 4);
+      this.selectedRateId = 'current';
+      this.selectedRate = null;
+      // Propagar el precio derivado al item clon que se enviará al backend.
+      this.updateItemWithNewPrice();
+      // Si el pago está incluido, sincronizar el monto por defecto con el total.
+      if (this.form.include_payment) {
+        this.form.payment_amount = total;
+      }
     },
     updateItemWithNewPrice() {
       // Calcular duración total (actual + adicionales)
@@ -567,11 +606,11 @@ export default {
     onIncludePaymentChange(value) {
       if (value) {
         // Si se incluye pago, establecer el monto por defecto al total de la extensión
-        this.form.payment_amount = this.extensionTotal;
+        this.form.payment_amount = this.extensionTotalNumber;
       } else {
         // Si no se incluye pago, limpiar los campos
         this.form.payment_amount = 0;
-        this.form.payment_method = 'cash';
+        this.form.payment_method_type_id = this.payment_method_types.length ? this.payment_method_types[0].id : null;
         this.form.payment_reference = '';
       }
     },
@@ -775,6 +814,9 @@ export default {
       const formData = {
         ...this.form,
         duration: totalDuration, // Enviar duración total, no solo adicionales
+        // Total de la extensión (editable). El backend lo usa como monto exacto
+        // de la extensión en lugar de recomputar unit_price × cantidad.
+        extension_total: this.extensionTotalNumber,
       };
       
       console.log('Duración actual:', currentDuration);
@@ -794,6 +836,16 @@ export default {
           this.axiosError(error);
         })
         .finally(() => (this.loading = false));
+    },
+    async getPaymentMethods() {
+      // Traer los métodos de pago reales desde la API, igual que Rent.vue.
+      try {
+        const response = await this.$http.get('/hotels/reception/tables');
+        this.payment_method_types = response.data.payment_method_types || [];
+      } catch (error) {
+        console.error('Error al cargar métodos de pago:', error);
+        this.payment_method_types = [];
+      }
     },
     getPaymentMethodFromId(methodId) {
       const methodMap = {
