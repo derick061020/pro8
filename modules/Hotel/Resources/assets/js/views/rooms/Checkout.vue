@@ -1773,7 +1773,90 @@ export default {
                 })
                 .filter(Boolean);
 
-            this.document.items = this.mergePaidExtensionsInDocumentRows(rows);
+            const mergedRows = this.mergePaidExtensionsInDocumentRows(rows);
+            this.document.items = this.mergeIdenticalProductRows(mergedRows);
+        },
+        // Fusiona en una sola línea los productos idénticos (mismo item, precio,
+        // afectación IGV, descuentos/cargos y estado de facturación) sumando sus
+        // cantidades y totales. Así el comprobante generado desde checkout no
+        // repite el mismo producto en varias filas.
+        mergeIdenticalProductRows(rows) {
+            if (!Array.isArray(rows) || rows.length === 0) {
+                return rows || [];
+            }
+
+            const rowKey = (row) => {
+                const itemId = row.item_id || (row.item && row.item.id) || '';
+                const unitPrice = _.round(parseFloat(row.unit_price) || 0, 6);
+                const affectation = row.affectation_igv_type_id || '';
+                const description = (row.item && (row.item.description || row.item.name_product_pdf))
+                    || row.name_product_pdf || '';
+                const warehouse = row.warehouse_id || '';
+                const discountSig = JSON.stringify((row.discounts || [])
+                    .map(d => [d.discount_type_id, d.percentage, d.amount, d.is_amount]));
+                const chargeSig = JSON.stringify((row.charges || [])
+                    .map(c => [c.charge_type_id, c.percentage, c.amount, c.is_amount]));
+                // No fusionar a través de comprobantes ya emitidos ni mezclar
+                // pendientes con facturados.
+                const invoiced = row._invoiced ? '1' : '0';
+                const documentId = (row._document && row._document.id) ? row._document.id : '';
+                return [itemId, unitPrice, affectation, description, warehouse, discountSig, chargeSig, invoiced, documentId].join('|');
+            };
+
+            const groups = new Map();
+            const result = [];
+
+            rows.forEach((row) => {
+                // Las habitaciones y extensiones ya se consolidan aparte.
+                if (row._source_type === 'HAB' || row._is_extension) {
+                    result.push(row);
+                    return;
+                }
+
+                const key = rowKey(row);
+                if (!groups.has(key)) {
+                    groups.set(key, row);
+                    result.push(row);
+                    return;
+                }
+
+                const target = groups.get(key);
+                this.mergeProductRowTotals(target, row);
+                target._rent_item_ids = _.uniq([
+                    ...(target._rent_item_ids || []),
+                    ...(row._rent_item_ids || []),
+                ]);
+            });
+
+            return result;
+        },
+        // Igual que mergeDocumentRowTotals pero conservando los valores unitarios
+        // (unit_value / unit_price) intactos: solo se suman cantidad y totales.
+        mergeProductRowTotals(targetRow, sourceRow) {
+            const sumFields = [
+                'quantity',
+                'total_base_igv',
+                'total_igv',
+                'total_taxes',
+                'total_value',
+                'total',
+                'total_charge',
+                'total_discount',
+                'total_plastic_bag_taxes',
+                'total_value_without_rounding',
+                'total_base_igv_without_rounding',
+                'total_igv_without_rounding',
+                'total_taxes_without_rounding',
+                'total_without_rounding',
+            ];
+
+            sumFields.forEach((field) => {
+                targetRow[field] = (parseFloat(targetRow[field]) || 0) + (parseFloat(sourceRow[field]) || 0);
+            });
+
+            if (targetRow.item) {
+                targetRow.item.quantity = targetRow.quantity;
+            }
         },
         mergePaidExtensionsInDocumentRows(rows) {
             if (!Array.isArray(rows) || rows.length === 0) {
