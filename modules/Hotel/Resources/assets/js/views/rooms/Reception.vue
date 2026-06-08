@@ -836,6 +836,30 @@
     transition: transform .18s ease, box-shadow .18s ease;
 }
 
+/* Estado MANTENIMIENTO: degradado amarillo intenso y texto oscuro legible. */
+.room-container .room-el-card.maintenance,
+.hotel-rooms .room-el-card.maintenance.el-card {
+    background: linear-gradient(135deg, #ffe259 0%, #ffc400 45%, #ffa000 100%) !important;
+    border: 1px solid #ff8f00 !important;
+    box-shadow: 0 4px 14px rgba(255, 160, 0, 0.45) !important;
+}
+.room-container .room-el-card.maintenance .el-card__body {
+    background: transparent !important;
+}
+.room-container .room-el-card.maintenance .card-rent,
+.room-container .room-el-card.maintenance .card-rent h2,
+.room-container .room-el-card.maintenance .card-rent h2 b,
+.room-container .room-el-card.maintenance .card-rent p,
+.room-container .room-el-card.maintenance .card-rent h4,
+.room-container .room-el-card.maintenance .card-rent h4 b,
+.room-container .room-el-card.maintenance .card-rent .text-muted {
+    color: #3a2c00 !important;
+}
+.room-container .room-el-card.maintenance .card-rent h2 svg,
+.room-container .room-el-card.maintenance .card-rent h4 svg {
+    stroke: #3a2c00 !important;
+}
+
 .room-container .room-el-card:hover {
     transform: translateY(-2px);
     box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12) !important;
