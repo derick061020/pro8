@@ -719,10 +719,15 @@ class HotelRentController extends Controller
 			$order->save();
 		}
 		
+		// Productos recién agregados en esta petición (para registrar en el
+		// historial de cambios y poder revertirlos luego).
+		$addedProducts = [];
+
 		foreach ($request->products as $product) {
 			$item = HotelRentItem::where('hotel_rent_id', $rentId)
 				->where('id', $product['id'])
 				->first();
+			$isNew = false;
 			if (!$item) {
 				$item = new HotelRentItem();
 				$item->type = 'PRO';
@@ -732,6 +737,7 @@ class HotelRentController extends Controller
 				$item->save();
 
 				$this->saveHotelRentItemPayment($product['rent_payment'], $item);
+				$isNew = true;
 			}
 			$item->item = $product;
 			$item->payment_status = $product['payment_status'];
@@ -739,10 +745,43 @@ class HotelRentController extends Controller
 			$item->save();
             $idInRequest[] = $item->id;
 
+			if ($isNew) {
+				$inner = $product['item'] ?? [];
+				if (is_object($inner)) $inner = (array) $inner;
+				$name = $product['description']
+					?? ($inner['description'] ?? ($inner['name'] ?? ($product['name'] ?? 'Producto')));
+				$addedProducts[] = [
+					'item_id'     => $item->id,
+					'name'        => $name,
+					'quantity'    => $product['quantity'] ?? 1,
+					'total'       => floatval($product['total'] ?? 0),
+				];
+			}
 		}
 
 		// Auto-aplicar adelantos disponibles a items con deuda
 		$this->applyAdvanceCreditToDebtItems($rent);
+
+		// Registrar en el historial de cambios los productos recién agregados,
+		// de modo que aparezcan en el historial de la habitación y se puedan
+		// revertir (eliminar el producto y su cobro).
+		if (!empty($addedProducts)) {
+			$totalAdded = array_sum(array_column($addedProducts, 'total'));
+			HotelRentChange::create([
+				'hotel_rent_id'    => $rent->id,
+				'change_type'      => 'PRODUCT_ADD',
+				'old_values'       => [],
+				'new_values'       => [
+					'products'  => $addedProducts,
+					'item_ids'  => array_column($addedProducts, 'item_id'),
+				],
+				'notes'            => count($addedProducts) === 1
+					? ('Producto agregado: ' . $addedProducts[0]['name'])
+					: ('Se agregaron ' . count($addedProducts) . ' productos'),
+				'price_difference' => $totalAdded,
+				'user_id'          => auth()->id(),
+			]);
+		}
 
 		return response()->json([
 			'success' => true,
@@ -1387,6 +1426,18 @@ class HotelRentController extends Controller
                 ], 400);
             }
 
+            // Snapshot completo del item HAB vigente ANTES de modificarlo, para
+            // poder revertir el cambio de habitación con fidelidad.
+            $oldItemSnapshot = [
+                'item_id'        => $oldItem->item_id,
+                'item'           => is_object($oldItem->item) ? (array) $oldItem->item : ($oldItem->item ?: []),
+                'quantity'       => $oldItem->quantity,
+                'unit_price'     => $oldItem->unit_price,
+                'total'          => $oldItem->total,
+                'description'    => $oldItem->description,
+                'payment_status' => $oldItem->payment_status,
+            ];
+
             // Datos base del item HAB vigente
             $oldItemJson    = is_object($oldItem->item) ? (array) $oldItem->item : ($oldItem->item ?: []);
             $oldUnitColumn  = (float) $oldItem->unit_price;
@@ -1509,6 +1560,8 @@ class HotelRentController extends Controller
                     'hotel_rate_id'  => $oldHotelRateId,
                     'unit_price'     => $oldUnitPrice,
                     'item_id'        => $oldItem->id,
+                    'rental_price'   => $oldUnitPrice,
+                    'item_snapshot'  => $oldItemSnapshot,
                 ],
                 'new_values'       => [
                     'hotel_room_id'  => $newRoom->id,

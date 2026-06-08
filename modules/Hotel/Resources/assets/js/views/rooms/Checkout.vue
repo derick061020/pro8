@@ -1135,9 +1135,40 @@
                                             <small>Consumido: {{ change.new_values.consumed }} {{ change.new_values.unit || 'noche(s)' }} · Restante: {{ change.new_values.remaining }} {{ change.new_values.unit || 'noche(s)' }}</small>
                                         </div>
                                     </div>
+                                    <div v-if="change.change_type === 'PRODUCT_ADD'" class="change-detail">
+                                        <strong>Productos agregados:</strong>
+                                        <ul class="mb-1 mt-1" style="padding-left:18px;">
+                                            <li v-for="(prod, pi) in (change.new_values && change.new_values.products) || []" :key="pi">
+                                                {{ prod.name }}
+                                                <span v-if="prod.quantity"> x{{ prod.quantity }}</span>
+                                                <span v-if="prod.total"> — S/ {{ parseFloat(prod.total).toFixed(2) }}</span>
+                                            </li>
+                                        </ul>
+                                        <div v-if="change.price_difference" class="price-change">
+                                            <strong>Total:</strong>
+                                            <span class="text-success">S/ {{ Math.abs(change.price_difference).toFixed(2) }}</span>
+                                        </div>
+                                    </div>
                                     <div v-if="change.notes" class="change-notes">
                                         <strong>Notas:</strong> {{ change.notes }}
                                     </div>
+                                </div>
+                                <div class="change-actions mt-2">
+                                    <el-button
+                                        v-if="canRevertChange(change.change_type)"
+                                        size="mini"
+                                        type="warning"
+                                        @click="onRevertHistoryChange(change)"
+                                    >
+                                        <i class="fa fa-undo"></i> Revertir
+                                    </el-button>
+                                    <el-button
+                                        size="mini"
+                                        type="danger"
+                                        @click="onDeleteHistoryChange(change)"
+                                    >
+                                        <i class="fa fa-trash"></i> Eliminar
+                                    </el-button>
                                 </div>
                             </div>
                         </div>
@@ -1544,6 +1575,15 @@ export default {
         });
 
         await this.loadInvoicesHistory();
+
+        // Si se llegó al checkout con ?show_history=1 (botón "Historial" de
+        // Recepción), abrir automáticamente el modal de historial de cambios.
+        try {
+            const params = new URLSearchParams(window.location.search);
+            if (params.get('show_history') === '1') {
+                this.showRoomHistory();
+            }
+        } catch (e) { /* noop */ }
     },
     watch: {
         arrears(value) {
@@ -3506,7 +3546,8 @@ export default {
                 'EXTENSION': 'Extensión',
                 'DATE_EDIT': 'Edición de Fechas',
                 'ROOM_CHANGE': 'Cambio de Habitación',
-                'PRICE_CHANGE': 'Cambio de Precio'
+                'PRICE_CHANGE': 'Cambio de Precio',
+                'PRODUCT_ADD': 'Productos Agregados'
             };
             return labels[changeType] || changeType;
         },
@@ -3517,7 +3558,8 @@ export default {
                 'EXTENSION': 'timeline-extension',
                 'DATE_EDIT': 'timeline-date-edit',
                 'ROOM_CHANGE': 'timeline-room-change',
-                'PRICE_CHANGE': 'timeline-price-change'
+                'PRICE_CHANGE': 'timeline-price-change',
+                'PRODUCT_ADD': 'timeline-product-add'
             };
             return classes[changeType] || 'timeline-default';
         },
@@ -3528,9 +3570,78 @@ export default {
                 'EXTENSION': 'fa fa-calendar-plus',
                 'DATE_EDIT': 'fa fa-calendar-alt',
                 'ROOM_CHANGE': 'fa fa-exchange-alt',
-                'PRICE_CHANGE': 'fa fa-dollar-sign'
+                'PRICE_CHANGE': 'fa fa-dollar-sign',
+                'PRODUCT_ADD': 'fa fa-shopping-cart'
             };
             return icons[changeType] || 'fa fa-info-circle';
+        },
+        // Indica si un tipo de cambio admite revertir (deshacer la operación).
+        canRevertChange(changeType) {
+            return ['EXTENSION', 'ROOM_CHANGE', 'PRODUCT_ADD', 'DATE_EDIT'].includes(changeType);
+        },
+        async onRevertHistoryChange(change) {
+            try {
+                await this.$confirm(
+                    'Esta acción deshará la operación (borra ítems/cargos creados y restaura el estado anterior). ¿Continuar?',
+                    'Revertir cambio',
+                    { confirmButtonText: 'Sí, revertir', cancelButtonText: 'Cancelar', type: 'warning' }
+                );
+            } catch (e) {
+                return; // cancelado
+            }
+            try {
+                this.loadingRoomHistory = true;
+                const response = await this.$http.post(
+                    `/hotels/reception/${this.currentRent.id}/history/${change.id}/revert`
+                );
+                if (response.data.success) {
+                    this.$message.success(response.data.message || 'Cambio revertido correctamente.');
+                    await this.showRoomHistory();
+                    // Recargar ítems/totales del checkout para reflejar la reversión.
+                    if (typeof this.loadRentData === 'function') {
+                        await this.loadRentData();
+                    }
+                } else {
+                    this.$message.error(response.data.message || 'No se pudo revertir el cambio.');
+                }
+            } catch (error) {
+                const msg = error.response && error.response.data && error.response.data.message
+                    ? error.response.data.message
+                    : 'Error al revertir el cambio.';
+                this.$message.error(msg);
+            } finally {
+                this.loadingRoomHistory = false;
+            }
+        },
+        async onDeleteHistoryChange(change) {
+            try {
+                await this.$confirm(
+                    'Se eliminará solo el registro del historial. No se modifican fechas, ítems ni cobros. ¿Continuar?',
+                    'Eliminar registro',
+                    { confirmButtonText: 'Sí, eliminar', cancelButtonText: 'Cancelar', type: 'warning' }
+                );
+            } catch (e) {
+                return; // cancelado
+            }
+            try {
+                this.loadingRoomHistory = true;
+                const response = await this.$http.delete(
+                    `/hotels/reception/${this.currentRent.id}/history/${change.id}`
+                );
+                if (response.data.success) {
+                    this.$message.success(response.data.message || 'Registro eliminado.');
+                    await this.showRoomHistory();
+                } else {
+                    this.$message.error(response.data.message || 'No se pudo eliminar el registro.');
+                }
+            } catch (error) {
+                const msg = error.response && error.response.data && error.response.data.message
+                    ? error.response.data.message
+                    : 'Error al eliminar el registro.';
+                this.$message.error(msg);
+            } finally {
+                this.loadingRoomHistory = false;
+            }
         },
         getStatusLabel(status) {
             const labels = {
@@ -3979,8 +4090,18 @@ td{
     background: #f39c12;
 }
 
+.timeline-product-add {
+    background: #9b59b6;
+}
+
 .timeline-default {
     background: #909399;
+}
+
+.change-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
 }
 
 .timeline-content {

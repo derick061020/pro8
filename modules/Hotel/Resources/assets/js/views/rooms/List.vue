@@ -154,6 +154,7 @@
                 <td class="text-center">
                   <el-button
                     class="btn btn-sm btn-warning"
+                    style="color:#000 !important;"
                     v-if="item.status === 'DISPONIBLE'"
                     @click="onChangeStatus(item, 'MANTENIMIENTO')"
                     :disabled="loading"

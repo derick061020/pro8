@@ -92,6 +92,8 @@ if ($hostname) {
             Route::get('{id}/room-history', 'HotelReceptionController@getRoomHistory');
             Route::get('rooms/{id}', 'HotelReceptionController@getRoom');
             Route::post('{id}/record-change', 'HotelReceptionController@recordChangePublic');
+            Route::post('{id}/history/{changeId}/revert', 'HotelReceptionController@revertChange');
+            Route::delete('{id}/history/{changeId}', 'HotelReceptionController@deleteChange');
 
         });
 

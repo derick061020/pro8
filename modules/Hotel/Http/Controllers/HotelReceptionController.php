@@ -51,7 +51,8 @@ class HotelReceptionController extends Controller
 
         $user = auth()->user();
         $rooms = HotelRoom::with('category', 'floor', 'rates')
-            ->where('establishment_id', $user->establishment_id);
+            ->where('establishment_id', $user->establishment_id)
+            ->where('active', true);
 
         // Si el usuario es limpiador, solo mostrar habitaciones asignadas para limpiar
         if ($user->type === 'limpiador') {
@@ -59,7 +60,7 @@ class HotelReceptionController extends Controller
                 ->whereIn('status', ['pending', 'in_progress'])
                 ->pluck('hotel_room_id')
                 ->toArray();
-            
+
             $rooms->whereIn('id', $roomIdsForCleaning);
         }
 
@@ -107,7 +108,8 @@ class HotelReceptionController extends Controller
     {
         $user = auth()->user();
         $rooms = HotelRoom::with('category', 'floor', 'rates', 'establishment')
-            ->where('establishment_id', $user->establishment_id);
+            ->where('establishment_id', $user->establishment_id)
+            ->where('active', true);
 
         // Si el usuario es limpiador, solo mostrar habitaciones asignadas para limpiar
         if ($user->type === 'limpiador') {
@@ -115,7 +117,7 @@ class HotelReceptionController extends Controller
                 ->whereIn('status', ['pending', 'in_progress'])
                 ->pluck('hotel_room_id')
                 ->toArray();
-            
+
             $rooms->whereIn('id', $roomIdsForCleaning);
         }
 
@@ -601,5 +603,227 @@ class HotelReceptionController extends Controller
                 'message' => 'Error al registrar el cambio: ' . $e->getMessage()
             ], 500);
         }
+    }
+
+    /**
+     * Elimina una entrada del historial de cambios SIN deshacer la operación.
+     * Solo borra el registro del log (fechas, ítems y cobros quedan intactos).
+     *
+     * @param int $rentId
+     * @param int $changeId
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function deleteChange($rentId, $changeId)
+    {
+        try {
+            $change = HotelRentChange::where('hotel_rent_id', $rentId)
+                ->where('id', $changeId)
+                ->firstOrFail();
+
+            $change->delete();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Registro del historial eliminado correctamente.'
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al eliminar el registro: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Revierte (deshace) la operación asociada a una entrada del historial:
+     *  - EXTENSION   → borra el ítem de extensión y restaura fecha/duración previa.
+     *  - PRODUCT_ADD → borra los productos agregados y sus cobros.
+     *  - ROOM_CHANGE → regresa el alquiler a la habitación anterior.
+     *  - DATE_EDIT   → restaura las fechas anteriores.
+     *
+     * Bloqueado si algún ítem afectado ya tiene comprobante emitido
+     * (document_id / sale_note_id). Tras revertir, la entrada del historial
+     * se elimina para evitar reversiones duplicadas.
+     *
+     * @param int $rentId
+     * @param int $changeId
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function revertChange($rentId, $changeId)
+    {
+        DB::connection('tenant')->beginTransaction();
+        try {
+            $rent = HotelRent::findOrFail($rentId);
+
+            if ($rent->status === 'FINALIZADO') {
+                DB::connection('tenant')->rollBack();
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No se puede revertir cambios de un alquiler finalizado.'
+                ], 400);
+            }
+
+            $change = HotelRentChange::where('hotel_rent_id', $rentId)
+                ->where('id', $changeId)
+                ->firstOrFail();
+
+            $old = $change->old_values ?: [];
+            $new = $change->new_values ?: [];
+
+            switch ($change->change_type) {
+                case 'EXTENSION':
+                    $this->revertExtension($rent, $old, $new);
+                    break;
+                case 'PRODUCT_ADD':
+                    $this->revertProductAdd($rent, $new);
+                    break;
+                case 'ROOM_CHANGE':
+                    $this->revertRoomChange($rent, $old, $new);
+                    break;
+                case 'DATE_EDIT':
+                    $this->revertDateEdit($rent, $old);
+                    break;
+                default:
+                    DB::connection('tenant')->rollBack();
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Este tipo de cambio no se puede revertir.'
+                    ], 400);
+            }
+
+            // Eliminar la entrada del historial tras revertir.
+            $change->delete();
+
+            DB::connection('tenant')->commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Cambio revertido correctamente.'
+            ], 200);
+
+        } catch (\Throwable $th) {
+            DB::connection('tenant')->rollBack();
+            return response()->json([
+                'success' => false,
+                'message' => $th->getMessage()
+            ], 422);
+        }
+    }
+
+    /**
+     * Verifica que un ítem no esté facturado; lanza excepción si lo está.
+     */
+    private function assertItemNotInvoiced($item)
+    {
+        if ($item && ($item->document_id !== null || $item->sale_note_id !== null)) {
+            throw new \Exception('No se puede revertir: el cargo ya tiene un comprobante emitido.');
+        }
+    }
+
+    private function revertExtension(HotelRent $rent, array $old, array $new)
+    {
+        $itemId = $new['item_id'] ?? null;
+        if ($itemId) {
+            $item = \Modules\Hotel\Models\HotelRentItem::where('hotel_rent_id', $rent->id)
+                ->where('id', $itemId)
+                ->first();
+            $this->assertItemNotInvoiced($item);
+            if ($item) {
+                $item->payments()->delete();
+                $item->delete();
+            }
+        }
+
+        if (array_key_exists('duration', $old))    $rent->duration    = $old['duration'];
+        if (array_key_exists('output_date', $old)) $rent->output_date = $old['output_date'];
+        if (array_key_exists('output_time', $old)) $rent->output_time = $old['output_time'];
+        $rent->save();
+    }
+
+    private function revertProductAdd(HotelRent $rent, array $new)
+    {
+        $itemIds = $new['item_ids'] ?? [];
+        if (empty($itemIds) && !empty($new['products'])) {
+            $itemIds = array_column($new['products'], 'item_id');
+        }
+
+        $items = \Modules\Hotel\Models\HotelRentItem::where('hotel_rent_id', $rent->id)
+            ->whereIn('id', $itemIds)
+            ->get();
+
+        foreach ($items as $item) {
+            $this->assertItemNotInvoiced($item);
+        }
+        foreach ($items as $item) {
+            $item->payments()->delete();
+            $item->delete();
+        }
+    }
+
+    private function revertRoomChange(HotelRent $rent, array $old, array $new)
+    {
+        $oldItemId = $old['item_id'] ?? null;
+        $newItemId = $new['item_id'] ?? null;
+
+        $oldItem = $oldItemId
+            ? \Modules\Hotel\Models\HotelRentItem::where('hotel_rent_id', $rent->id)->where('id', $oldItemId)->first()
+            : null;
+        $newItem = $newItemId
+            ? \Modules\Hotel\Models\HotelRentItem::where('hotel_rent_id', $rent->id)->where('id', $newItemId)->first()
+            : null;
+
+        $this->assertItemNotInvoiced($oldItem);
+        if ($newItem && $newItem->id !== ($oldItem->id ?? null)) {
+            $this->assertItemNotInvoiced($newItem);
+        }
+
+        // Caso split: el cambio creó un item HAB nuevo distinto del anterior.
+        if ($newItem && $oldItem && $newItem->id !== $oldItem->id) {
+            $newItem->payments()->delete();
+            $newItem->delete();
+        }
+
+        // Restaurar el item HAB anterior desde el snapshot.
+        $snapshot = $old['item_snapshot'] ?? null;
+        if ($oldItem && $snapshot) {
+            $oldItem->item_id        = $snapshot['item_id'] ?? $oldItem->item_id;
+            $oldItem->item           = $snapshot['item'] ?? $oldItem->item;
+            $oldItem->quantity       = $snapshot['quantity'] ?? $oldItem->quantity;
+            $oldItem->unit_price     = $snapshot['unit_price'] ?? $oldItem->unit_price;
+            $oldItem->total          = $snapshot['total'] ?? $oldItem->total;
+            $oldItem->description    = $snapshot['description'] ?? $oldItem->description;
+            $oldItem->payment_status = $snapshot['payment_status'] ?? $oldItem->payment_status;
+            $oldItem->save();
+        }
+
+        // Regresar el alquiler a la habitación/tarifa anterior.
+        $oldRoomId = $old['hotel_room_id'] ?? null;
+        $newRoomId = $new['hotel_room_id'] ?? null;
+
+        if ($oldRoomId) {
+            $rent->hotel_room_id = $oldRoomId;
+        }
+        if (array_key_exists('hotel_rate_id', $old)) $rent->hotel_rate_id = $old['hotel_rate_id'];
+        if (array_key_exists('rental_price', $old))  $rent->rental_price  = $old['rental_price'];
+        elseif (array_key_exists('unit_price', $old)) $rent->rental_price = $old['unit_price'];
+        $rent->save();
+
+        // Estados de habitaciones: la anterior vuelve a OCUPADO, la nueva queda libre.
+        if ($oldRoomId) {
+            HotelRoom::where('id', $oldRoomId)->update(['status' => 'OCUPADO']);
+        }
+        if ($newRoomId && $newRoomId != $oldRoomId) {
+            HotelRoom::where('id', $newRoomId)->update(['status' => 'DISPONIBLE']);
+        }
+    }
+
+    private function revertDateEdit(HotelRent $rent, array $old)
+    {
+        if (array_key_exists('input_date', $old))  $rent->input_date  = $old['input_date'];
+        if (array_key_exists('input_time', $old))  $rent->input_time  = $old['input_time'];
+        if (array_key_exists('output_date', $old)) $rent->output_date = $old['output_date'];
+        if (array_key_exists('output_time', $old)) $rent->output_time = $old['output_time'];
+        $rent->save();
     }
 }
