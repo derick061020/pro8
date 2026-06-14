@@ -327,7 +327,7 @@
                         <div class="col-12 text-center">
                             <el-button
                                 type="success"
-                                @click="showPaymentModal = true"
+                                @click="openPaymentModal"
                                 size="large"
                                 icon="el-icon-money"
                                 :disabled="totalDebt <= 0"
@@ -3354,6 +3354,12 @@ export default {
             }
 
             return { method, destination };
+        },
+        openPaymentModal() {
+            // Reiniciar el formulario (método de pago por defecto = primero del
+            // sistema) antes de abrir, para no arrastrar estado de una edición.
+            this.clearPaymentForm();
+            this.showPaymentModal = true;
         },
         clearPaymentForm() {
             const { method, destination } = this.getDefaultPaymentValues();

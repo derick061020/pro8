@@ -58,6 +58,7 @@
                 'soap_password' => $this->soap_password,
                 'soap_url' => $this->soap_url,
                 'config_system_env' => (bool)$this->config_system_env,
+                'ruc_api_provider' => $this->ruc_api_provider ?? 'apiperu',
                 'certificate' => $this->certificate,
                 'smtp_host' => $this->smtp_host,
                 'smtp_port' => $this->smtp_port,

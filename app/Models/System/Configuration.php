@@ -22,6 +22,7 @@ class Configuration extends Model
         'token_private_culqui',
         'url_apiruc',
         'token_apiruc',
+        'ruc_api_provider',
         'apk_url',
         'login',
         'use_login_global',

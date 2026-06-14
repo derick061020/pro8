@@ -335,6 +335,7 @@ use App\Models\System\PlanPeriod;
                 ->first();
 
             $client->config_system_env = $config->config_system_env;
+            $client->ruc_api_provider = $config->ruc_api_provider ?? 'apiperu';
 
             $company = DB::connection('tenant')
                 ->table('companies')
@@ -516,6 +517,9 @@ use App\Models\System\PlanPeriod;
                 $clientData = [
                     'plan' => json_encode($plan),
                     'config_system_env' => $request->config_system_env,
+                    'ruc_api_provider' => in_array($request->ruc_api_provider, ['apiperu', 'sunat'], true)
+                        ? $request->ruc_api_provider
+                        : 'apiperu',
                     'limit_documents' => $plan->limit_documents,
                     'smtp_host' => $client->smtp_host,
                     'smtp_port' => $client->smtp_port,
@@ -770,6 +774,9 @@ use App\Models\System\PlanPeriod;
                 'date_time_start' => date('Y-m-d H:i:s'),
                 'quantity_documents' => 0,
                 'config_system_env' => $request->config_system_env,
+                'ruc_api_provider' => in_array($request->ruc_api_provider, ['apiperu', 'sunat'], true)
+                    ? $request->ruc_api_provider
+                    : 'apiperu',
                 'login' => json_encode([
                     'type' => 'image',
                     'image' => $http.$fqdn.'/images/fondo-5.svg',

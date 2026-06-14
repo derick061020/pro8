@@ -246,6 +246,7 @@ use Illuminate\Support\Facades\Log;
             'url_apiruc',
             'new_validator_pagination',
             'token_apiruc',
+            'ruc_api_provider',
             'customer_filter_by_seller',
             'checked_global_igv_to_purchase',
             'checked_update_purchase_price',

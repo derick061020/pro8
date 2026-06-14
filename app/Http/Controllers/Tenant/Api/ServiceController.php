@@ -17,6 +17,7 @@
     use Illuminate\Http\Request;
     use Modules\ApiPeruDev\Data\ServiceData;
     use Modules\Document\Helpers\ConsultCdr;
+    use Modules\Services\Data\DocumentApiResolver;
 
 
     class ServiceController extends Controller
@@ -53,53 +54,30 @@
 
 
         /**
+         * Consulta de RUC. Usa el proveedor configurado para el tenant desde el admin
+         * (apiperu / sunat) con fallback automatico a la otra API.
+         *
          * @param int $number
          *
          * @return array
-         * @deprecated usar modules/ApiPeruDev/Data/ServiceData.php
          */
         public function ruc($number)
         {
-            $service = new Sunat();
-            $res = $service->get($number);
-            if ($res) {
-                $province_id = Province::idByDescription($res->provincia);
-                return [
-                    'success' => true,
-                    'data' => [
-                        'name' => $res->razonSocial,
-                        'trade_name' => $res->nombreComercial,
-                        'address' => $res->direccion,
-                        'phone' => implode(' / ', $res->telefonos),
-                        'department' => ($res->departamento) ?: 'LIMA',
-                        'department_id' => Department::idByDescription($res->departamento),
-                        'province' => ($res->provincia) ?: 'LIMA',
-                        'province_id' => $province_id,
-                        'district' => ($res->distrito) ?: 'LIMA',
-                        'district_id' => District::idByDescription($res->distrito, $province_id),
-                    ]
-                ];
-            } else {
-                return [
-                    'success' => false,
-                    'message' => $service->getError()
-                ];
-            }
+            return (new DocumentApiResolver())->service('ruc', $number);
         }
 
 
         /**
+         * Consulta de DNI. Usa el proveedor configurado para el tenant desde el admin
+         * (apiperu / sunat) con fallback automatico a la otra API.
+         *
          * @param int $number
          *
          * @return array
-         *
-         * @deprecated usar modules/ApiPeruDev/Data/ServiceData.php
          */
         public function dni($number)
         {
-            $res = Dni::search($number);
-
-            return $res;
+            return (new DocumentApiResolver())->service('dni', $number);
         }
 
         public function exchangeRateTest($date)

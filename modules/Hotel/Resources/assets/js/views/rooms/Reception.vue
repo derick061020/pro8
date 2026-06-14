@@ -700,55 +700,105 @@
             </span>
         </el-dialog>
 
-        <!-- Modal: Adelanto de pago -->
+        <!-- Modal de Pagos (mismo modal/lógica que Checkout.vue) -->
         <el-dialog
-            title="Adelanto de pago"
+            :title="currentRoomDebt > 0 ? 'Registrar pago' : 'Agregar adelanto de pago'"
             :visible.sync="showAdvancePaymentModal"
-            width="500px"
+            width="420px"
             :close-on-click-modal="false"
+            :close-on-press-escape="false"
+            custom-class="payment-dialog"
+            append-to-body
         >
-            <div v-if="selectedRoom && selectedRoom.rent">
-                <div class="alert alert-info">
-                    <strong>Cliente:</strong> {{ selectedRoom.rent.customer && selectedRoom.rent.customer.name }}<br>
-                    <strong>Habitación:</strong> {{ selectedRoom.name }}<br>
-                    <strong>Deuda actual:</strong> S/ {{ getRoomDebt(selectedRoom).toFixed(2) }}
-                    <span v-if="getRoomDebt(selectedRoom) <= 0" class="d-block mt-2">
-                        <em>Sin deuda — este pago quedará como adelanto y se aplicará a futuros cargos.</em>
+            <div class="pay-modal" v-if="selectedRoom && selectedRoom.rent">
+                <!-- Resumen de deuda -->
+                <div class="pay-debt">
+                    <span class="pay-debt__label">{{ currentRoomDebt > 0 ? 'Deuda pendiente' : 'Sin deuda' }}</span>
+                    <span class="pay-debt__amount" :class="{ 'is-zero': currentRoomDebt <= 0 }">
+                        S/ {{ Math.max(currentRoomDebt, 0).toFixed(2) }}
                     </span>
                 </div>
-                <div class="form-group">
-                    <label class="control-label">Monto del adelanto</label>
+
+                <!-- Monto recibido -->
+                <div class="pay-field">
+                    <label>Monto recibido</label>
                     <el-input
-                        v-model="advancePayment.amount"
+                        v-model="paymentForm.received"
                         type="number"
+                        step="0.01"
+                        min="0"
                         placeholder="0.00"
+                        @input="calculateChange"
+                        size="medium"
                     >
                         <template slot="prepend">S/</template>
                     </el-input>
                 </div>
-                <div class="form-group">
-                    <label class="control-label">Método de pago</label>
-                    <el-select v-model="advancePayment.method" style="width: 100%">
-                        <el-option label="Efectivo" value="cash"></el-option>
-                        <el-option label="Tarjeta de Crédito" value="credit_card"></el-option>
-                        <el-option label="Tarjeta de Débito" value="debit_card"></el-option>
-                        <el-option label="Transferencia" value="transfer"></el-option>
-                        <el-option label="Yape/Plin" value="yape_plin"></el-option>
-                    </el-select>
+
+                <!-- Método de pago (de la API) y caja/destino -->
+                <div class="pay-grid">
+                    <div class="pay-field">
+                        <label>Método de pago</label>
+                        <el-select
+                            v-model="paymentForm.payment_method_type_id"
+                            placeholder="Seleccionar"
+                            style="width: 100%"
+                            size="medium"
+                        >
+                            <el-option
+                                v-for="option in paymentMethodTypes"
+                                :key="option.id"
+                                :label="option.description"
+                                :value="option.id"
+                            ></el-option>
+                        </el-select>
+                    </div>
+                    <div class="pay-field">
+                        <label>Destino (caja)</label>
+                        <el-select
+                            v-model="paymentForm.payment_destination_id"
+                            placeholder="Seleccionar"
+                            style="width: 100%"
+                            size="medium"
+                        >
+                            <el-option
+                                v-for="option in paymentDestinations"
+                                :key="option.id"
+                                :label="option.description"
+                                :value="option.id"
+                            ></el-option>
+                        </el-select>
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label class="control-label">Referencia (opcional)</label>
-                    <el-input v-model="advancePayment.reference" placeholder="Opcional"></el-input>
+
+                <!-- Referencia -->
+                <div class="pay-field">
+                    <label>Referencia <span class="pay-optional">(opcional)</span></label>
+                    <el-input
+                        v-model="paymentForm.reference"
+                        placeholder="N° de operación, últimos 4 dígitos…"
+                        size="medium"
+                    ></el-input>
+                </div>
+
+                <!-- Vuelto -->
+                <div class="pay-change" :class="getPaymentSummaryClass()" v-if="paymentForm.received > 0">
+                    <span class="pay-change__label">{{ getPaymentMessage() }}</span>
+                    <span class="pay-change__amount">S/ {{ Math.abs(paymentForm.change).toFixed(2) }}</span>
                 </div>
             </div>
-            <span slot="footer" class="dialog-footer">
-                <el-button @click="showAdvancePaymentModal = false">Cancelar</el-button>
+
+            <div slot="footer" class="pay-footer">
+                <el-button @click="showAdvancePaymentModal = false" size="small" plain>Cancelar</el-button>
                 <el-button
-                    type="primary"
-                    :loading="loadingAdvancePayment"
+                    type="success"
                     @click="confirmAdvancePayment"
-                >Registrar adelanto</el-button>
-            </span>
+                    :disabled="!canSaveAdvancePayment"
+                    :loading="loadingAdvancePayment"
+                    size="small"
+                    icon="el-icon-check"
+                >Guardar pago</el-button>
+            </div>
         </el-dialog>
 
         <!-- Tooltip para observaciones -->
@@ -1636,6 +1686,96 @@
     color: #ffffff;
     text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
 }
+
+/* ===== Modal de pago minimalista (mismo estilo que Checkout.vue) ===== */
+.payment-dialog .el-dialog__header {
+    padding: 18px 22px 10px;
+}
+.payment-dialog .el-dialog__title {
+    font-size: 16px;
+    font-weight: 600;
+}
+.payment-dialog .el-dialog__body {
+    padding: 10px 22px 4px;
+}
+.pay-modal {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+.pay-debt {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 14px;
+    background: #f7f8fa;
+    border: 1px solid #ebeef5;
+    border-radius: 8px;
+}
+.pay-debt__label {
+    font-size: 13px;
+    color: #909399;
+}
+.pay-debt__amount {
+    font-size: 18px;
+    font-weight: 700;
+    color: #f56c6c;
+}
+.pay-debt__amount.is-zero {
+    color: #67c23a;
+}
+.pay-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+.pay-field > label {
+    font-size: 13px;
+    font-weight: 500;
+    color: #606266;
+    margin: 0;
+}
+.pay-optional {
+    font-weight: 400;
+    color: #c0c4cc;
+}
+.pay-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+}
+.pay-change {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 14px;
+    border-radius: 8px;
+    font-weight: 600;
+}
+.pay-change.payment-success {
+    background: #f0f9eb;
+    color: #67c23a;
+}
+.pay-change.payment-warning {
+    background: #fdf6ec;
+    color: #e6a23c;
+}
+.pay-change__label {
+    font-size: 13px;
+}
+.pay-change__amount {
+    font-size: 16px;
+}
+.pay-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+}
+@media (max-width: 480px) {
+    .pay-grid {
+        grid-template-columns: 1fr;
+    }
+}
 </style>
 <script>
 import ExtendTimeRoom from './partials/ExtendTimeRoom.vue';
@@ -1719,9 +1859,15 @@ export default {
             loadingStartCleaning: false,
             showAdvancePaymentModal: false,
             loadingAdvancePayment: false,
-            advancePayment: {
-                amount: 0,
-                method: 'cash',
+            // Métodos de pago y cajas reales (misma API que Checkout.vue).
+            paymentMethodTypes: [],
+            paymentDestinations: [],
+            // Mismo formulario/estructura que el modal de pagos de Checkout.vue.
+            paymentForm: {
+                received: 0,
+                change: 0,
+                payment_method_type_id: null,
+                payment_destination_id: null,
                 reference: '',
             },
             observationsRefreshInterval: null,
@@ -1733,6 +1879,19 @@ export default {
         },
         canManageRooms() {
             return this.userType === 'admin' || this.userType === 'recepcion';
+        },
+        currentRoomDebt() {
+            // Deuda de la habitación seleccionada (para el modal de pagos).
+            if (!this.selectedRoom || !this.selectedRoom.rent) return 0;
+            return this.getRoomDebt(this.selectedRoom);
+        },
+        canSaveAdvancePayment() {
+            // Mismas condiciones que Checkout.vue: monto recibido > 0, método y
+            // destino seleccionados, y que no se esté guardando ya.
+            return (parseFloat(this.paymentForm.received) > 0) &&
+                   !!this.paymentForm.payment_method_type_id &&
+                   !!this.paymentForm.payment_destination_id &&
+                   !this.loadingAdvancePayment;
         },
         getRoomDebt() {
             return (room) => {
@@ -1881,6 +2040,8 @@ export default {
     mounted() {
         this.items = this.rooms;
         this.initializeCountdown();
+        // Cargar métodos de pago y cajas reales (misma API que Checkout.vue).
+        this.fetchPaymentTables();
         // Polling para que las observaciones (y otros campos del rent) se
         // actualicen automáticamente sin necesidad de recargar la página.
         this.observationsRefreshInterval = setInterval(() => {
@@ -2572,48 +2733,108 @@ export default {
                     this.loadingStartCleaning = false;
                 });
         },
-        onAdvancePayment(room) {
-            this.selectedRoom = room;
-            this.advancePayment = {
-                amount: 0,
-                method: 'cash',
+        async fetchPaymentTables() {
+            // Traer métodos de pago y cajas/destinos reales (misma API que usa
+            // Checkout.vue vía sus props), para no usar valores hardcodeados.
+            try {
+                const { data } = await this.$http.get('/hotels/reception/tables');
+                this.paymentMethodTypes = data.payment_method_types || [];
+                this.paymentDestinations = data.payment_destinations || [];
+            } catch (error) {
+                this.paymentMethodTypes = [];
+                this.paymentDestinations = [];
+            }
+        },
+        getDefaultPaymentValues() {
+            // Primer método de pago del sistema y caja general (o primer destino).
+            const method = (this.paymentMethodTypes && this.paymentMethodTypes.length)
+                ? this.paymentMethodTypes[0].id
+                : null;
+
+            let destination = null;
+            if (this.paymentDestinations && this.paymentDestinations.length) {
+                const cash = _.find(this.paymentDestinations, { id: 'cash' });
+                destination = cash ? cash.id : this.paymentDestinations[0].id;
+            }
+
+            return { method, destination };
+        },
+        clearPaymentForm() {
+            const { method, destination } = this.getDefaultPaymentValues();
+            this.paymentForm = {
+                received: 0,
+                change: 0,
+                payment_method_type_id: method,
+                payment_destination_id: destination,
                 reference: '',
             };
+        },
+        calculateChange() {
+            // Vuelto = recibido - deuda (misma fórmula que Checkout.vue).
+            const received = parseFloat(this.paymentForm.received) || 0;
+            const totalDebt = parseFloat(this.currentRoomDebt) || 0;
+            this.paymentForm.change = received - totalDebt;
+        },
+        getPaymentSummaryClass() {
+            const change = parseFloat(this.paymentForm.change) || 0;
+            return change >= 0 ? 'payment-success' : 'payment-warning';
+        },
+        getPaymentMessage() {
+            const change = parseFloat(this.paymentForm.change) || 0;
+            if (change > 0) return 'Vuelto';
+            if (change < 0) return 'Falta dinero';
+            return 'Pago exacto';
+        },
+        async onAdvancePayment(room) {
+            this.selectedRoom = room;
+            // Asegurar que los métodos/cajas estén cargados antes de fijar defaults.
+            if (!this.paymentMethodTypes.length || !this.paymentDestinations.length) {
+                await this.fetchPaymentTables();
+            }
+            this.clearPaymentForm();
+            this.calculateChange();
             this.showOccupiedOptionsModal = false;
             this.showAdvancePaymentModal = true;
         },
-        confirmAdvancePayment() {
+        async confirmAdvancePayment() {
+            // Misma lógica/payload que el savePayment de Checkout.vue.
             if (!this.selectedRoom || !this.selectedRoom.rent) {
                 this.$message.error('No se encontró información de la habitación');
                 return;
             }
-            const amount = parseFloat(this.advancePayment.amount) || 0;
-            if (amount <= 0) {
+            const receivedAmount = parseFloat(this.paymentForm.received) || 0;
+            if (receivedAmount <= 0) {
                 this.$message.warning('Ingrese un monto mayor a cero');
                 return;
             }
-            this.loadingAdvancePayment = true;
-            this.$http
-                .post(`/hotels/reception/${this.selectedRoom.rent.id}/rent/save-payment`, {
-                    amount: amount,
-                    method: this.advancePayment.method,
-                    reference: this.advancePayment.reference || '',
-                })
-                .then((response) => {
-                    if (response.data.success) {
-                        this.$message.success('Adelanto registrado correctamente');
-                        this.showAdvancePaymentModal = false;
-                        this.searchRooms();
-                    } else {
-                        this.$message.error(response.data.message || 'No se pudo registrar el adelanto');
-                    }
-                })
-                .catch((error) => {
-                    this.$message.error(error.response?.data?.message || 'Error al registrar el adelanto');
-                })
-                .finally(() => {
-                    this.loadingAdvancePayment = false;
-                });
+            try {
+                this.loadingAdvancePayment = true;
+                const payload = {
+                    hotel_rent_id: this.selectedRoom.rent.id,
+                    amount: receivedAmount, // monto completo recibido
+                    payment_method_type_id: this.paymentForm.payment_method_type_id,
+                    payment_destination_id: this.paymentForm.payment_destination_id,
+                    reference: this.paymentForm.reference,
+                    received: this.paymentForm.received,
+                    change: this.paymentForm.change,
+                };
+                const response = await this.$http.post(
+                    `/hotels/reception/${this.selectedRoom.rent.id}/rent/save-payment`,
+                    payload
+                );
+                if (response.data.success) {
+                    this.$message.success(response.data.message || 'Pago guardado correctamente');
+                    this.showAdvancePaymentModal = false;
+                    this.clearPaymentForm();
+                    this.searchRooms();
+                } else {
+                    this.$message.error(response.data.message || 'No se pudo registrar el pago');
+                }
+            } catch (error) {
+                this.$message.error(error.response?.data?.message || 'Error al registrar el pago');
+            } finally {
+                this.loadingAdvancePayment = false;
+            }
         },
         onDeleteRecord(room) {
             this.$confirm(`¿Está seguro de eliminar el registro de la habitación ${room.name}? Esta acción no se puede deshacer.`, "Atención", {
