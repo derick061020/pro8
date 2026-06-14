@@ -15,6 +15,7 @@ use Modules\Hotel\Models\HotelRate;
 use Modules\Hotel\Models\HotelRoomRate;
 use Modules\Hotel\Models\HotelRent;
 use App\Models\Tenant\Establishment;
+use App\Models\Tenant\Item;
 
 class HotelRoomController extends Controller
 {
@@ -114,10 +115,12 @@ class HotelRoomController extends Controller
 		$room = $room->fill($request->only('description', 'active', 'name', 'hotel_category_id', 'hotel_floor_id','establishment_id'));
 		$room->save();
 
-		// Si cambió el nombre, propagar el nuevo nombre a los items HAB de
-		// alquileres activos (no finalizados) para que las boletas/notas
+		// Si cambió el nombre, propagar el nuevo nombre al item de catálogo
+		// (origen de la descripción en NUEVOS comprobantes) y a los items HAB
+		// de alquileres activos (no finalizados) para que las boletas/notas
 		// emitidas a partir de este momento usen el nombre actualizado.
 		if ($oldName !== $room->name) {
+			$this->propagateRoomNameToCatalogItem($room, $oldName);
 			$this->propagateRoomNameToActiveItems($room, $oldName);
 		}
 
@@ -125,6 +128,32 @@ class HotelRoomController extends Controller
 			'success' => true,
 			'data'    => $room
 		], 200);
+	}
+
+	/**
+	 * Actualiza el item de catálogo (App\Models\Tenant\Item) asociado a la
+	 * habitación. Esta es la descripción que se lee al armar un NUEVO
+	 * comprobante (Rent.vue consulta /documents/search/item/{item_id}), por lo
+	 * que sin esto las boletas/facturas seguían mostrando el nombre anterior.
+	 */
+	private function propagateRoomNameToCatalogItem(HotelRoom $room, $oldName)
+	{
+		if (!$room->item_id) return;
+
+		$item = Item::find($room->item_id);
+		if (!$item) return;
+
+		$replace = function ($text) use ($oldName, $room) {
+			if (!$text || !is_string($text)) return $text;
+			// Reemplaza el nombre anterior conservando cualquier prefijo
+			// (p. ej. "Habitación 101" -> "Habitación 102").
+			return str_replace($oldName, $room->name, $text);
+		};
+
+		$item->description = $replace($item->description);
+		$item->name        = $replace($item->name);
+		$item->second_name = $replace($item->second_name);
+		$item->save();
 	}
 
 	/**

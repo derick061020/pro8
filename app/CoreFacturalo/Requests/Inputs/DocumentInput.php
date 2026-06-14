@@ -207,8 +207,19 @@ class DocumentInput
                 $arayItem = [
                     'item_id' => $item->id,
                     'item' => [
-                        'description' => trim($item->description),
-                        'description' => trim($item->description == 'REPLACE DESCRIPTION' || $item->barcode == 'VARIOUS_ITEM' ? $row['item']['description'] : trim($item->description)),
+                        // La descripción que termina en el XML (cbc:Description, como
+                        // fallback cuando no hay name_product_xml/pdf) debe respetar la
+                        // descripción enviada desde el front-end. Antes solo se tomaba
+                        // la del front para 'REPLACE DESCRIPTION'/'VARIOUS_ITEM' y para
+                        // el resto se forzaba la del Item maestro, por lo que casos como
+                        // "Habitación 9 x N noches" (Hotel) o una descripción editada
+                        // desde Documentos quedaban en "Habitación 9". Ahora, si llega
+                        // una descripción no vacía, esa manda; si no, se usa la del Item.
+                        'description' => trim(
+                            (isset($row['item']['description']) && trim($row['item']['description']) !== '')
+                                ? $row['item']['description']
+                                : $item->description
+                        ),
                         'item_type_id' => $item->item_type_id,
                         'internal_id' => $item->barcode == 'VARIOUS_ITEM' ? null : $item->internal_id,
                         'item_code' => trim($item->item_code),

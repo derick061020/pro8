@@ -154,7 +154,14 @@ class DocumentUpdateInput
                 $items[] = [
                     'item_id' => $item->id,
                     'item' => [
-                        'description' => $item->description,
+                        // Respeta la descripción editada desde Documentos (la que
+                        // alimenta el cbc:Description del XML como fallback). Si no
+                        // llega descripción, se usa la del Item maestro.
+                        'description' => trim(
+                            (isset($row['item']['description']) && trim($row['item']['description']) !== '')
+                                ? $row['item']['description']
+                                : $item->description
+                        ),
                         'item_type_id' => $item->item_type_id,
                         'internal_id' => $item->internal_id,
                         'item_code' => trim($item->item_code),
