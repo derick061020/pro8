@@ -3627,32 +3627,67 @@ html.sidebar-white:not(.dark) ul.nav-main li.nav-description {
     border-bottom-color: rgba(255, 255, 255, .08);
 }
 
-/* ---------- ITEM ACTIVO (píldora roja) ---------- */
+/* ---------- ITEM ACTIVO y GRUPO ACTIVO (píldora roja) ---------- */
+/* incluye el padre activo expandido (ej. "Hoteles") y los items hoja */
 html.sidebar-light:not(.dark) ul.nav-main > li.nav-active > a,
 html:not(.dark) ul.nav-main li.nav-active:not(.nav-parent) > a {
     background: linear-gradient(118deg, var(--brand-red), var(--brand-red-dark)) !important;
     color: #fff !important;
     border-radius: 10px !important;
-    box-shadow: 0 4px 12px rgba(220, 53, 69, .35);
+    box-shadow: 0 3px 10px rgba(220, 53, 69, .30);
 }
 
-/* ---------- MENÚ DESPLEGADO (grupo abierto) ---------- */
-html.sidebar-white:not(.dark) ul.nav-main li.nav-expanded > a,
-html.sidebar-white:not(.dark) .nav-parent.nav-active > a {
+/* ---------- GRUPO ABIERTO pero NO activo (superficie plomo sutil) ---------- */
+html.sidebar-white:not(.dark) ul.nav-main li.nav-expanded:not(.nav-active) > a {
     background-color: var(--brand-plomo-2) !important;
     color: #fff !important;
+    border-radius: 10px !important;
 }
-html.sidebar-white:not(.dark) ul.nav-main li.nav-parent > ul.nav-children {
-    background-color: var(--brand-plomo-dark) !important;
-    border-radius: 0 0 10px 10px;
+
+/* ---------- SUBMENÚ: contenedor sin caja ni bordes ---------- */
+html.sidebar-white:not(.dark) ul.nav-main li.nav-parent > ul.nav-children,
+html.sidebar-white:not(.dark) .nav-parent.nav-active > ul.nav-children {
+    background-color: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    padding: 4px 0 6px !important;
 }
+/* eliminar las "cajitas" grises detrás de cada subítem (::after) */
+html.sidebar-white:not(.dark) ul.nav-main li .nav-children li a:after {
+    background: transparent !important;
+    content: none !important;
+}
+/* subítems: enlaces limpios y uniformes */
 html.sidebar-white:not(.dark) ul.nav-main li .nav-children li a {
     color: #b9bfc7 !important;
+    background: transparent !important;
+    border-radius: 8px !important;
+    margin: 2px 10px;
+    padding: 7px 12px 7px 30px !important;
+    transition: all .15s ease;
 }
+html.sidebar-white:not(.dark) ul.nav-main li .nav-children li a:hover,
+html.sidebar-white:not(.dark) ul.nav-main li .nav-children li a:focus {
+    color: #fff !important;
+    background: rgba(255, 255, 255, .07) !important;
+}
+/* viñeta (punto) de cada subítem */
+html.sidebar-white:not(.dark) ul.nav-main li .nav-children li a::before {
+    border-color: rgba(255, 255, 255, .4) !important;
+    background: transparent !important;
+    left: 16px !important;
+}
+/* subítem activo: misma píldora roja */
 html.sidebar-white:not(.dark) ul.nav-main li .nav-children li.nav-active:not(.nav-parent) > a {
     background: var(--brand-red) !important;
     color: #fff !important;
     border-radius: 8px !important;
+    box-shadow: 0 3px 10px rgba(220, 53, 69, .30);
+}
+html.sidebar-white:not(.dark) ul.nav-main li .nav-children li.nav-active:not(.nav-parent) > a::before {
+    border-color: #fff !important;
+    background: #fff !important;
 }
 
 /* ---------- TOGGLE colapsar / scrollbar ---------- */
