@@ -1856,6 +1856,9 @@ export default {
                     it.item.description = name;
                     it.item.full_description = name;
                     it.name_product_pdf = name;
+                    // También el nombre PDF anidado: el modal "Editar Producto"
+                    // lo lee de it.item.name_product_pdf, no del externo.
+                    it.item.name_product_pdf = name;
                     it.quantity = 1;
 
                     const newTotal = parseFloat(this.form.total_to_pay);
