@@ -615,6 +615,7 @@
                                                                 "
                                                             >
                                                                 <label
+                                                                    style="white-space: nowrap;"
                                                                     v-html="
                                                                         row.name_product_pdf
                                                                     "
@@ -1029,6 +1030,7 @@
                                                                 "
                                                             >
                                                                 <label
+                                                                    style="white-space: nowrap;"
                                                                     v-html="
                                                                         row.name_product_pdf
                                                                     "
