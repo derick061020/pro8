@@ -1052,13 +1052,13 @@
 }
 
 /* Indicador de deuda flotante: posicionado en la esquina superior derecha
-   del botón (Ocupado / Reservado), solapando ~50% por encima de su borde
-   superior para no ocupar espacio del card. */
+   del botón (Ocupado / Reservado), justo por encima con un margen de
+   separación para no solaparse con el botón. */
 .debt-indicator-floating {
     position: absolute;
-    top: -10px;
     right: 0;
-    transform: translateY(-50%);
+    bottom: 100%;
+    margin-bottom: 6px;
     z-index: 6;
     padding: 2px 8px;
     background: #ff4757;
