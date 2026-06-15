@@ -185,7 +185,7 @@
                                     </div>
                                 </template>
                                 <template v-if="ro.status === 'MANTENIMIENTO'">
-                                    <h4 class="text-center mb-0 maintenance-title">
+                                    <h4 class="text-center mb-0" style="color:#000 !important;">
                                     <svg  xmlns="http://www.w3.org/2000/svg"  width="20"  height="20"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-tool"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M7 10h3v-3l-3.5 -3.5a6 6 0 0 1 8 8l6 6a2 2 0 0 1 -3 3l-6 -6a6 6 0 0 1 -8 -8l3.5 3.5" /></svg>
                                         <b>En mantenimiento:</b>
                                     </h4>
@@ -890,40 +890,33 @@
     transition: transform .18s ease, box-shadow .18s ease;
 }
 
-/* Estado MANTENIMIENTO: fondo crema suave con acentos naranja y texto slate. */
+/* Estado MANTENIMIENTO: degradado amarillo intenso y texto oscuro legible. */
 .room-container .room-el-card.maintenance,
 .hotel-rooms .room-el-card.maintenance.el-card {
-    background: #fdf4e7 !important;
-    border: 1px solid #f6e2c8 !important;
-    box-shadow: 0 2px 10px rgba(245, 135, 31, 0.12) !important;
+    background: linear-gradient(135deg, #ffe259 0%, #ffc400 45%, #ffa000 100%) !important;
+    border: 0px !important;
+    box-shadow: 0 4px 14px rgba(255, 160, 0, 0.45) !important;
 }
 .room-container .room-el-card.maintenance .el-card__body {
     background: transparent !important;
 }
-/* Categoría: gris suave */
-.room-container .room-el-card.maintenance .card-rent .text-muted {
-    color: #9aa5b1 !important;
-}
-/* Número de habitación / título: slate oscuro */
+.room-container .room-el-card.maintenance .card-rent,
 .room-container .room-el-card.maintenance .card-rent h2,
-.room-container .room-el-card.maintenance .card-rent h2 b {
-    color: #2c3e50 !important;
+.room-container .room-el-card.maintenance .card-rent h2 b,
+.room-container .room-el-card.maintenance .card-rent p,
+.room-container .room-el-card.maintenance .card-rent .text-muted {
+    color: #3a2c00 !important;
 }
 .room-container .room-el-card.maintenance .card-rent h2 svg {
-    stroke: #2c3e50 !important;
+    stroke: #3a2c00 !important;
 }
-/* Encabezado "En mantenimiento": naranja */
+/* Solo el texto "En mantenimiento:" y su icono en naranja */
 .room-container .room-el-card.maintenance .card-rent h4.maintenance-title,
 .room-container .room-el-card.maintenance .card-rent h4.maintenance-title b {
     color: #f5871f !important;
 }
 .room-container .room-el-card.maintenance .card-rent h4.maintenance-title svg {
     stroke: #f5871f !important;
-}
-/* Texto descriptivo: slate oscuro */
-.room-container .room-el-card.maintenance .card-rent p,
-.room-container .room-el-card.maintenance .card-rent p b {
-    color: #2c3e50 !important;
 }
 
 .room-container .room-el-card:hover {
