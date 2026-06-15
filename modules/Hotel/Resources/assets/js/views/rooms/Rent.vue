@@ -818,6 +818,10 @@ export default {
             },
             rate: null,
             rate_unit_value: 0,
+            // Guards de reentrancia: evitan que recalcular la salida dispare el
+            // recálculo de la cantidad (y viceversa), lo que rompía el stepper.
+            _skipDurationSync: false,
+            _skipOutputSync: false,
             advancePaidFromReservation: 0, // Adelanto ya abonado en la reserva (check-in)
             loading: false,
             submitted: false,
@@ -975,37 +979,45 @@ export default {
         },
         'form.input_date': {
             handler: function(newVal, oldVal) {
+                // Al cambiar la fecha de entrada se mantiene la cantidad de
+                // noches/horas elegida y se recalcula la fecha/hora de salida.
                 if (newVal !== oldVal) {
-                    this.updateDuration();
+                    this.onUpdateOutputDate();
                 }
             }
         },
         'form.output_date': {
             handler: function(newVal, oldVal) {
-                if (newVal !== oldVal) {
+                // Si el usuario edita la salida directamente, se ajusta la
+                // cantidad de noches/horas en función de las fechas. Si la
+                // salida la escribió onUpdateOutputDate, no se recalcula.
+                if (newVal !== oldVal && !this._skipDurationSync) {
                     this.updateDuration();
                 }
             }
         },
         'form.input_time': {
             handler: function(newVal, oldVal) {
+                // Igual que la fecha: cambiar la hora de entrada recalcula la
+                // hora/fecha de salida manteniendo la duración.
                 if (newVal !== oldVal) {
-                    this.updateDuration();
+                    this.onUpdateOutputDate();
                 }
             }
         },
         'form.output_time': {
             handler: function(newVal, oldVal) {
-                if (newVal !== oldVal) {
+                if (newVal !== oldVal && !this._skipDurationSync) {
                     this.updateDuration();
                 }
             }
         },
         'form.duration': {
             handler: function(newVal, oldVal) {
-                // Solo actualizar fechas si cambia la duración y es por hora o mes
-                if (newVal !== oldVal && this.form.input_date && 
-                    (this.form.rental_period_type === 'hour' || this.form.rental_period_type === 'month')) {
+                // Cambiar la cantidad (noches/horas/meses) recalcula la salida
+                // en cualquier tipo de renta, manteniendo la entrada. Si la
+                // cantidad la escribió updateDuration, no se recalcula la salida.
+                if (newVal !== oldVal && this.form.input_date && !this._skipOutputSync) {
                     this.onUpdateOutputDate();
                 }
             }
@@ -1027,8 +1039,10 @@ export default {
             let newDuration;
 
             if (this.form.rental_period_type === 'hour') {
-                const checkIn = moment(`${this.form.input_date} ${this.form.input_time || '12:00'}`);
-                const checkOut = moment(`${this.form.output_date} ${this.form.output_time || '12:00'}`);
+                const checkIn = moment(`${this.form.input_date} ${this.form.input_time || '12:00'}`, 'YYYY-MM-DD HH:mm');
+                const checkOut = moment(`${this.form.output_date} ${this.form.output_time || '12:00'}`, 'YYYY-MM-DD HH:mm');
+                // Si alguna hora aún no es válida, no se recalcula la duración.
+                if (!checkIn.isValid() || !checkOut.isValid()) return;
                 const minutes = checkOut.diff(checkIn, 'minutes');
                 // Cualquier diferencia menor a 1 hora cuenta como 1 hora.
                 newDuration = Math.max(1, Math.ceil(minutes / 60));
@@ -1053,8 +1067,12 @@ export default {
             }
 
             // Actualizar solo si cambió, para no disparar bucles con los watchers.
+            // Se marca el guard para que el watcher de la cantidad no vuelva a
+            // recalcular la salida (lo que descoordinaba el stepper).
             if (this.form.duration !== newDuration) {
+                this._skipOutputSync = true;
                 this.form.duration = newDuration;
+                this.$nextTick(() => { this._skipOutputSync = false; });
             }
         },
         async loadReservationData() {
@@ -1130,6 +1148,11 @@ export default {
             this.form.input_time = this.reservation.input_time || '12:00';
             this.form.output_date = this.reservation.output_date;
             this.form.output_time = this.reservation.output_time || '12:00';
+
+            // Derivar la duración a partir de las fechas cargadas ANTES de
+            // seleccionar la tarifa, de lo contrario onSelectedRate recalcularía
+            // la salida con la duración por defecto y perdería el rango real.
+            this.updateDuration();
 
             // Adelanto ya abonado en la reserva (se descuenta del saldo a cobrar).
             // Debe quedar fijado ANTES de onSelectedRate() para que el monto a
@@ -1242,7 +1265,11 @@ export default {
                 this.form.input_time = (reservationData.dates?.input_time || reservationData.input_time || '12:00').slice(0,5);
                 this.form.output_date = reservationData.dates?.output_date || reservationData.output_date;
                 this.form.output_time = (reservationData.dates?.output_time || reservationData.output_time || '12:00').slice(0,5);
-                
+
+                // Derivar la duración desde las fechas cargadas antes de
+                // seleccionar la tarifa (ver nota en loadReservationData).
+                this.updateDuration();
+
                 // Cargar tarifa
                 if (reservationData.rate?.hotel_rate_id || reservationData.hotel_rate_id) {
                     console.log('Cargando tarifa:', reservationData.rate?.hotel_rate_id || reservationData.hotel_rate_id);
@@ -1511,52 +1538,23 @@ export default {
             // Limpiar el precio personalizado si vuelve a estándar
             if (!value) {
                 this.form.rental_price = null;
-                // Recalcular con el precio estándar
-                this.onUpdateTotalToPay();
-                this.updateDuration(); // Recalcular fecha/hora de salida
             }
-            
-            // Ajustar etiquetas y comportamiento según el tipo
-            if (value === 'hour') {
-                // Renta por hora
-                this.$message({
-                    message: 'Modo renta por hora activado. La duración se calculará en horas.',
-                    type: 'info'
-                });
-                
-                // Ajustar duración a un valor razonable para horas
-                if (this.form.duration > 24) {
-                    this.form.duration = 1; // Resetear a 1 hora por defecto
-                }
-                
-            } else if (value === 'month') {
-                // Renta por mes
-                this.$message({
-                    message: 'Modo renta por mes activado. La duración se calculará en meses.',
-                    type: 'info'
-                });
-                
-                // Ajustar duración a un valor razonable para meses
-                if (this.form.duration > 12) {
-                    this.form.duration = 1; // Resetear a 1 mes por defecto
-                }
-                
-            } else if (value === 'day') {
-                // Renta por día (estándar)
-                this.$message({
-                    message: 'Modo renta por día activado. La duración se calculará en días.',
-                    type: 'info'
-                });
-            } else {
-                // Estándar (vacío)
-                this.$message({
-                    message: 'Modo estándar por día activado.',
-                    type: 'info'
-                });
-            }
-            
-            // Recalcular todo después del cambio
-            this.updateDuration();
+
+            // Mensajes informativos según el tipo seleccionado.
+            const messages = {
+                hour: 'Modo renta por hora activado. La cantidad se interpreta en horas.',
+                month: 'Modo renta por mes activado. La cantidad se interpreta en meses.',
+                day: 'Modo renta por día activado. La cantidad se interpreta en días.',
+            };
+            this.$message({
+                message: messages[value] || 'Modo estándar por día activado.',
+                type: 'info'
+            });
+
+            // Se conserva la cantidad que ya estaba (noches/horas/meses) y solo
+            // se recalcula la fecha/hora de salida según el nuevo tipo. NO se
+            // llama a updateDuration(), que derivaría la cantidad de las fechas
+            // anteriores (ej. mostrar 18 horas al pasar de día a hora).
             this.onUpdateTotalToPay();
         },
         setTotalPayment()
@@ -1567,7 +1565,9 @@ export default {
         onUpdateOutputDate() {
             if (!this.form.input_date) return;
 
-            const checkIn = moment(`${this.form.input_date} ${this.form.input_time || '12:00'}`);
+            const checkIn = moment(`${this.form.input_date} ${this.form.input_time || '12:00'}`, 'YYYY-MM-DD HH:mm');
+            // Si la hora aún se está escribiendo (formato inválido) no se recalcula.
+            if (!checkIn.isValid()) return;
             const duration = Math.max(1, this.form.duration || 1);
 
             // La salida se calcula sumando la duración en la unidad que
@@ -1581,11 +1581,15 @@ export default {
                 checkOut = checkIn.clone().add(duration, 'days');
             }
 
+            // Se marca el guard para que los watchers de la salida no vuelvan a
+            // recalcular la cantidad (manteniendo intacto el valor del stepper).
+            this._skipDurationSync = true;
             this.form.output_date = checkOut.format('YYYY-MM-DD');
             // Para renta por día, usar siempre 12:00 como hora de salida.
             this.form.output_time = this.form.rental_period_type === 'day'
                 ? '12:00'
                 : checkOut.format('HH:mm');
+            this.$nextTick(() => { this._skipDurationSync = false; });
         },
         onSelectedRate() {
             const rate = this.room.rates
