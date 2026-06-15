@@ -5,17 +5,14 @@
         <div class="countdown-value">{{ tr.days }}</div>
         <div class="countdown-label">{{ tr.days === 1 ? 'día' : 'días' }}</div>
       </div>
-      <div class="countdown-separator"></div>
       <div class="countdown-unit">
         <div class="countdown-value">{{ pad(tr.hours) }}</div>
         <div class="countdown-label">hora</div>
       </div>
-      <div class="countdown-separator"></div>
       <div class="countdown-unit">
         <div class="countdown-value">{{ pad(tr.minutes) }}</div>
         <div class="countdown-label">min</div>
       </div>
-      <div class="countdown-separator"></div>
       <div class="countdown-unit">
         <div class="countdown-value">{{ pad(tr.seconds) }}</div>
         <div class="countdown-label">seg</div>
