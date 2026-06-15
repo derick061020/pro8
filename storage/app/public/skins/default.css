@@ -178,7 +178,6 @@ address {
     z-index: 1 !important;
     top: 11px !important;
     width: 40px;
-    height: 30px !important;
     text-align: center !important;
     background: var(--accent-color) !important;
     color: #606266 !important;
