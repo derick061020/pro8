@@ -1002,6 +1002,21 @@
     padding: 0 !important;
 }
 
+/* Las columnas de Bootstrap (col-3 + col-9) ya suman 100%; con el `gap:6px`
+   del row el total se iba a 100%+6px y el botón derecho se desbordaba,
+   quedando más pegado al borde derecho que el contenido al izquierdo.
+   Hacemos que la columna grande sea flexible para que el gap se reparta
+   dentro del 100% y el padding quede simétrico a ambos lados. */
+.room-container .room-el-card .card-rent > .row > .col-3 {
+    flex: 0 0 25%;
+    max-width: 25%;
+}
+.room-container .room-el-card .card-rent > .row > .col-9 {
+    flex: 1 1 auto;
+    max-width: 100%;
+    width: auto;
+}
+
 /* Botones del footer: tamaño consistente, no se cortan */
 .room-container .room-el-card .card-rent .btn,
 .room-container .room-el-card .card-rent .el-button {
