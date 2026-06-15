@@ -97,27 +97,42 @@
         public function getRecords($request)
         {
 
-            $date_start = $request['date_start'];
-            $date_end = $request['date_end'];
+            $date_start = $request['date_start'] ?? null;
+            $date_end = $request['date_end'] ?? null;
+            $establishment_id = $request['establishment_id'] ?? null;
+            $customer = $request['customer'] ?? null;
 
-            return $this->data($date_start, $date_end);
+            return $this->data($date_start, $date_end, $establishment_id, $customer);
 
         }
 
         /**
          * @param $date_start
          * @param $date_end
+         * @param $establishment_id
+         * @param $customer
          *
          * @return \Illuminate\Database\Eloquent\Builder|Builder|HotelRent
          */
-        private function data($date_start, $date_end)
+        private function data($date_start, $date_end, $establishment_id = null, $customer = null)
         {
             $rooms = HotelRent::with('room','room.rates', 'rate','room.category')
 			->orderBy('id', 'DESC');
-            return $rooms=$rooms->SearchByDate($date_start,$date_end)->latest();
 
+            $rooms = $rooms->SearchByDate($date_start, $date_end);
 
+            if ($establishment_id) {
+                $rooms->where('establishment_id', $establishment_id);
+            }
 
+            if ($customer) {
+                $rooms->whereHas('customer', function ($query) use ($customer) {
+                    $query->where('name', 'like', "%{$customer}%")
+                          ->orWhere('number', 'like', "%{$customer}%");
+                });
+            }
+
+            return $rooms->latest();
         }
 
         /**

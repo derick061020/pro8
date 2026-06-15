@@ -7,6 +7,17 @@
                 <div class="row mt-2">
 
                         <div class="col-md-3">
+                            <label class="control-label">Sucursal</label>
+                            <el-select v-model="form.establishment_id" placeholder="Todas las sucursales" filterable :clearable="true" style="width:100%">
+                                <el-option :value="null" label="Todas las sucursales"></el-option>
+                                <el-option v-for="option in establishments" :key="option.id" :value="option.id" :label="option.name"></el-option>
+                            </el-select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="control-label">Buscar (DNI o Nombre)</label>
+                            <el-input v-model="form.customer" placeholder="Ingrese DNI o nombre" :clearable="true" @keyup.enter.native="getRecordsByFilter"></el-input>
+                        </div>
+                        <div class="col-md-3">
                             <label class="control-label">Fecha ingreso</label>
                             <el-date-picker v-model="form.date_start" type="date"
                                             @change="changeDisabledDates"
@@ -19,7 +30,7 @@
                                             value-format="yyyy-MM-dd" format="dd/MM/yyyy" :clearable="true"></el-date-picker>
                         </div>
 
-                        <div class="col-md-6" style="margin-top:29px">
+                        <div class="col-md-12 mt-2">
                             <el-button class="submit" type="primary" @click.prevent="getRecordsByFilter" :loading="loading_submit" icon="el-icon-search" >Buscar</el-button>
                             <template v-if="records.length>0">
 
@@ -88,6 +99,7 @@
                 records: [],
                 headers: headers_token,
                 document_types: [],
+                establishments: [],
                 pagination: {},
                 search: {},
                 totals: {},
@@ -115,7 +127,7 @@
             await this.$http.get(`/${this.resource}/filter`)
                 .then(response => {
                     this.document_types = response.data.document_types;
-                    this.users = response.data.users;
+                    this.establishments = response.data.establishments;
                 });
 
 
@@ -138,6 +150,8 @@
             initForm(){
 
                 this.form = {
+                    establishment_id:null,
+                    customer:null,
                     date_start:null,
                     date_end:null,
                 }

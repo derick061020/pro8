@@ -259,6 +259,12 @@ $showTransfer = collect($vc_module_levels)->intersect(['inventory', 'inventory_d
                                         <a class="nav-link" href="{{ url('hotels/reception') }}">Recepción</a>
                                     </li>
                                 @endif
+                                @if(in_array('hotels_rooms', $vc_module_levels))
+                                    <li
+                                        class="{{ (($firstLevel === 'hotels') && ($secondLevel === 'reservations')) ? 'nav-active' : '' }}">
+                                        <a class="nav-link" href="{{ url('hotels/reservations/calendar') }}">Reservas</a>
+                                    </li>
+                                @endif
                                 @if(in_array('hotels_rates', $vc_module_levels))
                                     <li
                                         class="{{ (($firstLevel === 'hotels') && ($secondLevel === 'rates')) ? 'nav-active' : '' }}">
@@ -283,12 +289,7 @@ $showTransfer = collect($vc_module_levels)->intersect(['inventory', 'inventory_d
                                         <a class="nav-link" href="{{ url('hotels/rooms') }}">Habitaciones</a>
                                     </li>
                                 @endif
-                                @if(in_array('hotels_reception', $vc_module_levels))
-                                    <li
-                                        class="{{ (($firstLevel === 'hotels') && ($secondLevel === 'reservations')) ? 'nav-active' : '' }}">
-                                        <a class="nav-link" href="{{ url('hotels/reservations/calendar') }}">Calendario de Reservas</a>
-                                    </li>
-                                @endif
+                                
                             </ul>
                         </li>
                     @endif

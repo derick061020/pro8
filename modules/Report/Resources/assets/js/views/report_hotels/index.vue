@@ -29,6 +29,7 @@
                         <th> Habitación</th>
                         <th>Status de pago</th>
                         <th>Status checkout</th>
+                        <th>Precio</th>
                         <th>Productos</th>
                         <th>Fecha de entrada</th>
                         <th>Hora de entrada</th>
@@ -48,6 +49,7 @@
                         <td>{{ row.room ? row.room.name : '' }}</td>
                         <td>{{ row.payment_status === "PAID" ? "Pagado" : "Debe" }}</td>
                         <td>{{ row.status }}</td>
+                        <td>{{ row.rental_price }}</td>
                         <td>
 
 
