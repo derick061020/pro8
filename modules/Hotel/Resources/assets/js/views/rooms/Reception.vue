@@ -1056,7 +1056,7 @@
    superior para no ocupar espacio del card. */
 .debt-indicator-floating {
     position: absolute;
-    top: 0;
+    top: -10px;
     right: 0;
     transform: translateY(-50%);
     z-index: 6;
