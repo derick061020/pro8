@@ -57,6 +57,7 @@
                                         >
                                             <label class="control-label" for="rate">Tarifa</label>
                                             <el-select
+                                                ref="rateSelect"
                                                 v-model="form.hotel_rate_id"
                                                 @change="onSelectedRate"
                                             >
@@ -1592,6 +1593,13 @@ export default {
             this.$nextTick(() => { this._skipDurationSync = false; });
         },
         onSelectedRate() {
+            // Anclamos la posición del campo de tarifa antes de actualizar el
+            // estado. Al seleccionar una tarifa, rate_unit_value pasa a > 0 y se
+            // montan las secciones gated por v-if (check-in/out, tarifa final y
+            // pago), lo que reflujaba el layout y hacía "saltar" la página.
+            const anchor = this.$refs.rateSelect && this.$refs.rateSelect.$el;
+            const beforeTop = anchor ? anchor.getBoundingClientRect().top : null;
+
             const rate = this.room.rates
                 .filter((r) => r.hotel_rate_id === this.form.hotel_rate_id)
                 .reduce((r) => r);
@@ -1600,6 +1608,19 @@ export default {
             this.rate_unit_value = rate.price;
             this.form.rate_price = rate.price;
             this.onUpdateTotalToPay();
+
+            // Tras montar las nuevas secciones, corregimos el scroll para que el
+            // campo de tarifa quede en la misma posición visual (sin salto).
+            if (anchor) {
+                this.$nextTick(() => {
+                    const afterTop = anchor.getBoundingClientRect().top;
+                    const delta = afterTop - beforeTop;
+                    if (delta) {
+                        const scroller = document.scrollingElement || document.documentElement;
+                        scroller.scrollTop += delta;
+                    }
+                });
+            }
         },
         async reloadDataCustomers(customerId) {
             await this.$http
