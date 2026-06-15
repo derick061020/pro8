@@ -3553,4 +3553,115 @@ html.dark .establishment-dropdown-header {
     border-color: var(--borders-dark) !important;
     color: var(--light-color) !important;
 }
+
+/* ============================================================
+   TEMA HEADER ROJO + SIDEBAR PLOMO (moderno)
+   Colores base: rojo #dc3545 · plomo #343a40
+   Solo afecta modo claro (no toca html.dark)
+   ============================================================ */
+:root {
+    --brand-red: #dc3545;
+    --brand-red-dark: #c82333;
+    --brand-plomo: #343a40;
+    --brand-plomo-2: #3d444b;   /* hover / superficies elevadas */
+    --brand-plomo-dark: #2a2f34;/* submenú abierto */
+}
+
+/* ---------- HEADER (barra superior roja) ---------- */
+html:not(.dark):not(.header-dark) .header,
+html:not(.dark):not(.header-dark) .header .logo-container {
+    background: linear-gradient(90deg, var(--brand-red) 0%, var(--brand-red-dark) 100%) !important;
+    border-bottom: none !important;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, .14);
+}
+/* textos e iconos del header en blanco */
+html:not(.dark) .header,
+html:not(.dark) .header h2,
+html:not(.dark) .header a,
+html:not(.dark) .header span,
+html:not(.dark) .header i,
+html:not(.dark) .header svg,
+html:not(.dark) .header .userbox .name,
+html:not(.dark) .header .userbox .role,
+html:not(.dark) .header .userbox .username {
+    color: #fff !important;
+}
+/* botones/píldoras del header (carrito, notificaciones, etc.) */
+html:not(.dark) .header .logo-container .topbar-links {
+    background: rgba(255, 255, 255, .14) !important;
+    color: #fff !important;
+    transition: all .18s ease;
+}
+html:not(.dark) .header .logo-container .topbar-links:hover {
+    background: #fff !important;
+    color: var(--brand-red) !important;
+}
+
+/* ---------- SIDEBAR (panel lateral plomo) ---------- */
+html.fixed.sidebar-white:not(.dark) .sidebar-left,
+html.fixed.sidebar-white:not(.dark) .sidebar-header,
+html.fixed.sidebar-white:not(.dark) .sidebar-left .nano {
+    background-color: var(--brand-plomo) !important;
+}
+/* enlaces del menú */
+html.fixed.sidebar-white:not(.dark) .sidebar-left a {
+    color: #cfd4da !important;
+}
+/* hover / focus de enlaces principales */
+html.fixed.sidebar-white:not(.dark) .sidebar-left a:hover,
+html.fixed.sidebar-white:not(.dark) .sidebar-left a:active,
+html.fixed.sidebar-white:not(.dark) .sidebar-left a:focus {
+    color: #fff !important;
+    background-color: rgba(255, 255, 255, .06) !important;
+    border-radius: 8px;
+}
+/* puntos/flechas de los items */
+html.sidebar-white:not(.dark) .sidebar-left a::before,
+html.sidebar-white:not(.dark) .sidebar-left a::after {
+    color: #cfd4da !important;
+    border-color: rgba(255, 255, 255, .35) !important;
+}
+/* títulos de sección del menú */
+html.sidebar-white:not(.dark) ul.nav-main li.nav-description {
+    color: #8b929b !important;
+    border-bottom-color: rgba(255, 255, 255, .08);
+}
+
+/* ---------- ITEM ACTIVO (píldora roja) ---------- */
+html.sidebar-light:not(.dark) ul.nav-main > li.nav-active > a,
+html:not(.dark) ul.nav-main li.nav-active:not(.nav-parent) > a {
+    background: linear-gradient(118deg, var(--brand-red), var(--brand-red-dark)) !important;
+    color: #fff !important;
+    border-radius: 10px !important;
+    box-shadow: 0 4px 12px rgba(220, 53, 69, .35);
+}
+
+/* ---------- MENÚ DESPLEGADO (grupo abierto) ---------- */
+html.sidebar-white:not(.dark) ul.nav-main li.nav-expanded > a,
+html.sidebar-white:not(.dark) .nav-parent.nav-active > a {
+    background-color: var(--brand-plomo-2) !important;
+    color: #fff !important;
+}
+html.sidebar-white:not(.dark) ul.nav-main li.nav-parent > ul.nav-children {
+    background-color: var(--brand-plomo-dark) !important;
+    border-radius: 0 0 10px 10px;
+}
+html.sidebar-white:not(.dark) ul.nav-main li .nav-children li a {
+    color: #b9bfc7 !important;
+}
+html.sidebar-white:not(.dark) ul.nav-main li .nav-children li.nav-active:not(.nav-parent) > a {
+    background: var(--brand-red) !important;
+    color: #fff !important;
+    border-radius: 8px !important;
+}
+
+/* ---------- TOGGLE colapsar / scrollbar ---------- */
+html:not(.dark) .sidebar-toggle-container .sidebar-toggle {
+    color: #cfd4da !important;
+}
+html:not(.dark) .sidebar-toggle-container .sidebar-toggle:hover {
+    color: #fff !important;
+    background-color: rgba(255, 255, 255, .08) !important;
+}
+/* end tema rojo + plomo */
 /* end */
