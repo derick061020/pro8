@@ -167,14 +167,24 @@ class HotelReceptionController extends Controller
             ->orderBy('id', 'DESC')
             ->first();
 
-        // 2. Todas las reservas activas (no finalizadas) ordenadas por inicio
+        // 2. Todas las reservas activas (no finalizadas) ordenadas por inicio.
+        //    Además se descartan las reservas cuya ventana de tiempo ya venció
+        //    (output_date/output_time < AHORA) aunque no se hayan marcado como
+        //    FINALIZADO: una reserva expirada NO es una reserva vigente y no
+        //    debe contarse en el chip ni listarse en el modal.
         $reservations = HotelRent::with('customer.person_type')
             ->where('hotel_room_id', $room->id)
             ->where('status', '!=', 'FINALIZADO')
             ->where('is_reserve', true)
             ->orderBy('input_date', 'ASC')
             ->orderBy('input_time', 'ASC')
-            ->get();
+            ->get()
+            ->filter(function ($r) use ($now) {
+                $end = $this->parseDateTimeSafe($r->output_date, $r->output_time ?? '12:00');
+                // Si no se puede parsear el fin, conservar la reserva por seguridad.
+                return !$end || $end->gt($now);
+            })
+            ->values();
 
         // 3. Reserva cuya ventana cubre AHORA (check-in ya llegó, output no llegó)
         $currentReservation = $reservations->first(function ($r) use ($now) {
