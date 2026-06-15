@@ -141,10 +141,6 @@
                                    <h2 class="mt-0">
                                     <svg  xmlns="http://www.w3.org/2000/svg"  width="32"  height="32"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-door"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M14 12v.01" /><path d="M3 21h18" /><path d="M6 21v-16a2 2 0 0 1 2 -2h8a2 2 0 0 1 2 2v16" /></svg>
                                       <b>{{ ro.name }}</b>
-                                      <!-- Indicador de deuda al lado del nombre (ocupada o reservada con deuda) -->
-                                      <span v-if="(ro.status !== 'DISPONIBLE' || ro.is_active_reservation) && getRoomDebt(ro) > 0" class="debt-indicator-inline">
-                                          Falta pagar: {{ getFormattedDebt(ro) }}
-                                      </span>
                                     </h2>
                                    <p v-if="ro.description" class="description">{{ ro.description }}</p>
 
@@ -258,7 +254,15 @@
                                         <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-hotel-service"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M8.5 10a1.5 1.5 0 0 1 -1.5 -1.5a5.5 5.5 0 0 1 11 0v10.5a2 2 0 0 1 -2 2h-7a2 2 0 0 1 -2 -2v-2c0 -1.38 .71 -2.444 1.88 -3.175l4.424 -2.765c1.055 -.66 1.696 -1.316 1.696 -2.56a2.5 2.5 0 1 0 -5 0a1.5 1.5 0 0 1 -1.5 1.5z" /></svg> 
                                         </button>
                                     </div>
-                                    <div class="col-9" style="padding-right:0px;">
+                                    <div class="col-9" style="padding-right:0px;position:relative;">
+                                        <!-- Indicador de deuda flotante: esquina superior derecha del botón,
+                                             solapando ~50% por encima para no ocupar espacio del card. -->
+                                        <span
+                                            v-if="(ro.status !== 'DISPONIBLE' || ro.is_active_reservation) && getRoomDebt(ro) > 0"
+                                            class="debt-indicator-floating"
+                                        >
+                                            Falta pagar: {{ getFormattedDebt(ro) }}
+                                        </span>
                                         <!-- Habitación reservada: el botón hace Check-in -->
                                         <button
                                             v-if="ro.is_active_reservation"
@@ -1047,19 +1051,26 @@
     justify-content: flex-end;
 }
 
-/* Indicador de deuda al lado del nombre — que envuelva en vez de salirse */
-.debt-indicator-inline {
-    display: inline-block;
-    margin-left: 0 !important;
-    padding: 3px 8px;
+/* Indicador de deuda flotante: posicionado en la esquina superior derecha
+   del botón (Ocupado / Reservado), solapando ~50% por encima de su borde
+   superior para no ocupar espacio del card. */
+.debt-indicator-floating {
+    position: absolute;
+    top: 0;
+    right: 0;
+    transform: translateY(-50%);
+    z-index: 6;
+    padding: 2px 8px;
     background: #ff4757;
     color: white;
     border-radius: 10px;
-    font-size: 11px;
+    font-size: 10px;
     font-weight: 600;
+    line-height: 1.3;
     animation: pulse 2s infinite;
     white-space: nowrap;
-    flex-shrink: 0;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+    pointer-events: none;
 }
 
 /* AGENTE VENDEDOR / customer-type-badge — que no rompa el layout */
