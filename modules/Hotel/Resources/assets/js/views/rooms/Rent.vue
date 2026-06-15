@@ -46,7 +46,7 @@
                                     </div>
                                 </div>
 
-                                <div class="col-12 col-md-6 card-body bg-accent-color p-3">
+                                <div class="col-12 col-md-6 bg-accent-color p-3">
                                     <p class="m-0">
                                     <svg  xmlns="http://www.w3.org/2000/svg"  width="20"  height="20"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-coins"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M9 14c0 1.657 2.686 3 6 3s6 -1.343 6 -3s-2.686 -3 -6 -3s-6 1.343 -6 3z" /><path d="M9 14v4c0 1.656 2.686 3 6 3s6 -1.344 6 -3v-4" /><path d="M3 6c0 1.072 1.144 2.062 3 2.598s4.144 .536 6 0c1.856 -.536 3 -1.526 3 -2.598c0 -1.072 -1.144 -2.062 -3 -2.598s-4.144 -.536 -6 0c-1.856 .536 -3 1.526 -3 2.598z" /><path d="M3 6v10c0 .888 .772 1.45 2 2" /><path d="M3 11c0 .888 .772 1.45 2 2" /></svg> <b class="text-xs"> Tarifas disponibles</b> <span class="text-muted">(Seleccione una tarifa para esta habitación)</span>
                                 </p>
@@ -57,7 +57,6 @@
                                         >
                                             <label class="control-label" for="rate">Tarifa</label>
                                             <el-select
-                                                ref="rateSelect"
                                                 v-model="form.hotel_rate_id"
                                                 @change="onSelectedRate"
                                             >
@@ -1593,13 +1592,6 @@ export default {
             this.$nextTick(() => { this._skipDurationSync = false; });
         },
         onSelectedRate() {
-            // Anclamos la posición del campo de tarifa antes de actualizar el
-            // estado. Al seleccionar una tarifa, rate_unit_value pasa a > 0 y se
-            // montan las secciones gated por v-if (check-in/out, tarifa final y
-            // pago), lo que reflujaba el layout y hacía "saltar" la página.
-            const anchor = this.$refs.rateSelect && this.$refs.rateSelect.$el;
-            const beforeTop = anchor ? anchor.getBoundingClientRect().top : null;
-
             const rate = this.room.rates
                 .filter((r) => r.hotel_rate_id === this.form.hotel_rate_id)
                 .reduce((r) => r);
@@ -1608,19 +1600,6 @@ export default {
             this.rate_unit_value = rate.price;
             this.form.rate_price = rate.price;
             this.onUpdateTotalToPay();
-
-            // Tras montar las nuevas secciones, corregimos el scroll para que el
-            // campo de tarifa quede en la misma posición visual (sin salto).
-            if (anchor) {
-                this.$nextTick(() => {
-                    const afterTop = anchor.getBoundingClientRect().top;
-                    const delta = afterTop - beforeTop;
-                    if (delta) {
-                        const scroller = document.scrollingElement || document.documentElement;
-                        scroller.scrollTop += delta;
-                    }
-                });
-            }
         },
         async reloadDataCustomers(customerId) {
             await this.$http
