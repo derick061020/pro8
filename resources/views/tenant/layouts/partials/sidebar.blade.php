@@ -1712,7 +1712,7 @@ $showTransfer = collect($vc_module_levels)->intersect(['inventory', 'inventory_d
 
                 @if(in_array('users', $vc_module_levels))
                     <li>
-                        <a class="nav-link" href="{{route('tenant.users.index')}}">
+                        <a class="nav-link" href="{{route('tenant.users.index')}}" style="color:#3b4a63 !important;">
                             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
                                 stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"
                                 class="icon icon-tabler icons-tabler-outline icon-tabler-users">
@@ -1727,7 +1727,7 @@ $showTransfer = collect($vc_module_levels)->intersect(['inventory', 'inventory_d
                 @endif
                 @if(in_array('users_establishments', $vc_module_levels))
                     <li>
-                        <a class="nav-link" href="{{route('tenant.establishments.index')}}">
+                        <a class="nav-link" href="{{route('tenant.establishments.index')}}" style="color:#3b4a63 !important;">
                             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
                                 stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"
                                 class="icon icon-tabler icons-tabler-outline icon-tabler-list-numbers">
@@ -1743,7 +1743,7 @@ $showTransfer = collect($vc_module_levels)->intersect(['inventory', 'inventory_d
                 @endif
                 @if(in_array('app_2_generator', $vc_modules))
                     <li>
-                        <a class="nav-link" href="{{ route('tenant.liveapp.configuration') }}">
+                        <a class="nav-link" href="{{ route('tenant.liveapp.configuration') }}" style="color:#3b4a63 !important;">
                             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
                                 stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"
                                 class="icon icon-tabler icons-tabler-outline icon-tabler-device-mobile">
@@ -1758,7 +1758,7 @@ $showTransfer = collect($vc_module_levels)->intersect(['inventory', 'inventory_d
                 @endif
                 @if(in_array('apps', $vc_modules))
                     <li>
-                        <a class="nav-link" href="{{url('list-extras')}}">
+                        <a class="nav-link" href="{{url('list-extras')}}" style="color:#3b4a63 !important;">
                             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
                                 stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"
                                 class="icon icon-tabler icons-tabler-outline icon-tabler-packages">
@@ -1780,7 +1780,7 @@ $showTransfer = collect($vc_module_levels)->intersect(['inventory', 'inventory_d
                 @if(in_array('configuration', $vc_modules))
                     <li
                         class="{{in_array($firstLevel, ['list-platforms', 'list-cards', 'list-currencies', 'list-bank-accounts', 'list-banks', 'list-attributes', 'list-detractions', 'list-units', 'list-payment-methods', 'list-incomes', 'list-payments', 'company_accounts', 'list-vouchers-type', 'companies', 'advanced', 'tasks', 'inventories', 'bussiness_turns', 'offline-configurations', 'series-configurations', 'configurations', 'login-page', 'list-settings']) ? 'nav-active' : ''}}">
-                        <a class="nav-link" href="{{ url('list-settings') }}">
+                        <a class="nav-link" href="{{ url('list-settings') }}" style="color:#3b4a63 !important;">
                             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
                                 stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"
                                 class="icon icon-tabler icons-tabler-outline icon-tabler-briefcase">

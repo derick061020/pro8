@@ -1,25 +1,3 @@
-<style>
-    /* Asegura texto legible en el dropdown de opciones (fondo blanco) sin importar el tema */
-    .dropdown-menu-desktop a.dropdown-item,
-    .dropdown-menu-desktop a.dropdown-item span,
-    .dropdown-menu-desktop a.dropdown-item svg,
-    .dropdown-menu-mobile a.dropdown-item,
-    .dropdown-menu-mobile a.dropdown-item span,
-    .dropdown-menu-mobile a.dropdown-item svg {
-        color: #3b4a63 !important;
-        stroke: #3b4a63 !important;
-    }
-
-    .dropdown-menu-desktop a.dropdown-item:hover,
-    .dropdown-menu-desktop a.dropdown-item:hover span,
-    .dropdown-menu-desktop a.dropdown-item:hover svg,
-    .dropdown-menu-mobile a.dropdown-item:hover,
-    .dropdown-menu-mobile a.dropdown-item:hover span,
-    .dropdown-menu-mobile a.dropdown-item:hover svg {
-        color: #1f2a3d !important;
-        stroke: #1f2a3d !important;
-    }
-</style>
 <header class="header">
     <div class="logo-container">
         <div class="d-md-none toggle-sidebar-left" data-toggle-class="sidebar-left-opened" data-target="html"
@@ -516,7 +494,7 @@
                     @if(in_array('cuenta', $vc_modules))
                         @if(in_array('account_users_list', $vc_module_levels))
                             <li>
-                                <a class="dropdown-item d-flex align-items-center" role="menuitem" href="{{route('tenant.payment.index')}}">
+                                <a class="dropdown-item d-flex align-items-center" role="menuitem" href="{{route('tenant.payment.index')}}" style="color:#3b4a63 !important;">
                                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
                                         fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
                                         stroke-linejoin="round"
@@ -534,7 +512,7 @@
                         @endif
                     @endif
                     <li>
-                        <a class="dropdown-item d-flex align-items-center style-switcher-open" href="#">
+                        <a class="dropdown-item d-flex align-items-center style-switcher-open" href="#" style="color:#3b4a63 !important;">
                             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
                                 fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
                                 stroke-linejoin="round"
@@ -629,7 +607,7 @@
 
                     <li>
                         <a class="dropdown-item d-flex align-items-center" role="menuitem" href="{{ route('logout') }}"
-                            onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
+                            onclick="event.preventDefault(); document.getElementById('logout-form').submit();" style="color:#3b4a63 !important;">
                             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
                                 fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
                                 stroke-linejoin="round"
