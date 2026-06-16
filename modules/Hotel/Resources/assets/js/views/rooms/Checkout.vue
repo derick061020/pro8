@@ -108,6 +108,11 @@
                                 </button>
                             </div>
                         </div>
+                        <div class="col-12 col-md-2 card card-body bg-light-color my-1 mx-1 p-3">
+                            <span class="text-muted"><svg  xmlns="http://www.w3.org/2000/svg"  width="16"  height="16"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-moon"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z" /></svg> Noches</span>
+                            <h4 class="m-0"><b>
+                                {{ totalNights }} {{ totalNights === 1 ? 'noche' : 'noches' }}</b></h4>
+                        </div>
                         <div class="col-12 col-md-2 card card-body bg-light-color my-1 mx-1 p-3" v-if="currentRent.rental_date_time">
                             <span class="text-muted"><svg  xmlns="http://www.w3.org/2000/svg"  width="16"  height="16"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-clock"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M3 12a9 9 0 1 0 18 0a9 9 0 0 0 -18 0" /><path d="M12 7v5l3 3" /></svg> Renta</span>
                             <h4 class="m-0"><b>
@@ -194,13 +199,7 @@
                                                 {{ r.item.description }}
                                             </small>
                                         </td>
-                                        <td>
-                                            <span class="badge badge-pill badge-info"
-                                                style="font-size: 0.85rem; padding: 0.35em 0.7em;">
-                                                {{ getRoomItemQuantity(r) }}
-                                                noche{{ getRoomItemQuantity(r) == 1 ? '' : 's' }}
-                                            </span>
-                                        </td>
+                                        <td>{{ getRoomItemQuantity(r) }}</td>
                                         <td class="float-right">
                                             <div class="d-d-inline-block"
                                                 v-if="r.id === activeRoomItemId"
@@ -1305,6 +1304,22 @@ export default {
         ...mapState([
             'config',
         ]),
+        totalNights: function () {
+            // Total de noches del alquiler. rent.duration es acumulativo e
+            // incluye las extensiones; si no está disponible, se calcula como
+            // la diferencia de días entre check-in y check-out.
+            const duration = parseFloat(this.currentRent && this.currentRent.duration);
+            if (Number.isFinite(duration) && duration > 0) {
+                return Math.round(duration);
+            }
+            if (this.currentRent && this.currentRent.input_date && this.currentRent.output_date) {
+                const nights = moment(this.currentRent.output_date).diff(
+                    moment(this.currentRent.input_date), 'days'
+                );
+                return nights > 0 ? nights : 1;
+            }
+            return 0;
+        },
         canMakePayment: function () {
             if (
                 this.currentRent !== undefined &&
