@@ -928,7 +928,7 @@
     flex: 1;
     display: flex;
     flex-direction: column;
-    padding: 14px !important;
+    padding: 6px !important;
     min-height: 0;
     gap: 0;
     overflow: hidden;
