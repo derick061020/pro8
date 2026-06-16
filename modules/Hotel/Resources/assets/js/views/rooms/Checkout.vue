@@ -194,7 +194,13 @@
                                                 {{ r.item.description }}
                                             </small>
                                         </td>
-                                        <td>{{ getRoomItemQuantity(r) }}</td>
+                                        <td>
+                                            <span class="badge badge-pill badge-info"
+                                                style="font-size: 0.85rem; padding: 0.35em 0.7em;">
+                                                {{ getRoomItemQuantity(r) }}
+                                                noche{{ getRoomItemQuantity(r) == 1 ? '' : 's' }}
+                                            </span>
+                                        </td>
                                         <td class="float-right">
                                             <div class="d-d-inline-block"
                                                 v-if="r.id === activeRoomItemId"
