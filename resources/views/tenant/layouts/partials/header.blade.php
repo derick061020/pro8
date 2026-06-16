@@ -1,3 +1,19 @@
+<style>
+    /* Asegura texto legible en el dropdown de opciones (fondo blanco) sin importar el tema */
+    .dropdown-menu-desktop .dropdown-item,
+    .dropdown-menu-desktop .dropdown-item span,
+    .dropdown-menu-mobile .dropdown-item,
+    .dropdown-menu-mobile .dropdown-item span {
+        color: #60769a !important;
+    }
+
+    .dropdown-menu-desktop .dropdown-item:hover,
+    .dropdown-menu-desktop .dropdown-item:hover span,
+    .dropdown-menu-mobile .dropdown-item:hover,
+    .dropdown-menu-mobile .dropdown-item:hover span {
+        color: #2b3a55 !important;
+    }
+</style>
 <header class="header">
     <div class="logo-container">
         <div class="d-md-none toggle-sidebar-left" data-toggle-class="sidebar-left-opened" data-target="html"

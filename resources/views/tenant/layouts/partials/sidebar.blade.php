@@ -2063,6 +2063,18 @@ $showTransfer = collect($vc_module_levels)->intersect(['inventory', 'inventory_d
         display: block;
     }
 
+    /* Asegura texto legible dentro del popup (fondo blanco) sin importar el tema del sidebar */
+    .list-config a,
+    .list-config a span,
+    .list-config li {
+        color: #60769a !important;
+    }
+
+    .list-config li:hover a,
+    .list-config li:hover a span {
+        color: #2b3a55 !important;
+    }
+
     ul.nav.list-config i {
         width: 18px;
         text-align: center;
