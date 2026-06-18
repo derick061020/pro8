@@ -6,6 +6,14 @@ $hostname = app(Hyn\Tenancy\Contracts\CurrentHostname::class);
 
 if ($hostname) {
   Route::domain($hostname->fqdn)->group(function () {
+
+    // Landing pública de reservas (sin autenticación). Cada tenant resuelve
+    // su propia base de datos por el dominio, así que la misma landing sirve a
+    // todos los tenants mostrando sus propias habitaciones.
+    Route::get('reservas', 'HotelLandingController@index')->name('tenant.hotels.landing');
+    Route::post('reservas/availability', 'HotelLandingController@availability');
+    Route::post('reservas/store', 'HotelLandingController@store');
+
     Route::middleware(['auth', 'redirect.module', 'locked.tenant','check.email.verified'])
       ->prefix('hotels')
       ->group(function () {
