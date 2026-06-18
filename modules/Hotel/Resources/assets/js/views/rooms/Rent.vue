@@ -747,12 +747,19 @@
 
 import PersonForm from "@views/persons/form.vue";
 import moment from "moment";
+import "moment/locale/es";
+import lang from "element-ui/lib/locale/lang/es";
+import locale from "element-ui/lib/locale";
 import {calculateRowItem} from "@helpers/functions";
 import {functions} from "@mixins/functions";
 import {mapState} from "vuex/dist/vuex.mjs";
 import QuantityPersons from './partials/QuantityPersons.vue';
 import SaleNoteOptions from "@views/sale_notes/partials/options.vue";
 import { conformsTo } from "lodash";
+
+// Forzar el idioma español en los componentes de Element UI (calendarios, etc.)
+locale.use(lang);
+moment.locale("es");
 
 export default {
     components: {
