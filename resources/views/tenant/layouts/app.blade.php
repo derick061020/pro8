@@ -143,19 +143,6 @@
             display: var(--show-dark-logo, block);
         }
         
-        @if(request()->has('is_reservation') && request('is_reservation') == 'true')
-        .inner-wrapper {
-            margin-left: 0 !important;
-        }
-        .content-body {
-            margin-left: 0 !important;
-            padding: 20px !important;
-            max-width: 100% !important;
-        }
-        body {
-            background: #f8f9fa !important;
-        }
-        @endif
     </style>
 
     @if ($vc_company->favicon)
@@ -174,14 +161,10 @@
         <!-- end: header -->
         <div class="inner-wrapper">
             <!-- start: sidebar -->
-            @if(!request()->has('is_reservation') || request('is_reservation') != 'true')
-                @include('tenant.layouts.partials.sidebar')
-            @endif
+            @include('tenant.layouts.partials.sidebar')
             <!-- end: sidebar -->
             <section role="main" class="content-body" id="main-wrapper">
-                @if(!request()->has('is_reservation') || request('is_reservation') != 'true')
-                    @include('tenant.layouts.partials.header')
-                @endif
+                @include('tenant.layouts.partials.header')
                 @yield('content')
                 @include('tenant.layouts.partials.sidebar_styles')
                 {{-- @include('tenant.layouts.partials.sidebar_establishment') --}}
