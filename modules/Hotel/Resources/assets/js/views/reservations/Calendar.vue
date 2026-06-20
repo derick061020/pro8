@@ -136,10 +136,11 @@
                                 <!-- Day cells + bars -->
                                 <div class="rcal-days-row rcal-days-body" :data-room="room.id">
                                     <!-- Background day cells -->
-                                    <div class="rcal-day-cell" v-for="day in days" :key="'dc'+room.id+day.dateStr"
-                                         :class="{ 'dc-today': day.isToday, 'dc-weekend': day.isWeekend }"
+                                    <div class="rcal-day-cell" v-for="(day, dayIdx) in days" :key="'dc'+room.id+day.dateStr"
+                                         :class="{ 'dc-today': day.isToday, 'dc-weekend': day.isWeekend, 'dc-selecting': isCellSelected(room.id, dayIdx) }"
                                          :style="{ width: dayCellWidth + 'px' }"
-                                         @click="onCellClick(room, day)">
+                                         @mousedown.left.prevent="onCellMouseDown(room, dayIdx)"
+                                         @mouseenter="onCellMouseEnter(room.id, dayIdx)">
                                     </div>
 
                                     <!-- Reservation bars -->
@@ -402,6 +403,11 @@ export default {
             // New reservation popup
             showReservationPopup: false,
             selectedRoom: null,
+            // Drag-to-select range (arrastrar varios días para crear reserva)
+            dragging: false,
+            dragRoom: null,
+            dragStartIdx: null,
+            dragEndIdx: null,
             // Color assignment
             barColorIndex: {},
             // Catálogos
@@ -562,6 +568,15 @@ export default {
         this.computePeriod(this.periodMode, new Date())
         this.buildDays()
         this.loadData()
+    },
+    mounted() {
+        // Finalizar el arrastre aunque el cursor se suelte fuera de una celda
+        // (p. ej. sobre una barra de reserva o fuera de la grilla).
+        this._onWindowMouseUp = this.finishDrag.bind(this)
+        window.addEventListener('mouseup', this._onWindowMouseUp)
+    },
+    beforeDestroy() {
+        window.removeEventListener('mouseup', this._onWindowMouseUp)
     },
     methods: {
         /* ── Date Helpers ── */
@@ -853,6 +868,60 @@ export default {
             if (!status) return true;
             const s = String(status).toUpperCase();
             return s !== 'FINALIZADO' && s !== 'CANCELLED' && s !== 'CHECKED_OUT';
+        },
+
+        /* ── Drag-to-select (arrastrar varios días) ── */
+        // El usuario mantiene presionado sobre una celda y arrastra: al soltar,
+        // se abre la página de crear reserva con el rango de fechas marcado.
+        onCellMouseDown(room, dayIdx) {
+            this.dragging = true
+            this.dragRoom = room
+            this.dragStartIdx = dayIdx
+            this.dragEndIdx = dayIdx
+        },
+        onCellMouseEnter(roomId, dayIdx) {
+            // Solo se extiende el rango dentro de la misma fila de habitación.
+            if (!this.dragging || !this.dragRoom || this.dragRoom.id !== roomId) return
+            this.dragEndIdx = dayIdx
+        },
+        isCellSelected(roomId, dayIdx) {
+            if (!this.dragging || !this.dragRoom || this.dragRoom.id !== roomId) return false
+            const lo = Math.min(this.dragStartIdx, this.dragEndIdx)
+            const hi = Math.max(this.dragStartIdx, this.dragEndIdx)
+            return dayIdx >= lo && dayIdx <= hi
+        },
+        finishDrag() {
+            if (!this.dragging) return
+            const room = this.dragRoom
+            const lo = Math.min(this.dragStartIdx, this.dragEndIdx)
+            const hi = Math.max(this.dragStartIdx, this.dragEndIdx)
+            // Limpiar estado del arrastre antes de navegar.
+            this.dragging = false
+            this.dragRoom = null
+            this.dragStartIdx = null
+            this.dragEndIdx = null
+
+            if (!room) return
+            const startDay = this.days[lo]
+            const endDay = this.days[hi]
+            if (!startDay || !endDay) return
+
+            // Un solo día (clic sin arrastrar): comportamiento original.
+            if (lo === hi) {
+                this.onCellClick(room, startDay)
+                return
+            }
+
+            // Rango: input = primer día seleccionado, output = último día
+            // seleccionado (inclusive), igual que el rango que cubre una barra.
+            const params = new URLSearchParams({
+                is_reservation: 'true',
+                input_date: startDay.dateStr,
+                output_date: endDay.dateStr,
+                source: 'calendar',
+                t: Date.now().toString(),
+            })
+            window.location.href = `/hotels/reception/${room.id}/rent?${params.toString()}`
         },
 
         /* ── Actions ── */
@@ -1363,6 +1432,10 @@ export default {
 .rcal-day-cell:hover { background: rgba(59,130,246,.04); }
 .dc-today { background: rgba(59,130,246,.03); }
 .dc-weekend:not(.dc-today) { background: #fafbfc; }
+/* Celdas marcadas mientras se arrastra para seleccionar varios días */
+.rcal-day-cell.dc-selecting,
+.rcal-day-cell.dc-selecting:hover { background: rgba(59,130,246,.22); }
+.rcal-days-body { user-select: none; }
 
 /* ── Reservation Bars ── */
 .rcal-bar {

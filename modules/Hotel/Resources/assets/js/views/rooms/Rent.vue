@@ -889,6 +889,18 @@ export default {
             if (urlParams.get('is_reservation') === 'true') {
                 this.form.is_reservation = true;
             }
+            // Rango seleccionado arrastrando en el calendario: la fecha de salida
+            // viene en la URL. Se ajusta la duración (noches) y el watcher de
+            // input_date recalcula la salida a partir de esa duración.
+            const outputDateParam = urlParams.get('output_date');
+            if (outputDateParam && moment(outputDateParam, 'YYYY-MM-DD', true).isValid()) {
+                const nights = moment(outputDateParam, 'YYYY-MM-DD')
+                    .diff(moment(inputDateParam, 'YYYY-MM-DD'), 'days');
+                if (nights >= 1) {
+                    this.form.duration = nights;
+                    this.form.output_date = outputDateParam;
+                }
+            }
         }
         
         // Cargar datos de la reserva si existe (después de cargar clientes)
