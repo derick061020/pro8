@@ -75,8 +75,10 @@
         <!-- Calendar Grid -->
         <div class="rcal-container" v-loading="loading">
             <div class="rcal-scroll" ref="calScroll">
-                <div class="rcal-grid" :style="{ minWidth: (roomColWidth + visibleDays * dayCellWidth) + 'px' }">
+                <div class="rcal-grid" :style="{ minWidth: gridMinWidth + 'px' }">
 
+                  <!-- ============ VISTA POR DÍAS (día/semana/quincena/mes) ============ -->
+                  <template v-if="!isHourly">
                     <!-- === GLOBAL HEADER: Occupancy % row === -->
                     <div class="rcal-row rcal-row-header">
                         <div class="rcal-room-cell rcal-corner"></div>
@@ -158,6 +160,68 @@
                             </div>
                         </template>
                     </template>
+                  </template>
+
+                  <!-- ============ VISTA POR HORAS (modo Día) ============ -->
+                  <template v-else>
+                    <!-- Header: etiquetas de hora -->
+                    <div class="rcal-row rcal-row-header">
+                        <div class="rcal-room-cell rcal-corner">
+                            <span class="rcal-hour-corner">{{ selectedDay ? selectedDay.shortName + ' ' + selectedDay.dayNumber : '' }}</span>
+                        </div>
+                        <div class="rcal-days-row">
+                            <div class="rcal-hour-header" v-for="h in hours" :key="'hh'+h.h"
+                                 :class="{ 'hh-now': h.isCurrent }"
+                                 :style="{ width: hourCellWidth + 'px' }">
+                                {{ h.label }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Category groups (horas) -->
+                    <template v-for="group in roomGroups">
+                        <div class="rcal-row rcal-row-category" :key="'hcat'+group.id" @click="toggleCategory(group.id)">
+                            <div class="rcal-room-cell rcal-cat-label">
+                                <svg :class="{ 'rcal-chevron-open': !collapsedCategories[group.id] }" class="rcal-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+                                <span>{{ group.name }}</span>
+                            </div>
+                            <div class="rcal-days-row">
+                                <div class="rcal-hour-cat-cell" v-for="h in hours" :key="'hcc'+group.id+h.h"
+                                     :class="{ 'hh-now': h.isCurrent }"
+                                     :style="{ width: hourCellWidth + 'px' }"></div>
+                            </div>
+                        </div>
+
+                        <template v-if="!collapsedCategories[group.id]">
+                            <div class="rcal-row rcal-row-room" v-for="room in group.rooms" :key="'hrm'+room.id">
+                                <div class="rcal-room-cell rcal-room-label">
+                                    <span class="rcal-room-name">{{ room.name }}</span>
+                                    <span class="rcal-room-icons">
+                                        <span v-if="getRoomStatusIcon(room.status)" class="rcal-room-icon" :class="'ricon-'+room.status.toLowerCase()" :title="getRoomStatusLabel(room.status)">{{ getRoomStatusIcon(room.status) }}</span>
+                                    </span>
+                                </div>
+
+                                <div class="rcal-days-row rcal-days-body" :data-room="room.id">
+                                    <!-- Celdas de hora -->
+                                    <div class="rcal-hour-cell" v-for="h in hours" :key="'hc'+room.id+h.h"
+                                         :class="{ 'hh-now': h.isCurrent }"
+                                         :style="{ width: hourCellWidth + 'px' }"
+                                         @click="onHourCellClick(room, h)"></div>
+
+                                    <!-- Barras posicionadas por hora -->
+                                    <div v-for="bar in getRoomHourBars(room.id)" :key="'hbar'+bar.id"
+                                         class="rcal-bar"
+                                         :class="getBarClass(bar)"
+                                         :style="bar.style"
+                                         @click.stop="openDetails(bar)"
+                                         :title="bar.customer_name + ' — ' + bar.timeLabel">
+                                        <span class="rcal-bar-text">{{ bar.customer_name }} · {{ bar.timeLabel }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </template>
+                    </template>
+                  </template>
 
                     <!-- Empty -->
                     <div v-if="!roomGroups.length && !loading" class="rcal-empty">
@@ -375,6 +439,7 @@ export default {
             periodMode: 'fortnight', // 'day' | 'week' | 'fortnight' | 'month'
             visibleDays: 15,
             dayCellWidth: 90,
+            hourCellWidth: 80,
             roomColWidth: 160,
             startDate: null,
             days: [],
@@ -561,6 +626,65 @@ export default {
             })
             return map
         },
+
+        /* ── Vista por horas (modo Día) ── */
+        isHourly() {
+            return this.periodMode === 'day'
+        },
+        // El único día visible en modo Día.
+        selectedDay() {
+            return this.days.length ? this.days[0] : null
+        },
+        // 24 columnas de hora (00:00 … 23:00).
+        hours() {
+            const now = new Date()
+            const isToday = this.selectedDay && this.selectedDay.isToday
+            const curH = now.getHours()
+            const out = []
+            for (let h = 0; h < 24; h++) {
+                out.push({
+                    h,
+                    label: String(h).padStart(2, '0') + ':00',
+                    isCurrent: !!isToday && h === curH,
+                })
+            }
+            return out
+        },
+        gridMinWidth() {
+            if (this.isHourly) return this.roomColWidth + 24 * this.hourCellWidth
+            return this.roomColWidth + this.visibleDays * this.dayCellWidth
+        },
+        // roomId -> barras posicionadas por hora dentro del día seleccionado.
+        hourlyBarsByRoom() {
+            const map = {}
+            const day = this.selectedDay
+            if (!day) return map
+            const dayT = day.date.getTime()
+            this.parsedReservations.forEach(p => {
+                // La reserva debe cubrir el día seleccionado.
+                if (dayT < p.sT || dayT > p.eT) return
+                const r = p.res
+                // Hora de inicio: si la reserva empieza este día, su hora de
+                // entrada; si viene de días anteriores, desde las 00:00.
+                const startH = (p.sT === dayT) ? this.parseTimeToFloat(r.input_time, 0) : 0
+                // Hora de fin: si termina este día, su hora de salida; si sigue
+                // en días posteriores, hasta las 24:00.
+                let endH = (p.eT === dayT) ? this.parseTimeToFloat(r.output_time, 24) : 24
+                if (endH <= startH) endH = Math.min(24, startH + 0.5)
+                const leftPx = startH * this.hourCellWidth + 2
+                const widthPx = (endH - startH) * this.hourCellWidth - 4
+                const inLbl = (p.sT === dayT) ? this.fmtTime(r.input_time) : '00:00'
+                const outLbl = (p.eT === dayT) ? this.fmtTime(r.output_time) : '24:00'
+                if (!map[p.roomId]) map[p.roomId] = []
+                map[p.roomId].push({
+                    ...r,
+                    isMultiGuest: false,
+                    timeLabel: inLbl + ' → ' + outLbl,
+                    style: { left: leftPx + 'px', width: widthPx + 'px' },
+                })
+            })
+            return map
+        },
     },
     created() {
         // Fijar la fecha y construir los días SIN cargar (loadData hace la carga
@@ -592,6 +716,19 @@ export default {
         },
         isSameDay(a, b) { return a.toDateString() === b.toDateString() },
         isWeekend(d) { return d.getDay() === 0 || d.getDay() === 6 },
+        // "HH:mm[:ss]" -> número decimal de horas (14:30 -> 14.5). `fallback`
+        // se usa cuando no hay hora registrada.
+        parseTimeToFloat(t, fallback) {
+            if (!t) return fallback
+            const p = String(t).split(':')
+            const h = parseInt(p[0], 10)
+            const m = parseInt(p[1], 10) || 0
+            if (isNaN(h)) return fallback
+            return h + m / 60
+        },
+        fmtTime(t) {
+            return t ? String(t).slice(0, 5) : '--:--'
+        },
 
         /* ── Period / Navigation ── */
         // Calcula startDate + visibleDays + ancho de celda según el modo de
@@ -657,6 +794,17 @@ export default {
             this.$nextTick(() => {
                 const el = this.$refs.calScroll
                 if (!el) return
+                // En vista por horas, centrar la hora actual.
+                if (this.isHourly) {
+                    if (this.selectedDay && this.selectedDay.isToday) {
+                        const curH = new Date().getHours()
+                        const target = curH * this.hourCellWidth - el.clientWidth / 2 + this.roomColWidth
+                        el.scrollTo({ left: Math.max(0, target), behavior: 'smooth' })
+                    } else {
+                        el.scrollLeft = 0
+                    }
+                    return
+                }
                 const idx = this.days.findIndex(d => d.isToday)
                 if (idx < 0) { el.scrollLeft = 0; return }
                 const target = idx * this.dayCellWidth - el.clientWidth / 2 + this.roomColWidth
@@ -803,6 +951,32 @@ export default {
             // El cálculo y posicionamiento de barras ya está memoizado en el
             // computed barsByRoom; aquí solo se hace lookup.
             return this.barsByRoom[roomId] || []
+        },
+        getRoomHourBars(roomId) {
+            return this.hourlyBarsByRoom[roomId] || []
+        },
+        // Clic en una celda de hora (modo Día): crear reserva con fecha y hora.
+        onHourCellClick(room, hour) {
+            if (!this.selectedDay) return
+            // Si ya hay una reserva en esa habitación a esa hora, abrir detalle.
+            const dayT = this.selectedDay.date.getTime()
+            const hit = this.reservations.find(r => {
+                if (r.hotel_room_id != room.id) return false
+                const s = this.parseDate(r.start_date), e = this.parseDate(r.end_date)
+                if (dayT < s.getTime() || dayT > e.getTime()) return false
+                const startH = (s.getTime() === dayT) ? this.parseTimeToFloat(r.input_time, 0) : 0
+                const endH = (e.getTime() === dayT) ? this.parseTimeToFloat(r.output_time, 24) : 24
+                return hour.h >= Math.floor(startH) && hour.h < Math.ceil(endH)
+            })
+            if (hit) { this.openDetails(hit); return }
+            const params = new URLSearchParams({
+                is_reservation: 'true',
+                input_date: this.selectedDay.dateStr,
+                input_time: hour.label,
+                source: 'calendar',
+                t: Date.now().toString(),
+            })
+            window.location.href = `/hotels/reception/${room.id}/rent?${params.toString()}`
         },
         getBarClass(bar) {
             // El estado terminal tiene prioridad sobre is_reserve: una reserva
@@ -1438,6 +1612,28 @@ export default {
 .rcal-day-cell.dc-selecting,
 .rcal-day-cell.dc-selecting:hover { background: rgba(59,130,246,.22); }
 .rcal-days-body { user-select: none; }
+
+/* ── Vista por horas (modo Día) ── */
+.rcal-hour-corner { font-size: 12px; font-weight: 700; color: #374151; }
+.rcal-hour-header {
+    height: 100%; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 600; color: #6b7280;
+    border-right: 1px solid #eef0f2;
+}
+.rcal-hour-cat-cell {
+    height: 100%; flex-shrink: 0; border-right: 1px solid #f0f1f3;
+}
+.rcal-hour-cell {
+    height: 38px; flex-shrink: 0; cursor: pointer;
+    border-right: 1px solid #f0f1f3; transition: background .08s;
+}
+.rcal-hour-cell:last-child { border-right: none; }
+.rcal-hour-cell:hover { background: rgba(59,130,246,.06); }
+/* Resaltado de la hora actual */
+.rcal-hour-header.hh-now { color: #2563eb; font-weight: 800; background: rgba(59,130,246,.08); }
+.rcal-hour-cell.hh-now,
+.rcal-hour-cat-cell.hh-now { box-shadow: inset 1px 0 0 #3b82f6, inset -1px 0 0 #3b82f6; background: rgba(59,130,246,.05); }
 
 /* ── Reservation Bars ── */
 .rcal-bar {

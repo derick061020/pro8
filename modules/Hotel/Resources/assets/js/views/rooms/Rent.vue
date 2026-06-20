@@ -889,6 +889,11 @@ export default {
             if (urlParams.get('is_reservation') === 'true') {
                 this.form.is_reservation = true;
             }
+            // Hora de entrada desde la vista por horas del calendario.
+            const inputTimeParam = urlParams.get('input_time');
+            if (inputTimeParam && /^\d{1,2}:\d{2}$/.test(inputTimeParam)) {
+                this.form.input_time = inputTimeParam;
+            }
             // Rango seleccionado arrastrando en el calendario: la fecha de salida
             // viene en la URL. Se ajusta la duración (noches) y el watcher de
             // input_date recalcula la salida a partir de esa duración.
