@@ -2970,15 +2970,15 @@ export default {
             this.editDatesModal.editOutput = false;
             
             // Inicializar formulario con valores actuales
-            this.editDatesForm.inputDate = moment(this.currentRent.input_date).subtract(1, 'day').format('YYYY-MM-DD');
+            this.editDatesForm.inputDate = moment(this.currentRent.input_date).format('YYYY-MM-DD');
             this.editDatesForm.inputTime = this.currentRent.input_time || '14:00';
-            this.editDatesForm.outputDate = moment(this.currentRent.output_date).subtract(1, 'day').format('YYYY-MM-DD');
+            this.editDatesForm.outputDate = moment(this.currentRent.output_date).format('YYYY-MM-DD');
             this.editDatesForm.outputTime = this.currentRent.output_time || '11:59';
-            
+
             // Guardar precio original - usar el precio real por período
             const rentalType = this.currentRent.rental_period_type;
             let originalUnitPrice = 0;
-            
+
             if (rentalType === 'hour') {
                 // Para renta por hora, usar rental_price como precio por hora
                 originalUnitPrice = parseFloat(this.currentRent.rental_price) || parseFloat(this.room.item.unit_price);
@@ -2998,22 +2998,22 @@ export default {
                 const originalDays = Math.max(1, Math.ceil(originalDuration.asDays()));
                 originalUnitPrice = parseFloat(this.room.item.unit_price) / originalDays;
             }
-            
+
             this.editDatesForm.originalPrice = parseFloat(this.room.item.total); // Precio total original
             this.editDatesForm.originalUnitPrice = originalUnitPrice; // Precio por unidad original
             this.editDatesForm.newPrice = null;
             this.editDatesForm.priceDifference = 0;
-            
+
             // Calcular duración original
             this.editDatesForm.originalDuration = this.calculateDuration(
-                this.currentRent.input_date, 
+                this.currentRent.input_date,
                 this.currentRent.input_time,
-                this.currentRent.output_date, 
+                this.currentRent.output_date,
                 this.currentRent.output_time
             );
-            
+
             this.editDatesForm.warning = '';
-            
+
             this.showEditDatesModal = true;
         },
         showEditCheckoutDates() {
@@ -3022,9 +3022,9 @@ export default {
             this.editDatesModal.editOutput = true;
             
             // Inicializar formulario con valores actuales
-            this.editDatesForm.inputDate = moment(this.currentRent.input_date).subtract(1, 'day').format('YYYY-MM-DD');
+            this.editDatesForm.inputDate = moment(this.currentRent.input_date).format('YYYY-MM-DD');
             this.editDatesForm.inputTime = this.currentRent.input_time || '14:00';
-            this.editDatesForm.outputDate = moment(this.currentRent.output_date).subtract(1, 'day').format('YYYY-MM-DD');
+            this.editDatesForm.outputDate = moment(this.currentRent.output_date).format('YYYY-MM-DD');
             this.editDatesForm.outputTime = this.currentRent.output_time || '11:59';
             
             // Guardar precio original - usar el precio real por período
