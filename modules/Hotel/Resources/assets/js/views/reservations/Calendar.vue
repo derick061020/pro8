@@ -176,6 +176,7 @@
             <span class="rcal-lg-item"><i class="rcal-lg-dot lg-checkin"></i>Check-in</span>
             <span class="rcal-lg-item"><i class="rcal-lg-dot lg-active"></i>Activa</span>
             <span class="rcal-lg-item"><i class="rcal-lg-dot lg-checkout"></i>Check-out</span>
+            <span class="rcal-lg-item"><i class="rcal-lg-dot lg-finalized"></i>Finalizada</span>
         </div>
 
         <!-- Detail / Edit Modal -->
@@ -789,11 +790,23 @@ export default {
             return this.barsByRoom[roomId] || []
         },
         getBarClass(bar) {
-            // Si es una reserva, mostrar con color especial
+            // El estado FINALIZADO/cancelado tiene prioridad sobre cualquier
+            // otra cosa: una reserva finalizada conserva is_reserve = true, así
+            // que debe pintarse en gris (bars-finalized) y NO en naranja de
+            // reserva. Por eso se comprueba el estado terminal antes que is_reserve.
+            const st = String(bar.status || '').toUpperCase();
+            if (st === 'FINALIZADO' || st === 'CHECKED_OUT') {
+                return 'bars-finalized';
+            }
+            if (st === 'CANCELLED') {
+                return 'bars-cancelled';
+            }
+
+            // Si es una reserva (aún no finalizada), mostrar con color especial
             if (bar.is_reserve) {
                 return 'bars-reservation';
             }
-            
+
             const statusMap = {
                 confirmed: 'bars-confirmed',
                 pending: 'bars-pending',
@@ -1433,6 +1446,10 @@ export default {
 }
 .lg-checkout {
     background: linear-gradient(135deg, #b39ddb 25%, #9575cd 25%, #9575cd 50%, #b39ddb 50%, #b39ddb 75%, #9575cd 75%);
+    background-size: 8px 8px;
+}
+.lg-finalized {
+    background: linear-gradient(135deg, #b0bec5 25%, #90a4ae 25%, #90a4ae 50%, #b0bec5 50%, #b0bec5 75%, #90a4ae 75%);
     background-size: 8px 8px;
 }
 
