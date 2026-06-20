@@ -790,13 +790,22 @@ export default {
             return this.barsByRoom[roomId] || []
         },
         getBarClass(bar) {
-            // El estado FINALIZADO/cancelado tiene prioridad sobre cualquier
-            // otra cosa: una reserva finalizada conserva is_reserve = true, así
-            // que debe pintarse en gris (bars-finalized) y NO en naranja de
-            // reserva. Por eso se comprueba el estado terminal antes que is_reserve.
+            // El estado terminal tiene prioridad sobre is_reserve: una reserva
+            // finalizada/con checkout conserva is_reserve = true, así que hay que
+            // evaluar el estado antes que el color naranja de reserva.
             const st = String(bar.status || '').toUpperCase();
-            if (st === 'FINALIZADO' || st === 'CHECKED_OUT') {
-                return 'bars-finalized';
+            // Todos los registros terminados quedan en estado FINALIZADO, pero
+            // se distinguen por si hubo un checkout real:
+            //  - is_reserve = false → era un INGRESO real que pasó por checkout
+            //    (finalizeRent registró la salida) → morado (guía de colores).
+            //  - is_reserve = true  → era una RESERVA que expiró/se consumió sin
+            //    checkout real → plomo (bars-finalized).
+            if (st === 'FINALIZADO') {
+                return bar.is_reserve ? 'bars-finalized' : 'bars-checkout';
+            }
+            // Estado de checkout explícito (por si llega en inglés) → morado.
+            if (st === 'CHECKED_OUT') {
+                return 'bars-checkout';
             }
             if (st === 'CANCELLED') {
                 return 'bars-cancelled';
@@ -887,13 +896,24 @@ export default {
                 _availableRates: [],
             };
         },
-        openDetails(res) {
-            // En lugar de abrir un modal de detalle/edición, redirigir a la
-            // página correspondiente para gestionar/editar la reserva.
-            if (res.status === 'ACTIVE' || res.status === 'checked_in') {
-                this.goToEdit(res);
-            } else {
-                this.goToEditMode(res);
+        async openDetails(res) {
+            // Abrir el modal de detalles rápidos. Desde sus botones (Gestionar /
+            // Editar) se redirige a la página de recepción si hace falta.
+            this.editing = false;
+            this.detail = null;
+            this.showDetail = true;
+            this.loadingDetail = true;
+            try {
+                const r = await this.$http.get(`/hotels/reservations/calendar/${res.id}/details`);
+                this.detail = r.data?.data || null;
+                this.populateEditForm(this.detail);
+            } catch (e) {
+                // Fallback: usar los datos del evento que ya tenemos en el calendario.
+                console.error('Error cargando detalle de reserva:', e);
+                this.detail = { ...res };
+                this.populateEditForm(null, res);
+            } finally {
+                this.loadingDetail = false;
             }
         },
         populateEditForm(detail, fallbackEvent) {

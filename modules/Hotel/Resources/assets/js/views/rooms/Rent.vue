@@ -801,6 +801,10 @@ export default {
                 adults: 1,
                 children: 0,
                 quantity_persons: 1,
+                // Debe declararse aquí para que sea reactivo: si se agrega
+                // después con this.form.data_persons = [] Vue 2 no observa el
+                // array y el push del modal de huéspedes no re-renderiza.
+                data_persons: [],
                 license_plate: null,
                 travel_reason: null,
                 notes: null,
