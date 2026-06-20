@@ -334,7 +334,7 @@
         </el-dialog>
 
         <!-- Room Selection Dialog -->
-        <el-dialog :visible.sync="showReservationPopup" width="450px" custom-class="rcal-modal rcal-modal-compact" :show-close="true" append-to-body>
+        <el-dialog :visible.sync="showReservationPopup" width="1450px" custom-class="rcal-modal rcal-modal-compact" :show-close="true" append-to-body>
             <template slot="title">
                 <div class="rcal-modal-title">
                     <span>Seleccionar Habitación</span>
@@ -843,7 +843,14 @@ export default {
             if (hit) {
                 this.openDetails(hit)
             } else if (room.status === 'DISPONIBLE') {
-                window.location.href = `/hotels/reception/${room.id}/rent`
+                // Ir a crear reserva con la fecha de entrada ya marcada (la celda clickeada).
+                const params = new URLSearchParams({
+                    is_reservation: 'true',
+                    input_date: day.dateStr,
+                    source: 'calendar',
+                    t: Date.now().toString(),
+                })
+                window.location.href = `/hotels/reception/${room.id}/rent?${params.toString()}`
             }
         },
         emptyEditForm() {

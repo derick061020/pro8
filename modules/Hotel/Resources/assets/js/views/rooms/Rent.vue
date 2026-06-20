@@ -876,6 +876,16 @@ export default {
             console.log('Detectado modo edición desde calendario...');
             await this.loadReservationForEdit(urlParams.get('reservation_id'));
         }
+
+        // Nueva reserva desde el calendario: la celda clickeada trae la fecha de
+        // entrada. Se marca en el formulario y el watcher recalcula la salida.
+        const inputDateParam = urlParams.get('input_date');
+        if (inputDateParam && moment(inputDateParam, 'YYYY-MM-DD', true).isValid()) {
+            this.form.input_date = inputDateParam;
+            if (urlParams.get('is_reservation') === 'true') {
+                this.form.is_reservation = true;
+            }
+        }
         
         // Cargar datos de la reserva si existe (después de cargar clientes)
         if (this.reservation) {
