@@ -1493,13 +1493,9 @@ export default {
                 this.submittedMessage = response_reception.data.message || '';
 
                 if (this.form.is_reservation) {
-                    window.parent.postMessage({
-                        action: 'reservation_created',
-                        success: true,
-                        message: 'Reserva creada exitosamente'
-                    }, '*');
+                    // La reserva se crea desde el calendario: volver al calendario.
                     setTimeout(() => {
-                        if (!this.isPaid) this.onToBackPage();
+                        if (!this.isPaid) window.location.href = '/hotels/reservations/calendar';
                     }, 500);
                 } else {
                     this.onToBackPage();

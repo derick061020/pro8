@@ -361,32 +361,6 @@
             </div>
         </el-dialog>
 
-        <!-- Rent Iframe Dialog -->
-        <el-dialog 
-            :visible.sync="showRentIframe" 
-            width="95%" 
-            height="90%" 
-            custom-class="rcal-modal rcal-modal-fullscreen" 
-            :show-close="true" 
-            append-to-body
-            @close="closeRentIframe"
-        >
-            <template slot="title">
-                <div class="rcal-modal-title">
-                    <span>Nueva Reserva - {{ selectedRoom?.name }}</span>
-                </div>
-            </template>
-            <div v-if="selectedRoom" class="iframe-container">
-                <iframe 
-                    :src="getReservationUrl(selectedRoom)"
-                    style="width: 100%; height: 80vh; border: none; border-radius: 8px;"
-                    @load="onIframeLoad"
-                ></iframe>
-            </div>
-            <div slot="footer" class="rcal-modal-footer">
-                <el-button size="small" @click="closeRentIframe">Cerrar</el-button>
-            </div>
-        </el-dialog>
     </div>
 </template>
 
@@ -427,7 +401,6 @@ export default {
             // New reservation popup
             showReservationPopup: false,
             selectedRoom: null,
-            showRentIframe: false,
             // Color assignment
             barColorIndex: {},
             // Catálogos
@@ -588,14 +561,6 @@ export default {
         this.computePeriod(this.periodMode, new Date())
         this.buildDays()
         this.loadData()
-    },
-    mounted() {
-        // Escuchar mensajes del iframe (Rent.vue)
-        window.addEventListener('message', this.handleIframeMessage);
-    },
-    beforeDestroy() {
-        // Limpiar listener al destruir el componente
-        window.removeEventListener('message', this.handleIframeMessage);
     },
     methods: {
         /* ── Date Helpers ── */
@@ -897,21 +862,13 @@ export default {
                 _availableRates: [],
             };
         },
-        async openDetails(res) {
-            this.editing = false;
-            this.showDetail = true;
-            this.loadingDetail = true;
-            try {
-                const r = await this.$http.get(`/hotels/reservations/calendar/${res.id}/details`);
-                this.detail = r.data?.data || res;
-                this.populateEditForm(this.detail);
-            } catch (e) {
-                console.error('Detalle error:', e);
-                // Fallback con los datos del evento (al menos algo)
-                this.detail = res;
-                this.populateEditForm(null, res);
-            } finally {
-                this.loadingDetail = false;
+        openDetails(res) {
+            // En lugar de abrir un modal de detalle/edición, redirigir a la
+            // página correspondiente para gestionar/editar la reserva.
+            if (res.status === 'ACTIVE' || res.status === 'checked_in') {
+                this.goToEdit(res);
+            } else {
+                this.goToEditMode(res);
             }
         },
         populateEditForm(detail, fallbackEvent) {
@@ -1111,24 +1068,13 @@ export default {
             this.selectedRoom = room;
             // Cerrar el diálogo de selección
             this.showReservationPopup = false;
-            // Abrir el popup de Rent.vue en un iframe
-            this.$nextTick(() => {
-                this.showRentIframe = true;
-            });
+            // Redirigir a la página de Rent para crear la reserva (en lugar de
+            // abrir un modal/iframe). Al guardar, Rent.vue regresa al calendario.
+            window.location.href = this.getReservationUrl(room);
         },
         closeReservationPopup() {
             this.showReservationPopup = false;
             this.selectedRoom = null;
-        },
-        closeRentIframe() {
-            this.showRentIframe = false;
-            this.selectedRoom = null;
-            // Recargar las reservas después de cerrar
-            this.loadReservations();
-        },
-        onIframeLoad() {
-            // El iframe ha cargado completamente
-            console.log('Iframe de Rent.vue cargado');
         },
         getReservationUrl(room) {
             // Construir URL con parámetros codificados para asegurar que lleguen
@@ -1139,22 +1085,6 @@ export default {
                 source: 'calendar'
             });
             return `${baseUrl}?${params.toString()}`;
-        },
-        handleIframeMessage(event) {
-            // Verificar que el mensaje sea del iframe de reserva
-            if (event.data && event.data.action === 'reservation_created') {
-                console.log('Reserva creada detectada:', event.data);
-                
-                // Mostrar mensaje de éxito
-                this.$message({
-                    message: event.data.message || 'Reserva creada exitosamente',
-                    type: 'success',
-                    duration: 3000
-                });
-                
-                // Cerrar el popup del iframe
-                this.closeRentIframe();
-            }
         },
         deleteReservation(reservation) {
             const name = reservation.customer_name || (reservation.customer && reservation.customer.name) || 'esta reserva';
