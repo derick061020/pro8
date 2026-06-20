@@ -1239,8 +1239,12 @@
 
 <script>
 import moment from "moment";
-import 'moment/min/locales'
-moment.locale("es");
+import es from 'moment/locale/es'
+
+moment.locale('es')
+
+console.log(es)
+console.log(moment.locales())
 import DocumentOptions from "@views/documents/partials/options.vue";
 import SaleNoteOptions from "@views/sale_notes/partials/options.vue";
 import {calculateRowItem} from "@helpers/functions";
