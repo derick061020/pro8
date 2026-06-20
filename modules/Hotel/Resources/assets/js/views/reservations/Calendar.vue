@@ -842,7 +842,12 @@ export default {
             })
             if (hit) {
                 this.openDetails(hit)
-            } else if (room.status === 'DISPONIBLE') {
+            } else {
+                // No hay reserva en esta celda/día: se puede crear una nueva.
+                // No dependemos de room.status (estado físico actual de la
+                // habitación): una habitación OCUPADA hoy puede tener días
+                // futuros libres, y la búsqueda de `hit` ya garantiza que ese
+                // día concreto no tiene ninguna reserva encima.
                 // Ir a crear reserva con la fecha de entrada ya marcada (la celda clickeada).
                 const params = new URLSearchParams({
                     is_reservation: 'true',
