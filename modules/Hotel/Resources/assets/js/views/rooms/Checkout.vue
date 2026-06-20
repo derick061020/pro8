@@ -1239,7 +1239,7 @@
 
 <script>
 import moment from "moment";
-import "moment/locale/es";
+import 'moment/min/locales'
 moment.locale("es");
 import DocumentOptions from "@views/documents/partials/options.vue";
 import SaleNoteOptions from "@views/sale_notes/partials/options.vue";
@@ -1645,6 +1645,7 @@ export default {
             'loadConfiguration',
         ]),
         moment(...args) {
+            moment.locale('es');
             // Forzar locale español en todas las fechas del template,
             // independientemente del estado global de moment (otras librerías
             // como los date pickers pueden resetearlo a 'en').
