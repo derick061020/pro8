@@ -912,12 +912,14 @@ export default {
                 return
             }
 
-            // Rango: input = primer día seleccionado, output = último día
-            // seleccionado (inclusive), igual que el rango que cubre una barra.
+            // Rango: input = primer día seleccionado; output = día siguiente al
+            // último seleccionado, de modo que N celdas marcadas = N noches.
+            const out = new Date(endDay.date)
+            out.setDate(out.getDate() + 1)
             const params = new URLSearchParams({
                 is_reservation: 'true',
                 input_date: startDay.dateStr,
-                output_date: endDay.dateStr,
+                output_date: this.toStr(out),
                 source: 'calendar',
                 t: Date.now().toString(),
             })
