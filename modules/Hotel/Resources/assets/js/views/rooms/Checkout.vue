@@ -109,9 +109,9 @@
                             </div>
                         </div>
                         <div class="col-12 col-md-2 card card-body bg-light-color my-1 mx-1 p-3">
-                            <span class="text-muted"><svg  xmlns="http://www.w3.org/2000/svg"  width="16"  height="16"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-moon"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z" /></svg> Noches</span>
+                            <span class="text-muted"><svg  xmlns="http://www.w3.org/2000/svg"  width="16"  height="16"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-moon"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z" /></svg> {{ durationCardTitle }}</span>
                             <h4 class="m-0"><b>
-                                {{ totalNights }} {{ totalNights === 1 ? 'noche' : 'noches' }}</b></h4>
+                                {{ totalNights }} {{ durationLabel }}</b></h4>
                         </div>
                         <div class="col-12 col-md-2 card card-body bg-light-color my-1 mx-1 p-3" v-if="currentRent.rental_date_time">
                             <span class="text-muted"><svg  xmlns="http://www.w3.org/2000/svg"  width="16"  height="16"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-clock"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M3 12a9 9 0 1 0 18 0a9 9 0 0 0 -18 0" /><path d="M12 7v5l3 3" /></svg> Renta</span>
@@ -1239,6 +1239,8 @@
 
 <script>
 import moment from "moment";
+import "moment/locale/es";
+moment.locale("es");
 import DocumentOptions from "@views/documents/partials/options.vue";
 import SaleNoteOptions from "@views/sale_notes/partials/options.vue";
 import {calculateRowItem} from "@helpers/functions";
@@ -1319,6 +1321,26 @@ export default {
                 return nights > 0 ? nights : 1;
             }
             return 0;
+        },
+        // Etiqueta de la unidad de duración según el tipo de renta:
+        // por hora -> horas, por mes -> meses, día/estándar -> noches.
+        durationLabel: function () {
+            const type = this.currentRent && this.currentRent.rental_period_type;
+            const value = this.totalNights;
+            if (type === 'hour') {
+                return value === 1 ? 'hora' : 'horas';
+            }
+            if (type === 'month') {
+                return value === 1 ? 'mes' : 'meses';
+            }
+            return value === 1 ? 'noche' : 'noches';
+        },
+        // Título de la tarjeta (encabezado) acorde a la unidad.
+        durationCardTitle: function () {
+            const type = this.currentRent && this.currentRent.rental_period_type;
+            if (type === 'hour') return 'Horas';
+            if (type === 'month') return 'Meses';
+            return 'Noches';
         },
         canMakePayment: function () {
             if (
