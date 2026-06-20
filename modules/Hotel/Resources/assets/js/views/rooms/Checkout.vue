@@ -1645,7 +1645,10 @@ export default {
             'loadConfiguration',
         ]),
         moment(...args) {
-            return moment(...args);
+            // Forzar locale español en todas las fechas del template,
+            // independientemente del estado global de moment (otras librerías
+            // como los date pickers pueden resetearlo a 'en').
+            return moment(...args).locale('es');
         },
         getSourceRentItemsForCheckout() {
             const currentItems = this.currentRent && Array.isArray(this.currentRent.items)
