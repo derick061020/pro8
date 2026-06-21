@@ -1882,6 +1882,37 @@ class HotelRentController extends Controller
     }
 
     /**
+     * Calcula la deuda real de un alquiler con la misma fórmula que usa el
+     * frontend (Checkout.vue) y HotelReceptionController::attachRentBalances:
+     *
+     *   deuda = Σ(total de items, excluyendo PAY) - Σ(pagos) + arrears
+     *
+     * Es la fuente de verdad para la deuda: NO depende del payment_status de
+     * los items (que puede quedar en PAID al emitir un comprobante sin pago).
+     */
+    private function calculateRentDebt(HotelRent $rent)
+    {
+        $items = $rent->items ?: collect();
+
+        $totalOriginalItems = $items
+            ->filter(function ($i) { return $i->type !== 'PAY'; })
+            ->sum(function ($i) {
+                $itemObj = $i->item;
+                return (is_object($itemObj) && isset($itemObj->total)) ? floatval($itemObj->total) : 0;
+            });
+
+        $netPayments = floatval(
+            HotelRentItemPayment::whereHas('associated_record_payment', function ($q) use ($rent) {
+                $q->where('hotel_rent_id', $rent->id);
+            })->sum('payment')
+        );
+
+        $arrears = floatval($rent->arrears ?? 0);
+
+        return round($totalOriginalItems - $netPayments + $arrears, 2);
+    }
+
+    /**
      * Guardar pago parcial
      * @param int $id
      * @param Request $request
@@ -2003,9 +2034,12 @@ class HotelRentController extends Controller
                         ->where('payment_status', 'DEBT')
                         ->get();
 
-                    // Si no hay deuda, el pago se trata como ADELANTO/crédito:
-                    // se registra como un pseudo-item PAY y queda disponible
-                    // para futuros cargos (productos/extensiones).
+                    // No hay items en estado DEBT. Hay dos escenarios distintos:
+                    //  a) Realmente no se debe nada -> el pago es un ADELANTO/crédito.
+                    //  b) Sí existe deuda real (p.ej. se emitió el comprobante sin
+                    //     pagar y los items quedaron en PAID): la deuda se calcula
+                    //     con la fórmula real, no con el payment_status. En ese caso
+                    //     el pago liquida la deuda y el excedente es VUELTO (change).
                     if ($debtItems->isEmpty()) {
                         $paymentItemId = $this->resolvePaymentItemId($rent);
                         if (!$paymentItemId) {
@@ -2016,6 +2050,55 @@ class HotelRentController extends Controller
                             ], 422);
                         }
 
+                        $realDebt = $this->calculateRentDebt($rent);
+
+                        // Caso (b): existe deuda real aunque los items estén PAID.
+                        if ($realDebt > 0.009) {
+                            // El pago debe colgar de un HotelRentItem real (no del
+                            // catálogo). Usamos el item facturable más reciente.
+                            $targetItem = HotelRentItem::where('hotel_rent_id', $rent->id)
+                                ->where('type', '!=', 'PAY')
+                                ->orderByDesc('id')
+                                ->first();
+
+                            if (!$targetItem) {
+                                DB::connection('tenant')->rollBack();
+                                return response()->json([
+                                    'success' => false,
+                                    'message' => 'No se pudo registrar el pago porque no se encontró un item al cual asociarlo.'
+                                ], 422);
+                            }
+
+                            $appliedToDebt = min($amount, $realDebt);
+                            $change        = round($amount - $appliedToDebt, 2); // vuelto
+
+                            $debtPayment = new HotelRentItemPayment();
+                            $debtPayment->hotel_rent_item_id = $targetItem->id;
+                            $debtPayment->payment = $appliedToDebt;
+                            $debtPayment->payment_method_type_id = $paymentMethodTypeId;
+                            $debtPayment->reference = $reference;
+                            $debtPayment->change = $change;
+                            $debtPayment->date_of_payment = \Carbon\Carbon::now()->format('Y-m-d H:i:s');
+                            $debtPayment->save();
+
+                            // En caja solo entra lo aplicado a la deuda; el vuelto se
+                            // devuelve al cliente y no forma parte del ingreso.
+                            $this->registerRentPaymentInCash($debtPayment, $paymentDestinationId);
+
+                            DB::connection('tenant')->commit();
+
+                            return response()->json([
+                                'success'      => true,
+                                'message'      => $change > 0
+                                    ? 'Pago registrado correctamente. Vuelto: S/ ' . number_format($change, 2)
+                                    : 'Pago guardado correctamente',
+                                'payment_id'   => $debtPayment->id,
+                                'total_amount' => $appliedToDebt,
+                                'change'       => $change,
+                            ], 200);
+                        }
+
+                        // Caso (a): adelanto/crédito real para futuros cargos.
                         $creditItem = new HotelRentItem();
                         $creditItem->hotel_rent_id = $rent->id;
                         $creditItem->item_id = $paymentItemId;
@@ -2056,7 +2139,8 @@ class HotelRentController extends Controller
             if (!$isEditing) {
                 $remainingAmount = $amount;
                 $paymentItems = [];
-                
+                $lastPayment = null; // último pago creado, para registrar el vuelto
+
                 // Distribuir el pago entre todos los items con deuda
                 foreach ($debtItems as $debtItem) {
                     if ($remainingAmount <= 0) break;
@@ -2082,9 +2166,10 @@ class HotelRentController extends Controller
                     $payment->payment = $paymentAmount;
                     $payment->payment_method_type_id = $paymentMethodTypeId;
                     $payment->reference = $reference;
-                    $payment->change = 0; // El cambio se maneja a nivel general
+                    $payment->change = 0; // el vuelto se asigna al final, sobre el último pago
                     $payment->date_of_payment = \Carbon\Carbon::now()->format('Y-m-d H:i:s');
                     $payment->save();
+                    $lastPayment = $payment;
 
                     // Registrar el pago en caja/finanzas.
                     $this->registerRentPaymentInCash($payment, $paymentDestinationId);
@@ -2114,27 +2199,35 @@ class HotelRentController extends Controller
                     }
                 }
                 
-                // Crear un item de pago general si sobra dinero
+                // Si sobra dinero tras cubrir toda la deuda, es VUELTO: se registra
+                // como `change` sobre el último pago (no como ingreso/crédito), para
+                // que aparezca en el historial y no se pierda como antes.
                 if ($remainingAmount > 0) {
-                    $paymentItemId = $this->resolvePaymentItemId($rent, $debtItems->first());
-                    if (!$paymentItemId) {
-                        DB::connection('tenant')->rollBack();
-                        return response()->json([
-                            'success' => false,
-                            'message' => 'No se pudo guardar el excedente porque no se encontró un item base para asociarlo.'
-                        ], 422);
-                    }
+                    if ($lastPayment) {
+                        $lastPayment->change = round($remainingAmount, 2);
+                        $lastPayment->save();
+                    } else {
+                        // Borde defensivo: no se creó ningún pago en el bucle (los
+                        // items ya estaban cubiertos). Registramos un pago portador
+                        // del vuelto sobre el primer item con deuda (HotelRentItem real).
+                        $carrierItem = $debtItems->first();
+                        if (!$carrierItem) {
+                            DB::connection('tenant')->rollBack();
+                            return response()->json([
+                                'success' => false,
+                                'message' => 'No se pudo registrar el vuelto porque no se encontró un item base para asociarlo.'
+                            ], 422);
+                        }
 
-                    $paymentItem = new HotelRentItem();
-                    $paymentItem->hotel_rent_id = $rent->id;
-                    $paymentItem->item_id = $paymentItemId;
-                    $paymentItem->type = 'PAY'; // Tipo de pago
-                    $paymentItem->payment_status = 'PAID';
-                    $paymentItem->item = (object)[
-                        'description' => 'Pago excedente',
-                        'total' => $remainingAmount
-                    ];
-                    $paymentItem->save();
+                        $payment = new HotelRentItemPayment();
+                        $payment->hotel_rent_item_id = $carrierItem->id;
+                        $payment->payment = 0;
+                        $payment->payment_method_type_id = $paymentMethodTypeId;
+                        $payment->reference = $reference;
+                        $payment->change = round($remainingAmount, 2);
+                        $payment->date_of_payment = \Carbon\Carbon::now()->format('Y-m-d H:i:s');
+                        $payment->save();
+                    }
                 }
             }
             
