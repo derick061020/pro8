@@ -184,6 +184,9 @@ address {
     cursor: pointer !important;
     font-size: 13px;
 }
+.dropdown-menu-mobile span {
+    color: black!important;
+}
 .el-input-number__increase:hover:not(.is-disabled) ~ .el-input .el-input__inner:not(.is-disabled), .el-input-number__decrease:hover:not(.is-disabled) ~ .el-input .el-input__inner:not(.is-disabled) {
     border-color: var(--accent-color);
 }
