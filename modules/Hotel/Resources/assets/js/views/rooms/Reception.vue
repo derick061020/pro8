@@ -137,7 +137,7 @@
                             <div class="card-rent">
                                 <!-- <h4>{{ ro.status }}</h4> -->
 
-                                   <span class="text-muted">{{ ro.category?.description }}</span>
+                                   <span class="text-muted" style="text-transform: uppercase;">{{ ro.category?.description }}</span>
                                    <h2 class="mt-0">
                                     <svg  xmlns="http://www.w3.org/2000/svg"  width="32"  height="32"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-door"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M14 12v.01" /><path d="M3 21h18" /><path d="M6 21v-16a2 2 0 0 1 2 -2h8a2 2 0 0 1 2 2v16" /></svg>
                                       <b>{{ ro.name }}</b>
@@ -932,6 +932,12 @@
     min-height: 0;
     gap: 0;
     overflow: hidden;
+}
+/* SOLO PC */
+@media (min-width: 1024px) {
+  .room-container .room-el-card .el-card__body {
+    padding: 9px !important;
+  }
 }
 
 .room-container .room-el-card .card-rent {

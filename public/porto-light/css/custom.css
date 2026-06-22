@@ -1136,6 +1136,7 @@ ul.nav-main li.nav-active:not(.nav-parent) > a.dashboard-link {
   width: 30px;
   height: 30px;
   margin-top: 2px;
+  color: #3b4a63;
 }
 .dropdown-menu-mobile{
   display: flex !important;
@@ -1182,6 +1183,16 @@ ul.nav-main li.nav-active:not(.nav-parent) > a.dashboard-link {
     & li{
       list-style: none;
       margin: 20px 0;
+      /* La tarjeta de pendientes tiene fondo blanco, pero los links reusan
+         las clases del header (tema oscuro) que dejan texto e iconos en
+         blanco -> invisibles. Forzamos color oscuro aqui. */
+      color: #3b4a63;
+      & a, & a span, & .navigation-options{
+        color: #3b4a63;
+      }
+      & svg{
+        stroke: #3b4a63;
+      }
       & .navigation-options{
         display: flex;
         justify-content: space-between;
@@ -1201,6 +1212,7 @@ ul.nav-main li.nav-active:not(.nav-parent) > a.dashboard-link {
       & h4{
         margin: 0px;
         font-weight: 600;
+        color: #3b4a63;
       }
     }
   }
