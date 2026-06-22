@@ -1054,11 +1054,20 @@ export default {
         },
         'form.duration': {
             handler: function(newVal, oldVal) {
+                if (newVal === oldVal) return;
                 // Cambiar la cantidad (noches/horas/meses) recalcula la salida
                 // en cualquier tipo de renta, manteniendo la entrada. Si la
                 // cantidad la escribió updateDuration, no se recalcula la salida.
-                if (newVal !== oldVal && this.form.input_date && !this._skipOutputSync) {
+                if (this.form.input_date && !this._skipOutputSync) {
                     this.onUpdateOutputDate();
+                }
+                // El @change del el-input-number solo se dispara con la
+                // interacción del usuario, NO cuando la cantidad se fija por
+                // código (p. ej. el rango de noches que llega desde el
+                // calendario por URL). Sin esto el monto se quedaba calculado
+                // como 1 noche aunque la cantidad de noches fuera correcta.
+                if (this.form.hotel_rate_id || this.form.rental_price) {
+                    this.recomputeTotal();
                 }
             }
         }
@@ -1557,7 +1566,10 @@ export default {
                 this.form.payment_type = "CASH";
             }
         },
-        onUpdateTotalToPay() {
+        // Recalcula el monto a pagar a partir de la tarifa y la cantidad
+        // (noches/horas/meses). Separado de onUpdateTotalToPay para poder
+        // reusarlo desde el watcher de la cantidad sin volver a tocar la salida.
+        recomputeTotal() {
             // Si hay un precio de renta personalizado, usarlo en lugar del cálculo estándar
             if (this.form.rental_price) {
                 this.form.total_to_pay = parseFloat(this.form.rental_price);
@@ -1567,8 +1579,11 @@ export default {
             } else {
                 this.form.total_to_pay = this.form.rate_price * this.form.duration;
             }
-            this.onUpdateOutputDate();
             this.setTotalPayment()
+        },
+        onUpdateTotalToPay() {
+            this.recomputeTotal();
+            this.onUpdateOutputDate();
         },
         onRentalPeriodChange(value) {
             // Limpiar el precio personalizado si vuelve a estándar
