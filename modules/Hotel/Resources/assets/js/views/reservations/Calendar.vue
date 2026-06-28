@@ -872,7 +872,7 @@ export default {
             this.filteredRooms = this.rooms.filter(r => {
                 if (this.selectedCategory && r.hotel_category_id != this.selectedCategory) return false
                 return true
-            })
+            }).reverse()
         },
         toggleSearch() {
             this.searchOpen = !this.searchOpen

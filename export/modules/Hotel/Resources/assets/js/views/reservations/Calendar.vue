@@ -587,6 +587,7 @@ export default {
                 if (this.selectedCategory && r.hotel_category_id != this.selectedCategory) return false
                 return true
             }).reverse()
+            
         },
         toggleSearch() {
             this.searchOpen = !this.searchOpen
