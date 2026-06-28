@@ -1234,6 +1234,15 @@ export default {
             // Actualizar duración
             this.updateDuration();
 
+            // Si el adelanto de la reserva ya cubre el total, el check-in no tiene
+            // saldo por cobrar: marcar el estado de pago como PAGADO en lugar de
+            // "Falta pagar" (DEBT), que es el valor por defecto del formulario.
+            // Debe ir después de onSelectedRate()/updateDuration() para que
+            // total_to_pay (y por tanto saldoPendiente) ya esté calculado.
+            if (this.advancePaidFromReservation > 0 && this.saldoPendiente <= 0) {
+                this.form.payment_status = 'PAID';
+            }
+
             console.log('Datos de reserva cargados en el formulario');
         },
         async loadReservationForEdit(reservationId) {
