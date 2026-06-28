@@ -29,7 +29,7 @@
                         <th> Habitación</th>
                         <th>Status de pago</th>
                         <th>Status checkout</th>
-                        <th>Precio</th>
+                        <th>Precio renta</th>
                         <th>Productos</th>
                         <th>Fecha de entrada</th>
                         <th>Hora de entrada</th>
@@ -49,7 +49,7 @@
                         <td>{{ row.room ? row.room.name : '' }}</td>
                         <td>{{ row.payment_status === "PAID" ? "Pagado" : "Debe" }}</td>
                         <td>{{ row.status }}</td>
-                        <td>{{ calculateTotalItems(row.items) }}</td>
+                        <td>{{ formatCurrency(getRentalTotal(row)) }}</td>
                         <td>
 
 
@@ -146,12 +146,22 @@ export default {
 
             return str;
         },
-        calculateTotalItems(row) {
-            let total = 0;
-            row.forEach(function (a, b) {
-                total += a.item.total;
-            });
-            return total;
+        getRentalTotal(row) {
+            if (row.rental_total !== undefined && row.rental_total !== null) {
+                return Number(row.rental_total) || 0;
+            }
+
+            const rentItems = Array.isArray(row.rent_items) ? row.rent_items : [];
+            return rentItems
+                .filter(item => item.type === 'HAB')
+                .reduce((total, item) => {
+                    const jsonTotal = item.item && item.item.total ? Number(item.item.total) : 0;
+                    const columnTotal = item.total ? Number(item.total) : 0;
+                    return total + (jsonTotal > 0 ? jsonTotal : columnTotal);
+                }, 0);
+        },
+        formatCurrency(value) {
+            return Number(value || 0).toFixed(2);
         }
     },
 

@@ -112,7 +112,7 @@
          */
         private function data($date_start, $date_end)
         {
-            $rooms = HotelRent::with('room','room.rates', 'rate','room.category')
+            $rooms = HotelRent::with('room','room.rates', 'rate','room.category', 'items', 'products')
 			->orderBy('id', 'DESC');
             return $rooms=$rooms->SearchByDate($date_start,$date_end)->latest();
 
