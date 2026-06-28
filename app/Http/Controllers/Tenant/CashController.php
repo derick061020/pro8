@@ -302,6 +302,11 @@ class CashController extends Controller
 
         }
 
+        // Pagos del módulo Hotel (habitación/productos/adelantos) que ingresaron
+        // a esta caja y aún no fueron facturados. Cuando se factura, el ingreso
+        // lo aporta el comprobante (su cash_document) para no duplicar el monto.
+        $final_balance += $cash->getHotelRentIncome();
+
         $cash->final_balance = round($final_balance + $cash->beginning_balance, 2);
         $cash->income = round($final_balance, 2);
         $cash->state = false;
@@ -1100,6 +1105,48 @@ class CashController extends Controller
         }
 
         
+
+        // Pagos del módulo Hotel (habitación/productos/adelantos) que ingresaron
+        // a esta caja y aún no fueron facturados (al facturarse, el ingreso lo
+        // aporta el comprobante para no duplicar el monto).
+        foreach ($cash->getHotelRentPaymentsData() as $hotel_payment) {
+
+            $amount = (float) $hotel_payment->payment;
+            $hotel_item = $hotel_payment->associated_record_payment;
+            $hotel_rent = $hotel_item ? $hotel_item->hotel_rent : null;
+            $hotel_customer = $hotel_rent ? $hotel_rent->customer : null;
+
+            if ($amount >= 0) {
+                $cash_income += $amount;
+            } else {
+                $cash_egress += abs($amount);
+            }
+            $final_balance += $amount;
+
+            foreach ($methods_payment as $record) {
+                if ($record->id == $hotel_payment->payment_method_type_id) {
+                    $record->sum = ($record->sum + $amount);
+                }
+            }
+
+            $temp = [
+                'type_transaction'          => $amount < 0 ? 'Devolución (Hotel)' : 'Venta (Hotel)',
+                'document_type_description' => ($hotel_item ? $hotel_item->getDescriptionFromType() : 'Hotel').' (HOTEL)',
+                'number'                    => '-',
+                'date_of_issue'             => optional($hotel_payment->date_of_payment)->format('Y-m-d'),
+                'date_sort'                 => $hotel_payment->date_of_payment,
+                'customer_name'             => $hotel_customer->name ?? '-',
+                'customer_number'           => $hotel_customer->number ?? '-',
+                'total'                     => $amount,
+                'currency_type_id'          => 'PEN',
+                'usado'                     => 'hotel '.__LINE__,
+                'tipo'                      => 'hotel_rent_item',
+                'total_payments'            => $amount,
+            ];
+            $temp['total_string'] = self::FormatNumber($temp['total']);
+            $temp['total_payments'] = self::FormatNumber($temp['total_payments']);
+            $all_documents[] = $temp;
+        }
 
 //        $all_documents = collect($all_documents)->sortBy('date_sort')->all();
         /************************/

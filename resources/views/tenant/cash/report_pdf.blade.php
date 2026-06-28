@@ -114,6 +114,28 @@ foreach ($cash_documents as $cash_document) {
 
 }
 
+// Pagos del módulo Hotel (habitación/productos/adelantos) que ingresaron a esta
+// caja y aún no fueron facturados. Una vez facturados, el ingreso lo aporta el
+// comprobante (su cash_document), por lo que aquí se excluyen para no duplicar.
+$hotel_payments = $cash->getHotelRentPaymentsData();
+
+foreach ($hotel_payments as $hotel_payment) {
+    $amount = (float) $hotel_payment->payment;
+
+    if ($amount >= 0) {
+        $cash_income += $amount;
+    } else {
+        $cash_egress += abs($amount);
+    }
+    $final_balance += $amount;
+
+    foreach ($methods_payment as $record) {
+        if ($record->id == $hotel_payment->payment_method_type_id) {
+            $record->sum = ($record->sum + $amount);
+        }
+    }
+}
+
 $cash_final_balance = $final_balance + $cash->beginning_balance;
 //$cash_income = ($final_balance > 0) ? ($cash_final_balance - $cash->beginning_balance) : 0;
 
@@ -240,7 +262,7 @@ $cash_final_balance = $final_balance + $cash->beginning_balance;
                 </tr>
             </table>
         </div>
-        @if($cash_documents->count())
+        @if($cash_documents->count() || $hotel_payments->count())
             <div class="">
                 <div class=" ">
 
@@ -372,6 +394,25 @@ $cash_final_balance = $final_balance + $cash->beginning_balance;
                                     <td class="celda">{{ $currency_type_id }}</td>
                                     <td class="celda">{{ number_format($total,2, ".", "") }}</td>
 
+                                </tr>
+                            @endforeach
+                            @foreach($hotel_payments as $hotel_payment)
+                                @php
+                                    $hotel_item = $hotel_payment->associated_record_payment;
+                                    $hotel_rent = $hotel_item ? $hotel_item->hotel_rent : null;
+                                    $hotel_customer = $hotel_rent ? $hotel_rent->customer : null;
+                                    $hotel_amount = (float) $hotel_payment->payment;
+                                @endphp
+                                <tr>
+                                    <td class="celda">H{{ $loop->iteration }}</td>
+                                    <td class="celda">{{ $hotel_amount < 0 ? 'Devolución' : 'Ingreso' }}</td>
+                                    <td class="celda">{{ ($hotel_item ? $hotel_item->getDescriptionFromType() : 'Hotel') }} (HOTEL)</td>
+                                    <td class="celda">-</td>
+                                    <td class="celda">{{ optional($hotel_payment->date_of_payment)->format('Y-m-d') }}</td>
+                                    <td class="celda">{{ $hotel_customer->name ?? '-' }}</td>
+                                    <td class="celda">{{ $hotel_customer->number ?? '-' }}</td>
+                                    <td class="celda">PEN</td>
+                                    <td class="celda">{{ number_format($hotel_amount,2, ".", "") }}</td>
                                 </tr>
                             @endforeach
                         </tbody>

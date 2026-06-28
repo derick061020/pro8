@@ -131,7 +131,82 @@ class Cash extends ModelTenant
     {
         return $this->hasMany(CashDocumentCredit::class);
     }
-    
+
+
+    /**
+     *
+     * Query base de pagos del módulo Hotel atribuidos a ESTA caja y que aún no
+     * fueron facturados.
+     *
+     * Criterio de atribución: el pago de hotel tiene un global_payment con
+     * destino = esta caja (igual que el resto de ingresos del sistema).
+     *
+     * Criterio anti-duplicado ("el comprobante manda"): si el item del alquiler
+     * ya se facturó (document_id / sale_note_id), el ingreso lo aporta el
+     * comprobante (su propio cash_document) y el pago de hotel deja de contarse,
+     * evitando el doble conteo del mismo dinero.
+     *
+     * Devuelve null si el módulo Hotel no está disponible.
+     *
+     * @return \Illuminate\Database\Eloquent\Builder|null
+     */
+    protected function hotelRentPaymentsBaseQuery()
+    {
+        $class = \Modules\Hotel\Models\HotelRentItemPayment::class;
+
+        if (!class_exists($class)) {
+            return null;
+        }
+
+        return $class::query()
+            ->whereHas('global_payment', function ($q) {
+                $q->where('destination_type', self::class)
+                  ->where('destination_id', $this->id);
+            })
+            ->whereHas('associated_record_payment', function ($q) {
+                $q->whereNull('document_id')->whereNull('sale_note_id');
+            });
+    }
+
+
+    /**
+     *
+     * Pagos del módulo Hotel (habitación / productos / adelantos) atribuidos a
+     * esta caja y no facturados, con relaciones para mostrar en reportes.
+     *
+     * @return \Illuminate\Support\Collection
+     */
+    public function getHotelRentPaymentsData()
+    {
+        $query = $this->hotelRentPaymentsBaseQuery();
+
+        if (!$query) {
+            return collect();
+        }
+
+        return $query->with([
+                        'payment_method_type:id,description',
+                        'associated_record_payment.hotel_rent.customer',
+                    ])
+                    ->orderBy('date_of_payment')
+                    ->get();
+    }
+
+
+    /**
+     *
+     * Ingreso neto (ingresos menos devoluciones/vueltos) de los pagos del
+     * módulo Hotel atribuidos a esta caja.
+     *
+     * @return float
+     */
+    public function getHotelRentIncome()
+    {
+        $query = $this->hotelRentPaymentsBaseQuery();
+
+        return $query ? (float) $query->sum('payment') : 0.0;
+    }
+
 
     /**
      * 

@@ -731,6 +731,23 @@ class HotelReceptionController extends Controller
             $old = $change->old_values ?: [];
             $new = $change->new_values ?: [];
 
+            // Una extensión deja de ser revertible si DESPUÉS de ella hubo un
+            // cambio de habitación: ese cambio ya consumió/migró las noches de
+            // la extensión, así que deshacerla dejaría el alquiler inconsistente.
+            if ($change->change_type === 'EXTENSION') {
+                $laterRoomChange = HotelRentChange::where('hotel_rent_id', $rentId)
+                    ->where('change_type', 'ROOM_CHANGE')
+                    ->where('id', '>', $change->id)
+                    ->exists();
+                if ($laterRoomChange) {
+                    DB::connection('tenant')->rollBack();
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'No se puede revertir esta extensión porque luego hubo un cambio de habitación.'
+                    ], 400);
+                }
+            }
+
             switch ($change->change_type) {
                 case 'EXTENSION':
                     $this->revertExtension($rent, $old, $new);

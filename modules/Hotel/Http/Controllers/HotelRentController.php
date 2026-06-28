@@ -359,13 +359,15 @@ class HotelRentController extends Controller
 				// ADVANCE = pago parcial: se registra exactamente el monto indicado
 				// por el usuario; el resto queda como deuda.
 				if ($request->rent_payment && ($request->rent_payment['payment'] ?? 0) > 0) {
-					HotelRentItemPayment::create([
+					$advancePayment = HotelRentItemPayment::create([
 						'hotel_rent_item_id'     => $item->id,
 						'date_of_payment'        => date('Y-m-d'),
 						'payment_method_type_id' => $request->rent_payment['payment_method_type_id'],
 						'reference'              => $request->rent_payment['reference'] ?? null,
 						'payment'                => $request->rent_payment['payment'],
 					]);
+
+					$this->linkRentPaymentToOpenCash($advancePayment, $request->rent_payment['payment_destination_id'] ?? null);
 				}
 			} elseif ($request->payment_status === 'PAID') {
 				// PAGADO: el pago debe cubrir el TOTAL del item. El front enviaba
@@ -378,12 +380,14 @@ class HotelRentController extends Controller
 				$alreadyPaid = (float) $item->payments()->sum('payment');
 				$remaining   = round($itemTotal - $alreadyPaid, 2);
 				if ($remaining > 0) {
-					$item->payments()->create([
+					$paidPayment = $item->payments()->create([
 						'date_of_payment'        => date('Y-m-d'),
 						'payment_method_type_id' => $request->rent_payment['payment_method_type_id'] ?? null,
 						'reference'              => $request->rent_payment['reference'] ?? null,
 						'payment'                => $remaining,
 					]);
+
+					$this->linkRentPaymentToOpenCash($paidPayment, $request->rent_payment['payment_destination_id'] ?? null);
 				}
 			}
 
@@ -465,6 +469,47 @@ class HotelRentController extends Controller
 		]);
 	}
 
+	/**
+	 *
+	 * Vincular a la caja abierta un pago de hotel registrado en flujos que no
+	 * envían un destino explícito (adelantos al crear/editar la renta, pagos de
+	 * productos, extensiones). A diferencia de la pantalla de pago, NO bloquea la
+	 * operación si la caja está cerrada: simplemente no se vincula a caja.
+	 *
+	 * Crea un global_payment con destino = caja para que el pago aparezca en el
+	 * cierre y reportes de caja chica como el resto de ingresos.
+	 *
+	 * @param  HotelRentItemPayment $payment
+	 * @param  string|int|null      $paymentDestinationId
+	 * @return void
+	 */
+	private function linkRentPaymentToOpenCash(HotelRentItemPayment $payment, $paymentDestinationId = null)
+	{
+		// Si no se indica destino, por defecto va a caja general.
+		if (empty($paymentDestinationId)) {
+			$paymentDestinationId = 'cash';
+		}
+
+		// Solo se registra el movimiento en caja si hay una caja abierta. No se
+		// interrumpe la operación de hotel cuando la caja está cerrada.
+		if ($paymentDestinationId === 'cash') {
+			$cash = $this->getCash();
+			if (!$cash || empty($cash['cash_id'])) {
+				return;
+			}
+		}
+
+		// Evitar duplicar el pago global (p. ej. al reprocesar).
+		$payment->load('global_payment');
+		if ($payment->global_payment) {
+			$payment->global_payment()->delete();
+		}
+
+		$this->createGlobalPayment($payment, [
+			'payment_destination_id' => $paymentDestinationId,
+		]);
+	}
+
 	public function saveHotelRentItemPayment($rent_payment, HotelRentItem $item)
 	{
 		if($item->isPaid())
@@ -475,6 +520,8 @@ class HotelRentController extends Controller
 				'reference' => $rent_payment['reference'],
 				'payment' => $rent_payment['payment'],
 			]);
+
+			$this->linkRentPaymentToOpenCash($record, $rent_payment['payment_destination_id'] ?? null);
 		}
 	}
 
@@ -645,6 +692,8 @@ class HotelRentController extends Controller
         $payment->reference = $request->payment_reference ?? null;
         $payment->payment = $request->payment_amount;
         $payment->save();
+
+        $this->linkRentPaymentToOpenCash($payment, $request->input('payment_destination_id'));
 
         if ($request->payment_amount >= $totalExt) {
           $extensionItem->payment_status = 'PAID';
@@ -1971,13 +2020,15 @@ class HotelRentController extends Controller
                     }
 
                     $paymentAmount = (float) $request->input('payment_amount', 0);
-                    HotelRentItemPayment::create([
+                    $extensionPayment = HotelRentItemPayment::create([
                         'hotel_rent_item_id' => $extensionItem->id,
                         'date_of_payment' => date('Y-m-d'),
                         'payment_method_type_id' => $paymentMethodId,
                         'reference' => $request->input('payment_reference'),
                         'payment' => $paymentAmount,
                     ]);
+
+                    $this->linkRentPaymentToOpenCash($extensionPayment, $request->input('payment_destination_id'));
 
                     if ($paymentAmount >= $extensionTotal) {
                         $extensionItem->payment_status = 'PAID';
@@ -2418,7 +2469,14 @@ class HotelRentController extends Controller
             if($payment){
                 // Obtener el item asociado al pago
                 $associatedItem = HotelRentItem::find($payment->hotel_rent_item_id);
-                
+
+                // Eliminar el movimiento de caja/finanzas asociado para no dejar
+                // un ingreso huérfano en el cierre de caja.
+                $payment->load('global_payment');
+                if ($payment->global_payment) {
+                    $payment->global_payment()->delete();
+                }
+
                 // Eliminar el pago
                 $payment->delete();
                 

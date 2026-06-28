@@ -1095,85 +1095,58 @@
                                 </div>
                                 <div class="change-details">
                                     <div v-if="change.change_type === 'CHECKIN'" class="change-detail">
-                                        <strong>Ingreso:</strong> {{ formatDateTime(change.old_values.input_date, change.old_values.input_time) }}
+                                        Ingreso: {{ formatDateTime(change.old_values.input_date, change.old_values.input_time) }}
                                     </div>
-                                    <div v-if="change.change_type === 'CHECKOUT'" class="change-detail">
-                                        <strong>Salida:</strong> {{ formatDateTime(change.old_values.output_date, change.old_values.output_time) }}
+                                    <div v-else-if="change.change_type === 'CHECKOUT'" class="change-detail">
+                                        Salida: {{ formatDateTime(change.old_values.output_date, change.old_values.output_time) }}
                                     </div>
-                                    <div v-if="change.change_type === 'EXTENSION'" class="change-detail">
-                                        <strong>Habitación:</strong>
-                                        <span class="badge badge-info">{{ (change.new_values && change.new_values.room_name) || (change.old_values && change.old_values.room_name) || currentRent.room.name }}</span>
-                                        <br>
-                                        <strong>Extensión:</strong>
-                                        {{ (change.new_values && change.new_values.added) || change.days || 0 }}
+                                    <div v-else-if="change.change_type === 'EXTENSION'" class="change-detail">
+                                        +{{ (change.new_values && change.new_values.added) || change.days || 0 }}
                                         {{ (change.new_values && change.new_values.unit) || 'noche(s)' }}
-                                        <br>
-                                        <strong>Nueva salida:</strong> {{ formatDateTime(change.new_values.output_date, change.new_values.output_time) }}
+                                        · Nueva salida: {{ formatDateTime(change.new_values.output_date, change.new_values.output_time) }}
                                     </div>
-                                    <div v-if="change.change_type === 'DATE_EDIT'" class="change-detail">
-                                        <div v-if="change.old_values.input_date !== change.new_values.input_date">
-                                            <strong>Cambio de Ingreso:</strong><br>
-                                            {{ formatDateTime(change.old_values.input_date, change.old_values.input_time) }} 
-                                            <i class="fa fa-arrow-right"></i> 
-                                            {{ formatDateTime(change.new_values.input_date, change.new_values.input_time) }}
-                                        </div>
-                                        <div v-if="change.old_values.output_date !== change.new_values.output_date">
-                                            <strong>Cambio de Salida:</strong><br>
-                                            {{ formatDateTime(change.old_values.output_date, change.old_values.output_time) }} 
-                                            <i class="fa fa-arrow-right"></i> 
-                                            {{ formatDateTime(change.new_values.output_date, change.new_values.output_time) }}
-                                        </div>
-                                        <div v-if="change.price_difference !== 0" class="price-change">
-                                            <strong>Cambio de Precio:</strong> 
-                                            <span :class="change.price_difference > 0 ? 'text-success' : 'text-danger'">
-                                                S/ {{ Math.abs(change.price_difference).toFixed(2) }}
-                                                <i :class="change.price_difference > 0 ? 'fa fa-arrow-up' : 'fa fa-arrow-down'"></i>
-                                            </span>
-                                        </div>
+                                    <div v-else-if="change.change_type === 'DATE_EDIT'" class="change-detail">
+                                        <span v-if="change.old_values.input_date !== change.new_values.input_date">
+                                            Ingreso: {{ formatDate(change.old_values.input_date) }}
+                                            <i class="fa fa-arrow-right"></i>
+                                            {{ formatDate(change.new_values.input_date) }}<br>
+                                        </span>
+                                        <span v-if="change.old_values.output_date !== change.new_values.output_date">
+                                            Salida: {{ formatDate(change.old_values.output_date) }}
+                                            <i class="fa fa-arrow-right"></i>
+                                            {{ formatDate(change.new_values.output_date) }}
+                                        </span>
                                     </div>
-                                    <div v-if="change.change_type === 'ROOM_CHANGE'" class="change-detail">
-                                        <strong>Cambio de Habitación:</strong><br>
+                                    <div v-else-if="change.change_type === 'ROOM_CHANGE'" class="change-detail">
                                         <span class="badge badge-secondary">{{ change.old_values.room_name }}</span>
                                         <i class="fa fa-arrow-right mx-1"></i>
                                         <span class="badge badge-info">{{ change.new_values.room_name }}</span>
-                                        <div v-if="change.new_values.consumed != null" class="mt-1">
-                                            <small>Consumido: {{ change.new_values.consumed }} {{ change.new_values.unit || 'noche(s)' }} · Restante: {{ change.new_values.remaining }} {{ change.new_values.unit || 'noche(s)' }}</small>
-                                        </div>
                                     </div>
-                                    <div v-if="change.change_type === 'PRODUCT_ADD'" class="change-detail">
-                                        <strong>Productos agregados:</strong>
-                                        <ul class="mb-1 mt-1" style="padding-left:18px;">
-                                            <li v-for="(prod, pi) in (change.new_values && change.new_values.products) || []" :key="pi">
-                                                {{ prod.name }}
-                                                <span v-if="prod.quantity"> x{{ prod.quantity }}</span>
-                                                <span v-if="prod.total"> — S/ {{ parseFloat(prod.total).toFixed(2) }}</span>
-                                            </li>
-                                        </ul>
-                                        <div v-if="change.price_difference" class="price-change">
-                                            <strong>Total:</strong>
-                                            <span class="text-success">S/ {{ Math.abs(change.price_difference).toFixed(2) }}</span>
-                                        </div>
-                                    </div>
-                                    <div v-if="change.notes" class="change-notes">
-                                        <strong>Notas:</strong> {{ change.notes }}
+                                    <div v-else-if="change.change_type === 'PRODUCT_ADD'" class="change-detail">
+                                        {{ ((change.new_values && change.new_values.products) || []).map(p => p.name + (p.quantity ? ' x' + p.quantity : '')).join(', ') }}
                                     </div>
                                 </div>
                                 <div class="change-actions mt-2">
                                     <el-button
-                                        v-if="canRevertChange(change.change_type)"
+                                        v-if="canRevertChange(change, index)"
                                         size="mini"
                                         type="warning"
+                                        plain
                                         @click="onRevertHistoryChange(change)"
                                     >
                                         <i class="fa fa-undo"></i> Revertir
                                     </el-button>
-                                    <el-button
-                                        size="mini"
-                                        type="danger"
-                                        @click="onDeleteHistoryChange(change)"
+                                    <el-tooltip
+                                        v-else-if="isRevertibleType(change.change_type)"
+                                        content="No se puede revertir: luego hubo un cambio de habitación."
+                                        placement="top"
                                     >
-                                        <i class="fa fa-trash"></i> Eliminar
-                                    </el-button>
+                                        <span>
+                                            <el-button size="mini" type="info" plain disabled>
+                                                <i class="fa fa-lock"></i> Revertir
+                                            </el-button>
+                                        </span>
+                                    </el-tooltip>
                                 </div>
                             </div>
                         </div>
@@ -3710,9 +3683,29 @@ export default {
             };
             return icons[changeType] || 'fa fa-info-circle';
         },
-        // Indica si un tipo de cambio admite revertir (deshacer la operación).
-        canRevertChange(changeType) {
+        // Tipos cuya operación se puede deshacer (los demás solo informan).
+        isRevertibleType(changeType) {
             return ['EXTENSION', 'ROOM_CHANGE', 'PRODUCT_ADD', 'DATE_EDIT'].includes(changeType);
+        },
+        // Una extensión deja de ser revertible si DESPUÉS de ella hubo un cambio
+        // de habitación: ese cambio ya consumió/migró las noches de la extensión.
+        // roomHistory viene del más reciente al más antiguo, así que los cambios
+        // posteriores tienen un índice menor.
+        isExtensionLockedByRoomChange(index) {
+            for (let i = 0; i < index; i++) {
+                if (this.roomHistory[i] && this.roomHistory[i].change_type === 'ROOM_CHANGE') {
+                    return true;
+                }
+            }
+            return false;
+        },
+        // Indica si una entrada concreta del historial admite revertir.
+        canRevertChange(change, index) {
+            if (!this.isRevertibleType(change.change_type)) return false;
+            if (change.change_type === 'EXTENSION' && this.isExtensionLockedByRoomChange(index)) {
+                return false;
+            }
+            return true;
         },
         async onRevertHistoryChange(change) {
             try {
@@ -3743,36 +3736,6 @@ export default {
                 const msg = error.response && error.response.data && error.response.data.message
                     ? error.response.data.message
                     : 'Error al revertir el cambio.';
-                this.$message.error(msg);
-            } finally {
-                this.loadingRoomHistory = false;
-            }
-        },
-        async onDeleteHistoryChange(change) {
-            try {
-                await this.$confirm(
-                    'Se eliminará solo el registro del historial. No se modifican fechas, ítems ni cobros. ¿Continuar?',
-                    'Eliminar registro',
-                    { confirmButtonText: 'Sí, eliminar', cancelButtonText: 'Cancelar', type: 'warning' }
-                );
-            } catch (e) {
-                return; // cancelado
-            }
-            try {
-                this.loadingRoomHistory = true;
-                const response = await this.$http.delete(
-                    `/hotels/reception/${this.currentRent.id}/history/${change.id}`
-                );
-                if (response.data.success) {
-                    this.$message.success(response.data.message || 'Registro eliminado.');
-                    await this.showRoomHistory();
-                } else {
-                    this.$message.error(response.data.message || 'No se pudo eliminar el registro.');
-                }
-            } catch (error) {
-                const msg = error.response && error.response.data && error.response.data.message
-                    ? error.response.data.message
-                    : 'Error al eliminar el registro.';
                 this.$message.error(msg);
             } finally {
                 this.loadingRoomHistory = false;
