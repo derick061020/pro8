@@ -102,7 +102,7 @@
                                         d="M10 5a2 2 0 1 1 4 0a7 7 0 0 1 4 6v3a4 4 0 0 0 2 3h-16a4 4 0 0 0 2 -3v-3a7 7 0 0 1 4 -6" />
                                     <path d="M9 17v1a3 3 0 0 0 6 0v-1" />
                                 </svg>
-                                <span class="ms-2">Comprobantes no enviados</span>
+                                <span class="ms-2" style="color: black !important;">Comprobantes no enviados</span>
                                 <span
                                     class="badge badge-pill badge-danger badge-up cart-item-count">{{ $vc_document }}</span>
                             </span>
@@ -130,7 +130,7 @@
                                 <path d="M17 17h-11v-14h-2" />
                                 <path d="M6 5l14 1l-1 7h-13" />
                             </svg>
-                            <span class="ms-2">Pedidos pendientes</span>
+                            <span class="ms-2" style="color: black !important;">Pedidos pendientes</span>
                             <span class="badge badge-pill badge-info badge-up cart-item-count">{{ $vc_orders }}</span>
                         </span>
                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
@@ -158,7 +158,7 @@
                                             d="M14.8 8a2 2 0 0 0 -1.8 -1h-2a2 2 0 1 0 0 4h2a2 2 0 1 1 0 4h-2a2 2 0 0 1 -1.8 -1" />
                                         <path d="M12 6v10" />
                                     </svg>
-                                    <span>Mis Pagos</span>
+                                    <span style="color: black !important;">Mis Pagos</span>
                                 </span>
                                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
                                     stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
@@ -200,8 +200,8 @@
                             <span class="options-sunat">
                                 <i class="fas fa-2x fa-toggle-off me-2" style="font-size: 20px;"></i>
                                 <span class="ms-2" style="display: flex; flex-direction: column;">
-                                    <span>DEMO</span>
-                                    <span>SUNAT Entorno de Demostración</span>
+                                    <span style="color: black !important;">DEMO</span>
+                                    <span style="color: black !important;">SUNAT Entorno de Demostración</span>
                                 </span>
                             </span>
                             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
@@ -222,8 +222,8 @@
                                 <i class="text-success fas fa-2x fa-toggle-on me-2"
                                     style="font-size: 20px; color: #28a745 !important"></i>
                                 <span class="ms-2" style="display: flex; flex-direction: column;">
-                                    <span>PROD</span>
-                                    <span>SUNAT Entorno de Demostración</span>
+                                    <span style="color: black !important;">PROD</span>
+                                    <span style="color: black !important;">SUNAT Entorno de Demostración</span>
                                 </span>
                             </span>
                             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
@@ -243,8 +243,8 @@
                                 <i class="text-info fas fa-2x fa-toggle-on me-2"
                                     style="font-size: 20px; color: #398bf7!important;"></i>
                                 <span class="ms-2" style="display: flex; flex-direction: column;">
-                                    <span>INT</span>
-                                    <span>SUNAT Entorno de Demostración</span>
+                                    <span style="color: black !important;">INT</span>
+                                    <span style="color: black !important;">SUNAT Entorno de Demostración</span>
                                 </span>
                             </span>
                             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
@@ -258,7 +258,7 @@
                 @endif
                 <li>
                     <a class="style-switcher-open notification-icon text-secondary navigation-options" href="#">
-                        <span>
+                        <span style="color: black !important;">
                             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
                                 fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
                                 stroke-linejoin="round"
