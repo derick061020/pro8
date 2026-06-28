@@ -30,7 +30,6 @@
                         <th>Status de pago</th>
                         <th>Status checkout</th>
                         <th>Precio renta</th>
-                        <th>Productos</th>
                         <th>Fecha de entrada</th>
                         <th>Hora de entrada</th>
                         <th>Fecha de salida</th>

@@ -407,7 +407,7 @@
                 </div>
             </template>
             <div class="room-selection-grid">
-                <div v-for="room in filteredRooms" :key="room.id" class="room-card room-card-compact" @click="selectRoomForReservation(room)">
+                <div v-for="room in reservationRooms" :key="room.id" class="room-card room-card-compact" @click="selectRoomForReservation(room)">
                     <div class="room-card-header">
                         <h4>{{ room.name }}</h4>
                         <span class="room-category">{{ room.category?.description || 'Sin categoría' }}</span>
@@ -529,6 +529,9 @@ export default {
                 catMap[catId].rooms.push(room)
             })
             return groups
+        },
+        reservationRooms() {
+            return [...this.filteredRooms].reverse()
         },
 
         /* ── Índices memoizados para el render ──
@@ -838,7 +841,7 @@ export default {
         async loadRooms() {
             try {
                 const r = await this.$http.get('/hotels/rooms')
-                this.rooms = r.data?.rooms?.data || r.data?.data || []
+                this.rooms = this.sortRoomsByName(r.data?.rooms?.data || r.data?.data || [])
                 this.filteredRooms = [...this.rooms]
             } catch (e) {
                 console.error('Rooms error:', e)
@@ -872,7 +875,10 @@ export default {
             this.filteredRooms = this.rooms.filter(r => {
                 if (this.selectedCategory && r.hotel_category_id != this.selectedCategory) return false
                 return true
-            }).reverse()
+            })
+        },
+        sortRoomsByName(rooms) {
+            return [...rooms].sort((a, b) => String(a.name || '').localeCompare(String(b.name || ''), 'es', { numeric: true, sensitivity: 'base' }))
         },
         toggleSearch() {
             this.searchOpen = !this.searchOpen
