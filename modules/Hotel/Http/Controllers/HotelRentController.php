@@ -1293,7 +1293,9 @@ class HotelRentController extends Controller
 
             return [
                 'id' => $row->id,
-                'customer' => $row->customer->description,
+                'customer' => isset($row->customer->description)
+                    ? $row->customer->description
+                    : (isset($row->customer->name) ? $row->customer->name : ''),
                 'document_number' => $document_number,
                 'document_date' => $document_date,
                 'total' => $total,
