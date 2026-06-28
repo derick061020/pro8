@@ -15,6 +15,12 @@ $cash_documents = $cash->cash_documents;
 foreach ($cash_documents as $cash_document) {
     if($cash_document->sale_note){
 
+        // Comprobantes de hotel: el efectivo ya se cuenta vía pagos de hotel
+        // (getHotelRentPaymentsData). Se excluye el comprobante para no duplicar.
+        if($cash_document->sale_note->hotel_rent_id){
+            continue;
+        }
+
         if($cash_document->sale_note->currency_type_id == 'PEN'){
 
             if(in_array($cash_document->sale_note->state_type_id, ['01','03','05','07','13'])){
@@ -53,6 +59,12 @@ foreach ($cash_documents as $cash_document) {
 
     }
     else if($cash_document->document){
+
+        // Comprobantes de hotel: ver nota anterior.
+        if($cash_document->document->hotel_rent_id){
+            continue;
+        }
+
         if($cash_document->document->currency_type_id == 'PEN'){
 
             if(in_array($cash_document->document->state_type_id, ['01','03','05','07','13'])){
@@ -310,8 +322,15 @@ $cash_final_balance = $final_balance + $cash->beginning_balance;
                                 $all_documents = [];
                                 foreach ($cash_documents as $key => $value) {
                                     if($value->sale_note){
+                                        // Excluir comprobantes de hotel (se listan como pagos de hotel).
+                                        if($value->sale_note->hotel_rent_id){
+                                            continue;
+                                        }
                                         $all_documents[] = $value;
                                     }else if($value->document){
+                                        if($value->document->hotel_rent_id){
+                                            continue;
+                                        }
                                         $all_documents[] = $value;
                                     }else if($value->expense_payment){
                                         if($value->expense_payment->expense->state_type_id == '05'){

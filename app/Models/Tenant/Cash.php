@@ -141,10 +141,12 @@ class Cash extends ModelTenant
      * Criterio de atribución: el pago de hotel tiene un global_payment con
      * destino = esta caja (igual que el resto de ingresos del sistema).
      *
-     * Criterio anti-duplicado ("el comprobante manda"): si el item del alquiler
-     * ya se facturó (document_id / sale_note_id), el ingreso lo aporta el
-     * comprobante (su propio cash_document) y el pago de hotel deja de contarse,
-     * evitando el doble conteo del mismo dinero.
+     * El pago de hotel es la ÚNICA fuente de verdad del efectivo del módulo:
+     * se cuentan todos (estén o no facturados). Para no duplicar, los
+     * comprobantes ligados a un hotel_rent se EXCLUYEN del sumatorio de caja
+     * (ver CashController::close, report_pdf y report_cash_excel), porque el
+     * comprobante de hotel solo re-registra como pago del documento el dinero
+     * que ya entró por el pago de hotel.
      *
      * Devuelve null si el módulo Hotel no está disponible.
      *
@@ -162,9 +164,6 @@ class Cash extends ModelTenant
             ->whereHas('global_payment', function ($q) {
                 $q->where('destination_type', self::class)
                   ->where('destination_id', $this->id);
-            })
-            ->whereHas('associated_record_payment', function ($q) {
-                $q->whereNull('document_id')->whereNull('sale_note_id');
             });
     }
 

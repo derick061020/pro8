@@ -244,9 +244,16 @@ class CashController extends Controller
 
             if($cash_document->sale_note){
 
+                // Comprobantes de hotel: el efectivo ya se cuenta vía pagos de
+                // hotel (getHotelRentIncome). El comprobante solo re-registra el
+                // mismo dinero, por lo que se excluye para no duplicar.
+                if($cash_document->sale_note->hotel_rent_id){
+                    continue;
+                }
+
                 if(in_array($cash_document->sale_note->state_type_id, ['01','03','05','07','13'])){
-                    $final_balance += ($cash_document->sale_note->currency_type_id == 'PEN') 
-                    ? $cash_document->sale_note->total 
+                    $final_balance += ($cash_document->sale_note->currency_type_id == 'PEN')
+                    ? $cash_document->sale_note->total
                     : ($cash_document->sale_note->total * $cash_document->sale_note->exchange_rate_sale);
                 }
 
@@ -254,6 +261,11 @@ class CashController extends Controller
 
             }
             else if($cash_document->document){
+
+                // Comprobantes de hotel: ver nota anterior.
+                if($cash_document->document->hotel_rent_id){
+                    continue;
+                }
 
                 if(in_array($cash_document->document->state_type_id, ['01','03','05','07','13'])){
                     $final_balance += ($cash_document->document->currency_type_id == 'PEN') 
@@ -686,6 +698,11 @@ class CashController extends Controller
             /** Documentos de Tipo Nota de venta */
             if ($cash_document->sale_note) {
                 $sale_note = $cash_document->sale_note;
+                // Comprobantes de hotel: el efectivo ya se cuenta vía pagos de
+                // hotel; se excluye el comprobante para no duplicar.
+                if ($sale_note->hotel_rent_id) {
+                    continue;
+                }
                 if (in_array($sale_note->state_type_id, $status_type_id)) {
                         $record_total = 0;
                         $total = self::CalculeTotalOfCurency(
@@ -732,6 +749,10 @@ class CashController extends Controller
             else if ($cash_document->document) {
                 $record_total = 0;
                 $document = $cash_document->document;
+                // Comprobantes de hotel: ver nota anterior.
+                if ($document->hotel_rent_id) {
+                    continue;
+                }
                 $payment_condition_id = $document->payment_condition_id;
                 $pays = $document->payments;
                 $pagado = 0;
