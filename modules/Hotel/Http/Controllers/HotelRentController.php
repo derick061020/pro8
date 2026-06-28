@@ -235,7 +235,10 @@ class HotelRentController extends Controller
 
 					$existingReservation->fill($rentData);
 					$existingReservation->is_reserve         = false;
-					$existingReservation->status             = null;
+					// 'status' no admite NULL (default 'INICIADO'); una renta activa
+					// usa ese mismo valor, así que lo fijamos explícitamente al
+					// convertir la reserva en renta.
+					$existingReservation->status             = 'INICIADO';
 					$existingReservation->rental_date_time   = $rentalDateTime;
 					$existingReservation->rental_price       = $rentalPrice;
 					$existingReservation->rental_period_type = $rentalPeriodType;
