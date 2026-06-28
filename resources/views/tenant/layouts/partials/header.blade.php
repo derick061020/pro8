@@ -55,7 +55,7 @@
         <div class="dropdown-menu-mobile" style="display: none;">
             <div class="user-content">
                 <div class="close-container-user">
-                    <i class="fas fa-times"></i>
+                    <i class="fas fa-times" style="color:black!important;"></i>
                 </div>
                 <div>
 
@@ -70,7 +70,7 @@
                         {{-- <img src="{{asset('img/%21logged-user.jpg')}}" alt="Profile" class="rounded-circle"
                             data-lock-picture="img/%21logged-user.jpg" /> --}}
                         <div class="border rounded-circle text-center">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 24 24"
+                            <svg xmlns="http://www.w3.org/2000/svg" style="color:black!important;" width="30" height="30" viewBox="0 0 24 24"
                                 fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
                                 stroke-linejoin="round"
                                 class="icon icon-tabler icons-tabler-outline icon-tabler-user-square-rounded">
