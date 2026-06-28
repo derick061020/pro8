@@ -23,6 +23,7 @@
 <link rel="stylesheet" href="/landing-reservas/css/owl.theme.css">
 <link rel="stylesheet" href="/landing-reservas/css/prettyPhoto.css">
 <link rel="stylesheet" href="/landing-reservas/css/smoothness/jquery-ui-1.10.4.custom.min.css">
+<link rel="stylesheet" href="/landing-reservas/rs-plugin/css/settings.css">
 <link rel="stylesheet" href="/landing-reservas/css/theme.css">
 <link rel="stylesheet" href="/landing-reservas/css/colors/turquoise.css">
 <link rel="stylesheet" href="/landing-reservas/css/responsive.css">
@@ -33,19 +34,21 @@
 <script type="text/javascript" src="/landing-reservas/js/bootstrap.min.js"></script>
 <script type="text/javascript" src="/landing-reservas/js/bootstrap-hover-dropdown.min.js"></script>
 <script type="text/javascript" src="/landing-reservas/js/owl.carousel.min.js"></script>
+<script type="text/javascript" src="/landing-reservas/js/jquery.parallax-1.1.3.js"></script>
 <script type="text/javascript" src="/landing-reservas/js/jquery.nicescroll.js"></script>
 <script type="text/javascript" src="/landing-reservas/js/jquery.prettyPhoto.js"></script>
+<script type="text/javascript" src="/landing-reservas/js/jquery-ui-1.10.4.custom.min.js"></script>
+<script type="text/javascript" src="/landing-reservas/js/jquery.forms.js"></script>
 <script type="text/javascript" src="/landing-reservas/js/jquery.sticky.js"></script>
+<script type="text/javascript" src="/landing-reservas/js/waypoints.min.js"></script>
+<script type="text/javascript" src="/landing-reservas/js/jquery.isotope.min.js"></script>
+<script type="text/javascript" src="/landing-reservas/js/jquery.gmap.min.js"></script>
+<script type="text/javascript" src="/landing-reservas/rs-plugin/js/jquery.themepunch.tools.min.js"></script>
+<script type="text/javascript" src="/landing-reservas/rs-plugin/js/jquery.themepunch.revolution.min.js"></script>
+<script type="text/javascript" src="/landing-reservas/js/custom.js"></script>
 
 <style>
   /* Ajustes propios de la web de reservas (no alteran el tema base) */
-  .hero-reservas {
-    background: linear-gradient(rgba(20,30,40,.6), rgba(20,30,40,.65)), url('/landing-reservas/images/slides/1700x449.gif') center/cover no-repeat;
-    color: #fff; padding: 90px 0 40px; text-align: center;
-  }
-  .hero-reservas h1 { color:#fff; font-weight:700; margin-bottom:8px; }
-  .hero-reservas p.lead { color:#f1f1f1; font-size:18px; }
-  #reservation-form { margin-top:-45px; position:relative; z-index:5; }
   .search-box { background:#fff; border-radius:6px; box-shadow:0 10px 30px rgba(0,0,0,.12); padding:18px; }
   .search-box label { font-weight:600; font-size:12px; text-transform:uppercase; color:#666; }
   .search-box .form-control { height:42px; }
@@ -65,7 +68,7 @@
   .room-card__total { font-size:12px; color:#16a085; font-weight:600; }
   .room-card__actions { display:flex; gap:8px; margin-top:12px; }
   .room-card__actions .btn { flex:1; }
-  .amenity-pill { display:inline-block; background:#f0f3f5; color:#506; color:#566573; border-radius:16px; padding:4px 12px; font-size:12px; margin:0 6px 6px 0; }
+  .amenity-pill { display:inline-block; background:#f0f3f5; color:#566573; border-radius:16px; padding:4px 12px; font-size:12px; margin:0 6px 6px 0; }
   .amenity-pill i { color:#1abc9c; margin-right:5px; }
   .modal-gallery img { width:100%; border-radius:6px; margin-bottom:10px; cursor:pointer; max-height:360px; object-fit:cover; }
   .modal-thumbs { display:flex; gap:8px; flex-wrap:wrap; }
@@ -120,11 +123,11 @@
       </div>
       <div id="navbar-collapse-grid" class="navbar-collapse collapse">
         <ul class="nav navbar-nav navbar-right">
-          <li class="active"><a href="#top">Inicio</a></li>
-          <li><a href="#rooms-results">Habitaciones</a></li>
-          <li><a href="#gallery">Galería</a></li>
-          <li><a href="#contacto">Contacto</a></li>
-          <li><a href="#reservation-form" class="text-uppercase" style="color:#1abc9c;font-weight:600;">Reservar</a></li>
+          <li class="active"><a href="#top" class="nav-scroll">Inicio</a></li>
+          <li><a href="#rooms-results" class="nav-scroll">Habitaciones</a></li>
+          <li><a href="#gallery" class="nav-scroll">Galería</a></li>
+          <li><a href="#contacto" class="nav-scroll">Contacto</a></li>
+          <li><a href="#reservation-form" class="nav-scroll text-uppercase" style="color:#1abc9c;font-weight:600;">Reservar</a></li>
         </ul>
       </div>
     </div>
@@ -132,11 +135,75 @@
 </header>
 
 <a id="top"></a>
-<!-- Hero -->
-<section class="hero-reservas">
-  <div class="container">
-    <h1>{{ $hotelName }}</h1>
-    <p class="lead">Reserva tu habitación en línea de forma rápida y segura</p>
+<!-- Revolution Slider -->
+<section class="revolution-slider">
+  <div class="bannercontainer">
+    <div class="banner">
+      <ul>
+        <!-- Slide 1 -->
+        <li data-transition="fade" data-slotamount="7" data-masterspeed="1500" >
+          <!-- Main Image -->
+          <img src="/landing-reservas/images/slides/1700x449.gif" style="opacity:0;" alt="slidebg1"  data-bgfit="cover" data-bgposition="left bottom" data-bgrepeat="no-repeat">
+          <!-- Layers -->
+          <!-- Layer 1 -->
+          <div class="caption sft revolution-starhotel bigtext"
+          				data-x="505"
+                        data-y="30"
+                        data-speed="700"
+                        data-start="1700"
+                        data-easing="easeOutBack">
+							<span><i class="fa fa-star-o"></i> <i class="fa fa-star-o"></i> <i class="fa fa-star-o"></i> <i class="fa fa-star-o"></i> <i class="fa fa-star-o"></i></span> {{ $hotelName }} <span><i class="fa fa-star-o"></i> <i class="fa fa-star-o"></i> <i class="fa fa-star-o"></i> <i class="fa fa-star-o"></i> <i class="fa fa-star-o"></i></span></div>
+          <!-- Layer 2 -->
+          <div class="caption sft revolution-starhotel smalltext"
+          				data-x="605"
+                        data-y="105"
+                        data-speed="800"
+                        data-start="1700"
+                        data-easing="easeOutBack">
+							<span>Reserva tu estancia con nosotros</span></div>
+        <!-- Layer 3 -->
+                  <div class="caption sft"
+          				data-x="775"
+                        data-y="175"
+                        data-speed="1000"
+                        data-start="1900"
+                        data-easing="easeOutBack">
+							<a href="#rooms-results" class="button btn btn-purple btn-lg nav-scroll">Ver habitaciones</a>
+                  </div>
+        </li>
+		<!-- Slide 2 -->
+        <li data-transition="boxfade" data-slotamount="7" data-masterspeed="1000" >
+          <!-- Main Image -->
+          <img src="/landing-reservas/images/slides/1700x449.gif"  alt="darkblurbg"  data-bgfit="cover" data-bgposition="left top" data-bgrepeat="no-repeat">
+          <!-- Layers -->
+          <!-- Layer 1 -->
+          <div class="caption sft revolution-starhotel bigtext"
+          				data-x="585"
+                        data-y="30"
+                        data-speed="700"
+                        data-start="1700"
+                        data-easing="easeOutBack">
+							<span><i class="fa fa-star-o"></i> <i class="fa fa-star-o"></i> <i class="fa fa-star-o"></i> <i class="fa fa-star-o"></i> <i class="fa fa-star-o"></i></span> Bienvenido <span><i class="fa fa-star-o"></i> <i class="fa fa-star-o"></i> <i class="fa fa-star-o"></i> <i class="fa fa-star-o"></i> <i class="fa fa-star-o"></i></span></div>
+          <!-- Layer 2 -->
+          <div class="caption sft revolution-starhotel smalltext"
+          				data-x="682"
+                        data-y="105"
+                        data-speed="800"
+                        data-start="1700"
+                        data-easing="easeOutBack">
+							<span>Disponibilidad en tiempo real</span></div>
+        <!-- Layer 3 -->
+                  <div class="caption sft"
+          				data-x="785"
+                        data-y="175"
+                        data-speed="1000"
+                        data-start="1900"
+                        data-easing="easeOutBack">
+							<a href="#reservation-form" class="button btn btn-purple btn-lg nav-scroll">Reservar ahora</a>
+                  </div>
+        </li>
+      </ul>
+    </div>
   </div>
 </section>
 
@@ -148,14 +215,14 @@
         <div class="row">
           <div class="col-sm-3 col-xs-6">
             <div class="form-group">
-              <label for="checkin"><i class="fa fa-calendar"></i> Entrada</label>
-              <input name="checkin" type="date" id="checkin" class="form-control" required>
+              <label for="checkin_date"><i class="fa fa-calendar"></i> Entrada</label>
+              <input name="checkin" type="date" id="checkin_date" class="form-control" required>
             </div>
           </div>
           <div class="col-sm-3 col-xs-6">
             <div class="form-group">
-              <label for="checkout"><i class="fa fa-calendar"></i> Salida</label>
-              <input name="checkout" type="date" id="checkout" class="form-control" required>
+              <label for="checkout_date"><i class="fa fa-calendar"></i> Salida</label>
+              <input name="checkout" type="date" id="checkout_date" class="form-control" required>
             </div>
           </div>
           <div class="col-sm-2 col-xs-6">
@@ -199,14 +266,157 @@
   </div>
 </section>
 
+<!-- USP's -->
+<section class="usp mt100">
+  <div class="container">
+    <div class="row">
+      <div class="col-sm-12">
+        <h2 class="lined-heading"><span>¿Por qué reservar con nosotros?</span></h2>
+      </div>
+      <div class="col-sm-3 bounceIn appear" data-start="0">
+      <div class="box-icon">
+        <div class="circle"><i class="fa fa-calendar-check-o fa-lg"></i></div>
+        <h3>Reserva en línea</h3>
+        <p>Consulta disponibilidad en tiempo real y reserva tu habitación en pocos pasos, sin llamadas ni esperas.</p>
+        <a href="#reservation-form" class="nav-scroll">Reservar<i class="fa fa-angle-right"></i></a> </div>
+        </div>
+      <div class="col-sm-3 bounceIn appear" data-start="400">
+      <div class="box-icon">
+        <div class="circle"><i class="fa fa-credit-card fa-lg"></i></div>
+        <h3>Confirmación rápida</h3>
+        <p>Recibe la confirmación de tu reserva y coordina el pago directamente con el hotel de forma segura.</p>
+        <a href="#reservation-form" class="nav-scroll">Reservar<i class="fa fa-angle-right"></i></a> </div>
+        </div>
+      <div class="col-sm-3 bounceIn appear" data-start="800">
+      <div class="box-icon">
+        <div class="circle"><i class="fa fa-bed fa-lg"></i></div>
+        <h3>Habitaciones cómodas</h3>
+        <p>Conoce el detalle, las fotos y los servicios de cada habitación antes de elegir la que más te conviene.</p>
+        <a href="#rooms-results" class="nav-scroll">Ver habitaciones<i class="fa fa-angle-right"></i></a> </div>
+        </div>
+      <div class="col-sm-3 bounceIn appear" data-start="1200">
+      <div class="box-icon">
+        <div class="circle"><i class="fa fa-headphones fa-lg"></i></div>
+        <h3>Atención dedicada</h3>
+        <p>Nuestro equipo te acompaña antes, durante y después de tu estancia para que todo sea perfecto.</p>
+        <a href="#contacto" class="nav-scroll">Contacto<i class="fa fa-angle-right"></i></a> </div>
+    </div>
+    </div>
+  </div>
+</section>
+
+<!-- Parallax Effect -->
+<script type="text/javascript">$(document).ready(function(){$('#parallax-image').parallax("50%", -0.25);});</script>
+
+<section class="parallax-effect mt100">
+  <div id="parallax-image" style="background-image: url(/landing-reservas/images/parallax/1900x911.gif);">
+    <div class="color-overlay fadeIn appear" data-start="600">
+      <div class="container">
+        <div class="content">
+          <h3 class="text-center"><i class="fa fa fa-star-o"></i> {{ $hotelName }}</h3>
+          <p class="text-center">Vive una experiencia inolvidable
+		  <br>
+		  <a href="#rooms-results" class="btn btn-default btn-lg mt30 nav-scroll">Ver habitaciones</a></p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
 <!-- Gallery -->
 <section class="gallery-slider mt100" id="gallery">
   <div class="container">
     <div class="row">
-      <div class="col-md-12"><h2 class="lined-heading"><span>Galería</span></h2></div>
+      <div class="col-md-12">
+        <h2 class="lined-heading"><span>Galería</span></h2>
+      </div>
     </div>
   </div>
-  <div id="owl-gallery" class="owl-carousel"></div>
+  <div id="owl-gallery" class="owl-carousel">
+    <div class="item"><a href="/landing-reservas/images/gallery/800x504.gif" data-rel="prettyPhoto[gallery1]"><img src="/landing-reservas/images/gallery/800x504.gif" alt="Image 1"><i class="fa fa-search"></i></a></div>
+    <div class="item"><a href="/landing-reservas/images/gallery/800x504.gif" data-rel="prettyPhoto[gallery1]"><img src="/landing-reservas/images/gallery/800x504.gif" alt="Image 2"><i class="fa fa-search"></i></a></div>
+    <div class="item"><a href="/landing-reservas/images/gallery/800x504.gif" data-rel="prettyPhoto[gallery1]"><img src="/landing-reservas/images/gallery/800x504.gif" alt="Image 3"><i class="fa fa-search"></i></a></div>
+    <div class="item"><a href="/landing-reservas/images/gallery/800x504.gif" data-rel="prettyPhoto[gallery1]"><img src="/landing-reservas/images/gallery/800x504.gif" alt="Image 4"><i class="fa fa-search"></i></a></div>
+  </div>
+</section>
+
+<div class="container">
+  <div class="row">
+    <!-- Testimonials -->
+    <section class="testimonials mt100">
+      <div class="col-md-6">
+        <h2 class="lined-heading bounceInLeft appear" data-start="0"><span>Lo que opinan nuestros huéspedes</span></h2>
+        <div id="owl-reviews" class="owl-carousel">
+          <div class="item">
+            <div class="row">
+              <div class="col-lg-3 col-md-4 col-sm-2 col-xs-12"> <img src="/landing-reservas/images/reviews/100x100.gif" alt="Review 1" class="img-circle" /></div>
+              <div class="col-lg-9 col-md-8 col-sm-10 col-xs-12">
+                <div class="text-balloon">Excelente atención y habitaciones impecables. Volveremos sin dudarlo. <span>María G., Habitación doble</span> </div>
+              </div>
+            </div>
+            <div class="row">
+              <div class="col-lg-3 col-md-4 col-sm-2 col-xs-12"> <img src="/landing-reservas/images/reviews/100x100.gif" alt="Review 2" class="img-circle" /></div>
+              <div class="col-lg-9 col-md-8 col-sm-10 col-xs-12">
+                <div class="text-balloon">¡Un 5 de 5! Personal amable, limpio y muy cómodo. Totalmente recomendado. <span>Carlos D., Habitación simple</span> </div>
+              </div>
+            </div>
+          </div>
+          <div class="item">
+            <div class="row">
+              <div class="col-lg-3 col-md-4 col-sm-2 col-xs-12"> <img src="/landing-reservas/images/reviews/100x100.gif" alt="Review 3" class="img-circle" /></div>
+              <div class="col-lg-9 col-md-8 col-sm-10 col-xs-12">
+                <div class="text-balloon">Un lugar encantador. La próxima vez reservaré una estancia más larga. <span>Rosa O., Habitación simple</span> </div>
+              </div>
+            </div>
+            <div class="row">
+              <div class="col-lg-3 col-md-4 col-sm-2 col-xs-12"> <img src="/landing-reservas/images/reviews/100x100.gif" alt="Review 4" class="img-circle" /></div>
+              <div class="col-lg-9 col-md-8 col-sm-10 col-xs-12">
+                <div class="text-balloon">¡El mejor hotel de la ciudad! Buena ubicación y un servicio inmejorable. <span>Luis A., Habitación simple</span> </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- About -->
+    <section class="about mt100">
+      <div class="col-md-6">
+        <h2 class="lined-heading bounceInRight appear" data-start="800"><span>Sobre el hotel</span></h2>
+        <!-- Nav tabs -->
+        <ul class="nav nav-tabs">
+          <li class="active"><a href="#hotel" data-toggle="tab">El hotel</a></li>
+          <li><a href="#events" data-toggle="tab">Eventos</a></li>
+          <li><a href="#kids" data-toggle="tab">Familias</a></li>
+          <li><a href="#business" data-toggle="tab">Negocios</a></li>
+        </ul>
+        <!-- Tab panes -->
+        <div class="tab-content">
+          <div class="tab-pane fade in active" id="hotel">
+            <p>{{ $establishment->aditional_information ?? 'Te damos la bienvenida a un espacio pensado para tu descanso. Habitaciones cómodas, atención cercana y todo lo que necesitas para una estancia perfecta.' }}</p>
+            <p><img src="/landing-reservas/images/tab/197x147.gif" alt="hotel" class="pull-right"> Disfruta de nuestras instalaciones y servicios. Reserva en línea y asegura tu habitación al mejor precio, con confirmación directa del hotel.</p>
+          </div>
+          <div class="tab-pane fade" id="events">Organizamos y recibimos eventos. Consúltanos por disponibilidad de salas y servicios para tu celebración o reunión.</div>
+          <div class="tab-pane fade" id="kids">Un lugar ideal para venir en familia. Contamos con opciones pensadas para que grandes y pequeños se sientan como en casa.</div>
+          <div class="tab-pane fade" id="business">¿Viaje de negocios? Ofrecemos habitaciones equipadas, conexión y la comodidad que necesitas para trabajar y descansar.</div>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<!-- Call To Action -->
+<section id="call-to-action" class="mt100">
+  <div class="container">
+    <div class="row">
+      <div class="col-md-8 col-sm-8 col-xs-12">
+        <h2>¿Listo para tu próxima estancia? Reserva ahora en línea.</h2>
+      </div>
+      <div class="col-md-4 col-sm-4 col-xs-12">
+        <a href="#reservation-form" class="btn btn-default btn-lg pull-right nav-scroll">Ver disponibilidad</a>
+      </div>
+    </div>
+  </div>
 </section>
 
 <!-- Contacto / Footer -->
@@ -229,7 +439,7 @@
       <div class="col-md-4 col-sm-4">
         <h4>Reserva ahora</h4>
         <p>Consulta disponibilidad en tiempo real y asegura tu habitación.</p>
-        <a href="#reservation-form" class="btn btn-primary btn-lg">Ver disponibilidad</a>
+        <a href="#reservation-form" class="btn btn-primary btn-lg nav-scroll">Ver disponibilidad</a>
       </div>
     </div>
   </div>
@@ -423,25 +633,10 @@ jQuery(function ($) {
         $('#rooms-heading').text('Habitaciones destacadas');
     }
 
-    // ---- Galería: usar imágenes reales de las habitaciones ----
-    (function buildGallery() {
-        var imgs = [];
-        DATA.rooms.forEach(function (r) { (r.images || []).forEach(function (u) { imgs.push(u); }); });
-        if (!imgs.length) { $('#gallery').hide(); return; }
-        var html = imgs.slice(0, 12).map(function (u) {
-            return '<div class="item"><a href="' + u + '" data-rel="prettyPhoto[gallery]"><img src="' + u + '" alt="Galería"><i class="fa fa-search"></i></a></div>';
-        }).join('');
-        $('#owl-gallery').html(html);
-        if ($.fn.owlCarousel) {
-            $('#owl-gallery').owlCarousel({ items: 4, itemsDesktop: [1199,3], itemsTablet: [768,2], itemsMobile: [479,1], navigation: true, pagination: false });
-        }
-        if ($.fn.prettyPhoto) { $("a[data-rel^='prettyPhoto']").prettyPhoto({ social_tools: false }); }
-    })();
-
     // ---- Buscar disponibilidad ----
     $('#searchform').on('submit', function (e) {
         e.preventDefault();
-        var checkin = $('#checkin').val(), checkout = $('#checkout').val();
+        var checkin = $('#checkin_date').val(), checkout = $('#checkout_date').val();
         if (!checkin || !checkout) { alert('Selecciona las fechas de entrada y salida.'); return; }
         if (checkout <= checkin) { alert('La fecha de salida debe ser posterior a la de entrada.'); return; }
 
@@ -542,8 +737,8 @@ jQuery(function ($) {
         $('#r-room').val(room.id);
 
         // Tomar fechas de la búsqueda si existe, si no del buscador
-        var checkin = SEARCH.active ? SEARCH.checkin : $('#checkin').val();
-        var checkout = SEARCH.active ? SEARCH.checkout : $('#checkout').val();
+        var checkin = SEARCH.active ? SEARCH.checkin : $('#checkin_date').val();
+        var checkout = SEARCH.active ? SEARCH.checkout : $('#checkout_date').val();
         var adults = SEARCH.active ? SEARCH.adults : parseInt($('#adults').val(), 10);
         var children = SEARCH.active ? SEARCH.children : parseInt($('#children').val(), 10);
 
@@ -621,27 +816,24 @@ jQuery(function ($) {
     // ---- fechas mínimas ----
     (function initDates() {
         var today = new Date().toISOString().split('T')[0];
-        $('#checkin').attr('min', today).on('change', function () {
+        $('#checkin_date').attr('min', today).on('change', function () {
             var next = new Date($(this).val()); next.setDate(next.getDate() + 1);
-            $('#checkout').attr('min', next.toISOString().split('T')[0]);
-            if ($('#checkout').val() && $('#checkout').val() <= $(this).val()) {
-                $('#checkout').val(next.toISOString().split('T')[0]);
+            $('#checkout_date').attr('min', next.toISOString().split('T')[0]);
+            if ($('#checkout_date').val() && $('#checkout_date').val() <= $(this).val()) {
+                $('#checkout_date').val(next.toISOString().split('T')[0]);
             }
         });
-        $('#checkout').attr('min', today);
+        $('#checkout_date').attr('min', today);
     })();
 
-    // Smooth scroll para anclas del menú
-    $(document).on('click', 'a[href^="#"]', function (e) {
+    // Smooth scroll sólo para los enlaces de navegación internos (no rompe tabs/sliders)
+    $(document).on('click', 'a.nav-scroll', function (e) {
         var target = $(this).attr('href');
-        if (target.length > 1 && $(target).length) {
+        if (target && target.charAt(0) === '#' && target.length > 1 && $(target).length) {
             e.preventDefault();
             $('html,body').animate({ scrollTop: $(target).offset().top - 70 }, 400);
         }
     });
-
-    // Go-top
-    $('#go-top').on('click', function () { $('html,body').animate({ scrollTop: 0 }, 400); });
 });
 </script>
 
