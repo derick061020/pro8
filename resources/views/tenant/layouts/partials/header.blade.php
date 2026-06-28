@@ -63,8 +63,8 @@
                 <a href="#" class="user-profile-content">
                     <div class="profile-info" data-lock-name="{{ $vc_user->email }}"
                         data-lock-email="{{ $vc_user->email }}">
-                        <span class="name">{{ $vc_user->name }}</span>
-                        <span class="role">{{ $vc_user->email }}</span>
+                        <span class="name" style="color:black!important;">{{ $vc_user->name }}</span>
+                        <span class="role" style="color:black!important;">{{ $vc_user->email }}</span>
                     </div>
                     <figure class="profile-picture">
                         {{-- <img src="{{asset('img/%21logged-user.jpg')}}" alt="Profile" class="rounded-circle"
