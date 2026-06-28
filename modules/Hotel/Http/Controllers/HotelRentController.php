@@ -300,32 +300,55 @@ class HotelRentController extends Controller
 			$item->hotel_rent_order_id = $order ? $order->id : null;
 			$item->save();
 
-			//registrar pago (PAID o ADVANCE registran el monto pagado)
-			if ($isAdvance && $request->rent_payment && ($request->rent_payment['payment'] ?? 0) > 0) {
-				HotelRentItemPayment::create([
-					'hotel_rent_item_id'     => $item->id,
-					'date_of_payment'        => date('Y-m-d'),
-					'payment_method_type_id' => $request->rent_payment['payment_method_type_id'],
-					'reference'              => $request->rent_payment['reference'] ?? null,
-					'payment'                => $request->rent_payment['payment'],
-				]);
-			} else {
-				$this->saveHotelRentItemPayment($request->rent_payment, $item);
-			}
-
 			// Check-in de una reserva con adelanto: trasladar los pagos (adelantos)
-			// que ya estaban registrados en la reserva original al nuevo item, para
-			// que el monto abonado figure en el checkout y reduzca el saldo. Se
-			// reasignan (no se duplican) para no contar el ingreso dos veces.
+			// que ya estaban registrados en la reserva original al nuevo item ANTES
+			// de registrar el pago, para que cuenten como abonado y no se dupliquen
+			// ni dejen saldo. Se reasignan (no se duplican).
 			if ($isCheckinFromReservation && $sourceReservationId) {
 				$reservationItemIds = HotelRentItem::where('hotel_rent_id', $sourceReservationId)
 					->pluck('id');
 				if ($reservationItemIds->isNotEmpty()) {
 					HotelRentItemPayment::whereIn('hotel_rent_item_id', $reservationItemIds)
 						->update(['hotel_rent_item_id' => $item->id]);
-					// Si el adelanto cubre el total del item, marcarlo como pagado.
-					$this->applyAdvanceCreditToDebtItems($rent);
 				}
+			}
+
+			// Registrar el pago.
+			if ($isAdvance) {
+				// ADVANCE = pago parcial: se registra exactamente el monto indicado
+				// por el usuario; el resto queda como deuda.
+				if ($request->rent_payment && ($request->rent_payment['payment'] ?? 0) > 0) {
+					HotelRentItemPayment::create([
+						'hotel_rent_item_id'     => $item->id,
+						'date_of_payment'        => date('Y-m-d'),
+						'payment_method_type_id' => $request->rent_payment['payment_method_type_id'],
+						'reference'              => $request->rent_payment['reference'] ?? null,
+						'payment'                => $request->rent_payment['payment'],
+					]);
+				}
+			} elseif ($request->payment_status === 'PAID') {
+				// PAGADO: el pago debe cubrir el TOTAL del item. El front enviaba
+				// sólo el saldo (total - adelanto), por lo que en estadías de
+				// varios días quedaba un saldo "no pagado" en el checkout. Se toma
+				// el total real del item (rate x duración) y se descuenta lo ya
+				// abonado (adelantos trasladados de la reserva) para registrar el
+				// saldo completo y que la deuda quede en 0.
+				$itemTotal   = (float) ($product['total'] ?? ($request->rent_payment['payment'] ?? 0));
+				$alreadyPaid = (float) $item->payments()->sum('payment');
+				$remaining   = round($itemTotal - $alreadyPaid, 2);
+				if ($remaining > 0) {
+					$item->payments()->create([
+						'date_of_payment'        => date('Y-m-d'),
+						'payment_method_type_id' => $request->rent_payment['payment_method_type_id'] ?? null,
+						'reference'              => $request->rent_payment['reference'] ?? null,
+						'payment'                => $remaining,
+					]);
+				}
+			}
+
+			// Si el adelanto cubre el total del item, marcarlo como pagado.
+			if ($isCheckinFromReservation && $sourceReservationId) {
+				$this->applyAdvanceCreditToDebtItems($rent);
 			}
 
 			// Si es renta como pagado, redirigir a recepción
