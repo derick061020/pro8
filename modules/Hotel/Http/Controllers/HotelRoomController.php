@@ -16,9 +16,13 @@ use Modules\Hotel\Models\HotelRoomRate;
 use Modules\Hotel\Models\HotelRent;
 use App\Models\Tenant\Establishment;
 use App\Models\Tenant\Item;
+use Modules\Finance\Helpers\UploadFileHelper;
 
 class HotelRoomController extends Controller
 {
+	/** Carpeta (dentro de storage/app/public/uploads) de las imágenes de habitaciones. */
+	const ROOM_IMAGES_FOLDER = 'hotel/rooms';
+
 	/**
 	 * Display a listing of the resource.
 	 * @return Response
@@ -53,6 +57,9 @@ class HotelRoomController extends Controller
 			}
 
 			$rooms = $query->paginate(25);
+			$rooms->getCollection()->transform(function ($room) {
+				return $this->transformRoom($room);
+			});
 			return response()->json([
 				'success' => true,
 				'rooms' => $rooms
@@ -62,6 +69,9 @@ class HotelRoomController extends Controller
 		$query->where('establishment_id', $user->establishment_id);
 
 		$rooms = $query->paginate(25);
+		$rooms->getCollection()->transform(function ($room) {
+			return $this->transformRoom($room);
+		});
 
 		$establishments = Establishment::select('id','description')->get();
 		$userType = auth()->user()->type;
@@ -94,12 +104,92 @@ class HotelRoomController extends Controller
 	{
 		$room = HotelRoom::create($request->validated());
 		$room->status = 'DISPONIBLE';
+		$this->fillLandingFields($room, $request);
 		$room->save();
 
 		return response()->json([
 			'success' => true,
-			'data'    => $room
+			'data'    => $this->transformRoom($room)
 		], 200);
+	}
+
+	/**
+	 * Asigna a la habitación los campos de la web de reservas (landing):
+	 * resumen, capacidad, camas, tamaño, destacada, amenidades e imágenes.
+	 *
+	 * Las imágenes llegan como un array de objetos { filename, temp_path }.
+	 * Las que traen temp_path son nuevas subidas (vía /items/upload) y se
+	 * persisten en disco; las que sólo traen filename ya estaban guardadas.
+	 */
+	private function fillLandingFields(HotelRoom $room, $request)
+	{
+		$room->short_description = $request->input('short_description');
+		$room->capacity          = $request->input('capacity');
+		$room->beds              = $request->input('beds');
+		$room->size              = $request->input('size');
+		$room->featured          = (bool) $request->input('featured', false);
+
+		$amenities = $request->input('amenities', []);
+		$room->amenities = is_array($amenities)
+			? array_values(array_filter(array_map('trim', $amenities)))
+			: [];
+
+		$room->images = $this->processImages($request->input('images', []));
+	}
+
+	/**
+	 * Procesa la galería de imágenes: conserva las existentes y sube las nuevas
+	 * (las que traen temp_path) a storage/app/public/uploads/hotel/rooms.
+	 * Devuelve el array de nombres de archivo a guardar en la columna `images`.
+	 */
+	private function processImages($images)
+	{
+		if (!is_array($images)) {
+			return [];
+		}
+
+		$filenames = [];
+
+		foreach ($images as $image) {
+			$image = is_array($image) ? $image : (array) $image;
+			$filename  = $image['filename']  ?? null;
+			$temp_path = $image['temp_path'] ?? null;
+
+			if ($temp_path && $filename) {
+				try {
+					UploadFileHelper::checkIfValidFile($filename, $temp_path, true);
+					$saved = UploadFileHelper::uploadImageFromTempFile(
+						self::ROOM_IMAGES_FOLDER,
+						$filename,
+						$temp_path,
+						'habitacion',
+						true,
+						uniqid()
+					);
+					$filenames[] = $saved;
+				} catch (\Throwable $th) {
+					// Imagen inválida: se omite sin romper el guardado de la habitación.
+				}
+			} elseif ($filename) {
+				// Ya almacenada previamente: se conserva.
+				$filenames[] = $filename;
+			}
+		}
+
+		return array_values($filenames);
+	}
+
+	/**
+	 * Normaliza una habitación para devolverla al frontend del admin con sus
+	 * imágenes ya resueltas a URLs.
+	 */
+	private function transformRoom(HotelRoom $room)
+	{
+		$data = $room->toArray();
+		$data['image_urls']     = $room->image_urls;
+		$data['main_image_url'] = $room->main_image_url;
+
+		return $data;
 	}
 
 	/**
@@ -113,6 +203,7 @@ class HotelRoomController extends Controller
 		$room = HotelRoom::findOrFail($id);
 		$oldName = $room->name;
 		$room = $room->fill($request->only('description', 'active', 'name', 'hotel_category_id', 'hotel_floor_id','establishment_id'));
+		$this->fillLandingFields($room, $request);
 		$room->save();
 
 		// Si cambió el nombre, propagar el nuevo nombre al item de catálogo
@@ -126,7 +217,7 @@ class HotelRoomController extends Controller
 
 		return response()->json([
 			'success' => true,
-			'data'    => $room
+			'data'    => $this->transformRoom($room)
 		], 200);
 	}
 

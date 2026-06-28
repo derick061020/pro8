@@ -230,8 +230,17 @@ class HotelRentController extends Controller
 						->where('type', 'HAB')
 						->pluck('id');
 					// Las órdenes previas de la reserva se eliminan para no
-					// duplicarlas con la orden nueva de la renta.
-					HotelRentOrder::where('hotel_rent_id', $existingReservation->id)->delete();
+					// duplicarlas con la orden nueva de la renta. Pero los ítems HAB
+					// de la reserva todavía las apuntan vía hotel_rent_order_id; la
+					// FK impide borrar las órdenes mientras algún ítem las referencie
+					// (los ítems viejos se eliminan más abajo, no aquí). Por eso
+					// primero desvinculamos los ítems de esas órdenes.
+					$oldOrderIds = HotelRentOrder::where('hotel_rent_id', $existingReservation->id)->pluck('id');
+					if ($oldOrderIds->isNotEmpty()) {
+						HotelRentItem::whereIn('hotel_rent_order_id', $oldOrderIds)
+							->update(['hotel_rent_order_id' => null]);
+						HotelRentOrder::whereIn('id', $oldOrderIds)->delete();
+					}
 
 					$existingReservation->fill($rentData);
 					$existingReservation->is_reserve         = false;

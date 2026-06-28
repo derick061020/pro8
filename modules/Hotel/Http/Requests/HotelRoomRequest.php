@@ -29,7 +29,18 @@ class HotelRoomRequest extends FormRequest
 			'item_id' 			=> '',
 			'description'       => 'nullable|max:250',
 			'active'            => 'required|boolean',
-            'establishment_id' 	=> 'required|exists:tenant.establishments,id'
+            'establishment_id' 	=> 'required|exists:tenant.establishments,id',
+            // Campos de la web pública de reservas (landing). Todos opcionales.
+            'short_description' => 'nullable|string|max:255',
+            'capacity'          => 'nullable|integer|min:1|max:50',
+            'beds'              => 'nullable|string|max:100',
+            'size'              => 'nullable|integer|min:1|max:9999',
+            'featured'          => 'nullable|boolean',
+            'amenities'         => 'nullable|array',
+            'amenities.*'       => 'nullable|string|max:80',
+            'images'            => 'nullable|array',
+            'images.*.filename' => 'nullable|string',
+            'images.*.temp_path'=> 'nullable|string',
         ];
 
         return $rules;

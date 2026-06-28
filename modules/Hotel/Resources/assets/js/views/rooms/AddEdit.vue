@@ -4,7 +4,8 @@
     :visible="visible"
     @close="onClose"
     @open="onCreate"
-    width="400px"
+    width="640px"
+    top="6vh"
   >
     <form autocomplete="off" @submit.prevent="onSubmit">
       <div class="row form-body">
@@ -83,10 +84,80 @@
             {{ errors.description[0] }}
           </div>
         </div>
+
+        <!-- ============ Web de reservas ============ -->
+        <div class="col-12 mt-2 mb-2">
+          <h6 class="font-weight-bold text-primary" style="border-bottom:1px solid #eee;padding-bottom:6px;">
+            <i class="fa fa-globe"></i> Información para la web de reservas
+          </h6>
+          <small class="text-muted">Estos datos se muestran a tus clientes en la web pública de reservas.</small>
+        </div>
+
+        <div class="col-12 form-group mb-2">
+          <label class="control-label" for="short_description">Resumen corto</label>
+          <el-input
+            type="text"
+            id="short_description"
+            maxlength="255"
+            show-word-limit
+            placeholder="Ej: Habitación matrimonial con vista al mar y balcón privado"
+            v-model="form.short_description"
+          />
+        </div>
+
+        <div class="col-4 form-group mb-2">
+          <label class="control-label" for="capacity">Capacidad (huéspedes)</label>
+          <el-input-number id="capacity" v-model="form.capacity" :min="1" :max="50" controls-position="right" style="width:100%" />
+        </div>
+        <div class="col-4 form-group mb-2">
+          <label class="control-label" for="beds">Camas</label>
+          <el-input type="text" id="beds" placeholder="Ej: 1 cama queen" v-model="form.beds" />
+        </div>
+        <div class="col-4 form-group mb-2">
+          <label class="control-label" for="size">Tamaño (m²)</label>
+          <el-input-number id="size" v-model="form.size" :min="1" :max="9999" controls-position="right" style="width:100%" />
+        </div>
+
+        <div class="col-12 form-group mb-2">
+          <label class="control-label">Amenidades / Servicios</label>
+          <el-select
+            v-model="form.amenities"
+            multiple
+            filterable
+            allow-create
+            default-first-option
+            placeholder="Escribe y presiona Enter para agregar (Wi-Fi, TV, Aire acondicionado...)"
+            style="width:100%"
+          >
+            <el-option v-for="a in amenitySuggestions" :key="a" :label="a" :value="a"></el-option>
+          </el-select>
+        </div>
+
         <div class="col-12 form-group">
-          <label>Mostrar habitación</label>
+          <label class="control-label d-block">Galería de imágenes</label>
+          <div class="room-gallery">
+            <div v-for="(img, idx) in form.images" :key="idx" class="room-gallery__item">
+              <img :src="img.url" alt="imagen" />
+              <button type="button" class="room-gallery__remove" @click="removeImage(idx)" title="Quitar">&times;</button>
+            </div>
+            <label class="room-gallery__add" :class="{ 'is-loading': uploadingImage }">
+              <i class="fa" :class="uploadingImage ? 'fa-spinner fa-spin' : 'fa-plus'"></i>
+              <span>{{ uploadingImage ? 'Subiendo...' : 'Agregar' }}</span>
+              <input type="file" accept="image/*" multiple @change="onPickImages" :disabled="uploadingImage" hidden />
+            </label>
+          </div>
+          <small class="text-muted">La primera imagen se usa como principal en las tarjetas de la web.</small>
+        </div>
+
+        <div class="col-6 form-group">
+          <label class="d-block">Mostrar habitación</label>
           <el-switch v-model="form.active"></el-switch>
         </div>
+        <div class="col-6 form-group">
+          <label class="d-block">Destacar en la web</label>
+          <el-switch v-model="form.featured"></el-switch>
+        </div>
+
         <div class="col-12 row text-center">
           <div class="col-6">
             <el-button class="btn-block second-buton" @click="onClose">Cancelar</el-button>
@@ -101,7 +172,7 @@
               >Guardar</el-button
             >
           </div>
-          
+
         </div>
       </div>
     </form>
@@ -142,13 +213,44 @@ export default {
       title: "",
       errors: {},
       loading: false,
+      uploadingImage: false,
+      amenitySuggestions: [
+        "Wi-Fi gratis",
+        "TV cable",
+        "Smart TV",
+        "Aire acondicionado",
+        "Calefacción",
+        "Agua caliente",
+        "Frigobar",
+        "Caja fuerte",
+        "Desayuno incluido",
+        "Baño privado",
+        "Balcón",
+        "Vista al mar",
+        "Escritorio",
+        "Secadora de cabello",
+        "Servicio a la habitación",
+        "Jacuzzi",
+        "Estacionamiento",
+      ],
     };
   },
   methods: {
+    buildPayload() {
+      return {
+        ...this.form,
+        amenities: this.form.amenities || [],
+        // Sólo enviamos filename + temp_path; las existentes ya tienen filename.
+        images: (this.form.images || []).map((img) => ({
+          filename: img.filename,
+          temp_path: img.temp_path || null,
+        })),
+      };
+    },
     onUpdate() {
       this.loading = true;
       this.$http
-        .put(`/hotels/rooms/${this.room.id}/update`, this.form)
+        .put(`/hotels/rooms/${this.room.id}/update`, this.buildPayload())
         .then((response) => {
           this.$emit("onUpdateItem", response.data.data);
           this.onClose();
@@ -213,7 +315,7 @@ export default {
         .then((response) => {
           this.form.item_id = response.data.id;
           this.$http
-            .post("/hotels/rooms/store", this.form)
+            .post("/hotels/rooms/store", this.buildPayload())
             .then((response) => {
               this.$emit("onAddItem", response.data.data);
               this.onClose();
@@ -236,21 +338,73 @@ export default {
         this.onStore();
       }
     },
+    onPickImages(event) {
+      const files = Array.from(event.target.files || []);
+      if (!files.length) return;
+      this.uploadingImage = true;
+      const uploads = files.map((file) => {
+        const fd = new FormData();
+        fd.append("file", file);
+        fd.append("type", "image");
+        return this.$http
+          .post("/items/upload", fd, {
+            headers: { "Content-Type": "multipart/form-data" },
+          })
+          .then((response) => {
+            const data = response.data && response.data.data ? response.data.data : null;
+            if (data && data.temp_path) {
+              this.form.images.push({
+                filename: data.filename,
+                temp_path: data.temp_path,
+                url: data.temp_image,
+              });
+            }
+          });
+      });
+      Promise.all(uploads)
+        .catch((error) => this.axiosError(error))
+        .finally(() => {
+          this.uploadingImage = false;
+          event.target.value = "";
+        });
+    },
+    removeImage(idx) {
+      this.form.images.splice(idx, 1);
+    },
     onClose() {
       this.$emit("update:visible", false);
     },
     onCreate() {
       if (this.room) {
-        this.form = this.room;
+        this.form = {
+          ...this.room,
+          featured: !!this.room.featured,
+          capacity: this.room.capacity || undefined,
+          size: this.room.size || undefined,
+          amenities: Array.isArray(this.room.amenities) ? [...this.room.amenities] : [],
+          images: this.buildExistingImages(this.room),
+        };
         this.title = "Editar habitación";
       } else {
         this.title = "Crear habitación";
         this.form = {
           active: true,
+          featured: false,
           establishment_id: this.establishmentId,
+          amenities: [],
+          images: [],
         };
       }
-      this.getTables(this.establishmentId)
+      this.getTables(this.form.establishment_id || this.establishmentId);
+    },
+    buildExistingImages(room) {
+      const names = Array.isArray(room.images) ? room.images : [];
+      const urls = Array.isArray(room.image_urls) ? room.image_urls : [];
+      return names.map((filename, i) => ({
+        filename,
+        temp_path: null,
+        url: urls[i] || filename,
+      }));
     },
     getTables(establishment_id) {
       this.$http.get(`/hotels/rooms/tables/${establishment_id}`).then((response) => {
@@ -267,3 +421,68 @@ export default {
   },
 };
 </script>
+
+<style scoped>
+.room-gallery {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 6px;
+}
+.room-gallery__item {
+  position: relative;
+  width: 90px;
+  height: 90px;
+  border-radius: 6px;
+  overflow: hidden;
+  border: 1px solid #e4e7ed;
+  background: #f5f7fa;
+}
+.room-gallery__item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.room-gallery__remove {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 20px;
+  height: 20px;
+  line-height: 18px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  font-size: 15px;
+  cursor: pointer;
+  padding: 0;
+}
+.room-gallery__add {
+  width: 90px;
+  height: 90px;
+  border: 1px dashed #c0c4cc;
+  border-radius: 6px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #909399;
+  font-size: 12px;
+  margin: 0;
+  transition: border-color 0.2s, color 0.2s;
+}
+.room-gallery__add:hover {
+  border-color: #409eff;
+  color: #409eff;
+}
+.room-gallery__add i {
+  font-size: 18px;
+  margin-bottom: 4px;
+}
+.room-gallery__add.is-loading {
+  pointer-events: none;
+  opacity: 0.7;
+}
+</style>

@@ -141,7 +141,23 @@
                 :class="{ 'table-info': !item.active }"
               >
                 <td class="text-end">{{ item.id }}</td>
-                <td>{{ item.name }}</td>
+                <td>
+                  <div class="d-flex align-items-center">
+                    <img
+                      v-if="item.main_image_url"
+                      :src="item.main_image_url"
+                      alt=""
+                      style="width:38px;height:38px;object-fit:cover;border-radius:5px;margin-right:8px;"
+                    />
+                    <span>{{ item.name }}</span>
+                    <i
+                      v-if="item.featured"
+                      class="fa fa-star text-warning ms-1"
+                      title="Destacada en la web"
+                      style="margin-left:5px;"
+                    ></i>
+                  </div>
+                </td>
                 <td>{{ item.category.description }}</td>
                 <td>{{ item.floor.description }}</td>
                 <td>{{ (item.establishment) ? item.establishment.description: '' }}</td>

@@ -33,7 +33,55 @@
             'description',
             'item_id',
             'establishment_id',
+            'images',
+            'amenities',
+            'short_description',
+            'capacity',
+            'beds',
+            'size',
+            'featured',
         ];
+
+        protected $casts = [
+            'images'    => 'array',
+            'amenities' => 'array',
+            'featured'  => 'boolean',
+        ];
+
+        /**
+         * URLs públicas de la galería de imágenes de la habitación.
+         * Devuelve un array de URLs absolutas listas para usar en la landing.
+         */
+        public function getImageUrlsAttribute()
+        {
+            $images = $this->images;
+
+            if (!is_array($images)) {
+                return [];
+            }
+
+            return collect($images)
+                ->filter()
+                ->map(function ($filename) {
+                    // Permitir tanto rutas ya absolutas (http) como nombres de archivo.
+                    if (is_string($filename) && str_starts_with($filename, 'http')) {
+                        return $filename;
+                    }
+                    return asset('storage/uploads/hotel/rooms/' . $filename);
+                })
+                ->values()
+                ->all();
+        }
+
+        /**
+         * Imagen principal (primera de la galería) o null si no hay imágenes.
+         */
+        public function getMainImageUrlAttribute()
+        {
+            $urls = $this->image_urls;
+
+            return count($urls) ? $urls[0] : null;
+        }
 
         /**
          * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
