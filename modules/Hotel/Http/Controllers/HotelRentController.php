@@ -1437,56 +1437,74 @@ class HotelRentController extends Controller
                 $changeAt = $outputAt->copy()->subMinute();
             }
 
-            // Cálculo de períodos consumidos / restantes según rental_period_type
-            $period = $rent->rental_period_type ?: 'day';
-            [$consumed, $remaining, $unitLabel] = $this->calculateRoomChangeSplit(
-                $period,
-                $inputAt,
-                $changeAt,
-                (int) $rent->duration
-            );
-
             // Snapshot del estado actual para el historial
+            $period         = $rent->rental_period_type ?: 'day';
             $oldHotelRateId = $rent->hotel_rate_id;
 
-            // Item HAB vigente (no facturado aún)
-            $oldItem = $rent->items()
+            // Todos los items HAB abiertos (no facturados), del más antiguo al
+            // más reciente. Tras una o varias EXTENSIONES la estadía queda
+            // repartida en VARIOS items HAB; el cambio de habitación debe
+            // tratarlos en conjunto. La versión anterior solo modificaba el
+            // último item pero calculaba las noches restantes contra la
+            // duración TOTAL del alquiler, de modo que las noches de los items
+            // que no se tocaban se seguían cobrando ADEMÁS de las nuevas →
+            // doble cobro.
+            $openHabItems = $rent->items()
                 ->where('type', 'HAB')
                 ->whereNull('sale_note_id')
                 ->whereNull('document_id')
-                ->orderByDesc('id')
-                ->first();
+                ->orderBy('id')
+                ->get();
 
-            if (!$oldItem) {
+            if ($openHabItems->isEmpty()) {
                 return response()->json([
                     'success' => false,
                     'message' => 'No se encontró un item de habitación abierto para cerrar.'
                 ], 400);
             }
 
-            // Snapshot completo del item HAB vigente ANTES de modificarlo, para
-            // poder revertir el cambio de habitación con fidelidad.
-            $oldItemSnapshot = [
-                'item_id'        => $oldItem->item_id,
-                'item'           => is_object($oldItem->item) ? (array) $oldItem->item : ($oldItem->item ?: []),
-                'quantity'       => $oldItem->quantity,
-                'unit_price'     => $oldItem->unit_price,
-                'total'          => $oldItem->total,
-                'description'    => $oldItem->description,
-                'payment_status' => $oldItem->payment_status,
-            ];
+            // Duración realmente abierta = suma de las cantidades de TODOS los
+            // HAB abiertos (estadía original + todas las extensiones).
+            $openDuration = max(1, (int) $openHabItems->sum('quantity'));
 
-            // Datos base del item HAB vigente
-            $oldItemJson    = is_object($oldItem->item) ? (array) $oldItem->item : ($oldItem->item ?: []);
-            $oldUnitColumn  = (float) $oldItem->unit_price;
-            $oldUnitJson    = (float) ($oldItemJson['unit_price'] ?? $oldItemJson['unit_price_value'] ?? 0);
-            // La columna unit_price viene como "0.0000" (string truthy) en items
-            // creados antes de esta refactor — preferir JSON si la columna es 0.
-            $oldUnitPrice   = $oldUnitColumn > 0 ? $oldUnitColumn : $oldUnitJson;
+            [$consumed, $remaining, $unitLabel] = $this->calculateRoomChangeSplit(
+                $period,
+                $inputAt,
+                $changeAt,
+                $openDuration
+            );
+
+            // Resuelve el precio unitario real de un item (la columna unit_price
+            // viene como "0.0000" en items antiguos → preferir el JSON).
+            $resolveUnit = function (HotelRentItem $it) {
+                $json = is_object($it->item) ? (array) $it->item : ($it->item ?: []);
+                $col  = (float) $it->unit_price;
+                $j    = (float) ($json['unit_price'] ?? $json['unit_price_value'] ?? 0);
+                return $col > 0 ? $col : $j;
+            };
+
+            // Snapshot de TODOS los items abiertos para poder revertir con fidelidad.
+            $itemsSnapshot = $openHabItems->map(function (HotelRentItem $it) {
+                return [
+                    'id'             => $it->id,
+                    'item_id'        => $it->item_id,
+                    'item'           => is_object($it->item) ? (array) $it->item : ($it->item ?: []),
+                    'quantity'       => $it->quantity,
+                    'unit_price'     => $it->unit_price,
+                    'total'          => $it->total,
+                    'description'    => $it->description,
+                    'payment_status' => $it->payment_status,
+                ];
+            })->values()->all();
+
+            // Precio unitario representativo de la habitación anterior y JSON base
+            // para el nuevo item (preserva IGV/charges del último HAB abierto).
+            $lastOpen       = $openHabItems->last();
+            $oldUnitPrice   = $resolveUnit($lastOpen);
+            $baseJsonForNew = is_object($lastOpen->item) ? (array) $lastOpen->item : ($lastOpen->item ?: []);
 
             // Item de la nueva habitación (para reescribir identidad en el JSON)
-            $newItemRecord = Item::find($newRoom->item_id);
-
+            $newItemRecord  = Item::find($newRoom->item_id);
             $newTotal       = round($newUnitPrice * $remaining, 4);
             $newDescription = sprintf(
                 'Estadía en %s - %d %s (%s → %s)',
@@ -1497,80 +1515,87 @@ class HotelRentController extends Controller
                 $outputAt->format('d/m/Y H:i')
             );
 
-            if ($consumed === 0) {
-                // Cambio dentro del mismo período (p. ej. minutos después del check-in):
-                // no se cobra nada por la habitación anterior, se reemplaza el item
-                // vigente con los datos de la nueva habitación/tarifa.
-                $replacedJson = $this->rewriteHotelItemForRoom(
-                    $oldItemJson,
-                    $newItemRecord,
-                    $newRoom,
-                    $newDescription,
-                    $newUnitPrice,
-                    $remaining,
-                    $newTotal
-                );
+            $newItemJson = $this->rewriteHotelItemForRoom(
+                $baseJsonForNew,
+                $newItemRecord,
+                $newRoom,
+                $newDescription,
+                $newUnitPrice,
+                $remaining,
+                $newTotal
+            );
 
-                $oldItem->item_id     = $newRoom->item_id;
-                $oldItem->item        = $replacedJson;
-                $oldItem->quantity    = $remaining;
-                $oldItem->unit_price  = $newUnitPrice;
-                $oldItem->total       = $newTotal;
-                $oldItem->description = $newDescription;
-                $oldItem->save();
+            // Crear PRIMERO el item de la nueva habitación (las `remaining`
+            // noches), para poder reasignarle los pagos de las noches futuras.
+            $newItem = HotelRentItem::create([
+                'type'                => 'HAB',
+                'hotel_rent_id'       => $rent->id,
+                'item_id'             => $newRoom->item_id,
+                'item'                => $newItemJson,
+                'payment_status'      => 'DEBT',
+                'hotel_rent_order_id' => null,
+                'quantity'            => $remaining,
+                'unit_price'          => $newUnitPrice,
+                'total'               => $newTotal,
+                'description'         => $newDescription,
+            ]);
 
-                $newItem    = $oldItem;
-                $oldTotalNew = 0.0;
-            } else {
-                // Split: cierra el item antiguo por los períodos consumidos y crea
-                // un nuevo item HAB para los restantes con la nueva habitación/tarifa.
-                $oldTotalNew    = round($oldUnitPrice * $consumed, 4);
-                $oldDescription = sprintf(
-                    'Estadía en %s - %d %s (%s → %s)',
-                    $oldRoom->name,
-                    $consumed,
-                    $unitLabel,
-                    $inputAt->format('d/m/Y H:i'),
-                    $changeAt->format('d/m/Y H:i')
-                );
+            // Retira las noches "futuras" de los items abiertos, empezando por
+            // los más recientes (los primeros días corresponden a la habitación
+            // anterior ya consumida). Los pagos de las noches que se trasladan se
+            // reasignan al nuevo item para no perder dinero.
+            $toRemove       = $remaining;   // noches que dejan la habitación anterior
+            $oldFutureTotal = 0.0;          // valor (a tarifa antigua) de esas noches
+            $oldAnchorItem  = null;         // último item que permanece (ancla histórico)
 
-                $oldItemJson = $this->rewriteHotelItemDescription(
-                    $oldItemJson,
-                    $oldDescription,
-                    $oldUnitPrice,
-                    $consumed,
-                    $oldTotalNew
-                );
+            foreach ($openHabItems->reverse()->values() as $it) {
+                if ($toRemove <= 0) {
+                    if (!$oldAnchorItem) {
+                        $oldAnchorItem = $it;
+                    }
+                    continue;
+                }
 
-                $oldItem->item        = $oldItemJson;
-                $oldItem->quantity    = $consumed;
-                $oldItem->unit_price  = $oldUnitPrice;
-                $oldItem->total       = $oldTotalNew;
-                $oldItem->description = $oldDescription;
-                $oldItem->save();
+                $q      = (int) $it->quantity;
+                $itUnit = $resolveUnit($it);
 
-                $newItemJson = $this->rewriteHotelItemForRoom(
-                    $oldItemJson,
-                    $newItemRecord,
-                    $newRoom,
-                    $newDescription,
-                    $newUnitPrice,
-                    $remaining,
-                    $newTotal
-                );
+                if ($toRemove >= $q) {
+                    // Item completo en la zona futura → se traslada a la nueva
+                    // habitación. Reasignar sus pagos al nuevo item y eliminarlo.
+                    $oldFutureTotal += round($itUnit * $q, 4);
+                    HotelRentItemPayment::where('hotel_rent_item_id', $it->id)
+                        ->update(['hotel_rent_item_id' => $newItem->id]);
+                    $it->delete();
+                    $toRemove -= $q;
+                } else {
+                    // Item en el límite: parte consumida (se queda en la
+                    // habitación anterior), parte futura (pasa a la nueva).
+                    $keep            = $q - $toRemove;
+                    $oldFutureTotal += round($itUnit * $toRemove, 4);
 
-                $newItem = HotelRentItem::create([
-                    'type'                => 'HAB',
-                    'hotel_rent_id'       => $rent->id,
-                    'item_id'             => $newRoom->item_id,
-                    'item'                => $newItemJson,
-                    'payment_status'      => 'DEBT',
-                    'hotel_rent_order_id' => null,
-                    'quantity'            => $remaining,
-                    'unit_price'          => $newUnitPrice,
-                    'total'               => $newTotal,
-                    'description'         => $newDescription,
-                ]);
+                    $keepTotal       = round($itUnit * $keep, 4);
+                    $keepDescription = sprintf(
+                        'Estadía en %s - %d %s (%s → %s)',
+                        $oldRoom->name,
+                        $keep,
+                        $unitLabel,
+                        $inputAt->format('d/m/Y H:i'),
+                        $changeAt->format('d/m/Y H:i')
+                    );
+
+                    $itJson          = is_object($it->item) ? (array) $it->item : ($it->item ?: []);
+                    $it->item        = $this->rewriteHotelItemDescription(
+                        $itJson, $keepDescription, $itUnit, $keep, $keepTotal
+                    );
+                    $it->quantity    = $keep;
+                    $it->unit_price  = $itUnit;
+                    $it->total       = $keepTotal;
+                    $it->description = $keepDescription;
+                    $it->save();
+
+                    $oldAnchorItem = $it;
+                    $toRemove = 0;
+                }
             }
 
             // 3) Actualizar alquiler
@@ -1586,8 +1611,14 @@ class HotelRentController extends Controller
             $newRoom->status = 'OCUPADO';
             $newRoom->save();
 
-            // 5) Historial de cambios
-            $priceDifference = round(($newUnitPrice - $oldUnitPrice) * $remaining, 4);
+            // Aplicar adelantos disponibles a la nueva deuda (o liberar saldo a
+            // favor si la nueva habitación resulta más barata).
+            $this->applyAdvanceCreditToDebtItems($rent);
+
+            // 5) Historial de cambios. La diferencia real es el costo de las
+            // noches nuevas menos el de las noches retiradas de la habitación
+            // anterior (negativo si la nueva tarifa es menor).
+            $priceDifference = round($newTotal - $oldFutureTotal, 4);
 
             HotelRentChange::create([
                 'hotel_rent_id'    => $rent->id,
@@ -1597,9 +1628,9 @@ class HotelRentController extends Controller
                     'room_name'      => $oldRoom->name,
                     'hotel_rate_id'  => $oldHotelRateId,
                     'unit_price'     => $oldUnitPrice,
-                    'item_id'        => $oldItem->id,
+                    'item_id'        => $oldAnchorItem->id ?? null,
                     'rental_price'   => $oldUnitPrice,
-                    'item_snapshot'  => $oldItemSnapshot,
+                    'items_snapshot' => $itemsSnapshot,
                 ],
                 'new_values'       => [
                     'hotel_room_id'  => $newRoom->id,
@@ -1631,7 +1662,7 @@ class HotelRentController extends Controller
                     'consumed'         => $consumed,
                     'remaining'        => $remaining,
                     'unit'             => $unitLabel,
-                    'old_item_id'      => $oldItem->id,
+                    'old_item_id'      => $oldAnchorItem->id ?? null,
                     'new_item_id'      => $newItem->id,
                     'price_difference' => $priceDifference,
                 ],

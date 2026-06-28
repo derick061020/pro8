@@ -773,38 +773,87 @@ class HotelReceptionController extends Controller
 
     private function revertRoomChange(HotelRent $rent, array $old, array $new)
     {
-        $oldItemId = $old['item_id'] ?? null;
         $newItemId = $new['item_id'] ?? null;
-
-        $oldItem = $oldItemId
-            ? \Modules\Hotel\Models\HotelRentItem::where('hotel_rent_id', $rent->id)->where('id', $oldItemId)->first()
-            : null;
         $newItem = $newItemId
             ? \Modules\Hotel\Models\HotelRentItem::where('hotel_rent_id', $rent->id)->where('id', $newItemId)->first()
             : null;
 
-        $this->assertItemNotInvoiced($oldItem);
-        if ($newItem && $newItem->id !== ($oldItem->id ?? null)) {
+        if ($newItem) {
             $this->assertItemNotInvoiced($newItem);
         }
 
-        // Caso split: el cambio creó un item HAB nuevo distinto del anterior.
-        if ($newItem && $oldItem && $newItem->id !== $oldItem->id) {
-            $newItem->payments()->delete();
-            $newItem->delete();
+        // Snapshots a restaurar. Formato nuevo (varios items HAB abiertos) o el
+        // antiguo (un solo item) por compatibilidad con cambios históricos.
+        $snapshots = $old['items_snapshot'] ?? null;
+        if (!$snapshots && isset($old['item_snapshot'])) {
+            $snapshots = [array_merge($old['item_snapshot'], ['id' => $old['item_id'] ?? null])];
+        }
+        $snapshots = $snapshots ?: [];
+
+        // Verificar que ningún item existente a restaurar esté facturado.
+        foreach ($snapshots as $snap) {
+            if (!empty($snap['id'])) {
+                $existing = \Modules\Hotel\Models\HotelRentItem::where('hotel_rent_id', $rent->id)
+                    ->where('id', $snap['id'])->first();
+                $this->assertItemNotInvoiced($existing);
+            }
         }
 
-        // Restaurar el item HAB anterior desde el snapshot.
-        $snapshot = $old['item_snapshot'] ?? null;
-        if ($oldItem && $snapshot) {
-            $oldItem->item_id        = $snapshot['item_id'] ?? $oldItem->item_id;
-            $oldItem->item           = $snapshot['item'] ?? $oldItem->item;
-            $oldItem->quantity       = $snapshot['quantity'] ?? $oldItem->quantity;
-            $oldItem->unit_price     = $snapshot['unit_price'] ?? $oldItem->unit_price;
-            $oldItem->total          = $snapshot['total'] ?? $oldItem->total;
-            $oldItem->description    = $snapshot['description'] ?? $oldItem->description;
-            $oldItem->payment_status = $snapshot['payment_status'] ?? $oldItem->payment_status;
-            $oldItem->save();
+        // Conservar los pagos que se hayan trasladado al item nuevo durante el
+        // cambio: se devolverán al primer item restaurado para no perder dinero.
+        $migratedPaymentIds = $newItem ? $newItem->payments()->pluck('id')->all() : [];
+
+        // Restaurar cada item desde su snapshot: actualizar si todavía existe,
+        // recrear si fue eliminado al trasladar sus noches a la nueva habitación.
+        $firstRestored = null;
+        $restoredIds   = [];
+        foreach ($snapshots as $snap) {
+            $item = !empty($snap['id'])
+                ? \Modules\Hotel\Models\HotelRentItem::where('hotel_rent_id', $rent->id)->where('id', $snap['id'])->first()
+                : null;
+
+            if ($item) {
+                $item->item_id        = $snap['item_id'] ?? $item->item_id;
+                $item->item           = $snap['item'] ?? $item->item;
+                $item->quantity       = $snap['quantity'] ?? $item->quantity;
+                $item->unit_price     = $snap['unit_price'] ?? $item->unit_price;
+                $item->total          = $snap['total'] ?? $item->total;
+                $item->description    = $snap['description'] ?? $item->description;
+                $item->payment_status = $snap['payment_status'] ?? $item->payment_status;
+                $item->save();
+            } else {
+                $item = \Modules\Hotel\Models\HotelRentItem::create([
+                    'type'                => 'HAB',
+                    'hotel_rent_id'       => $rent->id,
+                    'item_id'             => $snap['item_id'] ?? null,
+                    'item'                => $snap['item'] ?? [],
+                    'payment_status'      => $snap['payment_status'] ?? 'DEBT',
+                    'hotel_rent_order_id' => null,
+                    'quantity'            => $snap['quantity'] ?? 1,
+                    'unit_price'          => $snap['unit_price'] ?? 0,
+                    'total'               => $snap['total'] ?? 0,
+                    'description'         => $snap['description'] ?? null,
+                ]);
+            }
+
+            $restoredIds[] = $item->id;
+            if (!$firstRestored) {
+                $firstRestored = $item;
+            }
+        }
+
+        // Eliminar el item de la nueva habitación (salvo que coincida con uno
+        // restaurado, caso de los cambios históricos sin split). Sus pagos
+        // trasladados se devuelven al primer item restaurado.
+        if ($newItem && !in_array($newItem->id, $restoredIds, true)) {
+            if ($firstRestored && !empty($migratedPaymentIds)) {
+                HotelRentItemPayment::whereIn('id', $migratedPaymentIds)
+                    ->update(['hotel_rent_item_id' => $firstRestored->id]);
+            } elseif (!$firstRestored) {
+                $newItem->payments()->delete();
+            }
+            $newItem->refresh();
+            $newItem->delete();
         }
 
         // Regresar el alquiler a la habitación/tarifa anterior.
