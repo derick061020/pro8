@@ -50,26 +50,6 @@
                         <td>{{ row.payment_status === "PAID" ? "Pagado" : "Debe" }}</td>
                         <td>{{ row.status }}</td>
                         <td>{{ formatCurrency(getRentalTotal(row)) }}</td>
-                        <td>
-
-
-                            <template
-                                v-if="row.items.length > 0 ">
-
-
-                                <button
-                                    class="btn waves-effect waves-light btn-xs btn-primary"
-                                    type="button"
-                                    @click.prevent="clickProductsItems(row.items,row.room?row.room.name:'')"
-
-                                >
-                                    <i class="fa fa-database"></i>
-                                </button>
-
-                                <br>
-                                {{ checkProductDebts(row.items) }}
-                            </template>
-                        </td>
                         <td>{{ row.input_date }}</td>
                         <td>{{ row.input_time }}</td>
                         <td>{{ row.output_date }}</td>
