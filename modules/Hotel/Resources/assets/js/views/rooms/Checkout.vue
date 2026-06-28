@@ -3235,8 +3235,20 @@ export default {
                         this.editDatesForm.priceDifference
                     );
 
-                    // Actualizar los datos del rent actual
-                    this.currentRent = response.data.rent;
+                    // Actualizar SOLO los campos de fecha del rent actual.
+                    // No reemplazar todo el objeto: la respuesta de edit-dates
+                    // devuelve el rent con fresh(['room','customer']) SIN cargar
+                    // la relación `items`. Si reemplazáramos currentRent
+                    // perderíamos items/customer.person_type/room.category, y
+                    // onCalculatePaidAndDebts() (que recorre
+                    // this.currentRent.items) lanzaría una excepción que cae al
+                    // catch y muestra "Error al editar las fechas" pese a que el
+                    // guardado fue exitoso.
+                    const updatedRent = response.data.rent || {};
+                    this.currentRent.input_date = updatedRent.input_date;
+                    this.currentRent.input_time = updatedRent.input_time;
+                    this.currentRent.output_date = updatedRent.output_date;
+                    this.currentRent.output_time = updatedRent.output_time;
 
                     // Actualizar el precio del item si cambió
                     if (response.data.new_item_price) {
