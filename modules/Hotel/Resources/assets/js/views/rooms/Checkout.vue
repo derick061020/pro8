@@ -3235,34 +3235,16 @@ export default {
                         this.editDatesForm.priceDifference
                     );
 
-                    // Actualizar SOLO los campos de fecha del rent actual.
-                    // No reemplazar todo el objeto: la respuesta de edit-dates
-                    // devuelve el rent con fresh(['room','customer']) SIN cargar
-                    // la relación `items`. Si reemplazáramos currentRent
-                    // perderíamos items/customer.person_type/room.category, y
-                    // onCalculatePaidAndDebts() (que recorre
-                    // this.currentRent.items) lanzaría una excepción que cae al
-                    // catch y muestra "Error al editar las fechas" pese a que el
-                    // guardado fue exitoso.
-                    const updatedRent = response.data.rent || {};
-                    this.currentRent.input_date = updatedRent.input_date;
-                    this.currentRent.input_time = updatedRent.input_time;
-                    this.currentRent.output_date = updatedRent.output_date;
-                    this.currentRent.output_time = updatedRent.output_time;
-
-                    // Actualizar el precio del item si cambió
-                    if (response.data.new_item_price) {
-                        this.room.item.unit_price = response.data.new_item_price.unit_price;
-                        this.room.item.total = response.data.new_item_price.total;
-                        this.total = this.room.item.total;
-                    }
-
-                    // Recalcular totales
-                    await this.onCalculateTotals();
-                    this.onCalculatePaidAndDebts();
-
-                    // Actualizar la duración y otros campos si es necesario
-                    this.initForm();
+                    // Recargar TODO el estado desde el servidor, igual que hace
+                    // la extensión de estadía. No mutamos currentRent a mano: la
+                    // respuesta de edit-dates trae el rent con fresh(['room',
+                    // 'customer']) SIN la relación `items`, y reasignarlo dejaba
+                    // currentRent.items en undefined -> onCalculatePaidAndDebts()
+                    // reventaba y el catch mostraba "Error al editar las fechas"
+                    // pese a que el guardado fue exitoso. loadRentData() recarga
+                    // rent, items, room, pagos y recalcula totales de forma
+                    // consistente.
+                    await this.loadRentData();
                 } else {
                     this.$message.error(response.data.message);
                 }
