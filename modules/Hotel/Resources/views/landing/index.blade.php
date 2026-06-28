@@ -1,8 +1,16 @@
 <!DOCTYPE HTML>
-<html>
+<html lang="es">
 <head>
 <meta charset="utf-8">
-<title>Starhotel</title>
+@php
+    $hotelName = $establishment->description ?? 'Hotel';
+    $hotelPhone = $establishment->telephone ?? null;
+    $hotelEmail = $establishment->email ?? null;
+    $hotelAddress = $establishment->address ?? null;
+    $hotelWeb = $establishment->web_address ?? null;
+    $hotelLogo = (!empty($establishment->logo)) ? asset('storage/uploads/logos/'.$establishment->logo) : null;
+@endphp
+<title>{{ $hotelName }} · Reservas online</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="csrf-token" content="{{ csrf_token() }}">
 <link rel="shortcut icon" href="/landing-reservas/favicon.ico">
@@ -15,36 +23,60 @@
 <link rel="stylesheet" href="/landing-reservas/css/owl.theme.css">
 <link rel="stylesheet" href="/landing-reservas/css/prettyPhoto.css">
 <link rel="stylesheet" href="/landing-reservas/css/smoothness/jquery-ui-1.10.4.custom.min.css">
-<link rel="stylesheet" href="/landing-reservas/rs-plugin/css/settings.css">
 <link rel="stylesheet" href="/landing-reservas/css/theme.css">
 <link rel="stylesheet" href="/landing-reservas/css/colors/turquoise.css">
 <link rel="stylesheet" href="/landing-reservas/css/responsive.css">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:400italic,600italic,400,600,700">
 
-<!-- Javascripts --> 
-<script type="text/javascript" src="/landing-reservas/js/jquery-1.11.0.min.js"></script> 
-<script type="text/javascript" src="/landing-reservas/js/bootstrap.min.js"></script> 
-<script type="text/javascript" src="/landing-reservas/js/bootstrap-hover-dropdown.min.js"></script> 
-<script type="text/javascript" src="/landing-reservas/js/owl.carousel.min.js"></script> 
-<script type="text/javascript" src="/landing-reservas/js/jquery.parallax-1.1.3.js"></script>
-<script type="text/javascript" src="/landing-reservas/js/jquery.nicescroll.js"></script>  
-<script type="text/javascript" src="/landing-reservas/js/jquery.prettyPhoto.js"></script> 
-<script type="text/javascript" src="/landing-reservas/js/jquery-ui-1.10.4.custom.min.js"></script> 
-<script type="text/javascript" src="/landing-reservas/js/jquery.forms.js"></script> 
-<script type="text/javascript" src="/landing-reservas/js/jquery.sticky.js"></script> 
-<script type="text/javascript" src="/landing-reservas/js/waypoints.min.js"></script> 
-<script type="text/javascript" src="/landing-reservas/js/jquery.isotope.min.js"></script> 
-<script type="text/javascript" src="/landing-reservas/js/jquery.gmap.min.js"></script> 
-<script type="text/javascript" src="http://maps.google.com/maps/api/js?sensor=false"></script>
-<script type="text/javascript" src="/landing-reservas/rs-plugin/js/jquery.themepunch.tools.min.js"></script> 
-<script type="text/javascript" src="/landing-reservas/rs-plugin/js/jquery.themepunch.revolution.min.js"></script> 
-<script type="text/javascript" src="/landing-reservas/js/custom.js"></script> 
-<!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
-<!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
-<!--[if lt IE 9]>
-      <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
-      <script src="https://oss.maxcdn.com/libs/respond.js/1.3.0/respond.min.js"></script>
-    <![endif]-->
+<!-- Javascripts -->
+<script type="text/javascript" src="/landing-reservas/js/jquery-1.11.0.min.js"></script>
+<script type="text/javascript" src="/landing-reservas/js/bootstrap.min.js"></script>
+<script type="text/javascript" src="/landing-reservas/js/bootstrap-hover-dropdown.min.js"></script>
+<script type="text/javascript" src="/landing-reservas/js/owl.carousel.min.js"></script>
+<script type="text/javascript" src="/landing-reservas/js/jquery.nicescroll.js"></script>
+<script type="text/javascript" src="/landing-reservas/js/jquery.prettyPhoto.js"></script>
+<script type="text/javascript" src="/landing-reservas/js/jquery.sticky.js"></script>
+
+<style>
+  /* Ajustes propios de la web de reservas (no alteran el tema base) */
+  .hero-reservas {
+    background: linear-gradient(rgba(20,30,40,.6), rgba(20,30,40,.65)), url('/landing-reservas/images/slides/1700x449.gif') center/cover no-repeat;
+    color: #fff; padding: 90px 0 40px; text-align: center;
+  }
+  .hero-reservas h1 { color:#fff; font-weight:700; margin-bottom:8px; }
+  .hero-reservas p.lead { color:#f1f1f1; font-size:18px; }
+  #reservation-form { margin-top:-45px; position:relative; z-index:5; }
+  .search-box { background:#fff; border-radius:6px; box-shadow:0 10px 30px rgba(0,0,0,.12); padding:18px; }
+  .search-box label { font-weight:600; font-size:12px; text-transform:uppercase; color:#666; }
+  .search-box .form-control { height:42px; }
+  .room-card { background:#fff; border-radius:8px; overflow:hidden; box-shadow:0 4px 18px rgba(0,0,0,.08); margin-bottom:30px; display:flex; flex-direction:column; height:calc(100% - 30px); transition:transform .2s, box-shadow .2s; }
+  .room-card:hover { transform:translateY(-4px); box-shadow:0 10px 28px rgba(0,0,0,.15); }
+  .room-card__img { position:relative; height:210px; background:#eceff1 center/cover no-repeat; }
+  .room-card__badge { position:absolute; top:12px; left:12px; background:#1abc9c; color:#fff; font-size:11px; font-weight:600; padding:4px 10px; border-radius:20px; text-transform:uppercase; }
+  .room-card__fav { position:absolute; top:12px; right:12px; background:#e67e22; color:#fff; font-size:11px; font-weight:600; padding:4px 10px; border-radius:20px; }
+  .room-card__body { padding:16px 18px; flex:1; display:flex; flex-direction:column; }
+  .room-card__cat { color:#1abc9c; font-size:12px; text-transform:uppercase; letter-spacing:.5px; font-weight:600; }
+  .room-card__title { font-size:19px; font-weight:700; margin:2px 0 6px; color:#2c3e50; }
+  .room-card__meta { color:#7f8c8d; font-size:13px; margin-bottom:8px; }
+  .room-card__meta i { color:#1abc9c; margin-right:3px; }
+  .room-card__desc { color:#666; font-size:13px; flex:1; }
+  .room-card__price { font-size:22px; font-weight:700; color:#2c3e50; }
+  .room-card__price small { font-size:12px; color:#95a5a6; font-weight:400; }
+  .room-card__total { font-size:12px; color:#16a085; font-weight:600; }
+  .room-card__actions { display:flex; gap:8px; margin-top:12px; }
+  .room-card__actions .btn { flex:1; }
+  .amenity-pill { display:inline-block; background:#f0f3f5; color:#506; color:#566573; border-radius:16px; padding:4px 12px; font-size:12px; margin:0 6px 6px 0; }
+  .amenity-pill i { color:#1abc9c; margin-right:5px; }
+  .modal-gallery img { width:100%; border-radius:6px; margin-bottom:10px; cursor:pointer; max-height:360px; object-fit:cover; }
+  .modal-thumbs { display:flex; gap:8px; flex-wrap:wrap; }
+  .modal-thumbs img { width:70px; height:55px; object-fit:cover; border-radius:5px; border:2px solid transparent; cursor:pointer; }
+  .modal-thumbs img.active { border-color:#1abc9c; }
+  .summary-box { background:#f8fafb; border:1px solid #eceff1; border-radius:6px; padding:12px 14px; margin-bottom:14px; }
+  .summary-box strong { color:#2c3e50; }
+  .loading-rooms { text-align:center; padding:40px 0; color:#95a5a6; }
+  .empty-rooms { text-align:center; padding:40px 0; color:#7f8c8d; }
+  .doc-feedback { font-size:12px; margin-top:4px; }
+</style>
 </head>
 
 <body>
@@ -55,25 +87,16 @@
     <div class="row">
       <div class="col-xs-6">
         <div class="th-text pull-left">
-          <div class="th-item"> <a href="#"><i class="fa fa-phone"></i> 05-460789986</a> </div>
-          <div class="th-item"> <a href="#"><i class="fa fa-envelope"></i> MAIL@STARHOTEL.COM </a></div>
+          @if($hotelPhone)<div class="th-item"> <a href="tel:{{ $hotelPhone }}"><i class="fa fa-phone"></i> {{ $hotelPhone }}</a> </div>@endif
+          @if($hotelEmail)<div class="th-item"> <a href="mailto:{{ $hotelEmail }}"><i class="fa fa-envelope"></i> {{ $hotelEmail }} </a></div>@endif
         </div>
       </div>
       <div class="col-xs-6">
         <div class="th-text pull-right">
           <div class="th-item">
-            <div class="btn-group">
-              <button class="btn btn-default btn-xs dropdown-toggle js-activated" type="button" data-toggle="dropdown"> English <span class="caret"></span> </button>
-              <ul class="dropdown-menu">
-                <li> <a href="#">ENGLISH</a> </li>
-                <li> <a href="#">FRANCE</a> </li>
-                <li> <a href="#">GERMAN</a> </li>
-                <li> <a href="#">SPANISH</a> </li>
-              </ul>
+            <div class="social-icons">
+              @if($hotelWeb)<a href="{{ $hotelWeb }}" target="_blank"><i class="fa fa-globe"></i></a>@endif
             </div>
-          </div>
-          <div class="th-item">
-            <div class="social-icons"> <a href="#"><i class="fa fa-facebook"></i></a> <a href="#"><i class="fa fa-twitter"></i></a> <a href="#"><i class="fa fa-youtube-play"></i></a> </div>
           </div>
         </div>
       </div>
@@ -83,532 +106,542 @@
 
 <!-- Header -->
 <header>
-  <!-- Navigation -->
   <div class="navbar yamm navbar-default" id="sticky">
     <div class="container">
       <div class="navbar-header">
         <button type="button" data-toggle="collapse" data-target="#navbar-collapse-grid" class="navbar-toggle"> <span class="icon-bar"></span> <span class="icon-bar"></span> <span class="icon-bar"></span> </button>
-        <a href="/reservas" class="navbar-brand">         
-        <!-- Logo -->
-        <div id="logo"> <img id="default-logo" src="/landing-reservas/images/logo.png" alt="Starhotel" style="height:44px;"> <img id="retina-logo" src="/landing-reservas/images/logo-retina.png" alt="Starhotel" style="height:44px;"> </div>
-        </a> </div>
+        <a href="/reservas" class="navbar-brand">
+          @if($hotelLogo)
+            <div id="logo"><img src="{{ $hotelLogo }}" alt="{{ $hotelName }}" style="height:44px;"></div>
+          @else
+            <span style="font-size:22px;font-weight:700;color:#2c3e50;line-height:50px;">{{ $hotelName }}</span>
+          @endif
+        </a>
+      </div>
       <div id="navbar-collapse-grid" class="navbar-collapse collapse">
-        <ul class="nav navbar-nav">
-          <li class="dropdown active"> <a href="/reservas">Home</a>
-          </li>
-		  <li class="dropdown"> <a href="#" data-toggle="dropdown" class="dropdown-toggle js-activated">Rooms<b class="caret"></b></a>
-            <ul class="dropdown-menu">
-              <li><a href="/landing-reservas/room-list.html">Room List View</a></li>
-              <li><a href="/landing-reservas/room-detail.html">Room Detail</a></li>
-            </ul>
-          </li>
-          <li class="dropdown"> <a href="#" data-toggle="dropdown" class="dropdown-toggle js-activated">Features<b class="caret"></b></a>
-            <div class="dropdown-menu"> 
-              <div class="yamm-content">
-                <div class="row">
-                  <ul class="col-sm-3 list-unstyled mt20">
-                    <li>
-                      <p><strong>Elements</strong></p>
-                    </li>
-					<li><a href="/landing-reservas/elements.html">Elements</a></li>
-					<li><a href="/landing-reservas/icons.html">Icons</a></li>
-                    <li><a href="/landing-reservas/404.html">404 Page</a></li>
-                  </ul>				
-				  <ul class="col-sm-3 list-unstyled mt20">
-                    <li>
-                      <p><strong>Layout</strong></p>
-                    </li>
-					<li><a href="/landing-reservas/boxed-pattern.html"><i class="fa fa-square-o"></i> Boxed</a></li>
-					<li><a href="/reservas"><i class="fa fa-arrows-h"></i> Wide</a></li>
-                    <li><a href="/landing-reservas/boxed-background.html"><i class="fa fa-picture-o"></i> Image</a></li>
-                  </ul>					  
-				  <ul class="col-sm-6 list-unstyled mt20">
-                    <li>
-                      <p><strong>Yamm! Megamenu</strong></p>
- 	  			      <ul class="list-unstyled">
-					    <li class="row">
-					      <ul class="col-sm-12 list-unstyled">
-							<li>
-							Lorem ipsum dolor sit amet, consectetur adipiscing elit. Fusce posuere justo posuere, commodo nibh sit amet, malesuada nisi. Nam vitae mauris vel ante laoreet placerat. Praesent pellentesque consectetur lobortis. Pellentesque lacinia nibh leo, sed pharetra tortor sagittis id. Cras a scelerisque eros. Nunc ornare diam turpis, id vulputate massa sagittis sed.
-							</li>
-                          </ul>
-					    </li>
-					  </ul>
-			        </li>	
-				  </ul>		
-                </div>
-              </div>
-            </div>
-          </li>
-          <li class="dropdown"> <a href="#" data-toggle="dropdown" class="dropdown-toggle js-activated">Blog<b class="caret"></b></a>
-            <ul class="dropdown-menu">
-              <li><a href="/landing-reservas/blog.html">Blog grid</a></li>
-              <li><a href="/landing-reservas/blog-post.html">Blog post</a></li>
-            </ul>
-          </li>
-          <li> <a href="/landing-reservas/gallery.html">Gallery</a></li>
-          <li class="dropdown"> <a href="#" data-toggle="dropdown" class="dropdown-toggle js-activated">Contact<b class="caret"></b></a>
-            <ul class="dropdown-menu">
-              <li><a href="/landing-reservas/contact-01.html">Contact 1</a></li>
-              <li><a href="/landing-reservas/contact-02.html">Contact 2</a></li>
-            </ul>
-          </li>
+        <ul class="nav navbar-nav navbar-right">
+          <li class="active"><a href="#top">Inicio</a></li>
+          <li><a href="#rooms-results">Habitaciones</a></li>
+          <li><a href="#gallery">Galería</a></li>
+          <li><a href="#contacto">Contacto</a></li>
+          <li><a href="#reservation-form" class="text-uppercase" style="color:#1abc9c;font-weight:600;">Reservar</a></li>
         </ul>
       </div>
     </div>
   </div>
 </header>
 
-<!-- Revolution Slider -->
-<section class="revolution-slider">
-  <div class="bannercontainer">
-    <div class="banner">
-      <ul>
-        <!-- Slide 1 -->
-        <li data-transition="fade" data-slotamount="7" data-masterspeed="1500" > 
-          <!-- Main Image --> 
-          <img src="/landing-reservas/images/slides/1700x449.gif" style="opacity:0;" alt="slidebg1"  data-bgfit="cover" data-bgposition="left bottom" data-bgrepeat="no-repeat"> 
-          <!-- Layers -->           
-          <!-- Layer 1 -->
-          <div class="caption sft revolution-starhotel bigtext"  
-          				data-x="505" 
-                        data-y="30" 
-                        data-speed="700" 
-                        data-start="1700" 
-                        data-easing="easeOutBack"> 
-						<span><i class="fa fa-star-o"></i> <i class="fa fa-star-o"></i> <i class="fa fa-star-o"></i> <i class="fa fa-star-o"></i> <i class="fa fa-star-o"></i></span> A Five Star Hotel <span><i class="fa fa-star-o"></i> <i class="fa fa-star-o"></i> <i class="fa fa-star-o"></i> <i class="fa fa-star-o"></i> <i class="fa fa-star-o"></i></span></div>
-          <!-- Layer 2 -->
-          <div class="caption sft revolution-starhotel smalltext"  
-          				data-x="605" 
-                        data-y="105" 
-                        data-speed="800" 
-                        data-start="1700" 
-                        data-easing="easeOutBack">
-						<span>And we like to keep it that way!</span></div>
-        <!-- Layer 3 -->
-                  <div class="caption sft"  
-          				data-x="775" 
-                        data-y="175" 
-                        data-speed="1000" 
-                        data-start="1900" 
-                        data-easing="easeOutBack">
-						<a href="/landing-reservas/room-list.html" class="button btn btn-purple btn-lg">See rooms</a> 
-                  </div>
-        </li>
-		<!-- Slide 2 -->
-        <li data-transition="boxfade" data-slotamount="7" data-masterspeed="1000" > 
-          <!-- Main Image --> 
-          <img src="/landing-reservas/images/slides/1700x449.gif"  alt="darkblurbg"  data-bgfit="cover" data-bgposition="left top" data-bgrepeat="no-repeat"> 
-          <!-- Layers -->           
-          <!-- Layer 1 -->
-          <div class="caption sft revolution-starhotel bigtext"  
-          				data-x="585" 
-                        data-y="30" 
-                        data-speed="700" 
-                        data-start="1700" 
-                        data-easing="easeOutBack"> 
-						<span><i class="fa fa-star-o"></i> <i class="fa fa-star-o"></i> <i class="fa fa-star-o"></i> <i class="fa fa-star-o"></i> <i class="fa fa-star-o"></i></span> Double room <span><i class="fa fa-star-o"></i> <i class="fa fa-star-o"></i> <i class="fa fa-star-o"></i> <i class="fa fa-star-o"></i> <i class="fa fa-star-o"></i></span></div>
-          <!-- Layer 2 -->
-          <div class="caption sft revolution-starhotel smalltext"  
-          				data-x="682" 
-                        data-y="105" 
-                        data-speed="800" 
-                        data-start="1700" 
-                        data-easing="easeOutBack">
-						<span>€ 99,- a night this summer</span></div>
-        <!-- Layer 3 -->
-                  <div class="caption sft"  
-          				data-x="785" 
-                        data-y="175" 
-                        data-speed="1000" 
-                        data-start="1900" 
-                        data-easing="easeOutBack">
-						<a href="/landing-reservas/room-detail.html" class="button btn btn-purple btn-lg">Book this room</a> 
-                  </div>
-        </li>
-      </ul>
-    </div>
+<a id="top"></a>
+<!-- Hero -->
+<section class="hero-reservas">
+  <div class="container">
+    <h1>{{ $hotelName }}</h1>
+    <p class="lead">Reserva tu habitación en línea de forma rápida y segura</p>
   </div>
 </section>
-			
-<!-- Reservation form -->
+
+<!-- Buscador de disponibilidad -->
 <section id="reservation-form">
   <div class="container">
-    <div class="row">
-      <div class="col-md-12">         
-        <form class="form-inline reservation-horizontal clearfix" role="form" method="post" action="/reservas/store" name="reservationform" id="reservationform">
-        <!-- Error message -->
-		<div id="message"></div>
-          <div class="row">
-            <div class="col-sm-3">
-              <div class="form-group">
-                <label for="email" accesskey="E">E-mail</label>
-                <input name="email" type="text" id="email" value="" class="form-control" placeholder="Please enter your E-mail"/>
-              </div>
-            </div>
-            <div class="col-sm-2">
-              <div class="form-group">
-                <label for="room">Room Type</label>
-                <div class="popover-icon" data-container="body" data-toggle="popover" data-trigger="hover" data-placement="right" data-content="Vivamus sagittis lacus vel augue laoreet rutrum faucibus."> <i class="fa fa-info-circle fa-lg"> </i> </div>
-                <select class="form-control" name="room" id="room">
-                  <option selected="selected" disabled="disabled">Select a room</option>
-                  @foreach($rooms as $room)
-                  <option value="{{ $room['id'] }}">{{ $room['category'] }} {{ $room['name'] }}</option>
-                  @endforeach
-                </select>
-              </div>
-            </div>
-            <div class="col-sm-2">
-              <div class="form-group">
-                <label for="checkin">Check-in</label>
-                <div class="popover-icon" data-container="body" data-toggle="popover" data-trigger="hover" data-placement="right" data-content="Check-In is from 11:00"> <i class="fa fa-info-circle fa-lg"> </i> </div>
-                <i class="fa fa-calendar infield"></i>
-                <input name="checkin" type="text" id="checkin" value="" class="form-control" placeholder="Check-in"/>
-              </div>
-            </div>
-            <div class="col-sm-2">
-              <div class="form-group">
-                <label for="checkout">Check-out</label>
-                <div class="popover-icon" data-container="body" data-toggle="popover" data-trigger="hover" data-placement="right" data-content="Check-out is from 12:00"> <i class="fa fa-info-circle fa-lg"> </i> </div>
-                <i class="fa fa-calendar infield"></i>
-                <input name="checkout" type="text" id="checkout" value="" class="form-control" placeholder="Check-out"/>
-              </div>
-            </div>
-            <div class="col-sm-1">
-              <div class="form-group">
-                <div class="guests-select">
-                  <label>Guests</label>
-                  <i class="fa fa-user infield"></i>
-                  <div class="total form-control" id="test">1</div>
-                  <div class="guests">
-                    <div class="form-group adults">
-                      <label for="adults">Adults</label>
-                      <div class="popover-icon" data-container="body" data-toggle="popover" data-trigger="hover" data-placement="right" data-content="+18 years"> <i class="fa fa-info-circle fa-lg"> </i> </div>
-                      <select name="adults" id="adults" class="form-control">
-                        <option value="1">1 adult</option>
-                        <option value="2">2 adults</option>
-                        <option value="3">3 adults</option>
-                      </select>
-                    </div>
-                    <div class="form-group children">
-                      <label for="children">Children</label>
-                      <div class="popover-icon" data-container="body" data-toggle="popover" data-trigger="hover" data-placement="right" data-content="0 till 18 years"> <i class="fa fa-info-circle fa-lg"> </i> </div>
-                      <select name="children" id="children" class="form-control">
-                        <option value="0">0 children</option>
-                        <option value="1">1 child</option>
-                        <option value="2">2 children</option>
-                        <option value="3">3 children</option>
-                      </select>
-                    </div>
-                    <button type="button" class="btn btn-default button-save btn-block">Save</button>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div class="col-sm-2">
-              <button type="submit" class="btn btn-primary btn-block">Book Now</button>
+    <div class="search-box">
+      <form class="form" role="form" id="searchform" onsubmit="return false;">
+        <div class="row">
+          <div class="col-sm-3 col-xs-6">
+            <div class="form-group">
+              <label for="checkin"><i class="fa fa-calendar"></i> Entrada</label>
+              <input name="checkin" type="date" id="checkin" class="form-control" required>
             </div>
           </div>
-        </form>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- Rooms -->
-<section class="rooms mt50">
-  <div class="container">
-    <div class="row">
-      <div class="col-sm-12">
-        <h2 class="lined-heading"><span>Guests Favorite Rooms</span></h2>
-      </div>
-      @forelse($rooms as $room)
-      <!-- Room -->
-      <div class="col-sm-4">
-        <div class="room-thumb"> <img src="/landing-reservas/images/rooms/356x228.gif" alt="{{ $room['name'] }}" class="img-responsive" />
-          <div class="mask">
-            <div class="main">
-              <h5>{{ $room['category'] }} {{ $room['name'] }}</h5>
-              <div class="price">@if($room['min_price'] > 0)S/ {{ number_format($room['min_price'], 2) }}<span>a night</span>@else<span>Consultar tarifa</span>@endif</div>
+          <div class="col-sm-3 col-xs-6">
+            <div class="form-group">
+              <label for="checkout"><i class="fa fa-calendar"></i> Salida</label>
+              <input name="checkout" type="date" id="checkout" class="form-control" required>
             </div>
-            <div class="content">
-              <p><span>{{ $room['category'] }}</span> {{ $room['description'] ?: 'Habitación cómoda y equipada para tu estancia.' }}</p>
-              <div class="row">
-                <div class="col-xs-6">
-                  <ul class="list-unstyled">
-                    <li><i class="fa fa-check-circle"></i> Incl. breakfast</li>
-                    <li><i class="fa fa-check-circle"></i> Private balcony</li>
-                    <li><i class="fa fa-check-circle"></i> Sea view</li>
-                  </ul>
-                </div>
-                <div class="col-xs-6">
-                  <ul class="list-unstyled">
-                    <li><i class="fa fa-check-circle"></i> Free Wi-Fi</li>
-                    <li><i class="fa fa-check-circle"></i> Incl. breakfast</li>
-                    <li><i class="fa fa-check-circle"></i> Bathroom</li>
-                  </ul>
-                </div>
-              </div>
-              <a href="#reservation-form" class="btn btn-primary btn-block reserve-room" data-room-id="{{ $room['id'] }}">Reservar</a>
+          </div>
+          <div class="col-sm-2 col-xs-6">
+            <div class="form-group">
+              <label for="adults"><i class="fa fa-user"></i> Adultos</label>
+              <select name="adults" id="adults" class="form-control">
+                @for($i=1;$i<=8;$i++)<option value="{{ $i }}">{{ $i }}</option>@endfor
+              </select>
+            </div>
+          </div>
+          <div class="col-sm-2 col-xs-6">
+            <div class="form-group">
+              <label for="children"><i class="fa fa-child"></i> Niños</label>
+              <select name="children" id="children" class="form-control">
+                @for($i=0;$i<=6;$i++)<option value="{{ $i }}">{{ $i }}</option>@endfor
+              </select>
+            </div>
+          </div>
+          <div class="col-sm-2 col-xs-12">
+            <div class="form-group">
+              <label>&nbsp;</label>
+              <button type="submit" id="btn-search" class="btn btn-primary btn-block" style="height:42px;"><i class="fa fa-search"></i> Buscar</button>
             </div>
           </div>
         </div>
-      </div>
-      @empty
-      <div class="col-sm-12 text-center">
-        <p>No hay habitaciones publicadas en este momento.</p>
-      </div>
-      @endforelse
+      </form>
     </div>
   </div>
 </section>
 
-<!-- USP's -->
-<section class="usp mt100">
+<!-- Resultados / Habitaciones -->
+<section class="rooms mt50" id="rooms-results">
   <div class="container">
     <div class="row">
       <div class="col-sm-12">
-        <h2 class="lined-heading"><span>USP section</span></h2>
+        <h2 class="lined-heading"><span id="rooms-heading">Nuestras habitaciones</span></h2>
+        <p class="text-center text-muted" id="rooms-subheading" style="margin-top:-10px;margin-bottom:25px;">Selecciona fechas para ver disponibilidad y precios.</p>
       </div>
-      <div class="col-sm-3 bounceIn appear" data-start="0">
-      <div class="box-icon">
-        <div class="circle"><i class="fa fa-glass fa-lg"></i></div>
-        <h3>Beverages included</h3>
-        <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse interdum eleifend augue, quis rhoncus purus fermentum. </p>
-        <a href="#">Read more<i class="fa fa-angle-right"></i></a> </div>
-        </div>
-      <div class="col-sm-3 bounceIn appear" data-start="400">
-      <div class="box-icon">
-        <div class="circle"><i class="fa fa-credit-card fa-lg"></i></div>
-        <h3>Stay First, Pay After!</h3>
-        <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse interdum eleifend augue, quis rhoncus purus fermentum. </p>
-        <a href="#">Read more<i class="fa fa-angle-right"></i></a> </div>
-        </div>
-      <div class="col-sm-3 bounceIn appear" data-start="800">
-      <div class="box-icon">      
-        <div class="circle"><i class="fa fa-cutlery fa-lg"></i></div>
-        <h3>24 Hour Restaurant</h3>
-        <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse interdum eleifend augue, quis rhoncus purus fermentum. </p>
-        <a href="#">Read more<i class="fa fa-angle-right"></i></a> </div>
-        </div>
-      <div class="col-sm-3 bounceIn appear" data-start="1200">
-      <div class="box-icon">
-        <div class="circle"><i class="fa fa-tint fa-lg"></i></div>
-        <h3>Spa Included!</h3>
-        <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse interdum eleifend augue, quis rhoncus purus fermentum. </p>
-        <a href="#">Read more<i class="fa fa-angle-right"></i></a> </div>
-    </div>
-    </div>
-  </div>
-</section>
-
-<!-- Parallax Effect -->
-<script type="text/javascript">$(document).ready(function(){$('#parallax-image').parallax("50%", -0.25);});</script>
-
-<section class="parallax-effect mt100">
-  <div id="parallax-image" style="background-image: url(/landing-reservas/images/parallax/1900x911.gif);">
-    <div class="color-overlay fadeIn appear" data-start="600">
-      <div class="container">
-        <div class="content">
-          <h3 class="text-center"><i class="fa fa fa-star-o"></i> STARHOTEL</h3>
-          <p class="text-center">An Exceptional Hotel Template!
-		  <br>
-		  <a href="/landing-reservas/room-list.html" class="btn btn-default btn-lg mt30">See rooms</a></p>
-        </div>
-      </div>
+      <div class="col-sm-12" id="rooms-grid"></div>
     </div>
   </div>
 </section>
 
 <!-- Gallery -->
-<section class="gallery-slider mt100">
+<section class="gallery-slider mt100" id="gallery">
   <div class="container">
     <div class="row">
-      <div class="col-md-12">
-        <h2 class="lined-heading"><span>Gallery</span></h2>
-      </div>
+      <div class="col-md-12"><h2 class="lined-heading"><span>Galería</span></h2></div>
     </div>
   </div>
-  <div id="owl-gallery" class="owl-carousel">
-    <div class="item"><a href="images/gallery/800x504.gif" data-rel="prettyPhoto[gallery1]"><img src="/landing-reservas/images/gallery/800x504.gif" alt="Image 1"><i class="fa fa-search"></i></a></div>
-    <div class="item"><a href="images/gallery/800x504.gif" data-rel="prettyPhoto[gallery1]"><img src="/landing-reservas/images/gallery/800x504.gif" alt="Image 2"><i class="fa fa-search"></i></a></div>
-    <div class="item"><a href="images/gallery/800x504.gif" data-rel="prettyPhoto[gallery1]"><img src="/landing-reservas/images/gallery/800x504.gif" alt="Image 3"><i class="fa fa-search"></i></a></div>
-    <div class="item"><a href="images/gallery/800x504.gif" data-rel="prettyPhoto[gallery1]"><img src="/landing-reservas/images/gallery/800x504.gif" alt="Image 4"><i class="fa fa-search"></i></a></div>
-  </div>
+  <div id="owl-gallery" class="owl-carousel"></div>
 </section>
 
-<div class="container">
-  <div class="row"> 
-    <!-- Testimonials -->
-    <section class="testimonials mt100">
-      <div class="col-md-6">
-        <h2 class="lined-heading bounceInLeft appear" data-start="0"><span>What Other Visitors Experienced</span></h2>
-        <div id="owl-reviews" class="owl-carousel">
-          <div class="item">
-            <div class="row">
-              <div class="col-lg-3 col-md-4 col-sm-2 col-xs-12"> <img src="/landing-reservas/images/reviews/100x100.gif" alt="Review 1" class="img-circle" /></div>
-              <div class="col-lg-9 col-md-8 col-sm-10 col-xs-12">
-                <div class="text-balloon">Searched the internet and i found, booked and visited this hotel that i like to call utopia... <span>Kim Jones, Single Room</span> </div>
-              </div>
-            </div>
-            <div class="row">
-              <div class="col-lg-3 col-md-4 col-sm-2 col-xs-12"> <img src="/landing-reservas/images/reviews/100x100.gif" alt="Review 2" class="img-circle" /></div>
-              <div class="col-lg-9 col-md-8 col-sm-10 col-xs-12">
-                <div class="text-balloon">I give it a 5 out of 5! Great hotel, friendly staff, clean, relaxing... Yep i'm coming back! ;-) <span>Sandra Donnathan, Double Room</span> </div>
-              </div>
-            </div>
-          </div>
-          <div class="item">
-            <div class="row">
-              <div class="col-lg-3 col-md-4 col-sm-2 col-xs-12"> <img src="/landing-reservas/images/reviews/100x100.gif" alt="Review 3" class="img-circle" /></div>
-              <div class="col-lg-9 col-md-8 col-sm-10 col-xs-12">
-                <div class="text-balloon">Such a nice place... Next time i will book a 3 weeks stay at this place. <span>Rosanne O'Donald, Single Room</span> </div>
-              </div>
-            </div>
-            <div class="row">
-              <div class="col-lg-3 col-md-4 col-sm-2 col-xs-12"> <img src="/landing-reservas/images/reviews/100x100.gif" alt="Review 4" class="img-circle" /></div>
-              <div class="col-lg-9 col-md-8 col-sm-10 col-xs-12">
-                <div class="text-balloon">By far the best hotel in the city! Location is nice and the service is great! <span>Carl Adams, Single Room</span> </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-    
-    <!-- About -->
-    <section class="about mt100">
-      <div class="col-md-6">
-        <h2 class="lined-heading bounceInRight appear" data-start="800"><span>Hotel Tabs</span></h2>
-        <!-- Nav tabs -->
-        <ul class="nav nav-tabs">
-          <li class="active"><a href="#hotel" data-toggle="tab">Our hotels</a></li>
-          <li><a href="#events" data-toggle="tab">Events</a></li>
-          <li><a href="#kids" data-toggle="tab">Kids</a></li>
-          <li><a href="#business" data-toggle="tab">Business</a></li>
-        </ul>
-        <!-- Tab panes -->
-        <div class="tab-content">
-          <div class="tab-pane fade in active" id="hotel">
-            <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse interdum eleifend augue, quis rhoncus purus fermentum. In hendrerit risus arcu, in eleifend metus dapibus varius. Nulla dolor sapien, laoreet vel tincidunt non, egestas non justo. Phasellus et mattis lectus, et gravida urna.</p>
-            <p><img src="/landing-reservas/images/tab/197x147.gif" alt="food" class="pull-right"> Donec pretium sem non tincidunt iaculis. Nunc at pharetra eros, a varius leo. Mauris id hendrerit justo. Mauris egestas magna vitae nisi ultricies semper. Nam vitae suscipit magna. Nam et felis nulla. Ut nec magna tortor. Nulla dolor sapien, laoreet vel tincidunt non, egestas non justo. </p>
-          </div>
-          <div class="tab-pane fade" id="events">Phasellus sodales justo felis, a vestibulum risus mattis vitae. Aliquam vitae varius elit, non facilisis massa. Vestibulum luctus diam mollis gravida bibendum. Aliquam mattis velit dolor, sit amet semper erat auctor vel. Integer auctor in dui ac vehicula. Integer fermentum nunc ut arcu feugiat, nec placerat nunc tincidunt. Pellentesque in massa eu augue placerat cursus sed quis magna.</div>
-          <div class="tab-pane fade" id="kids">Aa vestibulum risus mattis vitae. Aliquam vitae varius elit, non facilisis massa. Vestibulum luctus diam mollis gravida bibendum. Aliquam mattis velit dolor, sit amet semper erat auctor vel. Integer auctor in dui ac vehicula. Integer fermentum nunc ut arcu feugiat, nec placerat nunc tincidunt. Pellentesque in massa eu augue placerat cursus sed quis magna.</div>
-          <div class="tab-pane fade" id="business">...</div>
-        </div>
-      </div>
-    </section>
-  </div>
-</div>
-
-<!-- Call To Action -->
-<section id="call-to-action" class="mt100">
+<!-- Contacto / Footer -->
+<footer id="contacto" class="mt100">
   <div class="container">
     <div class="row">
-      <div class="col-md-8 col-sm-8 col-xs-12">
-        <h2>This is a Call to Action that you can use for all purposes!</h2>
+      <div class="col-md-4 col-sm-4">
+        <h4>{{ $hotelName }}</h4>
+        <p>{{ $establishment->aditional_information ?? 'Te damos la bienvenida. Reserva tu estancia con nosotros y disfruta de una experiencia inolvidable.' }}</p>
       </div>
-      <div class="col-md-4 col-sm-4 col-xs-12">
-        <a href="/landing-reservas/elements.html" class="btn btn-default btn-lg pull-right">More features</a>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- Footer -->
-<footer>
-  <div class="container">
-    <div class="row">
-      <div class="col-md-3 col-sm-3">
-        <h4>About Starhotel</h4>
-        <p>Suspendisse sed sollicitudin nisl, at dignissim libero. Sed porta tincidunt ipsum, vel volutpat. <br>
-          <br>
-          Nunc ut fringilla urna. Cras vel adipiscing ipsum. Integer dignissim nisl eu lacus interdum facilisis. Aliquam erat volutpat. Nulla semper vitae felis vitae dapibus. </p>
-      </div>
-      <div class="col-md-3 col-sm-3">
-        <h4>Recieve our newsletter</h4>
-        <p>Suspendisse sed sollicitudin nisl, at dignissim libero. Sed porta tincidunt ipsum, vel volutpa!</p>
-        <form role="form">
-          <div class="form-group">
-            <input name="newsletter" type="text" id="newsletter" value="" class="form-control" placeholder="Please enter your E-mailaddress">
-          </div>
-          <button type="submit" class="btn btn-lg btn-black btn-block">Submit</button>
-        </form>
-      </div>
-      <div class="col-md-3 col-sm-3">
-        <h4>From our blog</h4>
-        <ul>
-          <li><a href="#">Amazing post with all the goodies<br>
-            January 23, 2014</a></li>
-          <li><a href="#">Integer dignissim nisl eu lacus<br>
-            January 21, 2014</a></li>
-          <li><a href="#">Aliquam erat volutpat. Nulla semper<br>
-            January 14, 2014</a></li>
-        </ul>
-      </div>
-      <div class="col-md-3 col-sm-3">
-        <h4>Address</h4>
+      <div class="col-md-4 col-sm-4">
+        <h4>Contacto</h4>
         <address>
-        <strong>Twitter, Inc.</strong><br>
-        795 Folsom Ave, Suite 600<br>
-        San Francisco, CA 94107<br>
-        <abbr title="Phone">P:</abbr> <a href="#">(123) 456-7890</a><br>
-        <abbr title="Email">E:</abbr> <a href="#">mail@example.com</a><br>
-        <abbr title="Website">W:</abbr> <a href="#">www.slashdown.nl</a><br>
+          @if($hotelAddress)<i class="fa fa-map-marker"></i> {{ $hotelAddress }}<br>@endif
+          @if($hotelPhone)<i class="fa fa-phone"></i> <a href="tel:{{ $hotelPhone }}">{{ $hotelPhone }}</a><br>@endif
+          @if($hotelEmail)<i class="fa fa-envelope"></i> <a href="mailto:{{ $hotelEmail }}">{{ $hotelEmail }}</a><br>@endif
+          @if($hotelWeb)<i class="fa fa-globe"></i> <a href="{{ $hotelWeb }}" target="_blank">{{ $hotelWeb }}</a>@endif
         </address>
+      </div>
+      <div class="col-md-4 col-sm-4">
+        <h4>Reserva ahora</h4>
+        <p>Consulta disponibilidad en tiempo real y asegura tu habitación.</p>
+        <a href="#reservation-form" class="btn btn-primary btn-lg">Ver disponibilidad</a>
       </div>
     </div>
   </div>
   <div class="footer-bottom">
     <div class="container">
       <div class="row">
-        <div class="col-xs-6"> &copy; 2014 Starhotel All Rights Reserved </div>
-        <div class="col-xs-6 text-right">
-          <ul>
-            <li><a href="/landing-reservas/contact-01.html">Contact</a></li>
-          </ul>
-        </div>
+        <div class="col-xs-12 text-center"> &copy; {{ date('Y') }} {{ $hotelName }}. Todos los derechos reservados. </div>
       </div>
     </div>
   </div>
 </footer>
 
-<!-- Go-top Button -->
 <div id="go-top"><i class="fa fa-angle-up fa-2x"></i></div>
 
-<!-- Conexión de reservas (no altera el diseño) -->
+<!-- ===================== Modal: Detalle de habitación ===================== -->
+<div class="modal fade" id="roomDetailModal" tabindex="-1" role="dialog">
+  <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal">&times;</button>
+        <h4 class="modal-title" id="detail-title">Detalle</h4>
+      </div>
+      <div class="modal-body" id="detail-body">
+        <div class="loading-rooms"><i class="fa fa-spinner fa-spin fa-2x"></i></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== Modal: Reservar ===================== -->
+<div class="modal fade" id="reserveModal" tabindex="-1" role="dialog">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal">&times;</button>
+        <h4 class="modal-title">Completa tu reserva</h4>
+      </div>
+      <div class="modal-body">
+        <div id="reserve-message"></div>
+        <div class="summary-box" id="reserve-summary"></div>
+        <form id="reserveform">
+          <input type="hidden" name="room" id="r-room">
+          <input type="hidden" name="checkin" id="r-checkin">
+          <input type="hidden" name="checkout" id="r-checkout">
+          <input type="hidden" name="adults" id="r-adults">
+          <input type="hidden" name="children" id="r-children">
+
+          <div class="row">
+            <div class="col-sm-4">
+              <div class="form-group">
+                <label>Documento</label>
+                <select class="form-control" name="document_type" id="r-doctype">
+                  <option value="dni">DNI</option>
+                  <option value="ruc">RUC</option>
+                </select>
+              </div>
+            </div>
+            <div class="col-sm-8">
+              <div class="form-group">
+                <label>Número de documento</label>
+                <div class="input-group">
+                  <input type="text" class="form-control" name="document_number" id="r-docnumber" placeholder="Nº de documento">
+                  <span class="input-group-btn">
+                    <button class="btn btn-default" type="button" id="r-doc-search"><i class="fa fa-search"></i></button>
+                  </span>
+                </div>
+                <div class="doc-feedback text-muted" id="r-doc-feedback"></div>
+              </div>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Nombre / Razón social <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" name="name" id="r-name" required placeholder="Tu nombre completo">
+          </div>
+          <div class="row">
+            <div class="col-sm-6">
+              <div class="form-group">
+                <label>Teléfono</label>
+                <input type="text" class="form-control" name="telephone" id="r-telephone" placeholder="Celular / teléfono">
+              </div>
+            </div>
+            <div class="col-sm-6">
+              <div class="form-group">
+                <label>E-mail</label>
+                <input type="email" class="form-control" name="email" id="r-email" placeholder="correo@ejemplo.com">
+              </div>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Comentarios / solicitudes especiales</label>
+            <textarea class="form-control" name="notes" id="r-notes" rows="2" placeholder="Ej: llegada tardía, cuna, piso alto..."></textarea>
+          </div>
+          <button type="submit" class="btn btn-primary btn-block btn-lg" id="r-submit">Confirmar reserva</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== Lógica de reservas ===================== -->
 <script type="text/javascript">
 jQuery(function ($) {
     $.ajaxSetup({ headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') } });
 
-    // Botón "Reservar" de las tarjetas: preselecciona la habitación y baja al formulario
-    $(document).on('click', '.reserve-room', function (e) {
+    var CURRENCY = 'S/';
+    var DATA = {
+        rooms: {!! json_encode($rooms, JSON_UNESCAPED_UNICODE) !!},
+        featured: {!! json_encode($featured, JSON_UNESCAPED_UNICODE) !!}
+    };
+    // Estado de la búsqueda actual (para detalle y reserva)
+    var SEARCH = { checkin: null, checkout: null, adults: 1, children: 0, active: false };
+    var PLACEHOLDER = '/landing-reservas/images/rooms/356x228.gif';
+
+    // ---- utilidades ----
+    function money(n) { return CURRENCY + ' ' + Number(n || 0).toLocaleString('es-PE', {minimumFractionDigits: 2, maximumFractionDigits: 2}); }
+    function esc(s) { return $('<div>').text(s == null ? '' : s).html(); }
+    function amenityIcon(a) {
+        a = (a || '').toLowerCase();
+        if (a.indexOf('wi') === 0 || a.indexOf('wifi') > -1 || a.indexOf('wi-fi') > -1) return 'fa-wifi';
+        if (a.indexOf('tv') > -1) return 'fa-television';
+        if (a.indexOf('aire') > -1 || a.indexOf('clima') > -1) return 'fa-snowflake-o';
+        if (a.indexOf('desayun') > -1) return 'fa-coffee';
+        if (a.indexOf('baño') > -1 || a.indexOf('bano') > -1) return 'fa-bath';
+        if (a.indexOf('estacion') > -1 || a.indexOf('parking') > -1) return 'fa-car';
+        if (a.indexOf('frigo') > -1 || a.indexOf('mini') > -1) return 'fa-glass';
+        if (a.indexOf('caja') > -1) return 'fa-lock';
+        if (a.indexOf('vista') > -1) return 'fa-eye';
+        if (a.indexOf('jacuzzi') > -1 || a.indexOf('tina') > -1) return 'fa-tint';
+        return 'fa-check-circle';
+    }
+
+    // ---- render de tarjetas ----
+    function roomCard(room) {
+        var img = room.main_image || PLACEHOLDER;
+        var price = room.min_price > 0
+            ? '<div class="room-card__price">' + money(room.min_price) + ' <small>/ noche</small></div>'
+            : '<div class="room-card__price"><small>Consultar tarifa</small></div>';
+        var total = (room.total && room.nights)
+            ? '<div class="room-card__total">' + room.nights + ' noche(s): ' + money(room.total) + '</div>' : '';
+        var meta = [];
+        if (room.capacity) meta.push('<i class="fa fa-users"></i> ' + room.capacity);
+        if (room.beds) meta.push('<i class="fa fa-bed"></i> ' + esc(room.beds));
+        if (room.size) meta.push('<i class="fa fa-expand"></i> ' + room.size + ' m²');
+        var desc = room.short_description || room.description || 'Habitación cómoda y equipada para tu estancia.';
+        var fav = room.featured ? '<span class="room-card__fav"><i class="fa fa-star"></i> Destacada</span>' : '';
+
+        return '' +
+        '<div class="col-sm-6 col-md-4">' +
+          '<div class="room-card">' +
+            '<div class="room-card__img" style="background-image:url(\'' + img + '\');">' +
+              '<span class="room-card__badge">' + esc(room.category) + '</span>' + fav +
+            '</div>' +
+            '<div class="room-card__body">' +
+              '<div class="room-card__cat">' + esc(room.category) + '</div>' +
+              '<div class="room-card__title">' + esc(room.name) + '</div>' +
+              (meta.length ? '<div class="room-card__meta">' + meta.join(' &nbsp; ') + '</div>' : '') +
+              '<div class="room-card__desc">' + esc(desc) + '</div>' +
+              '<div style="margin-top:10px;">' + price + total + '</div>' +
+              '<div class="room-card__actions">' +
+                '<button class="btn btn-default btn-detail" data-id="' + room.id + '"><i class="fa fa-info-circle"></i> Detalle</button>' +
+                '<button class="btn btn-primary btn-reserve" data-id="' + room.id + '"><i class="fa fa-calendar-check-o"></i> Reservar</button>' +
+              '</div>' +
+            '</div>' +
+          '</div>' +
+        '</div>';
+    }
+
+    function renderRooms(list) {
+        var $grid = $('#rooms-grid');
+        if (!list || !list.length) {
+            $grid.html('<div class="empty-rooms"><i class="fa fa-bed fa-3x"></i><p style="margin-top:12px;">No hay habitaciones disponibles para los criterios seleccionados.</p></div>');
+            return;
+        }
+        $grid.html('<div class="row">' + list.map(roomCard).join('') + '</div>');
+    }
+
+    function findRoom(id) {
+        id = parseInt(id, 10);
+        // Preferir la lista de la última búsqueda (trae nights/total)
+        if (window.__lastList) {
+            var r = window.__lastList.filter(function (x) { return x.id === id; })[0];
+            if (r) return r;
+        }
+        return DATA.rooms.filter(function (x) { return x.id === id; })[0];
+    }
+
+    // Render inicial: destacadas si las hay, si no todas
+    window.__lastList = (DATA.featured && DATA.featured.length) ? DATA.featured : DATA.rooms;
+    renderRooms(window.__lastList);
+    if (DATA.featured && DATA.featured.length) {
+        $('#rooms-heading').text('Habitaciones destacadas');
+    }
+
+    // ---- Galería: usar imágenes reales de las habitaciones ----
+    (function buildGallery() {
+        var imgs = [];
+        DATA.rooms.forEach(function (r) { (r.images || []).forEach(function (u) { imgs.push(u); }); });
+        if (!imgs.length) { $('#gallery').hide(); return; }
+        var html = imgs.slice(0, 12).map(function (u) {
+            return '<div class="item"><a href="' + u + '" data-rel="prettyPhoto[gallery]"><img src="' + u + '" alt="Galería"><i class="fa fa-search"></i></a></div>';
+        }).join('');
+        $('#owl-gallery').html(html);
+        if ($.fn.owlCarousel) {
+            $('#owl-gallery').owlCarousel({ items: 4, itemsDesktop: [1199,3], itemsTablet: [768,2], itemsMobile: [479,1], navigation: true, pagination: false });
+        }
+        if ($.fn.prettyPhoto) { $("a[data-rel^='prettyPhoto']").prettyPhoto({ social_tools: false }); }
+    })();
+
+    // ---- Buscar disponibilidad ----
+    $('#searchform').on('submit', function (e) {
         e.preventDefault();
-        $('#room').val($(this).data('room-id'));
-        $('html, body').animate({ scrollTop: $('#reservation-form').offset().top - 80 }, 400);
-        $('#email').focus();
+        var checkin = $('#checkin').val(), checkout = $('#checkout').val();
+        if (!checkin || !checkout) { alert('Selecciona las fechas de entrada y salida.'); return; }
+        if (checkout <= checkin) { alert('La fecha de salida debe ser posterior a la de entrada.'); return; }
+
+        var $btn = $('#btn-search').prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Buscando...');
+        $('#rooms-grid').html('<div class="loading-rooms"><i class="fa fa-spinner fa-spin fa-2x"></i><p>Buscando habitaciones disponibles...</p></div>');
+
+        $.post('/reservas/search', {
+            checkin: checkin, checkout: checkout,
+            adults: $('#adults').val(), children: $('#children').val()
+        }).done(function (res) {
+            if (!res.success) { $('#rooms-grid').html('<div class="empty-rooms">' + esc(res.message || 'No se pudo buscar.') + '</div>'); return; }
+            SEARCH = { checkin: checkin, checkout: checkout, adults: parseInt($('#adults').val(),10), children: parseInt($('#children').val(),10), active: true };
+            window.__lastList = res.rooms;
+            renderRooms(res.rooms);
+            $('#rooms-heading').text(res.count + ' habitación(es) disponible(s)');
+            $('#rooms-subheading').text('Del ' + res.checkin + ' al ' + res.checkout + ' · ' + res.nights + ' noche(s) · ' + res.adults + ' adulto(s)' + (res.children ? ', ' + res.children + ' niño(s)' : ''));
+            $('html,body').animate({ scrollTop: $('#rooms-results').offset().top - 70 }, 400);
+        }).fail(function (xhr) {
+            var m = (xhr.responseJSON && xhr.responseJSON.message) ? xhr.responseJSON.message : 'No se pudo realizar la búsqueda.';
+            $('#rooms-grid').html('<div class="empty-rooms">' + esc(m) + '</div>');
+        }).always(function () {
+            $btn.prop('disabled', false).html('<i class="fa fa-search"></i> Buscar');
+        });
     });
 
-    // Envío del formulario de reserva por AJAX -> respuesta dentro de #message
-    $('#reservationform').on('submit', function (e) {
+    // ---- Detalle ----
+    $(document).on('click', '.btn-detail', function () {
+        var id = $(this).data('id');
+        $('#detail-body').html('<div class="loading-rooms"><i class="fa fa-spinner fa-spin fa-2x"></i></div>');
+        $('#roomDetailModal').modal('show');
+        var url = '/reservas/room/' + id;
+        if (SEARCH.active) url += '?checkin=' + SEARCH.checkin + '&checkout=' + SEARCH.checkout;
+        $.get(url).done(function (res) {
+            if (!res.success) { $('#detail-body').html('<p class="text-danger">No se pudo cargar el detalle.</p>'); return; }
+            renderDetail(res.room);
+        }).fail(function () {
+            $('#detail-body').html('<p class="text-danger">No se pudo cargar el detalle.</p>');
+        });
+    });
+
+    function renderDetail(room) {
+        $('#detail-title').text(room.category + ' · ' + room.name);
+        var images = (room.images && room.images.length) ? room.images : [PLACEHOLDER];
+        var gallery = '<div class="modal-gallery"><img id="detail-main" src="' + images[0] + '" alt="' + esc(room.name) + '"></div>';
+        var thumbs = images.length > 1
+            ? '<div class="modal-thumbs">' + images.map(function (u, i) { return '<img src="' + u + '" class="' + (i===0?'active':'') + '" data-src="' + u + '">'; }).join('') + '</div>'
+            : '';
+        var meta = [];
+        if (room.capacity) meta.push('<i class="fa fa-users"></i> ' + room.capacity + ' huésped(es)');
+        if (room.beds) meta.push('<i class="fa fa-bed"></i> ' + esc(room.beds));
+        if (room.size) meta.push('<i class="fa fa-expand"></i> ' + room.size + ' m²');
+        if (room.floor) meta.push('<i class="fa fa-building"></i> ' + esc(room.floor));
+        var amenities = (room.amenities && room.amenities.length)
+            ? '<h5 style="margin-top:14px;">Servicios</h5>' + room.amenities.map(function (a) { return '<span class="amenity-pill"><i class="fa ' + amenityIcon(a) + '"></i>' + esc(a) + '</span>'; }).join('')
+            : '';
+        var price = room.min_price > 0 ? money(room.min_price) + ' <small class="text-muted">/ noche</small>' : 'Consultar tarifa';
+        var totalLine = (room.total && room.nights) ? '<div class="room-card__total" style="font-size:14px;">Total ' + room.nights + ' noche(s): <strong>' + money(room.total) + '</strong></div>' : '';
+        var availability = '';
+        if (typeof room.available !== 'undefined') {
+            availability = room.available
+                ? '<div class="alert alert-success" style="padding:8px 12px;">Disponible para las fechas seleccionadas.</div>'
+                : '<div class="alert alert-warning" style="padding:8px 12px;">No disponible en esas fechas.</div>';
+        }
+
+        var html =
+            '<div class="row">' +
+              '<div class="col-sm-7">' + gallery + thumbs + '</div>' +
+              '<div class="col-sm-5">' +
+                '<div class="room-card__cat">' + esc(room.category) + '</div>' +
+                '<h3 style="margin-top:4px;">' + esc(room.name) + '</h3>' +
+                (meta.length ? '<p class="room-card__meta">' + meta.join(' &nbsp; ') + '</p>' : '') +
+                '<p>' + esc(room.description || room.short_description || '') + '</p>' +
+                '<div class="room-card__price" style="margin-top:10px;">' + price + '</div>' +
+                totalLine + availability + amenities +
+                '<button class="btn btn-primary btn-block btn-lg btn-reserve" data-id="' + room.id + '" style="margin-top:16px;"><i class="fa fa-calendar-check-o"></i> Reservar</button>' +
+              '</div>' +
+            '</div>';
+        $('#detail-body').html(html);
+    }
+
+    $(document).on('click', '.modal-thumbs img', function () {
+        $('#detail-main').attr('src', $(this).data('src'));
+        $('.modal-thumbs img').removeClass('active');
+        $(this).addClass('active');
+    });
+
+    // ---- Reservar ----
+    $(document).on('click', '.btn-reserve', function () {
+        var room = findRoom($(this).data('id'));
+        if (!room) return;
+        $('#roomDetailModal').modal('hide');
+        openReserve(room);
+    });
+
+    function openReserve(room) {
+        $('#reserve-message').empty();
+        $('#reserveform')[0].reset();
+        $('#r-room').val(room.id);
+
+        // Tomar fechas de la búsqueda si existe, si no del buscador
+        var checkin = SEARCH.active ? SEARCH.checkin : $('#checkin').val();
+        var checkout = SEARCH.active ? SEARCH.checkout : $('#checkout').val();
+        var adults = SEARCH.active ? SEARCH.adults : parseInt($('#adults').val(), 10);
+        var children = SEARCH.active ? SEARCH.children : parseInt($('#children').val(), 10);
+
+        $('#r-checkin').val(checkin || '');
+        $('#r-checkout').val(checkout || '');
+        $('#r-adults').val(adults || 1);
+        $('#r-children').val(children || 0);
+
+        var datesTxt = (checkin && checkout)
+            ? 'Del <strong>' + checkin + '</strong> al <strong>' + checkout + '</strong>'
+            : '<span class="text-danger">Selecciona fechas en el buscador antes de reservar.</span>';
+        var priceTxt = room.min_price > 0 ? money(room.min_price) + ' / noche' : 'Consultar tarifa';
+        $('#reserve-summary').html(
+            '<div><strong>' + esc(room.category) + ' · ' + esc(room.name) + '</strong></div>' +
+            '<div>' + datesTxt + '</div>' +
+            '<div>' + (adults || 1) + ' adulto(s)' + (children ? ', ' + children + ' niño(s)' : '') + ' · ' + priceTxt + '</div>'
+        );
+        $('#reserveModal').modal('show');
+    }
+
+    // Consulta de documento (autocompleta nombre)
+    $('#r-doc-search').on('click', function () {
+        var type = $('#r-doctype').val(), num = $.trim($('#r-docnumber').val());
+        var $fb = $('#r-doc-feedback').removeClass('text-danger text-success').addClass('text-muted');
+        if (!num) { $fb.text('Ingresa el número de documento.'); return; }
+        $fb.html('<i class="fa fa-spinner fa-spin"></i> Consultando...');
+        $.get('/reservas/document/' + type + '/' + num).done(function (res) {
+            if (res.success && res.data) {
+                var d = res.data;
+                if (d.name) $('#r-name').val(d.name);
+                $fb.removeClass('text-muted').addClass('text-success').text('Datos encontrados.');
+            } else {
+                $fb.removeClass('text-muted').addClass('text-danger').text(res.message || 'No se encontraron datos.');
+            }
+        }).fail(function (xhr) {
+            var m = (xhr.responseJSON && xhr.responseJSON.message) ? xhr.responseJSON.message : 'No se pudo consultar.';
+            $fb.removeClass('text-muted').addClass('text-danger').text(m);
+        });
+    });
+
+    $('#r-doctype').on('change', function () {
+        $('#r-docnumber').attr('placeholder', $(this).val() === 'ruc' ? 'RUC (11 dígitos)' : 'DNI (8 dígitos)');
+    });
+
+    // Enviar reserva
+    $('#reserveform').on('submit', function (e) {
         e.preventDefault();
-        var $btn = $(this).find('button[type="submit"]');
-        $btn.prop('disabled', true);
+        if (!$('#r-checkin').val() || !$('#r-checkout').val()) {
+            $('#reserve-message').html(alertHtml('danger', 'Selecciona las fechas en el buscador antes de reservar.'));
+            return;
+        }
+        var $btn = $('#r-submit').prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Enviando...');
         $.post('/reservas/store', $(this).serialize())
             .done(function (html) {
-                $('#message').html(html);
-                $('#reservationform')[0].reset();
+                $('#reserve-message').html(html);
+                if (html.indexOf('alert-success') !== -1) {
+                    $('#reserveform')[0].reset();
+                    // Refrescar disponibilidad si había búsqueda activa
+                    if (SEARCH.active) { $('#searchform').trigger('submit'); }
+                }
             })
             .fail(function (xhr) {
-                $('#message').html(
+                $('#reserve-message').html(
                     (xhr.responseText && xhr.responseText.indexOf('alert') !== -1)
                         ? xhr.responseText
-                        : '<div class="alert alert-danger alert-dismissable"><button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>No se pudo registrar la reserva. Inténtalo de nuevo.</div>'
-                );
+                        : alertHtml('danger', 'No se pudo registrar la reserva. Inténtalo de nuevo.'));
             })
-            .always(function () { $btn.prop('disabled', false); });
+            .always(function () { $btn.prop('disabled', false).html('Confirmar reserva'); });
     });
+
+    function alertHtml(type, msg) {
+        return '<div class="alert alert-' + type + ' alert-dismissable"><button type="button" class="close" data-dismiss="alert">&times;</button>' + esc(msg) + '</div>';
+    }
+
+    // ---- fechas mínimas ----
+    (function initDates() {
+        var today = new Date().toISOString().split('T')[0];
+        $('#checkin').attr('min', today).on('change', function () {
+            var next = new Date($(this).val()); next.setDate(next.getDate() + 1);
+            $('#checkout').attr('min', next.toISOString().split('T')[0]);
+            if ($('#checkout').val() && $('#checkout').val() <= $(this).val()) {
+                $('#checkout').val(next.toISOString().split('T')[0]);
+            }
+        });
+        $('#checkout').attr('min', today);
+    })();
+
+    // Smooth scroll para anclas del menú
+    $(document).on('click', 'a[href^="#"]', function (e) {
+        var target = $(this).attr('href');
+        if (target.length > 1 && $(target).length) {
+            e.preventDefault();
+            $('html,body').animate({ scrollTop: $(target).offset().top - 70 }, 400);
+        }
+    });
+
+    // Go-top
+    $('#go-top').on('click', function () { $('html,body').animate({ scrollTop: 0 }, 400); });
 });
 </script>
 

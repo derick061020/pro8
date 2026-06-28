@@ -11,6 +11,9 @@ if ($hostname) {
     // su propia base de datos por el dominio, así que la misma landing sirve a
     // todos los tenants mostrando sus propias habitaciones.
     Route::get('reservas', 'HotelLandingController@index')->name('tenant.hotels.landing');
+    Route::post('reservas/search', 'HotelLandingController@searchAvailability');
+    Route::get('reservas/room/{id}', 'HotelLandingController@roomDetail');
+    Route::get('reservas/document/{type}/{number}', 'HotelLandingController@documentLookup');
     Route::post('reservas/store', 'HotelLandingController@store');
 
     Route::middleware(['auth', 'redirect.module', 'locked.tenant','check.email.verified'])
