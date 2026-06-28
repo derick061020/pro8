@@ -1499,16 +1499,18 @@ class HotelRentController extends Controller
                 ], 400);
             }
 
-            // Duración realmente abierta = suma de las cantidades de TODOS los
-            // HAB abiertos (estadía original + todas las extensiones).
-            $openDuration = max(1, (int) $openHabItems->sum('quantity'));
-
-            [$consumed, $remaining, $unitLabel] = $this->calculateRoomChangeSplit(
-                $period,
-                $inputAt,
-                $changeAt,
-                $openDuration
-            );
+            // Resuelve la cantidad real de noches de un item. OJO: los items
+            // creados en store() NO setean la columna `quantity` (queda en su
+            // valor por defecto = 1); las noches reales viven en el JSON
+            // `item.quantity`. El resto de la app (UI, totales) lee el JSON, así
+            // que aquí también se prefiere el JSON, con fallback a la columna.
+            $resolveQuantity = function (HotelRentItem $it) {
+                $json = is_object($it->item) ? (array) $it->item : ($it->item ?: []);
+                $jq   = isset($json['quantity']) ? (float) $json['quantity'] : 0.0;
+                if ($jq > 0) return (int) round($jq);
+                $col = (int) $it->quantity;
+                return $col > 0 ? $col : 1;
+            };
 
             // Resuelve el precio unitario real de un item (la columna unit_price
             // viene como "0.0000" en items antiguos → preferir el JSON).
@@ -1518,6 +1520,19 @@ class HotelRentController extends Controller
                 $j    = (float) ($json['unit_price'] ?? $json['unit_price_value'] ?? 0);
                 return $col > 0 ? $col : $j;
             };
+
+            // Duración realmente abierta = suma de las noches (del JSON) de TODOS
+            // los HAB abiertos (estadía original + todas las extensiones).
+            $openDuration = max(1, (int) $openHabItems->sum(function (HotelRentItem $it) use ($resolveQuantity) {
+                return $resolveQuantity($it);
+            }));
+
+            [$consumed, $remaining, $unitLabel] = $this->calculateRoomChangeSplit(
+                $period,
+                $inputAt,
+                $changeAt,
+                $openDuration
+            );
 
             // Snapshot de TODOS los items abiertos para poder revertir con fidelidad.
             $itemsSnapshot = $openHabItems->map(function (HotelRentItem $it) {
@@ -1608,7 +1623,7 @@ class HotelRentController extends Controller
                     continue;
                 }
 
-                $q      = (int) $it->quantity;
+                $q      = $resolveQuantity($it);
                 $itUnit = $resolveUnit($it);
 
                 if ($toRemove >= $q) {
