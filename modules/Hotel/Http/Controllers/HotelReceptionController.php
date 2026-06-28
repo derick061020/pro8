@@ -431,23 +431,73 @@ class HotelReceptionController extends Controller
                 $rent->output_time = $outputTime;
             }
 
-            // Actualizar precio si se proporciona
+            // Actualizar precio si se proporciona. IMPORTANTE: el precio,
+            // la cantidad de noches y el total que la UI y los totales del
+            // checkout realmente leen NO viven en las columnas unit_price/total
+            // del item, sino en el JSON `item` (item.total, item.unit_price,
+            // item.quantity). De hecho los items creados en store() ni siquiera
+            // setean esas columnas (quedan en 0). Por eso aquí se actualiza el
+            // JSON, igual que store()/extendStay; si solo tocáramos las columnas
+            // el cambio de precio/duración no se reflejaría en el checkout.
             $newItemPrice = null;
             if ($newPrice !== null && $newPrice > 0) {
                 $roomItem = $rent->items()->where('type', 'HAB')->first();
                 if ($roomItem) {
-                    $oldTotal = $roomItem->total;
-                    $roomItem->total = $newPrice;
-                    
-                    // Recalcular unit_price basado en la duración
-                    $duration = $inputDateTime->diffInDays($outputDateTime);
-                    $unitPrice = $duration > 0 ? $newPrice / $duration : $newPrice;
+                    // Nueva cantidad de unidades según el tipo de renta, igual
+                    // que el cálculo del frontend (ceil de la duración).
+                    $rentalType = $rent->rental_period_type;
+                    if ($rentalType === 'hour') {
+                        $quantity = (int) max(1, ceil($inputDateTime->diffInMinutes($outputDateTime) / 60));
+                        $timeUnit = 'hora(s)';
+                    } elseif ($rentalType === 'month') {
+                        $quantity = (int) max(1, ceil($inputDateTime->diffInDays($outputDateTime) / 30));
+                        $timeUnit = 'mes(es)';
+                    } else {
+                        $quantity = (int) max(1, ceil($inputDateTime->diffInHours($outputDateTime) / 24));
+                        $timeUnit = 'noche(s)';
+                    }
+
+                    $unitPrice = $newPrice / $quantity;
+
+                    // Regex para reemplazar el sufijo " x N noche(s)/hora(s)/mes(es)"
+                    // en las descripciones por la nueva duración.
+                    $suffixRegex = '/\s*x\s*\d+(?:\.\d+)?\s*(?:noche\(s\)|hora\(s\)|mes\(es\))/iu';
+                    $newSuffix   = ' x ' . $quantity . ' ' . $timeUnit;
+
+                    // Actualizar el JSON `item` (lo que realmente lee la app).
+                    $json = is_object($roomItem->item) ? (array) $roomItem->item : ($roomItem->item ?: []);
+                    $json['total']      = $newPrice;
+                    $json['unit_price'] = $unitPrice;
+                    $json['quantity']   = $quantity;
+                    if (isset($json['description'])) {
+                        $json['description'] = preg_replace($suffixRegex, '', $json['description']) . $newSuffix;
+                    }
+                    // Sub-objeto anidado `item.item` (el que termina en el XML/PDF).
+                    if (isset($json['item'])) {
+                        $nested = (array) $json['item'];
+                        $nested['unit_price'] = $unitPrice;
+                        if (isset($nested['total'])) {
+                            $nested['total'] = $newPrice;
+                        }
+                        if (isset($nested['description'])) {
+                            $nested['description'] = preg_replace($suffixRegex, '', $nested['description']) . $newSuffix;
+                        }
+                        if (!empty($nested['name_product_pdf'])) {
+                            $nested['name_product_pdf'] = preg_replace($suffixRegex, '', $nested['name_product_pdf']) . $newSuffix;
+                        }
+                        $json['item'] = $nested;
+                    }
+                    $roomItem->item = $json;
+
+                    // Mantener las columnas sincronizadas por consistencia.
+                    $roomItem->total      = $newPrice;
                     $roomItem->unit_price = $unitPrice;
+                    $roomItem->quantity   = $quantity;
                     $roomItem->save();
 
                     $newItemPrice = [
                         'unit_price' => $unitPrice,
-                        'total' => $newPrice
+                        'total'      => $newPrice,
                     ];
                 }
             }
