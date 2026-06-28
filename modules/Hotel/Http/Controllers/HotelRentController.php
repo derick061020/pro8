@@ -208,8 +208,45 @@ class HotelRentController extends Controller
 			
 			\Log::info('Rent data before save: ' . json_encode($rentData));
 			
-			$rent = HotelRent::create($rentData);
-			
+			// Check-in que proviene de una reserva: en lugar de crear un nuevo
+			// HotelRent (lo que dejaba la reserva original FINALIZADA y la renta
+			// como DOS registros separados en calendario/reportes), reutilizamos
+			// la propia reserva y la convertimos en renta. Así queda UN SOLO
+			// registro que conserva su id, su historial y sus adelantos.
+			$rent                  = null;
+			$convertedReservation  = false;
+			$oldReservationItemIds = collect();
+			if ($isCheckinFromReservation && $sourceReservationId) {
+				$existingReservation = HotelRent::find($sourceReservationId);
+				if ($existingReservation && $existingReservation->is_reserve) {
+					// Ítems HAB que la reserva ya tenía: más abajo se crea un
+					// ítem HAB nuevo para la renta, así que guardamos los viejos
+					// para trasladarles los pagos (adelantos) y luego eliminarlos.
+					$oldReservationItemIds = HotelRentItem::where('hotel_rent_id', $existingReservation->id)
+						->where('type', 'HAB')
+						->pluck('id');
+					// Las órdenes previas de la reserva se eliminan para no
+					// duplicarlas con la orden nueva de la renta.
+					HotelRentOrder::where('hotel_rent_id', $existingReservation->id)->delete();
+
+					$existingReservation->fill($rentData);
+					$existingReservation->is_reserve         = false;
+					$existingReservation->status             = null;
+					$existingReservation->rental_date_time   = $rentalDateTime;
+					$existingReservation->rental_price       = $rentalPrice;
+					$existingReservation->rental_period_type = $rentalPeriodType;
+					$existingReservation->save();
+
+					$rent                 = $existingReservation;
+					$convertedReservation = true;
+					\Log::info('Reserva convertida en renta (mismo registro)', ['rent_id' => $rent->id]);
+				}
+			}
+
+			if (!$rent) {
+				$rent = HotelRent::create($rentData);
+			}
+
 			\Log::info('Rent created with is_reserve: ' . $rent->is_reserve);
 
 			// Solo cambiar estado a OCUPADO si no es una reserva
@@ -219,18 +256,6 @@ class HotelRentController extends Controller
 			} else {
 				// Para reservas, mantener la habitación como disponible
 				\Log::info('Reserva creada, manteniendo habitación como DISPONIBLE');
-			}
-
-			// Si este check-in convirtió una reserva en renta real, finalizar la
-			// reserva de origen para no dejar un registro duplicado que vuelva a
-			// bloquear la habitación en validaciones, calendario y reportes.
-			if ($isCheckinFromReservation && $sourceReservationId) {
-				$originalReservation = HotelRent::find($sourceReservationId);
-				if ($originalReservation && $originalReservation->is_reserve && $originalReservation->id !== $rent->id) {
-					$originalReservation->status = 'FINALIZADO';
-					$originalReservation->save();
-					\Log::info('Reserva de origen finalizada tras check-in', ['reservation_id' => $sourceReservationId, 'rent_id' => $rent->id]);
-				}
 			}
 
 			// Inicializar variable $order para evitar undefined
@@ -305,11 +330,20 @@ class HotelRentController extends Controller
 			// de registrar el pago, para que cuenten como abonado y no se dupliquen
 			// ni dejen saldo. Se reasignan (no se duplican).
 			if ($isCheckinFromReservation && $sourceReservationId) {
-				$reservationItemIds = HotelRentItem::where('hotel_rent_id', $sourceReservationId)
-					->pluck('id');
+				// Al convertir la reserva en renta usamos los ítems HAB viejos
+				// capturados antes de crear el nuevo (si no, la consulta por
+				// hotel_rent_id incluiría también el ítem recién creado).
+				$reservationItemIds = $convertedReservation
+					? $oldReservationItemIds
+					: HotelRentItem::where('hotel_rent_id', $sourceReservationId)->pluck('id');
 				if ($reservationItemIds->isNotEmpty()) {
 					HotelRentItemPayment::whereIn('hotel_rent_item_id', $reservationItemIds)
 						->update(['hotel_rent_item_id' => $item->id]);
+				}
+				// Reserva reutilizada: eliminar los ítems HAB originales (ya sin
+				// pagos) para no dejar dos ítems de habitación en la misma renta.
+				if ($convertedReservation && $reservationItemIds->isNotEmpty()) {
+					HotelRentItem::whereIn('id', $reservationItemIds)->delete();
 				}
 			}
 
@@ -1542,16 +1576,32 @@ class HotelRentController extends Controller
                 'description'         => $newDescription,
             ]);
 
+            // Trasladar TODOS los pagos de los items HAB que se están cambiando
+            // al nuevo item. El dinero ya pagado debe seguir a la habitación
+            // nueva; luego applyAdvanceCreditToDebtItems lo re-aplica (item más
+            // antiguo primero) según el crédito disponible, de modo que solo se
+            // cobre —o devuelva— la DIFERENCIA real respecto a la tarifa nueva.
+            // Antes los pagos quedaban en el item anterior (ya recortado o
+            // eliminado) y la habitación nueva aparecía como deuda total / con
+            // vuelto, aunque la nueva tarifa fuera mayor.
+            $openIds = $openHabItems->pluck('id')->all();
+            HotelRentItemPayment::whereIn('hotel_rent_item_id', $openIds)
+                ->update(['hotel_rent_item_id' => $newItem->id]);
+
             // Retira las noches "futuras" de los items abiertos, empezando por
             // los más recientes (los primeros días corresponden a la habitación
-            // anterior ya consumida). Los pagos de las noches que se trasladan se
-            // reasignan al nuevo item para no perder dinero.
+            // anterior ya consumida). Los items afectados pasan a DEBT para que
+            // el crédito ya pagado los re-marque como pagados si alcanza.
             $toRemove       = $remaining;   // noches que dejan la habitación anterior
             $oldFutureTotal = 0.0;          // valor (a tarifa antigua) de esas noches
             $oldAnchorItem  = null;         // último item que permanece (ancla histórico)
 
             foreach ($openHabItems->reverse()->values() as $it) {
                 if ($toRemove <= 0) {
+                    // Noche(s) ya consumida(s) en la habitación anterior: se
+                    // mantienen. A DEBT para que el crédito las re-marque.
+                    $it->payment_status = 'DEBT';
+                    $it->save();
                     if (!$oldAnchorItem) {
                         $oldAnchorItem = $it;
                     }
@@ -1562,11 +1612,10 @@ class HotelRentController extends Controller
                 $itUnit = $resolveUnit($it);
 
                 if ($toRemove >= $q) {
-                    // Item completo en la zona futura → se traslada a la nueva
-                    // habitación. Reasignar sus pagos al nuevo item y eliminarlo.
+                    // Item completo en la zona futura → sus noches pasan a la
+                    // nueva habitación; el item anterior se elimina (sus pagos
+                    // ya fueron trasladados al nuevo item).
                     $oldFutureTotal += round($itUnit * $q, 4);
-                    HotelRentItemPayment::where('hotel_rent_item_id', $it->id)
-                        ->update(['hotel_rent_item_id' => $newItem->id]);
                     $it->delete();
                     $toRemove -= $q;
                 } else {
@@ -1589,10 +1638,11 @@ class HotelRentController extends Controller
                     $it->item        = $this->rewriteHotelItemDescription(
                         $itJson, $keepDescription, $itUnit, $keep, $keepTotal
                     );
-                    $it->quantity    = $keep;
-                    $it->unit_price  = $itUnit;
-                    $it->total       = $keepTotal;
-                    $it->description = $keepDescription;
+                    $it->quantity       = $keep;
+                    $it->unit_price     = $itUnit;
+                    $it->total          = $keepTotal;
+                    $it->description    = $keepDescription;
+                    $it->payment_status = 'DEBT';
                     $it->save();
 
                     $oldAnchorItem = $it;
