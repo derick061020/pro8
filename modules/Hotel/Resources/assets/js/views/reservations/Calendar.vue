@@ -531,7 +531,7 @@ export default {
             return groups
         },
         reservationRooms() {
-            return [...this.filteredRooms].reverse()
+            return [...this.filteredRooms]
         },
 
         /* ── Índices memoizados para el render ──

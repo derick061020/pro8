@@ -473,7 +473,7 @@ export default {
             return groups
         },
         reservationRooms() {
-            return [...this.filteredRooms].reverse()
+            return [...this.filteredRooms]
         },
     },
     created() {
