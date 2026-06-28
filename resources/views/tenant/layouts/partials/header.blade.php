@@ -198,7 +198,7 @@
                             title="{{$environment}}: ENTORNO DE DEMOSTRACIÓN, pulse para ir a configuración"
                             style="background-color: transparent !important;">
                             <span class="options-sunat">
-                                <i class="fas fa-2x fa-toggle-off me-2" style="font-size: 20px;"></i>
+                                <i class="fas fa-2x fa-toggle-off me-2" style="color:gray!important;font-size: 20px;"></i>
                                 <span class="ms-2" style="display: flex; flex-direction: column;">
                                     <span style="color: black !important;">DEMO</span>
                                     <span style="color: black !important;">SUNAT Entorno de Demostración</span>
