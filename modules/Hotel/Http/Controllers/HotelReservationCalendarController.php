@@ -709,34 +709,28 @@ class HotelReservationCalendarController extends Controller
      * Marcar `FINALIZADO` no era suficiente: la reserva seguía bloqueando la
      * habitación en validaciones, calendarios y reportes. Para reservas que se
      * cancelan/se equivocan, el operador espera que la fila desaparezca por
-     * completo. Si la reserva tiene items con pagos, no se permite borrar para
-     * no perder el rastro contable.
+     * completo. Se permite borrar aunque la reserva tenga pagos: en ese caso se
+     * eliminan también los movimientos de caja (global_payment) asociados a cada
+     * pago para que caja/ventas no queden descuadradas con registros huérfanos.
      */
     public function deleteReservation($id)
     {
         DB::connection('tenant')->beginTransaction();
         try {
-            $rent = HotelRent::with('items.payments')->findOrFail($id);
-
-            // Solo se pueden borrar reservas (no rents reales con consumo pagado)
-            $hasPaidItems = $rent->items->contains(function ($i) {
-                return $i->payment_status === 'PAID' || ($i->payments && $i->payments->count() > 0);
-            });
-
-            if ($hasPaidItems) {
-                DB::connection('tenant')->rollBack();
-                return response()->json([
-                    'success' => false,
-                    'message' => 'No se puede eliminar: la reserva tiene cargos pagados. Procéselo desde checkout.',
-                ], 422);
-            }
+            $rent = HotelRent::with('items.payments.global_payment')->findOrFail($id);
 
             // Si la habitación quedó como OCUPADO solo por esta reserva, liberarla
             $room = HotelRoom::find($rent->hotel_room_id);
 
-            // Eliminar items + órdenes asociadas y luego el rent
+            // Eliminar items + pagos (con su movimiento en caja) + órdenes y luego el rent
             foreach ($rent->items as $item) {
                 if ($item->payments) {
+                    foreach ($item->payments as $payment) {
+                        // Borrar el movimiento en caja para no dejar dinero fantasma
+                        if ($payment->global_payment) {
+                            $payment->global_payment()->delete();
+                        }
+                    }
                     $item->payments()->delete();
                 }
                 $item->delete();
