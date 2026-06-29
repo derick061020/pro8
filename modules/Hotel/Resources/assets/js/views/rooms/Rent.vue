@@ -488,7 +488,7 @@
                                     <h6>
                                         Total a pagar:
                                         <br/>
-                                        <b class="h5">{{ (form.total_to_pay).toFixed(2) }}</b>
+                                        <b class="h5">{{ liveTotal.toFixed(2) }}</b>
                                     </h6>
                                     <div v-if="advancePaidFromReservation > 0" class="mt-1">
                                         <small class="text-success d-block">
@@ -811,6 +811,7 @@ export default {
                 hotel_rate_id: null,
                 rate_price: 10,
                 duration: 1,
+                total_to_pay: 0,
                 payment_status: 'DEBT',
                 input_date: moment().format('YYYY-MM-DD'),
                 input_time: moment().format('HH:mm'),
@@ -936,10 +937,26 @@ export default {
         {
             return this.form.payment_status === 'ADVANCE';
         },
+        // Total a pagar calculado EN VIVO a partir de la tarifa y la cantidad
+        // (noches/horas/meses) o del precio personalizado. Es la única fuente de
+        // verdad del monto: al ser un computed, "Total a pagar", el saldo y el
+        // "Falta pagar" se actualizan solos al cambiar las noches, sin depender
+        // de que algún handler recuerde recalcular form.total_to_pay (que era lo
+        // que dejaba el monto pegado en, p. ej., 2 noches = 80 en el adelanto).
+        liveTotal()
+        {
+            const rentalPrice = parseFloat(this.form.rental_price);
+            if (this.form.rental_price !== null && this.form.rental_price !== '' && !isNaN(rentalPrice)) {
+                return rentalPrice;
+            }
+            const rate = parseFloat(this.form.rate_price) || 0;
+            const duration = parseFloat(this.form.duration) || 0;
+            return rate * duration;
+        },
         // Saldo pendiente considerando el adelanto ya abonado en la reserva.
         saldoPendiente()
         {
-            const total = parseFloat(this.form.total_to_pay) || 0;
+            const total = this.liveTotal;
             const advance = parseFloat(this.advancePaidFromReservation) || 0;
             return Math.max(0, total - advance);
         },
@@ -1075,7 +1092,18 @@ export default {
                 // noches → 80) y el "Falta pagar" salía mal.
                 this.recomputeTotal();
             }
-        }
+        },
+        // El total mostrado y el saldo se derivan de liveTotal (computed). Este
+        // watcher mantiene en sync form.total_to_pay, que es lo que se envía al
+        // backend al guardar, y refresca el monto a cobrar por defecto. Así nunca
+        // se desincronizan el total visible y el total enviado.
+        liveTotal: {
+            handler: function(newVal) {
+                this.form.total_to_pay = newVal;
+                this.setTotalPayment();
+            },
+            immediate: true,
+        },
     },
     methods: {
         updateTotalPersons() {
