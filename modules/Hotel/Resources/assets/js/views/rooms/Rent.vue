@@ -1624,6 +1624,19 @@ export default {
         },
         setTotalPayment()
         {
+            // En PAGADO / DEUDA el monto cobrado es el saldo completo, así que
+            // se sincroniza con cada recálculo del total.
+            //
+            // En ADELANTO el monto lo escribe el usuario (pago parcial): NO se
+            // sobreescribe al recalcular el total (p. ej. al cambiar las noches),
+            // sólo se acota para que nunca supere el nuevo saldo. Así el
+            // "Falta pagar" (= saldo − adelanto) se actualiza solo al variar las
+            // noches sin perder lo que el usuario ya escribió.
+            if (this.form.payment_status === 'ADVANCE') {
+                const current = parseFloat(this.form.rent_payment.payment) || 0;
+                this.form.rent_payment.payment = Math.min(current, this.saldoPendiente);
+                return;
+            }
             // Si hay un adelanto abonado en la reserva, sólo se cobra el saldo.
             this.form.rent_payment.payment = this.saldoPendiente
         },
