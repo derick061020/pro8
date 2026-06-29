@@ -1066,9 +1066,14 @@ export default {
                 // código (p. ej. el rango de noches que llega desde el
                 // calendario por URL). Sin esto el monto se quedaba calculado
                 // como 1 noche aunque la cantidad de noches fuera correcta.
-                if (this.form.hotel_rate_id || this.form.rental_price) {
-                    this.recomputeTotal();
-                }
+                //
+                // Se recalcula SIEMPRE: recomputeTotal() ya parte de rate_price
+                // (que siempre tiene valor) o de rental_price, así que no hace
+                // falta condicionarlo a hotel_rate_id. Antes, al fijar un precio
+                // manual o cambiar las noches por fechas sin un hotel_rate, el
+                // total_to_pay se quedaba con la cantidad anterior (p. ej. 2
+                // noches → 80) y el "Falta pagar" salía mal.
+                this.recomputeTotal();
             }
         }
     },
