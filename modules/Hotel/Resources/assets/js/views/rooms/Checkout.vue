@@ -2305,12 +2305,51 @@ export default {
             this.document.items = pendingItems;
             await this.onCalculateTotals();
 
-            // Reasignar pagos al total pendiente
+            // Reasignar pagos al total pendiente.
+            //
+            // Antes este bloque colapsaba todas las formas de pago (tarjeta,
+            // transferencia, yape, etc.) en una sola sobre el método del
+            // primer pago — típicamente efectivo —, por eso el comprobante
+            // siempre mostraba "efectivo" aunque el usuario hubiera registrado
+            // pagos en otros métodos desde recepción/checkout. Ahora se
+            // distribuye el nuevo total proporcionalmente entre los pagos
+            // existentes, conservando cada `payment_method_type_id`,
+            // `reference` y destino, para que la boleta/factura refleje los
+            // métodos reales.
             const newTotal = parseFloat(this.document.total) || 0;
-            this.document.payments = (savedPayments || []).map((p, idx) => ({
-                ...p,
-                payment: idx === 0 ? newTotal : 0,
-            })).filter(p => p.payment > 0);
+            const paymentsToRescale = (savedPayments || []).filter(
+                p => parseFloat(p.payment) > 0 || parseFloat(p.change) > 0
+            );
+            const originalSum = _.sumBy(paymentsToRescale, p => parseFloat(p.payment) || 0);
+
+            if (paymentsToRescale.length > 0 && newTotal > 0) {
+                // Distribuir newTotal proporcionalmente. Cualquier residuo de
+                // redondeo lo absorbe el último pago para que la suma sea
+                // exacta y cuadre contra el total de la boleta.
+                let remaining = newTotal;
+                this.document.payments = paymentsToRescale.map((p, idx) => {
+                    const isLast = idx === paymentsToRescale.length - 1;
+                    let amount = originalSum > 0
+                        ? (parseFloat(p.payment) * newTotal) / originalSum
+                        : (isLast ? newTotal : 0);
+                    amount = _.round(amount, 2);
+                    if (isLast) {
+                        amount = _.round(remaining, 2);
+                    } else {
+                        remaining = _.round(remaining - amount, 2);
+                    }
+                    return {
+                        ...p,
+                        payment: amount,
+                        // El cambio/vuelto es del pago original (no del
+                        // comprobante), así que si se redimensiona el monto
+                        // no se arrastra el `change` y se confunde con un
+                        // vuelto del comprobante nuevo.
+                        change: 0,
+                    };
+                }).filter(p => parseFloat(p.payment) > 0);
+            }
+
             if (this.document.payments.length === 0 && newTotal > 0) {
                 const cash = _.find(this.paymentDestinations, { id: 'cash' });
                 this.document.payments.push({
