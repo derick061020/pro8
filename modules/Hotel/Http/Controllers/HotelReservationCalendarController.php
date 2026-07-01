@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Modules\Hotel\Models\HotelRent;
 use Modules\Hotel\Models\HotelRentItem;
+use Modules\Hotel\Models\HotelRentItemPayment;
 use Modules\Hotel\Models\HotelRentOrder;
 use Modules\Hotel\Models\HotelRoom;
 use Modules\Hotel\Models\HotelCategory;
@@ -717,21 +718,23 @@ class HotelReservationCalendarController extends Controller
     {
         DB::connection('tenant')->beginTransaction();
         try {
-            $rent = HotelRent::with('items.payments.global_payment')->findOrFail($id);
+            $rent = HotelRent::with('items')->findOrFail($id);
 
             // Si la habitación quedó como OCUPADO solo por esta reserva, liberarla
             $room = HotelRoom::find($rent->hotel_room_id);
 
-            // Eliminar items + pagos (con su movimiento en caja) + órdenes y luego el rent
+            // Eliminar items + pagos (con su movimiento en caja) + órdenes y luego el rent.
+            // OJO: HotelRentItem::payments() es hasOne, pero un item puede tener varias
+            // filas de pago (adelanto + saldo). Se consultan todas por hotel_rent_item_id
+            // para no dejar pagos ni movimientos de caja huérfanos.
             foreach ($rent->items as $item) {
-                if ($item->payments) {
-                    foreach ($item->payments as $payment) {
-                        // Borrar el movimiento en caja para no dejar dinero fantasma
-                        if ($payment->global_payment) {
-                            $payment->global_payment()->delete();
-                        }
+                $itemPayments = HotelRentItemPayment::where('hotel_rent_item_id', $item->id)->get();
+                foreach ($itemPayments as $payment) {
+                    // Borrar el movimiento en caja para no dejar dinero fantasma
+                    if ($payment->global_payment) {
+                        $payment->global_payment()->delete();
                     }
-                    $item->payments()->delete();
+                    $payment->delete();
                 }
                 $item->delete();
             }
