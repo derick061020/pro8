@@ -28,6 +28,20 @@ class HotelReservationCalendarController extends Controller
         return view('hotel::reservations.calendar');
     }
 
+    /**
+     * Sucursal (establecimiento) actual del usuario.
+     *
+     * El calendario debe mostrar SOLO la información de la sucursal en la que
+     * está trabajando el usuario. Para todos los usuarios ese valor es
+     * `establishment_id` en su registro: los administradores lo cambian con
+     * "cambiar establecimiento" (HotelReceptionController@changeUserEstablishment,
+     * que persiste el cambio en el usuario), por lo que basta con leerlo aquí.
+     */
+    private function currentEstablishmentId()
+    {
+        return auth()->user()->establishment_id;
+    }
+
     public function getCalendarEvents(Request $request)
     {
         $roomId    = $request->get('room_id');
@@ -35,7 +49,15 @@ class HotelReservationCalendarController extends Controller
         $startDate = $request->get('start_date');
         $endDate   = $request->get('end_date');
 
-        $query = HotelRent::with(['room', 'room.category', 'items']);
+        $establishmentId = $this->currentEstablishmentId();
+
+        // Solo reservas de habitaciones de la sucursal actual. Se filtra por la
+        // habitación (fuente de verdad de a qué sucursal pertenece) para no
+        // mezclar información entre sucursales.
+        $query = HotelRent::with(['room', 'room.category', 'items'])
+            ->whereHas('room', function ($q) use ($establishmentId) {
+                $q->where('establishment_id', $establishmentId);
+            });
 
         if ($roomId) {
             $query->where('hotel_room_id', $roomId);
@@ -122,22 +144,61 @@ class HotelReservationCalendarController extends Controller
         });
     }
 
+    /**
+     * Habitaciones de la sucursal actual para el calendario.
+     *
+     * Se devuelven TODAS las habitaciones activas de la sucursal (sin paginar)
+     * con su categoría y tarifas, para que la grilla las agrupe correctamente y
+     * no mezcle habitaciones de otras sucursales. Antes el calendario consumía
+     * /hotels/rooms, que para un usuario admin no filtraba por sucursal y además
+     * paginaba a 25 filas, provocando la mezcla de información entre sucursales.
+     */
     public function getRooms()
     {
-        $rooms = HotelRoom::with('category')
+        $establishmentId = $this->currentEstablishmentId();
+
+        $rooms = HotelRoom::with(['category', 'rates.rate'])
+            ->where('establishment_id', $establishmentId)
             ->where('active', true)
+            ->orderBy('name')
             ->get()
             ->map(function ($room) {
-                return [
-                    'id' => $room->id,
-                    'name' => $room->name,
-                    'category' => $room->category ? $room->category->description : 'N/A',
-                    'status' => $room->status,
-                ];
+                $data = $room->toArray();
+                // Normalizar tarifas para el formulario de edición inline.
+                $data['rates'] = $room->rates->map(function ($rr) {
+                    return [
+                        'hotel_rate_id'    => $rr->hotel_rate_id,
+                        'price'            => (float) $rr->price,
+                        'rate_description' => $rr->rate ? $rr->rate->description : null,
+                    ];
+                })->values();
+                return $data;
             });
 
         return response()->json([
             'data' => $rooms
+        ]);
+    }
+
+    /**
+     * Categorías (tipos de habitación) de la sucursal actual para el filtro del
+     * calendario. Se filtra por sucursal para no ofrecer tipos de otras sedes.
+     */
+    public function getCategories()
+    {
+        $categories = HotelCategory::where('active', true)
+            ->where('establishment_id', $this->currentEstablishmentId())
+            ->orderBy('description')
+            ->get()
+            ->map(function ($c) {
+                return [
+                    'id'          => $c->id,
+                    'description' => $c->description,
+                ];
+            });
+
+        return response()->json([
+            'data' => $categories
         ]);
     }
 
@@ -795,9 +856,12 @@ class HotelReservationCalendarController extends Controller
 
         $date = $request->get('date');
 
-        // Obtener pagos de hotel_rent_items para la fecha específica
+        // Obtener pagos de hotel_rent_items para la fecha específica, solo de la
+        // sucursal actual (se une con hotel_rooms para filtrar por sucursal).
         $total = HotelRentItem::join('hotel_rent_item_payments', 'hotel_rent_items.id', '=', 'hotel_rent_item_payments.hotel_rent_item_id')
             ->join('hotel_rents', 'hotel_rent_items.hotel_rent_id', '=', 'hotel_rents.id')
+            ->join('hotel_rooms', 'hotel_rents.hotel_room_id', '=', 'hotel_rooms.id')
+            ->where('hotel_rooms.establishment_id', $this->currentEstablishmentId())
             ->whereDate('hotel_rent_item_payments.date_of_payment', $date)
             ->sum('hotel_rent_item_payments.payment');
 
@@ -823,6 +887,7 @@ class HotelReservationCalendarController extends Controller
         $total = HotelRentItem::join('hotel_rent_item_payments', 'hotel_rent_items.id', '=', 'hotel_rent_item_payments.hotel_rent_item_id')
             ->join('hotel_rents', 'hotel_rent_items.hotel_rent_id', '=', 'hotel_rents.id')
             ->join('hotel_rooms', 'hotel_rents.hotel_room_id', '=', 'hotel_rooms.id')
+            ->where('hotel_rooms.establishment_id', $this->currentEstablishmentId())
             ->whereDate('hotel_rent_item_payments.date_of_payment', $date)
             ->where('hotel_rooms.hotel_category_id', $categoryId)
             ->sum('hotel_rent_item_payments.payment');
@@ -850,17 +915,23 @@ class HotelReservationCalendarController extends Controller
         $startDate = $request->get('start_date');
         $endDate   = $request->get('end_date');
 
-        // Totales generales por día
+        $establishmentId = $this->currentEstablishmentId();
+
+        // Totales generales por día (solo sucursal actual)
         $daily = HotelRentItem::join('hotel_rent_item_payments', 'hotel_rent_items.id', '=', 'hotel_rent_item_payments.hotel_rent_item_id')
+            ->join('hotel_rents', 'hotel_rent_items.hotel_rent_id', '=', 'hotel_rents.id')
+            ->join('hotel_rooms', 'hotel_rents.hotel_room_id', '=', 'hotel_rooms.id')
+            ->where('hotel_rooms.establishment_id', $establishmentId)
             ->whereBetween('hotel_rent_item_payments.date_of_payment', [$startDate, $endDate])
             ->groupBy('day')
             ->selectRaw('DATE(hotel_rent_item_payments.date_of_payment) as day, SUM(hotel_rent_item_payments.payment) as total')
             ->pluck('total', 'day');
 
-        // Totales por categoría y día
+        // Totales por categoría y día (solo sucursal actual)
         $byCategoryRows = HotelRentItem::join('hotel_rent_item_payments', 'hotel_rent_items.id', '=', 'hotel_rent_item_payments.hotel_rent_item_id')
             ->join('hotel_rents', 'hotel_rent_items.hotel_rent_id', '=', 'hotel_rents.id')
             ->join('hotel_rooms', 'hotel_rents.hotel_room_id', '=', 'hotel_rooms.id')
+            ->where('hotel_rooms.establishment_id', $establishmentId)
             ->whereBetween('hotel_rent_item_payments.date_of_payment', [$startDate, $endDate])
             ->groupBy('day', 'hotel_rooms.hotel_category_id')
             ->selectRaw('DATE(hotel_rent_item_payments.date_of_payment) as day, hotel_rooms.hotel_category_id as category_id, SUM(hotel_rent_item_payments.payment) as total')

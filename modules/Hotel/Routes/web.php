@@ -112,6 +112,7 @@ if ($hostname) {
             Route::get('calendar', 'HotelReservationCalendarController@index')->name('tenant.hotels.calendar');
             Route::get('calendar/events', 'HotelReservationCalendarController@getCalendarEvents');
             Route::get('calendar/rooms', 'HotelReservationCalendarController@getRooms');
+            Route::get('calendar/categories', 'HotelReservationCalendarController@getCategories');
             Route::get('calendar/{id}/details', 'HotelReservationCalendarController@getReservationDetails');
             Route::put('calendar/{id}/status', 'HotelReservationCalendarController@updateReservationStatus');
             Route::get('calendar/range', 'HotelReservationCalendarController@getReservationsByDateRange');

@@ -840,8 +840,11 @@ export default {
         },
         async loadRooms() {
             try {
-                const r = await this.$http.get('/hotels/rooms')
-                this.rooms = this.sortRoomsByName(r.data?.rooms?.data || r.data?.data || [])
+                // Endpoint del calendario: solo habitaciones de la sucursal
+                // actual (sin paginar). Evita mezclar habitaciones de otras
+                // sucursales, que ocurría al consumir /hotels/rooms.
+                const r = await this.$http.get('/hotels/reservations/calendar/rooms')
+                this.rooms = this.sortRoomsByName(r.data?.data || [])
                 this.filteredRooms = [...this.rooms]
             } catch (e) {
                 console.error('Rooms error:', e)
@@ -849,8 +852,9 @@ export default {
         },
         async loadCategories() {
             try {
-                const r = await this.$http.get('/hotels/categories')
-                this.categories = r.data?.categories?.data || r.data?.data || []
+                // Categorías de la sucursal actual (ver loadRooms).
+                const r = await this.$http.get('/hotels/reservations/calendar/categories')
+                this.categories = r.data?.data || []
             } catch (e) { this.categories = [] }
         },
         async loadReservations() {
