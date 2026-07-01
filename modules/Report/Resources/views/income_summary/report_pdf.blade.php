@@ -123,8 +123,16 @@ $cash_documents_credit = $cash->cash_documents_credit;
                     <td class="td-custom">
                         <p><strong>Total pagos notas de venta: </strong>S/ {{ $cash_data['total_sale_note_payments'] }}</p>
                     </td>
-                </tr> 
-            </table> 
+                </tr>
+                @if(isset($cash_data['total_hotel_payments']) && $cash_data['total_hotel_payments'] != 0)
+                <tr>
+                    <td class="td-custom">
+                        <p><strong>Total pagos hotel: </strong>S/ {{ $cash_data['total_hotel_payments'] }}</p>
+                    </td>
+                    <td class="td-custom"></td>
+                </tr>
+                @endif
+            </table>
         </div>
 
         @php
@@ -136,7 +144,7 @@ $cash_documents_credit = $cash->cash_documents_credit;
         @else
             
 
-            @if($cash_data['total_document_payments'] != 0)
+            @if($cash_data['payments']->count())
             <h3>Comprobantes con pagos</h3>
                 <div class="">
                     <div class=" ">

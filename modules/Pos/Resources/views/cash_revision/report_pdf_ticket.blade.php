@@ -18,6 +18,10 @@ foreach ($cash_documents as $cash_document) {
 
     if($cash_document->sale_note){
 
+        // Comprobantes de hotel: el ingreso se cuenta vía los pagos de hotel
+        // (más abajo) para no duplicar (el pago de hotel manda).
+        if($cash_document->sale_note->hotel_rent_id){ continue; }
+
         if($cash_document->sale_note->currency_type_id == 'PEN'){
 
             if(in_array($cash_document->sale_note->state_type_id, ['01','03','05','07','13'])){
@@ -55,6 +59,9 @@ foreach ($cash_documents as $cash_document) {
     }
 
     else if($cash_document->document){
+
+        // Comprobantes de hotel: ver nota anterior.
+        if($cash_document->document->hotel_rent_id){ continue; }
 
         if($cash_document->document->currency_type_id == 'PEN'){
 
@@ -123,6 +130,26 @@ foreach ($cash_documents as $cash_document) {
         }
     }
 
+}
+
+// Pagos del módulo Hotel (no facturados / el pago de hotel manda).
+$hotel_payments = $cash->getHotelRentPaymentsData();
+
+foreach ($hotel_payments as $hotel_payment) {
+    $amount = (float) $hotel_payment->payment;
+
+    if ($amount >= 0) {
+        $cash_income += $amount;
+    } else {
+        $cash_egress += abs($amount);
+    }
+    $final_balance += $amount;
+
+    foreach ($methods_payment as $record) {
+        if ($record->id == $hotel_payment->payment_method_type_id) {
+            $record->sum = ($record->sum + $amount);
+        }
+    }
 }
 
 $cash_final_balance = $final_balance + $cash->beginning_balance;

@@ -877,16 +877,24 @@
                 ])
                 ->whereHas('doc_payments', function ($q) {
                     $q->whereHas('associated_record_payment', function ($p) {
-                        $p->whereStateTypeAccepted();
+                        // El ingreso de comprobantes de hotel se cuenta vía el pago
+                        // de hotel (hotel_rent_item_payment), no por el comprobante.
+                        $p->whereStateTypeAccepted()
+                            ->whereNull('hotel_rent_id');
                     })
                     ->filterCashPaymentWithoutDestination();
                 })
                 ->orWhereHas('sln_payments', function ($q) {
                     $q->whereHas('associated_record_payment', function ($p) {
                         $p->whereStateTypeAccepted()
-                            ->whereNotChanged();
+                            ->whereNotChanged()
+                            ->whereNull('hotel_rent_id');
                     })
                     ->filterCashPaymentWithoutDestination();
+                })
+                ->orWhereHas('hotel_rent_item_payment', function ($q) {
+                    $q->whereHas('associated_record_payment')
+                        ->whereCashPaymentMethodType();
                 });
 
             return $query;
@@ -928,14 +936,19 @@
                 // ingresos
                 ->whereHas('doc_payments', function ($q) {
                     $q->whereHas('associated_record_payment', function ($p) {
-                        $p->whereStateTypeAccepted();
+                        // Se excluyen comprobantes ligados a una renta de hotel: su
+                        // ingreso ya se cuenta vía hotel_rent_item_payment (el pago
+                        // de hotel manda) para no duplicar.
+                        $p->whereStateTypeAccepted()
+                            ->whereNull('hotel_rent_id');
                     })
                     ->whereCashPaymentMethodType();
                 })
                 ->orWhereHas('sln_payments', function ($q) {
                     $q->whereHas('associated_record_payment', function ($p) {
                         $p->whereStateTypeAccepted()
-                            ->whereNotChanged();
+                            ->whereNotChanged()
+                            ->whereNull('hotel_rent_id');
                     })
                     ->whereCashPaymentMethodType();
                 })
@@ -1024,10 +1037,18 @@
             $query->applyFiltersPerformancePayments()
                     // ingresos
                     ->whereHas('doc_payments', function ($payment) {
-                        $payment->filterCashPaymentWithDocument();
+                        // Se excluyen comprobantes de hotel: el ingreso lo aporta el
+                        // pago de hotel (hotel_rent_item_payment) para no duplicar.
+                        $payment->filterCashPaymentWithDocument()
+                            ->whereHas('associated_record_payment', function ($document) {
+                                $document->whereNull('hotel_rent_id');
+                            });
                     })
                     ->orWhereHas('sln_payments', function ($payment) {
-                        $payment->filterCashPaymentWithDocument();
+                        $payment->filterCashPaymentWithDocument()
+                            ->whereHas('associated_record_payment', function ($sale_note) {
+                                $sale_note->whereNull('hotel_rent_id');
+                            });
                     })
                     ->orWhereHas('quo_payment', function ($payment) {
                         $payment->filterCashPaymentWithDocument();
@@ -1037,6 +1058,10 @@
                     })
                     ->orWhereHas('inc_payment', function ($payment) {
                         $payment->filterCashPaymentWithDocument();
+                    })
+                    ->orWhereHas('hotel_rent_item_payment', function ($payment) {
+                        $payment->whereHas('associated_record_payment')
+                            ->whereCashPaymentMethodType();
                     })
                     // ingresos
 
@@ -1066,10 +1091,23 @@
         {
             return $query->applyFiltersPerformancePayments()
                         ->whereHas('doc_payments', function ($payment) {
-                            $payment->destinationCashPaymentDocument();
+                            // El ingreso de comprobantes de hotel se cuenta vía el
+                            // pago de hotel (hotel_rent_item_payment), no por el
+                            // comprobante, para no duplicar.
+                            $payment->destinationCashPaymentDocument()
+                                ->whereHas('associated_record_payment', function ($document) {
+                                    $document->whereNull('hotel_rent_id');
+                                });
                         })
                         ->orWhereHas('sln_payments', function ($payment) {
-                            $payment->destinationCashPaymentDocument();
+                            $payment->destinationCashPaymentDocument()
+                                ->whereHas('associated_record_payment', function ($sale_note) {
+                                    $sale_note->whereNull('hotel_rent_id');
+                                });
+                        })
+                        ->orWhereHas('hotel_rent_item_payment', function ($payment) {
+                            $payment->whereHas('associated_record_payment')
+                                ->whereCashPaymentMethodType();
                         });
         }
 

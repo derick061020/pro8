@@ -85,7 +85,7 @@ $cash_final_balance = 0;
 
             </table>
         </div>
-        @if($cash_documents->count())
+        @if($cash_documents->count() || ($hotel_payments ?? collect())->count())
             <div class="">
                 <div class=" ">
                     <table class="">
@@ -107,8 +107,11 @@ $cash_final_balance = 0;
                                 $all_documents = [];
                                 foreach ($cash_documents as $key => $value) {
                                     if($value->sale_note){
+                                        // Comprobantes de hotel: el ingreso se lista como pago de hotel.
+                                        if($value->sale_note->hotel_rent_id){ continue; }
                                         $all_documents[] = $value;
                                     }else if($value->document){
+                                        if($value->document->hotel_rent_id){ continue; }
                                         $all_documents[] = $value;
                                     }else if($value->expense_payment){
                                         if($value->expense_payment->expense->state_type_id == '05'){
@@ -207,6 +210,24 @@ $cash_final_balance = 0;
                                     <td class="celda">{{ $currency_type_id }}</td>
                                     <td class="celda">{{ number_format($total,2, ".", "") }}</td>
 
+                                </tr>
+                            @endforeach
+
+                            {{-- Pagos del módulo Hotel (no facturados) --}}
+                            @foreach(($hotel_payments ?? []) as $hotel_payment)
+                                @php
+                                    $row = $hotel_payment->getRowResourceCashPayment();
+                                @endphp
+                                <tr>
+                                    <td class="celda">{{ count($all_documents) + $loop->iteration }}</td>
+                                    <td class="celda">Venta</td>
+                                    <td class="celda">{{ $row['document_type_description'] }}</td>
+                                    <td class="celda">{{ $row['number_full'] }}</td>
+                                    <td class="celda">{{ $row['date_of_issue'] }}</td>
+                                    <td class="celda">{{ $row['acquirer_name'] }}</td>
+                                    <td class="celda">{{ $row['acquirer_number'] }}</td>
+                                    <td class="celda">{{ $row['currency_type_id'] }}</td>
+                                    <td class="celda">{{ number_format($row['payment'],2, ".", "") }}</td>
                                 </tr>
                             @endforeach
                         </tbody>

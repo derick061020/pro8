@@ -216,16 +216,22 @@ class Cash extends ModelTenant
     public function getTotalsIncomeSummary()
     {
 
+        // Se excluyen los comprobantes de hotel: su ingreso se cuenta vía los
+        // pagos del módulo Hotel (getHotelRentIncome) para no duplicar.
         $document_total_payments = $this->cash_documents()
-                            ->whereHas('document')
+                            ->whereHas('document', function($q){
+                                $q->whereNull('hotel_rent_id');
+                            })
                             ->get()
                             ->sum(function($row){
                                 return $row->document->getTotalAllPayments();
                             });
-        
-        
+
+
         $sale_note_total_payments = $this->cash_documents()
-                            ->whereHas('sale_note')
+                            ->whereHas('sale_note', function($q){
+                                $q->whereNull('hotel_rent_id');
+                            })
                             ->get()
                             ->sum(function($row){
                                 return $row->sale_note->getTotalAllPayments();
@@ -234,6 +240,7 @@ class Cash extends ModelTenant
         return [
             'document_total_payments' => $this->generalApplyNumberFormat($document_total_payments),
             'sale_note_total_payments' => $this->generalApplyNumberFormat($sale_note_total_payments),
+            'hotel_total_payments' => $this->generalApplyNumberFormat($this->getHotelRentIncome()),
         ];
         
     }
@@ -248,20 +255,26 @@ class Cash extends ModelTenant
     public function getIncomePaymentsData()
     {
         
+        // Se excluyen los comprobantes ligados a una renta de hotel: su ingreso
+        // se reporta vía los pagos del módulo Hotel (hotel_payments) para no
+        // duplicar el monto (el pago de hotel manda).
         $documents = $this->cash_documents()
                         ->join('documents', 'documents.id', '=', 'cash_documents.document_id')
+                        ->whereNull('documents.hotel_rent_id')
                         ->orderBy('documents.document_type_id')
                         ->orderBy('documents.created_at')
                         ->get();
-        
+
         $sale_notes = $this->cash_documents()
                             ->join('sale_notes', 'sale_notes.id', '=', 'cash_documents.sale_note_id')
+                            ->whereNull('sale_notes.hotel_rent_id')
                             ->orderBy('sale_notes.created_at')
                             ->get();
 
         return [
             'documents' => $documents,
             'sale_notes' => $sale_notes,
+            'hotel_payments' => $this->getHotelRentPaymentsData(),
         ];
         
     }

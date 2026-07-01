@@ -200,9 +200,16 @@ trait CashReportTrait
         foreach ($cash->cash_documents as $cash_document)
         {
             $model_associated = $cash_document->getDataModelAssociated();
-            
+
             if($model_associated)
             {
+                // Comprobantes de hotel: el ingreso se cuenta vía los pagos de
+                // hotel (más abajo) para no duplicar (el pago de hotel manda).
+                if(!empty($model_associated->hotel_rent_id))
+                {
+                    continue;
+                }
+
                 $data_summary_daily = $model_associated->applySummaryDailyOperations();
 
                 if($data_summary_daily['apply'])
@@ -217,6 +224,29 @@ trait CashReportTrait
                     }
                 }
             }
+        }
+
+        // Pagos del módulo Hotel (habitación/productos/adelantos) atribuidos a la
+        // caja y no facturados. Se reportan como ingreso de ventas al contado.
+        foreach ($cash->getHotelRentPaymentsData() as $hotel_payment)
+        {
+            $amount = (float) $hotel_payment->payment;
+
+            if($amount == 0)
+            {
+                continue;
+            }
+
+            if($hotel_payment->payment_method_type_id === PaymentMethodType::TRANSFER_PAYMENT_ID)
+            {
+                $data['cash_sales_income']['total_transfer'] += $amount;
+            }
+            else
+            {
+                $data['cash_sales_income']['total_cash'] += $amount;
+            }
+
+            $data['cash_sales_income']['total'] += $amount;
         }
     }
     

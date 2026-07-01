@@ -223,6 +223,13 @@ class CashController extends Controller
             /** Documentos de Tipo Nota de venta */
             if ($cash_document->sale_note) {
                 $sale_note = $cash_document->sale_note;
+
+                // Comprobantes de hotel: el ingreso se cuenta vía los pagos de
+                // hotel (más abajo) para no duplicar (el pago de hotel manda).
+                if ($sale_note->hotel_rent_id) {
+                    continue;
+                }
+
                 $pays = [];
                 $document = $sale_note->documents->first(); 
                 $description= null;
@@ -316,6 +323,12 @@ class CashController extends Controller
             {
                 $record_total = 0;
                 $document = $cash_document->document;
+
+                // Comprobantes de hotel: ver nota anterior.
+                if ($document->hotel_rent_id) {
+                    continue;
+                }
+
                 $payment_condition_id = $document->payment_condition_id;
                 $pays = $document->payments->filter(function ($payment) use ($cash_id) {
                     return $payment->cashDocumentPayments->contains('cash_id', $cash_id);
@@ -707,6 +720,49 @@ class CashController extends Controller
 
         }
 
+
+        // Pagos del módulo Hotel (habitación/productos/adelantos) atribuidos a la
+        // caja y no facturados. Son la fuente de verdad del ingreso del módulo
+        // (el pago de hotel manda); los comprobantes ligados a hotel se excluyen
+        // arriba para no duplicar.
+        foreach ($cash->getHotelRentPaymentsData() as $hotel_payment) {
+            $amount = (float) $hotel_payment->payment;
+
+            if ($amount == 0) {
+                continue;
+            }
+
+            $cash_income += $amount;
+            $final_balance += $amount;
+
+            foreach ($methods_payment as $record) {
+                if ($record->id == $hotel_payment->payment_method_type_id) {
+                    $record->sum = ($record->sum + $amount);
+                }
+            }
+
+            if ($hotel_payment->payment_method_type_id === '01') {
+                $data['total_cash_income_pmt_01'] += $amount;
+            }
+
+            $row = $hotel_payment->getRowResourceCashPayment();
+            $all_documents[] = [
+                'type_transaction'          => 'Venta',
+                'type_transaction_prefix'   => 'income',
+                'document_type_description' => $row['document_type_description'],
+                'number'                    => $row['number_full'],
+                'date_of_issue'             => $row['date_of_issue'],
+                'date_sort'                 => $row['date_of_issue'],
+                'customer_name'             => $row['acquirer_name'],
+                'customer_number'           => $row['acquirer_number'],
+                'total'                     => $amount,
+                'currency_type_id'          => $row['currency_type_id'],
+                'usado'                     => '-',
+                'tipo'                      => 'hotel_rent_item',
+                'total_payments'            => $amount,
+                'total_string'              => self::FormatNumber($amount),
+            ];
+        }
 
 //Inicio: Deyvis: pendiente revisar para que funke
         // finanzas ingresos

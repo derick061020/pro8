@@ -3,7 +3,7 @@
     $data_payments = $cash->getIncomePaymentsData();
 @endphp
 
-@if($cash_documents->count())
+@if($cash_documents->count() || count($data_payments['hotel_payments'] ?? []))
 
     <div class="">
         <div class=" ">
@@ -118,6 +118,26 @@
                         @endforeach
                     @endforeach
                     {{-- notas de venta --}}
+
+
+                    {{-- pagos hotel (no facturados / el pago de hotel manda) --}}
+                    @foreach($data_payments['hotel_payments'] ?? [] as $payment)
+                        @php
+                            $row = $payment->getRowIncomeSummaryPayment();
+                        @endphp
+                        <tr>
+                            <td class="celda">{{ $loop->iteration }}</td>
+                            <td class="celda">{{ $row['date_time_of_issue'] }}</td>
+                            <td class="celda">{{ $row['document_type_description'] }}</td>
+                            <td class="celda">{{ $row['number_full'] }}</td>
+                            <td class="celda">{{ $row['payment_method_type_description'] }}</td>
+                            <td class="celda">{{ $row['currency_type_id'] }}</td>
+                            <td class="celda">{{ number_format($row['total'], 2) }}</td>
+                            <td class="celda">{{ number_format($row['change'], 2) }}</td>
+                            <td class="celda">{{ number_format($row['payment'], 2) }}</td>
+                        </tr>
+                    @endforeach
+                    {{-- pagos hotel --}}
 
 
                     {{-- comprobantes y notas de venta a credito --}}

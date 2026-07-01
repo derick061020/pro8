@@ -455,14 +455,20 @@ class CashController extends Controller
 
     public function report_general()
     {
-        $cashes = Cash::select('id')->whereDate('date_opening', date('Y-m-d'))->pluck('id');
-        $cash_documents =  CashDocument::whereIn('cash_id', $cashes)->get();
+        $cashes = Cash::whereDate('date_opening', date('Y-m-d'))->get();
+        $cash_documents =  CashDocument::whereIn('cash_id', $cashes->pluck('id'))->get();
         // dd($cash_documents);
+
+        // Pagos del módulo Hotel (no facturados / el pago de hotel manda). Los
+        // comprobantes ligados a hotel se excluyen en la vista para no duplicar.
+        $hotel_payments = $cashes->flatMap(function ($cash) {
+            return $cash->getHotelRentPaymentsData();
+        });
 
         $company = Company::first();
         set_time_limit(0);
 
-        $pdf = PDF::loadView('tenant.cash.report_general_pdf', compact("cash_documents", "company"));
+        $pdf = PDF::loadView('tenant.cash.report_general_pdf', compact("cash_documents", "company", "hotel_payments"));
         $filename = "Reporte_POS";
         return $pdf->download($filename.'.pdf');
 

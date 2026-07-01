@@ -186,6 +186,12 @@ class CashControllerRevision extends Controller
         $expense_payments = [];
 //        dd($cash->cash_documents);
         foreach ($cash->cash_documents as $cash_document) {
+            // Comprobantes de hotel: el ingreso se lista como pago de hotel
+            // (más abajo) para no duplicar (el pago de hotel manda).
+            if (($cash_document->sale_note && $cash_document->sale_note->hotel_rent_id)
+                || ($cash_document->document && $cash_document->document->hotel_rent_id)) {
+                continue;
+            }
             if ($cash_document->sale_note) {
                 if (in_array($cash_document->sale_note->state_type_id, ['01', '03', '05', '07', '13'])) {
                     if (count($cash_document->sale_note->payments) > 0) {
@@ -280,6 +286,27 @@ class CashControllerRevision extends Controller
             }
         }
 
+        // Pagos del módulo Hotel (no facturados / el pago de hotel manda).
+        $hotel_payments = [];
+        foreach ($cash->getHotelRentPaymentsData() as $hotel_payment) {
+            $amount = (float) $hotel_payment->payment;
+            if ($amount == 0) {
+                continue;
+            }
+            $cash_income += $amount;
+            $final_balance += $amount;
+
+            $row = $hotel_payment->getRowResourceCashPayment();
+            $hotel_payments[] = [
+                'number' => $row['number_full'],
+                'date_of_issue' => $row['date_of_issue'],
+                'customer_name' => $row['acquirer_name'],
+                'customer_number' => $row['acquirer_number'],
+                'currency_type_id' => $row['currency_type_id'],
+                'total' => $amount,
+            ];
+        }
+
         return [
             'company' => $data_company,
             'establishment' => $data_establishment,
@@ -288,6 +315,7 @@ class CashControllerRevision extends Controller
             'technical_services' => $technical_services,
             'documents' => $documents,
             'expense_payments' => $expense_payments,
+            'hotel_payments' => $hotel_payments,
         ];
 //        $cash_final_balance = $final_balance + $cash->beginning_balance;
     }

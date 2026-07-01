@@ -90,4 +90,46 @@ class HotelRentItemPayment extends ModelTenant
         ];
     }
 
+
+    /**
+     *
+     * Obtener informacion del pago para el reporte excel de pagos en efectivo.
+     * El módulo Hotel no factura el ingreso, por lo que el "total" del registro
+     * es el propio pago aplicado.
+     *
+     * @return array
+     */
+    public function getDataCashPaymentReport()
+    {
+        $data = [
+            'total' => $this->payment,
+            'items_description_html' => '',
+        ];
+
+        return array_merge($this->getRowResourceCashPayment(), $data);
+    }
+
+
+    /**
+     *
+     * Obtener informacion del pago para el reporte de resumen de ingresos.
+     *
+     * @return array
+     */
+    public function getRowIncomeSummaryPayment()
+    {
+        return [
+            'type' => 'hotel_rent_item',
+            'date_time_of_issue' => $this->associated_record_payment->hotel_rent->input_date,
+            'number_full' => '-',
+            'currency_type_id' => $this->associated_record_payment->hotel_rent->getDefaultCurrency(),
+            'document_type_description' => 'R. HABITACIÓN (HOTEL)',
+            'payment_method_type_description' => optional($this->payment_method_type)->description,
+            'total' => $this->payment,
+            'change' => $this->change ?? 0,
+            'payment' => $this->payment,
+            'payment_for_calculate' => $this->payment,
+        ];
+    }
+
 }

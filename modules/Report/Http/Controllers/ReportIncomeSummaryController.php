@@ -58,8 +58,9 @@ class ReportIncomeSummaryController extends Controller
         $payments = collect();
         $total_document_payments = 0;
         $total_sale_note_payments = 0;
+        $total_hotel_payments = 0;
 
-        foreach ($cash->global_destination as $global_payment) 
+        foreach ($cash->global_destination as $global_payment)
         {
             $row = $global_payment->payment->getRowIncomeSummaryPayment();
             $payments->push($row);
@@ -67,6 +68,10 @@ class ReportIncomeSummaryController extends Controller
             if($row['type'] === 'document')
             {
                 $total_document_payments += $row['payment_for_calculate'];
+            }
+            else if($row['type'] === 'hotel_rent_item')
+            {
+                $total_hotel_payments += $row['payment_for_calculate'];
             }
             else
             {
@@ -77,6 +82,7 @@ class ReportIncomeSummaryController extends Controller
         return [
             'total_document_payments' => number_format($total_document_payments, 2, '.', ''),
             'total_sale_note_payments' => number_format($total_sale_note_payments, 2, '.', ''),
+            'total_hotel_payments' => number_format($total_hotel_payments, 2, '.', ''),
             'payments' => $payments,
         ];
     }
