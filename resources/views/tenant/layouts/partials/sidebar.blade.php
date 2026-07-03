@@ -2,6 +2,7 @@
 
 use App\Models\Tenant\Configuration;
 use Modules\Inventory\Models\InventoryConfiguration;
+use Modules\Hotel\Models\HotelRoom;
 
 $configuration = Configuration::first();
 $firstLevel = $path[0] ?? null;
@@ -15,6 +16,16 @@ $visual = $configuration->visual ?? null;
 $showInSidebar = null; // will be resolved after multi-user calculation
 
 $establishments = App\Models\Tenant\Establishment::select('id', 'description')->get();
+
+// Obtener contador de habitaciones ocupadas
+$occupiedRoomsCount = 0;
+if(in_array('hotels', $vc_modules)) {
+    $user = auth()->user();
+    $establishment_id = $user->establishment_id;
+    $occupiedRoomsCount = HotelRoom::where('establishment_id', $establishment_id)
+        ->where('status', 'OCUPADO')
+        ->count();
+}
 
 $multiUserCount = 0;
 if(config('configuration.multi_user_enabled')) {
