@@ -2167,6 +2167,12 @@ export default {
             }
 
         },
+        async sendDocument(id) {
+            // Dispara el envío del comprobante a SUNAT/PSE. Se usa siempre el
+            // recurso 'documents' porque solo facturas/boletas se transmiten
+            // (las NV nunca llegan aquí).
+            return await this.$http.get(`/documents/send/${id}`);
+        },
         successGoToInvoice() {
             console.log('successGoToInvoice');
 
@@ -2373,6 +2379,28 @@ export default {
 
                 this.documentNewId = response.data.data.id;
                 const isSaleNote = this.document.document_type_id === '80';
+
+                // Enviar el comprobante a SUNAT. El POST /documents solo firma el
+                // XML y genera el PDF; el envío real al PSE/SUNAT se dispara con
+                // /documents/send/{id}, igual que en la sección de documentos
+                // (ver invoice_generate.vue). Sin esta llamada el comprobante
+                // queda "registrado" pero nunca se transmite ("se queda cargando").
+                // Facturas (01) se envían con send_auto; boletas (03) solo con
+                // envío individual (ticket_single_shipment); las NV (80) no van a SUNAT.
+                if (!isSaleNote) {
+                    try {
+                        if (this.config.send_auto && this.document.document_type_id === '01') {
+                            await this.sendDocument(this.documentNewId);
+                        } else if (this.config.ticket_single_shipment && this.document.document_type_id === '03') {
+                            await this.sendDocument(this.documentNewId);
+                        }
+                    } catch (e) {
+                        // El comprobante ya está registrado; si el envío falla se
+                        // puede reintentar desde la lista de documentos. No abortamos
+                        // el marcado de items ni el resto del checkout por esto.
+                        console.error('Error al enviar el comprobante a SUNAT:', e);
+                    }
+                }
 
                 console.log('=== INVOICE CREATED ===');
                 console.log('document_type_id:', this.document.document_type_id);
