@@ -645,7 +645,7 @@
                 this.document.establishment_id = q.establishment_id
                 this.document.date_of_issue =  moment().format('YYYY-MM-DD')//q.date_of_issue
                 this.document.date_of_due = q.due_date || moment().format('YYYY-MM-DD')//q.date_of_issue
-                this.document.time_of_issue = q.time_of_issue
+                this.document.time_of_issue = moment().format('HH:mm:ss')//q.time_of_issue
                 this.document.customer_id = q.customer_id
                 this.document.currency_type_id = q.currency_type_id
                 this.document.purchase_order = null
