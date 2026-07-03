@@ -1368,58 +1368,6 @@ $showTransfer = collect($vc_module_levels)->intersect(['inventory', 'inventory_d
                     {{-- @if(in_array('hotels', $vc_modules) || in_array('documentary-procedure', $vc_modules))
                     <li class="nav-description">Módulos extras</li>
                     @endif --}}
-                    @if(in_array('hotels', $vc_modules))
-                        <li class=" nav-parent {{ ($firstLevel === 'hotels') ? 'nav-active nav-expanded' : '' }}">
-                            <a class="nav-link" href="#">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
-                                    fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
-                                    stroke-linejoin="round"
-                                    class="icon icon-tabler icons-tabler-outline icon-tabler-building-skyscraper">
-                                    <path stroke="none" d="M0 0h24v24H0z" fill="none" />
-                                    <path d="M3 21l18 0" />
-                                    <path d="M5 21v-14l8 -4v18" />
-                                    <path d="M19 21v-10l-6 -4" />
-                                    <path d="M9 9l0 .01" />
-                                    <path d="M9 12l0 .01" />
-                                    <path d="M9 15l0 .01" />
-                                    <path d="M9 18l0 .01" />
-                                </svg>
-                                <span>Hoteles</span>
-                            </a>
-                            <ul class="nav nav-children">
-                                @if(in_array('hotels_reception', $vc_module_levels))
-                                    <li
-                                        class="{{ (($firstLevel === 'hotels') && ($secondLevel === 'reception')) ? 'nav-active' : '' }}">
-                                        <a class="nav-link" href="{{ url('hotels/reception') }}">Recepción</a>
-                                    </li>
-                                @endif
-                                @if(in_array('hotels_rates', $vc_module_levels))
-                                    <li
-                                        class="{{ (($firstLevel === 'hotels') && ($secondLevel === 'rates')) ? 'nav-active' : '' }}">
-                                        <a class="nav-link" href="{{ url('hotels/rates') }}">Tarifas</a>
-                                    </li>
-                                @endif
-                                @if(in_array('hotels_floors', $vc_module_levels))
-                                    <li
-                                        class="{{ (($firstLevel === 'hotels') && ($secondLevel === 'floors')) ? 'nav-active' : '' }}">
-                                        <a class="nav-link" href="{{ url('hotels/floors') }}">Ubicaciones</a>
-                                    </li>
-                                @endif
-                                @if(in_array('hotels_cats', $vc_module_levels))
-                                    <li
-                                        class="{{ (($firstLevel === 'hotels') && ($secondLevel === 'categories')) ? 'nav-active' : '' }}">
-                                        <a class="nav-link" href="{{ url('hotels/categories') }}">Categorías</a>
-                                    </li>
-                                @endif
-                                @if(in_array('hotels_rooms', $vc_module_levels))
-                                    <li
-                                        class="{{ (($firstLevel === 'hotels') && ($secondLevel === 'rooms')) ? 'nav-active' : '' }}">
-                                        <a class="nav-link" href="{{ url('hotels/rooms') }}">Habitaciones</a>
-                                    </li>
-                                @endif
-                            </ul>
-                        </li>
-                    @endif
                     {{-- Suscription --}}
                     @if(in_array('suscription_app', $vc_modules))
                         <li class=" nav-parent {{ ($firstLevel === 'full_suscription') ? 'nav-active nav-expanded' : '' }}">
