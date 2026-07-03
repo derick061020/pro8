@@ -56,6 +56,15 @@ class AppServiceProvider extends ServiceProvider
             return; // Si no hay configuración, salimos sin alterar nada
         }
 
+        // Si la BD del sistema no tiene SMTP configurado, no alteramos la
+        // configuración de correo: se mantiene la del .env / la que setee
+        // Configuration::setConfigSmtpMail() por tenant al momento de enviar.
+        // (Sin esta guarda, un mail_host nulo pisaba el host del .env y
+        // rompía el envío con "host null" en Symfony Mailer.)
+        if (empty($config->mail_host)) {
+            return;
+        }
+
         $encryption = $config->mail_encryption;
         $host = $config->mail_host;
 
