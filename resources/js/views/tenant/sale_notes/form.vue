@@ -3360,7 +3360,7 @@ export default {
 
             let validate = await this.validate_payments();
             if (
-                validate.acum_total > parseFloat(this.form.total) ||
+                _.round(validate.acum_total, 2) > _.round(parseFloat(this.form.total), 2) ||
                 validate.error_by_item > 0
             ) {
                 return this.$message.error(
@@ -3379,7 +3379,7 @@ export default {
                     this.form.quantity_period > 0 ? true : false;
             }
 
-            if (validate.acum_total == parseFloat(this.form.total)) {
+            if (_.round(validate.acum_total, 2) >= _.round(parseFloat(this.form.total), 2)) {
                 this.form.paid = true;
             }
 
