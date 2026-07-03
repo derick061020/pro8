@@ -507,7 +507,7 @@ class ConfigurationController extends Controller
             $ext = $file->getClientOriginalExtension();
             $name = date('Ymd') . '_' . $configuration->id . '.' . $ext;
 
-            request()->validate(['file' => 'required|image|mimes:jpeg,png,jpg,gif,svg|max:2048']);
+            request()->validate(['file' => 'required|image|mimes:jpeg,png,jpg,gif,svg,webp|max:2048']);
 
             UploadFileHelper::checkIfValidFile($name, $file->getPathName(), true);
 

@@ -11,7 +11,9 @@
 
     <title>Facturación Electrónica</title>
 
-    <link href="{{ mix('css/app.css') }}" rel="stylesheet">
+    <script src="{{ asset('porto-light/vendor/jquery/jquery.js') }}"></script>
+
+    @vite(['resources/js/app.js'])
 
     <!-- Styles -->
     <link href="https://fonts.googleapis.com/css?family=Open+Sans:300,400,600,700,800|Shadows+Into+Light" rel="stylesheet" type="text/css">
@@ -65,8 +67,6 @@
 
     @yield('content-mercadopago')
 
-    <script src="{{ asset('js/manifest.js') }}"></script>
-    <script src="{{ asset('js/vendor.js') }}"></script>
-    <script src="{{ mix('js/app.js') }}"></script>
+    @vite(['resources/js/app.js'])
 </body>
 </html>

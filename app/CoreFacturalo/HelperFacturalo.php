@@ -154,6 +154,7 @@ class HelperFacturalo
     private function addPage(&$pdf, $additional_data, $document, $company, $template_name, $base_height)
     {
         list($template, $base_pdf_template, $width, $calculated_height) = $additional_data;
+        // $isNotLandscape = isset($additional_data[4]) ? $additional_data[4] : false;
         $html_dispatch_ticket = $template->pdfWithoutFormat($base_pdf_template, $template_name, $company, $document);
         $additional = 0;
 
@@ -161,11 +162,11 @@ class HelperFacturalo
 
         // if(!$document->is_individual) {
             $pdf->AddPageByArray([
-                'orientation' => 'L',
-                'newformat' => [
-                    $base_height + $calculated_height + $additional,
-                    $width,
-                ],
+                'orientation' => 'P',
+                // 'newformat' => [
+                //     $base_height + $calculated_height + $additional,
+                //     $width,
+                // ],
                 'mgt' => 0,
                 'mgr' => 1,
                 'mgb' => 0,
@@ -173,7 +174,19 @@ class HelperFacturalo
             ]);
         // }
 
-        $pdf->writeHTML($html_dispatch_ticket, HTMLParserMode::HTML_BODY);
+        $previous = set_error_handler(function ($severity, $message, $file = '', $line = 0) use (&$previous) {
+            if ($severity === E_WARNING && strpos($message, 'Trying to access array offset on') !== false) {
+                return true;
+            }
+
+            return $previous ? ($previous)($severity, $message, $file, $line) : false;
+        });
+
+        try {
+            $pdf->writeHTML($html_dispatch_ticket, HTMLParserMode::HTML_BODY);
+        } finally {
+            restore_error_handler();
+        }
     }
 
 }

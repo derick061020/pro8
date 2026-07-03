@@ -652,6 +652,7 @@
                             @success="successTransport"></transport-form>
 
             <items
+                :showWeightInput="false"
                 :dialogVisible.sync="showDialogAddItems"
                 @addItem="addItem"></items>
 

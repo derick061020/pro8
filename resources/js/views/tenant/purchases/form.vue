@@ -64,10 +64,11 @@
                             <div class="col-6 col-lg-2">
                                 <div :class="{'has-danger': errors.date_of_issue}"
                                      class="form-group">
-                                    <label class="control-label">Fec Emisión</label>
+                                    <label class="control-label">Fec. Emisión</label>
                                     <el-date-picker v-model="form.date_of_issue"
                                                     :clearable="false"
                                                     type="date"
+                                                    :format="dpDateFormat"
                                                     value-format="yyyy-MM-dd"
                                                     :readonly="readonly_date_of_due"
                                                     @change="changeDateOfIssue"></el-date-picker>
@@ -85,6 +86,7 @@
                                                     :clearable="false"
                                                     type="date"
                                                     :readonly="readonly_date_of_due"
+                                                    :format="dpDateFormat"
                                                     value-format="yyyy-MM-dd"></el-date-picker>
                                     <small v-if="errors.date_of_due"
                                            class="form-control-feedback"
@@ -133,7 +135,12 @@
                                             </div>
                                         </template>
                                     </el-select>
-                                    <span class="btn-add-new" @click.prevent="showDialogNewPerson = true" title="Agregar nuevo proveedor">
+                                    <template v-if="form.supplier_id">
+                                        <span class="btn-add-new btn-edit-person" @click.prevent="personRecordId = form.supplier_id; showDialogNewPerson = true" title="Editar proveedor">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-user-edit"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0" /><path d="M6 21v-2a4 4 0 0 1 4 -4h3.5" /><path d="M18.42 15.61a2.1 2.1 0 0 1 2.97 2.97l-3.39 3.42h-3v-3l3.42 -3.39" /></svg>
+                                        </span>
+                                    </template>
+                                    <span class="btn-add-new" @click.prevent="personRecordId = null; showDialogNewPerson = true" title="Agregar nuevo proveedor">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-user-plus"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0" /><path d="M16 19h6" /><path d="M19 16v6" /><path d="M6 21v-2a4 4 0 0 1 4 -4h4" /></svg>
                                     </span>
                                     <small v-if="errors.supplier_id"
@@ -152,7 +159,7 @@
                                     <small class="form-control-feedback" v-if="errors.payment_method_type_id" v-text="errors.payment_method_type_id[0]"></small>
                                 </div>
                             </div> -->
-                            <div class="col-lg-2 col-3">
+                            <div class="col-lg-2 col-3" v-if="currency_types.length > 1">
                                 <div :class="{'has-danger': errors.currency_type_id}"
                                      class="form-group">
                                     <label class="control-label">Moneda</label>
@@ -168,7 +175,7 @@
                                            v-text="errors.currency_type_id[0]"></small>
                                 </div>
                             </div>
-                            <div class="col-lg-2 col-3">
+                            <div class="col-lg-2 col-3" v-if="currency_types.length > 1">
                                 <div :class="{'has-danger': errors.exchange_rate_sale}"
                                      class="form-group">
                                     <label class="control-label">Tipo de cambio
@@ -534,14 +541,14 @@
                                             <td class="text-center">{{ row.item.unit_type_id }}</td>
                                             <td class="text-end">{{ row.quantity }}</td>
                                             <td class="text-end">{{ currency_type.symbol }}
-                                                                   {{ getFormatUnitPriceRow(row.unit_value) }}
+                                                                   {{ formatDecimal(row.unit_value) }}
                                             </td>
                                             <td class="text-end">{{ currency_type.symbol }}
-                                                                   {{ getFormatUnitPriceRow(row.unit_price) }}
+                                                                   {{ formatDecimal(row.unit_price) }}
                                             </td>
-                                            <td class="text-end">{{ currency_type.symbol }} {{ row.total_discount }}</td>
-                                            <td class="text-end">{{ currency_type.symbol }} {{ row.total_charge }}</td>
-                                            <td class="text-end">{{ currency_type.symbol }} {{ row.total }}</td>
+                                            <td class="text-end">{{ currency_type.symbol }} {{ formatDecimal(row.total_discount) }}</td>
+                                            <td class="text-end">{{ currency_type.symbol }} {{ formatDecimal(row.total_charge) }}</td>
+                                            <td class="text-end">{{ currency_type.symbol }} {{ formatDecimal(row.total) }}</td>
                                             <td class="text-end">
 
                                                 <button v-if="applyLotsGroup(row.item)"
@@ -608,31 +615,31 @@
 
                                 <p v-if="form.total_exportation > 0"
                                    class="text-end">OP.EXPORTACIÓN: {{ currency_type.symbol }}
-                                                                     {{ form.total_exportation }}</p>
+                                                                     {{ formatDecimal(form.total_exportation) }}</p>
                                 <p v-if="form.total_free > 0"
                                    class="text-end">OP.GRATUITAS: {{ currency_type.symbol }} {{
-                                        form.total_free
+                                        formatDecimal(form.total_free)
                                                               }}</p>
                                 <p v-if="form.total_unaffected > 0"
                                    class="text-end">OP.INAFECTAS: {{ currency_type.symbol }}
-                                                                    {{ form.total_unaffected }}</p>
+                                                                    {{ formatDecimal(form.total_unaffected) }}</p>
                                 <p v-if="form.total_exonerated > 0"
                                    class="text-end">OP.EXONERADAS: {{ currency_type.symbol }}
-                                                                    {{ form.total_exonerated }}</p>
+                                                                    {{ formatDecimal(form.total_exonerated) }}</p>
                                 <p v-if="form.total_taxed > 0"
                                    class="text-end">OP.GRAVADA: {{ currency_type.symbol }} {{
-                                        form.total_taxed
+                                        formatDecimal(form.total_taxed)
                                                                }}</p>
                                 <p v-if="form.total_igv > 0"
-                                   class="text-end">IGV: {{ currency_type.symbol }} {{ form.total_igv }}</p>
+                                   class="text-end">IGV: {{ currency_type.symbol }} {{ formatDecimal(form.total_igv) }}</p>
 
                                 <p v-if="form.total_isc > 0"
-                                   class="text-end">ISC: {{ currency_type.symbol }} {{ form.total_isc }}</p>
+                                   class="text-end">ISC: {{ currency_type.symbol }} {{ formatDecimal(form.total_isc) }}</p>
 
                                 <p v-if="form.total_discount > 0" class="text-end">DESCUENTOS TOTALES: {{ currency_type.symbol }} {{ form.total_discount }}</p>
 
                                 <h3 v-if="form.total > 0"
-                                    class="text-end"><b>TOTAL COMPRAS: </b>{{ currency_type.symbol }} {{ form.total }}
+                                    class="text-end"><b>TOTAL COMPRAS: </b>{{ currency_type.symbol }} {{ formatDecimal(form.total) }}
                                 </h3>
 
                                 <template v-if="is_perception_agent">
@@ -692,7 +699,7 @@
                                     <h3 v-if="form.total > 0 && !hide_button"
                                         class="text-end"><b>MONTO TOTAL : </b>{{
                                             currency_type.symbol
-                                                                                                   }} {{ total_amount }}
+                                                                                                   }} {{ formatDecimal(total_amount) }}
                                     </h3>
 
 
@@ -720,7 +727,7 @@
                             class="btn btn-primary btn-submit-default"
                             type="primary"
                         >
-                            Generar
+                            {{ isEditing ? 'Actualizar' : 'Generar' }}
                         </el-button>
                     </div>
                 </form>
@@ -728,6 +735,7 @@
             </div>
 
             <purchase-form-item :currency-type-id-active="form.currency_type_id"
+                                :currency-types="currency_types"
                                 :exchange-rate-sale="form.exchange_rate_sale"
                                 :showDialog.sync="showDialogAddItem"
                                 :localHasGlobalIgv="localHasGlobalIgv"
@@ -742,6 +750,7 @@
             />
 
             <person-form :external="true"
+                         :recordId="personRecordId"
                          :input_person="personFormInput"
                          :showDialog.sync="showDialogNewPerson"
                          type="suppliers"></person-form>
@@ -779,7 +788,7 @@ import {mapActions, mapState} from "vuex";
 import InputLotGroup from '@components/secondary/InputLotGroup.vue'
 
 export default {
-    props: ['purchase_order_id'],
+    props: ['purchase_order_id', 'purchase_id'],
     components: {PurchaseFormItem, PersonForm, PurchaseOptions, SeriesForm, InputLotGroup, AddSupplyModal},
     mixins: [functions, exchangeRate, fnPaymentsFee, operationsForDiscounts],
     computed: {
@@ -827,6 +836,7 @@ export default {
     data() {
         return {
             input_person: {},
+            personRecordId: null,
             resource: 'purchases',
             showDialogAddItem: false,
             showDialogAddSupply: false,
@@ -872,7 +882,8 @@ export default {
             ,
             isEditing: false,
             resourceId: null,
-            pageTitle: 'Nueva Compra'
+            pageTitle: 'Nueva Compra',
+            decimal_quantity: 2
         }
     },
     watch: {
@@ -929,16 +940,13 @@ export default {
         this.isGeneratePurchaseOrder()
         this.changeHasPayment()
         this.changeHasClient()
-        // detect edit by URL pattern /purchases/edit/{id}
-        try {
-            const m = window.location.pathname.match(/\/purchases\/create\/(\d+)/);
-            if (m && m[1]) {
-                this.isEditing = true;
-                this.resourceId = m[1];
-                this.pageTitle = 'Editar Compra';
-                await this.initRecord();
-            }
-        } catch (e) {}
+        
+        if (this.purchase_id) {
+            this.isEditing = true;
+            this.resourceId = m[1];
+            this.pageTitle = 'Editar Compra';
+            await this.initRecord();
+        }
     },
     created() {
         this.loadConfiguration()
@@ -946,13 +954,31 @@ export default {
         this.loadEstablishment()
         this.searchPurchaseOrder();
         // this.localHasGlobalIgv = this.hasGlobalIgv;
-        this.initGlobalIgv()
+        this.initGlobalIgv();
+        this.loadDecimalQuantity();
         this.$eventHub.$on("reloadDataPersons", customer_id => {
             this.reloadDataCustomers(customer_id);
             this.supplierSearchTerm = ''
         });
     },
     methods: {
+        loadDecimalQuantity() {
+            // Obtener la configuracion general para los decimales
+            this.$http ? this.$http.get('/configurations/record').then(response => {
+                if (response.data && response.data.data && response.data.data.decimal_quantity) {
+                    this.decimal_quantity = response.data.data.decimal_quantity;
+                }
+            }) :
+            (window.axios && window.axios.get('/configurations/record').then(response => {
+                if (response.data && response.data.data && response.data.data.decimal_quantity) {
+                    this.decimal_quantity = response.data.data.decimal_quantity;
+                }
+            }));
+        },
+        formatDecimal(value) {
+            if (value === undefined || value === null || isNaN(value)) return '';
+            return Number(value).toLocaleString('en-US', { minimumFractionDigits: this.decimal_quantity, maximumFractionDigits: this.decimal_quantity });
+        },
         saveInputLotGroup(params)
         {
             this.form.items[params.index].lot_code = params.data.lot_code
@@ -1044,7 +1070,7 @@ export default {
             this.customers = this.all_customers
         },
         getFormatUnitPriceRow(unit_price) {
-            return _.round(unit_price, 6)
+            return this.formatDecimal(unit_price)
             // return unit_price.toFixed(6)
         },
         async isGeneratePurchaseOrder()
@@ -1505,19 +1531,19 @@ export default {
                 total_charge += parseFloat(row.total_charge)
 
                 if (row.affectation_igv_type_id === '10') {
-                    total_taxed += parseFloat(row.total_value)
+                    total_taxed += parseFloat(row.total_value_without_rounding)
                 }
                 if (row.affectation_igv_type_id === '20') {
-                    total_exonerated += parseFloat(row.total_value)
+                    total_exonerated += parseFloat(row.total_value_without_rounding)
                 }
                 if (row.affectation_igv_type_id === '30') {
-                    total_unaffected += parseFloat(row.total_value)
+                    total_unaffected += parseFloat(row.total_value_without_rounding)
                 }
                 if (row.affectation_igv_type_id === '40') {
-                    total_exportation += parseFloat(row.total_value)
+                    total_exportation += parseFloat(row.total_value_without_rounding)
                 }
                 if (['10', '20', '30', '40'].indexOf(row.affectation_igv_type_id) < 0) {
-                    total_free += parseFloat(row.total_value)
+                    total_free += parseFloat(row.total_value_without_rounding)
                 }
 
                 total_value += parseFloat(row.total_value)
@@ -1531,22 +1557,22 @@ export default {
             });
 
             // isc
-            this.form.total_base_isc = _.round(total_base_isc, 2)
-            this.form.total_isc = _.round(total_isc, 2)
+            this.form.total_base_isc = _.round(total_base_isc, this.decimal_quantity)
+            this.form.total_isc = _.round(total_isc, this.decimal_quantity)
 
-            this.form.total_exportation = _.round(total_exportation, 2)
-            this.form.total_taxed = _.round(total_taxed, 2)
-            this.form.total_exonerated = _.round(total_exonerated, 2)
-            this.form.total_unaffected = _.round(total_unaffected, 2)
-            this.form.total_free = _.round(total_free, 2)
-            this.form.total_igv = _.round(total_igv, 2)
-            this.form.total_value = _.round(total_value, 2)
+            this.form.total_exportation = _.round(total_exportation, this.decimal_quantity)
+            this.form.total_taxed = _.round(total_taxed, this.decimal_quantity)
+            this.form.total_exonerated = _.round(total_exonerated, this.decimal_quantity)
+            this.form.total_unaffected = _.round(total_unaffected, this.decimal_quantity)
+            this.form.total_free = _.round(total_free, this.decimal_quantity)
+            this.form.total_igv = _.round(total_igv, this.decimal_quantity)
+            this.form.total_value = _.round(total_value, this.decimal_quantity)
             // this.form.total_taxes = _.round(total_igv, 2)
 
             //impuestos (isc + igv)
-            this.form.total_taxes = _.round(total_igv + total_isc, 2)
+            this.form.total_taxes = _.round(total_igv + total_isc, this.decimal_quantity)
 
-            this.form.total = _.round(total, 2)
+            this.form.total = _.round(total, this.decimal_quantity)
 
             this.calculatePerception()
 
@@ -1663,44 +1689,40 @@ export default {
 
             this.loading_submit = true
             // await this.changePaymentMethodType(false)
-            await this.$http.post(`/${this.resource}`, this.form)
-                .then(response => {
+            const request = this.isEditing
+            ? this.$http.post(`/${this.resource}/update`, this.form)
+            : this.$http.post(`/${this.resource}`, this.form)
 
-                    if (response.data.success) {
-
-                        if (this.purchase_order_id) {
-
-                            this.$message({
-                                showClose: true,
-                                message: `Compra registrada : ${response.data.data.number_full}`,
-                                duration: 2 * 3000,
-                                type: "success"
-                            });
-
-                            this.close()
-
-                        } else {
-
-                            this.resetForm()
-                            this.purchaseNewId = response.data.data.id
-                            this.showDialogOptions = true
-
-                        }
-
+        await request
+            .then(response => {
+                if (response.data.success) {
+                    if (this.purchase_order_id) {
+                        this.$message({
+                            showClose: true,
+                            message: `Compra registrada : ${response.data.data.number_full}`,
+                            duration: 2 * 3000,
+                            type: "success"
+                        });
+                        this.close()
                     } else {
-                        this.$message.error(response.data.message)
+                        this.resetForm()
+                        this.purchaseNewId = response.data.data.id
+                        this.showDialogOptions = true
                     }
-                })
-                .catch(error => {
-                    if (error.response.status === 422) {
-                        this.errors = error.response.data
-                    } else {
-                        this.$message.error(error.response.data.message)
-                    }
-                })
-                .then(() => {
-                    this.loading_submit = false
-                })
+                } else {
+                    this.$message.error(response.data.message)
+                }
+            })
+            .catch(error => {
+                if (error.response.status === 422) {
+                    this.errors = error.response.data
+                } else {
+                    this.$message.error(error.response.data.message)
+                }
+            })
+            .then(() => {
+                this.loading_submit = false
+            })
         },
         close() {
             location.href = '/purchases'
@@ -1760,6 +1782,7 @@ export default {
 
         },
         openNewPersonDialog() {
+            this.personRecordId = null
             this.showDialogNewPerson = true
         },
     }

@@ -19,11 +19,11 @@
             <td width="20%">
                 <img
                     src="data:{{mime_content_type(public_path("storage/uploads/logos/{$company->logo}"))}};base64, {{base64_encode(file_get_contents(public_path("storage/uploads/logos/{$company->logo}")))}}"
-                    alt="{{$company->name}}" alt="{{ $company->name }}" class="company_logo" style="max-width: 300px">
+                    alt="{{ \App\CoreFacturalo\Helpers\CompanyDocumentDisplay::logoAlt($company) }}" alt="{{ \App\CoreFacturalo\Helpers\CompanyDocumentDisplay::logoAlt($company) }}" class="company_logo" style="max-width: 300px">
             </td>
             <td width="50%" class="text-center">
                 <div class="text-left">
-                    <h3 class="">{{ $company->name }}</h3>
+                    @include('pdf.partials.company_document_header_names', ['tagPrimary' => 'h3', 'tagLegal' => 'h4'])
                     <h4>{{ 'RUC '.$company->number }}</h4>
                     <h5 style="text-transform: uppercase;">
                         {{ ($establishment->address !== '-')? $establishment->address : '' }}
@@ -42,7 +42,7 @@
         @else
             <td width="70%" class="pl-1 text-left">
                 <div class="text-left">
-                    <h3 class="">{{ $company->name }}</h3>
+                    @include('pdf.partials.company_document_header_names', ['tagPrimary' => 'h3', 'tagLegal' => 'h4'])
                     <h4>{{ 'RUC '.$company->number }}</h4>
                     <h5 style="text-transform: uppercase;">
                         {{ ($establishment->address !== '-')? $establishment->address : '' }}
@@ -219,7 +219,7 @@
                 <td>{{ $row['document_type']['description'] }}: {{ $row['number'] }}</td>
             </tr>
             <tr>
-                <td>PROOVEDOR {{ $row['name'] }}</td>
+                <td>PROVEEDOR {{ $row['name'] }}</td>
                 <td>RUC: {{ $row['customer'] }}</td>
             </tr>
         @endforeach
@@ -526,6 +526,9 @@ foreach($document->items as $row) {
             <th class="border-top-bottom text-center">F. Venc.</th>
         @endif
         <th class="border-top-bottom text-center" width="8%">Unidad</th>
+        @if (isset($configuration['enable_weight_in_dispatches']) &&  $configuration['enable_weight_in_dispatches'])
+            <th class="border-top-bottom text-center">Peso</th>
+        @endif
         <th class="border-top-bottom text-center" width="9%">Cantidad</th>
         <th class="border-top-bottom text-center"width="8%">Precio</th>
         <th class="border-top-bottom text-right"width="8%">Total</th>
@@ -538,6 +541,9 @@ foreach($document->items as $row) {
         <th class="border-top-bottom text-left">Serie</th>
         <th class="border-top-bottom text-left">Modelo</th>
         <th class="border-top-bottom text-center">Unidad</th>
+        @if (isset($configuration['enable_weight_in_dispatches']) &&  $configuration['enable_weight_in_dispatches'])
+            <th class="border-top-bottom text-center">Peso</th>
+        @endif
         <th class="border-top-bottom text-right">Cantidad</th>
     </tr>
     @endif
@@ -584,7 +590,7 @@ foreach($document->items as $row) {
             <td class="text-left align-top">
                 @isset($row->item->lots)
                     @foreach($row->item->lots as $lot)
-                        @if( isset($lot->has_sale) && $lot->has_sale)
+                        @if(!empty($lot->series))
                             <span style="font-size: 9px">{{ $lot->series }}</span><br>
                         @endif
                     @endforeach
@@ -626,6 +632,9 @@ foreach($document->items as $row) {
                 </td>
             @endif
             <td class="text-center">{{ $row->item->unit_type_id }}</td>
+            @if (isset($configuration['enable_weight_in_dispatches']) &&  $configuration['enable_weight_in_dispatches'])
+                <td class="text-center">{{ $row->item->weight }}</td>
+            @endif
             <td class="text-center">
                 @if(((int)$row->quantity != $row->quantity))
                     {{ $row->quantity }}
@@ -672,35 +681,20 @@ foreach($document->items as $row) {
                     *** Pago Anticipado ***
                 @endif
             </td>
-            {{-- <td class="text-left">
-                @php
-                    $current_item = $items ? $items->where('item_id', $row->item_id)->first() : null;
-                @endphp
-                @if($current_item && count($current_item->item->lots) > 0)
-                    @foreach($current_item->item->lots as $lot)
-                        {{$lot->series}}
-                        @if(!$loop->first && $loop->last)
-                            -
+            <td class="text-left align-top">
+                @isset($row->item->lots)
+                    @foreach($row->item->lots as $lot)
+                        @if(!empty($lot->series))
+                            <span style="font-size: 9px">{{ $lot->series }}</span><br>
                         @endif
                     @endforeach
-                @endif
-            </td> --}}
-            <td class="text-left">{{ $row->item->model ?? '' }}</td>
-            {{-- <td class="text-left">
-                @php
-                    $current_item = $items ? $items->where('item_id', $row->item_id)->first() : null;
-                @endphp
-                @if($current_item && count($current_item->item->lots) > 0)
-                    @foreach($current_item->item->lots as $lot)
-                        {{$lot->series}}
-                        @if(!$loop->first && $loop->last)
-                            -
-                        @endif
-                    @endforeach
-                @endif
-            </td> --}}
+                @endisset
+            </td>
             <td class="text-left">{{ $row->item->model ?? '' }}</td>
             <td class="text-center">{{ $row->item->unit_type_id }}</td>
+            @if (isset($configuration['enable_weight_in_dispatches']) &&  $configuration['enable_weight_in_dispatches'])
+                <td class="text-center">{{ $row->item->weight }}</td>
+            @endif
             <td class="text-right">
                 @if ($row->item->unit_type_id == 'NIU')
                     {{ number_format($row->quantity, 0) }}

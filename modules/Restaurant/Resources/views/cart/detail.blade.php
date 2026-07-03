@@ -183,9 +183,9 @@
             <div class="checkout-methods text-center">
 
                 @guest('ecommerce')
-                <a href="{{route('tenant_ecommerce_login')}}" class="btn btn-block btn-sm btn-primary login-link culqi">Pagar
+                <a href="{{route('tenant_ecommerce_login')}}" class="btn btn-block btn-sm btn-primary login-link culqi" @click="saveFormToLocalStorage()">Pagar
                     con VISA</a>
-                <a href="{{route('tenant_ecommerce_login')}}" class="btn btn-block btn-sm btn-primary login-link">Pagar
+                <a href="{{route('tenant_ecommerce_login')}}" class="btn btn-block btn-sm btn-primary login-link" @click="saveFormToLocalStorage()">Pagar
                     con EFECTIVO</a>
                 <a style="margin-left:15%" href="{{route('tenant_ecommerce_login')}}"
                     class="btn btn-block btn-sm login-link">
@@ -325,6 +325,7 @@
           })
 
           this.calculateSummary()
+          this.restoreFromLocalStorage()
         },
         created() {
             let array = localStorage.getItem('products_cart');
@@ -342,6 +343,39 @@
 
         },
         methods: {
+            restoreFromLocalStorage() {
+                const savedContact = localStorage.getItem('cart_form_contact');
+                const savedDocument = localStorage.getItem('cart_form_document');
+                const savedTypeDoc = localStorage.getItem('cart_type_document');
+                const savedNumberDoc = localStorage.getItem('cart_number_document');
+
+                if (savedContact) {
+                    const contact = JSON.parse(savedContact);
+                    this.form_contact.address = contact.address || this.user.address;
+                    this.form_contact.telephone = contact.telephone || this.user.telephone;
+                    localStorage.removeItem('cart_form_contact');
+                }
+                if (savedDocument) {
+                    const doc = JSON.parse(savedDocument);
+                    this.form_document.codigo_tipo_documento = doc.codigo_tipo_documento;
+                    this.optionDocument();
+                    localStorage.removeItem('cart_form_document');
+                }
+                if (savedTypeDoc) {
+                    this.typeDocuments = savedTypeDoc;
+                    localStorage.removeItem('cart_type_document');
+                }
+                if (savedNumberDoc) {
+                    this.numberDocument = savedNumberDoc;
+                    localStorage.removeItem('cart_number_document');
+                }
+            },
+            saveFormToLocalStorage() {
+                localStorage.setItem('cart_form_contact', JSON.stringify(this.form_contact));
+                localStorage.setItem('cart_form_document', JSON.stringify(this.form_document));
+                localStorage.setItem('cart_type_document', this.typeDocuments);
+                localStorage.setItem('cart_number_document', this.numberDocument);
+            },
             async changeExchangeRate(exchange_rate_date){
                 var response = await axios.get(`/exchange_rate/ecommence/${exchange_rate_date}`)
                 this.exchange_rate_sale = parseFloat(response.data.sale)

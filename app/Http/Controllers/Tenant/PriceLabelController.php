@@ -100,10 +100,17 @@ class PriceLabelController extends Controller
         try {
             $priceLabel = PriceLabel::findOrFail($id);
 
-            $priceLabel->update([
+            $newIsActive = $request->is_active ?? $priceLabel->is_active;
+            $payload = [
                 'label' => $request->label,
-                'is_active' => $request->is_active ?? $priceLabel->is_active,
-            ]);
+                'is_active' => $newIsActive,
+            ];
+
+            if (!$newIsActive && $priceLabel->is_default) {
+                $payload['is_default'] = false;
+            }
+
+            $priceLabel->update($payload);
 
             return response()->json([
                 'success' => true,
@@ -161,6 +168,79 @@ class PriceLabelController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Error al eliminar la etiqueta de precio: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Limpiar el flag is_default de todos los price labels.
+     * Esto hace que "Precio Principal" vuelva a ser el default por descarte.
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function clearDefault()
+    {
+        try {
+            PriceLabel::where('is_default', true)->update(['is_default' => false]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Precio Principal marcado como por defecto',
+            ]);
+
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al limpiar la etiqueta por defecto: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Marcar un price label como default (toggle).
+     * Si ya es default, lo desmarca. Si no, lo marca y limpia los demás.
+     *
+     * @param int $id
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function setDefault($id)
+    {
+        try {
+            DB::connection('tenant')->beginTransaction();
+
+            $priceLabel = PriceLabel::findOrFail($id);
+
+            if ($priceLabel->is_default) {
+                $priceLabel->update(['is_default' => false]);
+                $message = 'Etiqueta de precio por defecto desmarcada';
+            } else {
+                if (!$priceLabel->is_active) {
+                    DB::connection('tenant')->rollBack();
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'No se puede marcar como por defecto una etiqueta inactiva',
+                    ], 422);
+                }
+
+                PriceLabel::where('is_default', true)->update(['is_default' => false]);
+                $priceLabel->update(['is_default' => true]);
+                $message = 'Etiqueta de precio marcada como por defecto';
+            }
+
+            DB::connection('tenant')->commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => $message,
+                'data' => $priceLabel->fresh()->getCollectionData(),
+            ]);
+
+        } catch (Exception $e) {
+            DB::connection('tenant')->rollBack();
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al actualizar la etiqueta por defecto: ' . $e->getMessage(),
             ], 500);
         }
     }

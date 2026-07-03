@@ -16,7 +16,7 @@
             <div class="row">
                 
                 <template v-for="pay in sortedPayments">
-                <div class="col-12 col-sm-6 col-lg-3">
+                <div class="col-12 col-sm-6 col-lg-3 mb-3 mb-md-2">
                     <div class="status-container p-3 d-flex align-items-center justify-content-between" :style="{backgroundColor: getClassStatePay(pay.id)}">
                         <div>
                             <span class="status-price">S/ {{ parseFloat(pay.total).toFixed(2) }}</span>
@@ -103,7 +103,7 @@
                        </div>                       
                    </div>
                 </div>
-                <div class="col-md-12 mt-3 card-filters-client" v-if="filters.client_id">
+                <div class="col-md-12 mt-3 card-filters-client px-0" v-if="filters.client_id">
                    <header class="card-filters-header p-3" >
                        <div class="row">
                            <div class="col-md-12 text-center position-relative">

@@ -527,8 +527,15 @@ class Purchase extends ModelTenant
                             // --    utility_item
 
         $guides = (array)$this->guides;
+        $warehouses = $this->items->map(function ($item) {
+            return $item->warehouse ? [
+                'id'          => $item->warehouse->id,
+                'description' => $item->warehouse->description,
+            ] : null;
+        })->filter()->unique('id')->values();
         return [
             'id'                             => $this->id,
+            'warehouses'                    => $warehouses,
             'customer_number'                             => $customer_number,
             'customer_name'                             => $customer_name,
             'series'                             => $this->series,
@@ -575,7 +582,11 @@ class Purchase extends ModelTenant
                     'id'          => $row->id,
                     'description' => $row->item->description,
                     'name_product_pdf' => $row->name_product_pdf,
-                    'quantity'    => round($row->quantity, 2)
+                    'quantity'    => round($row->quantity, 2),
+                    'warehouse'   => $row->warehouse ? [
+                        'id'          => $row->warehouse->id,
+                        'description' => $row->warehouse->description,
+                    ] : null
                 ];
             }),
             'print_a4'                       => url('')."/purchases/print/{$this->external_id}/a4",

@@ -20,7 +20,7 @@ class LoginConfigurationController extends Controller
     public function uploadBgImage()
     {
         request()->validate([
-            'image' => 'required|mimes:jpeg,png,jpg,gif,svg|max:2048'
+            'image' => 'required|mimes:jpeg,png,jpg,gif,svg,webp|max:2048'
         ]);
 
         $config = Configuration::first();

@@ -29,7 +29,10 @@ $half = 50;
         <th colspan="9"
             style="text-align: center; font-size: 12px; font-weight: bold">
 
-            {{ $company->name  }} {{ 'RUC '.$company->number }}
+            @php
+                use App\CoreFacturalo\Helpers\CompanyDocumentDisplay as LedgerHdr;
+            @endphp
+            {{ LedgerHdr::commercialLine($company) }}@if($lh = LedgerHdr::legalLine($company)) — {{ $lh }}@endif {{ 'RUC '.$company->number }}
 
         </th>
     </tr>

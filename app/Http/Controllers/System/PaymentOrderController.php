@@ -179,13 +179,14 @@ class PaymentOrderController extends Controller
         $model->order_state_id = 2;
         $model->save();
 
-        $client = $model->client;
-        $months = optional($client->period)->months ? $client->period->months : 1;
-        $ending = Carbon::parse($client->ending_billing_cycle)->addMonths($months);
-        
-        $client->ending_billing_cycle = $ending;
-        $client->save();
+        if (!$model->plan_id) {
+            $client = $model->client;
+            $months = optional($client->period)->months ? $client->period->months : 1;
+            $ending = Carbon::parse($client->ending_billing_cycle)->addMonths($months);
 
+            $client->ending_billing_cycle = $ending;
+            $client->save();
+        }
 
         return [
             'success' => true,

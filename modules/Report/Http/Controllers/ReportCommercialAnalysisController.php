@@ -71,27 +71,23 @@ class ReportCommercialAnalysisController extends Controller
         $number = $request['number'];
         $person_type_id = $request['person_type_id'];
         $category_id = $request['category_id'];
-        // dd($request);
 
-        if($category_id){
-
-            $data = $model::whereType('customers')        
-                        ->where('person_type_id', 'like', '%' . $person_type_id . '%')
-                        ->where('number', 'like', '%' . $number . '%')
-                        ->whereHas('documents.items.m_item.category',function($q) use($category_id){
-                            $q->where('id', $category_id);
-                        })
-                        ->latest();
-        }else{
-
-            $data = $model::whereType('customers')        
-                        ->where('person_type_id', 'like', '%' . $person_type_id . '%')
-                        ->where('number', 'like', '%' . $number . '%') 
-                        ->latest();
+        $data = $model::whereType('customers')
+            ->where('number', 'like', '%' . $number . '%');
+            
+        if ($person_type_id !== 'all') {
+            $data->where('person_type_id', 'like', '%' . $person_type_id . '%');
         }
-       
+
+        if ($category_id) {
+            $data->whereHas('documents.items.m_item.category', function($q) use($category_id){
+                $q->where('id', $category_id);
+            });
+        }
+
+        $data->latest();
+
         return $data;
-        
     }
   
 

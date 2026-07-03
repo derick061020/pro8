@@ -3,7 +3,7 @@
         <Keypress :key-code="113"
                   key-event="keyup"
                   @success="handleFn113"/>
-        
+
         <table-items
               ref="table_items"
               @clickAddItem="clickAddItem"
@@ -80,7 +80,7 @@
                 <div class="col-md-4 position-relative">
                     <span slot="prepend" style="px-1" class="currency-symbol-span fast-payment">{{ currencyTypeActive.symbol }}</span>
                     <div class="form-group amount-container">
-                        <label class="control-label mb-0">Ingrese monto</label>                        
+                        <label class="control-label mb-0">Ingrese monto</label>
                         <el-input ref="enter_amount"
                                   v-model="enter_amount"
                                   @input="enterAmount()"
@@ -97,7 +97,7 @@
                         <label class="control-label mb-0">Descuento
                             ({{ (discount_type === '01') ? 'Monto' : 'Porcentaje' }})</label>
                         <el-input v-model="discount_amount"
-                                  @input="inputDiscountAmount()">                            
+                                  @input="inputDiscountAmount()">
                         </el-input>
                     </div>
                 </div>
@@ -120,22 +120,22 @@
             <div class="row px-2 pt-3 col-12">
                 <div class="col-md-8 d-flex px-0">
                     <div class="col-md-6 px-2" v-if="!disabledDiscountForSeller">
-                        <el-button 
-                            class="btn-warning w-100" 
+                        <el-button
+                            class="btn-warning w-100"
                             @click="toggleDiscount">
                             {{ enabled_discount ? 'Quitar Descuento' : 'Agregar Descuento' }}
                         </el-button>
                     </div>
                     <div class="col-md-6 px-2">
-                        <el-button 
-                            class="btn-primary w-100" 
+                        <el-button
+                            class="btn-primary w-100"
                             @click="clickAddPayment()">
                             Agregar Pagos
                         </el-button>
                     </div>
                 </div>
                 <div class="col-md-4 padding-top-mb px-1" v-if="businessTurns.active">
-                    <el-button 
+                    <el-button
                         class="btn-info w-100 px-2"
                         @click="openPlateNumberDialog">
                         Agregar Placa
@@ -235,7 +235,7 @@
                                             <el-button :disabled="!Boolean(form.customer_id)" v-if="btn_save_plates" @click="savePlates"  icon="el-icon-folder-add"></el-button>
                                         </el-tooltip>
                                     </el-input>
-                                </template> 
+                                </template>
                             </div>
                         </div>
                     </div>
@@ -325,7 +325,7 @@
                                 class="submit btn btn-block py-3 text-white w-100"
                                 :class="{'btn-warning': form.total > 0, 'bg-dark': form.total <= 0}"
                                 @click="clickPayment"
-                            >                                
+                            >
                                 PAGAR
                                 <b class="font-weight-semibold mb-0">{{ currencyTypeActive.symbol }} {{ form.total }}</b>
                                 <i class="fas fa-wallet ms-2"></i>
@@ -443,9 +443,11 @@ import SaleNotesOptions from '../../sale_notes/partials/options.vue'
 import OptionsForm from './options.vue'
 import MultiplePaymentForm from './multiple_payment_garage.vue'
 import PersonForm from '../../../tenant/persons/form.vue'
+import { buhoprinter } from '@mixins/buhoprinter'
 
 export default {
     components: {OptionsForm, CardBrandsForm, SaleNotesOptions, MultiplePaymentForm, Keypress, PersonForm},
+    mixins: [buhoprinter],
 
     props: [
         'form',
@@ -458,7 +460,9 @@ export default {
         'isPrint',
         'rowsItems',
         'configuration',
-        'typeUser'
+        'typeUser',
+        'customer_email',
+        'config'
     ],
     data() {
         return {
@@ -475,6 +479,7 @@ export default {
             showDialogSaleNote: false,
             showDialogNewCardBrand: false,
             documentNewId: null,
+            printTicketUrl: null,
             saleNotesNewId: null,
             resource_options: null,
             has_card: false,
@@ -551,9 +556,11 @@ export default {
 
         await this.getFormPosLocalStorage()
         // console.log(this.form.payments, this.payments)
-        if (!qz.websocket.isActive() && this.isPrint) {
-            startConnection();
-        }
+        // La conexión directa con BuhoPrinter ya no es necesaria desde el frontend.
+        // La impresión se centraliza vía PrintOrder → Redis → BuhoPrinter agent.
+        // if (!this.isBuhoActive && this.isPrint) {
+        //     this.startConnectionBuho();
+        // }
     },
     mounted() {
         // console.log(this.currencyTypeActive)
@@ -575,7 +582,7 @@ export default {
             if (!customer) {
                 this.messageBoxPlate =  'Debe seleccionar un cliente para guardar la placa.'
             } else {
-                this.messageBoxPlate = `Se guardara la placa al cliente: ${customer.name}.` 
+                this.messageBoxPlate = `Se guardara la placa al cliente: ${customer.name}.`
                 this.getPlates()
             }
 
@@ -918,11 +925,23 @@ export default {
 
         },
         clickAddPayment() {
-            
+
+            // Si ya hay pagos registrados, conservarlos al reabrir el diálogo
+            if (this.form.payments && this.form.payments.length > 0) {
+                this.payments = this.form.payments;
+                this.showDialogMultiplePayment = true;
+                this.$nextTick(() => {
+                    if (this.$refs.componentMultiplePaymentGarage) {
+                        this.$refs.componentMultiplePaymentGarage.$data.form.payment = this.form.total;
+                    }
+                });
+                return;
+            }
+
+            // Primera vez: arrancar con un pago por defecto
             this.payments = [];
-    
             this.showDialogMultiplePayment = true;
-    
+
             this.$nextTick(() => {
                 if (this.$refs.componentMultiplePaymentGarage) {
                     this.$refs.componentMultiplePaymentGarage.$data.form.payment = this.form.total;
@@ -1180,6 +1199,27 @@ export default {
             this.cleanPayments()
             // this.filterSeries()
         },
+        async autoSendPdfMail() {
+            if (!this.config.auto_send_pdf_email) return;
+
+            if (!this.customer_email) {
+                this.$message.warning('El cliente no tiene correo registrado.');
+                return;
+            }
+
+            this.$http.post(`/${this.resource_documents}/email`, {
+                customer_email: this.customer_email,
+                id: this.documentNewId
+            }).then(response => {
+                if (response.data.success) {
+                    this.$message.success('El correo fue enviado satisfactoriamente');
+                } else {
+                    this.$message.error('Error al enviar el correo');
+                }
+            }).catch(() => {
+                this.$message.error('Error al enviar el correo');
+            });
+        },
         async clickPayment() {
             // if(this.has_card && !this.form_payment.card_brand_id) return this.$message.error('Seleccione una tarjeta');
 
@@ -1200,7 +1240,7 @@ export default {
             let existError = this.form.items.some(item => {
                 if (Number(item.quantity) == 0) {
                     errorZeroQuantity = true
-                    return true; 
+                    return true;
                 }
 
                 if (unit_type_notAllowed.includes(item.unit_type_id) && !Number.isInteger(Number(item.quantity))) {
@@ -1217,8 +1257,8 @@ export default {
                 if (errorFloatQuantity) {
                     this.$message.error('El producto con ese tipo de unidad no permite cantidad en decimales');
                 }
-                
-                return 
+
+                return
             }
 
             if (!moment(moment().format("YYYY-MM-DD")).isSame(this.form.date_of_issue)) {
@@ -1259,14 +1299,14 @@ export default {
 
                         // this.form_payment.sale_note_id = response.data.data.id;
                         this.form_cash_document.sale_note_id = response.data.data.id;
-                        this.documentNewId = response.data.data.id;
+                        this.documentNewId  = response.data.data.id;
                     } else {
                         this.documentNewId = response.data.data.id;
-                        
+
                         if(this.configuration.send_auto && this.form.document_type_id === '01') {
-                            response_sent = await this.sendDocument(this.documentNewId); 
+                            response_sent = await this.sendDocument(this.documentNewId);
                         } else if (this.configuration.ticket_single_shipment && this.form.document_type_id === '03') {
-                            response_sent = await this.sendDocument(this.documentNewId); 
+                            response_sent = await this.sendDocument(this.documentNewId);
                         }
 
                         // this.form_payment.document_id = response.data.data.id;
@@ -1274,6 +1314,9 @@ export default {
 
                     }
 
+                    // Almacena la URL del PDF de ticket para impresión con BuhoPrinter
+                    this.printTicketUrl = response.data?.links?.print_ticket ?? null;
+                    this.autoSendPdfMail();
                     this.showDialogOptions = true;
 
                     // this.savePaymentMethod();
@@ -1327,17 +1370,13 @@ export default {
         async printticket() {
             //getUpdatedConfig();
             await this.sleep(400);
-            var configg = getUpdatedConfig();
-            var opts = getUpdatedConfig();
-            var printData = [
-                {
-                    type: 'html',
-                    format: 'plain',
-                    data: this.form.datahtml,
-                    options: opts
-                }
-            ];
-            qz.print(configg, printData).catch(displayError);
+            const url = this.printTicketUrl;
+            if (url) {
+                // Centraliza la impresión vía backend → Redis → BuhoPrinter agent
+                await this.printDocument(url, this.configuration?.printer_name_documents);
+            } else {
+                console.warn('[BuhoPrinter] print_ticket URL no disponible.');
+            }
         },
         saveCashDocument() {
             this.$http.post(`/cash/cash_document`, this.form_cash_document)
@@ -1423,11 +1462,19 @@ export default {
         {
             return await this.$http
                 .get(`/documents/send/${id}`)
-            
+
         },
         checkPaymentGarage(total = null) {
             let amount = total ? total: this.form.total
             this.inputDiscountAmount()
+
+            if (!this.form.items || this.form.items.length < 1) {
+                this.form.payments = [];
+                this.payments = [];
+                this.setAmount(0);
+                return;
+            }
+
             if (this.form.payments.length == 0) {
                 this.$refs.componentMultiplePaymentGarage.clickAddPayment(amount)
                 this.setAmount(this.form.total)
@@ -1463,7 +1510,7 @@ export default {
                     this.btn_save_plates = false
                 });
         },
-        getPlates() 
+        getPlates()
         {
             this.$http
                 .get(`\\bussiness_turns\\plates\\${this.form.customer_id}`)

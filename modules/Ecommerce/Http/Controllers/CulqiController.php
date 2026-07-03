@@ -82,7 +82,7 @@ class CulqiController extends Controller
 
             'external_id' => Str::uuid()->toString(),
             'customer' => json_decode( $request->customer ),
-            'shipping_address' => 'direccion 1',
+            'shipping_address' => $request->input('shipping_address', ''),
             'items' => json_decode( $request->items ),
             'total' => $request->precio_culqi,
             'reference_payment' => 'culqui',

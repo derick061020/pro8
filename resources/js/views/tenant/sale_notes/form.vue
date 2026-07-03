@@ -64,6 +64,7 @@
                                     <el-date-picker
                                         v-model="form.date_of_issue"
                                         type="date"
+                                        :format="dpDateFormat"
                                         value-format="yyyy-MM-dd"
                                         :clearable="false"
                                         @change="changeDateOfIssue"
@@ -89,6 +90,7 @@
                                     <el-date-picker
                                         v-model="form.due_date"
                                         type="date"
+                                        :format="dpDateFormat"
                                         value-format="yyyy-MM-dd"
                                         :clearable="true"
                                         :picker-options="pickerOptions"
@@ -107,7 +109,7 @@
                 <form autocomplete="off" @submit.prevent="submit" class="">
                     <div class="form-body m-3 m-md-4">
                         <div class="row mt-1">
-                            <div class="col-lg-4 col-sm-7">
+                            <div class="col-sm-7" :class="{'col-lg-4': currency_types.length > 1, 'col-lg-6': currency_types.length <= 1}">
                                 <div
                                     class="form-group position-relative"
                                     :class="{
@@ -117,7 +119,11 @@
                                     <label
                                         class="control-label font-weight-bold"
                                     >
-                                        Cliente
+                                        <el-badge type="success" :value="getCustomer.person_type" class="item">
+                                            <span>
+                                                Cliente
+                                            </span>
+                                        </el-badge>
                                         <!-- <a
                                             href="#"
                                             @click.prevent="
@@ -166,9 +172,16 @@
                                             </div>
                                         </template>
                                     </el-select>
-                                    <span class="btn-add-new" @click.prevent="showDialogNewPerson = true" title="Agregar nuevo cliente">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-user-plus"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0" /><path d="M16 19h6" /><path d="M19 16v6" /><path d="M6 21v-2a4 4 0 0 1 4 -4h4" /></svg>
-                                    </span>
+                                    <template v-if="form.customer_id">
+                                        <span class="btn-add-new btn-edit-person btn-add-new-invoice" @click.prevent="showDialogNewPerson = true; editPerson = true" title="Editar cliente">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-user-edit"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0" /><path d="M6 21v-2a4 4 0 0 1 4 -4h3.5" /><path d="M18.42 15.61a2.1 2.1 0 0 1 2.97 2.97l-3.39 3.42h-3v-3l3.42 -3.39" /></svg>
+                                        </span>
+                                    </template>
+                                    <template>
+                                        <span class="btn-add-new btn-add-new-invoice" @click.prevent="showDialogNewPerson = true; editPerson = false" title="Agregar nuevo cliente">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-user-plus"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0" /><path d="M16 19h6" /><path d="M19 16v6" /><path d="M6 21v-2a4 4 0 0 1 4 -4h4" /></svg>
+                                        </span>
+                                    </template>
                                     <small
                                         class="form-control-feedback"
                                         v-if="errors.customer_id"
@@ -177,7 +190,7 @@
                                 </div>
                             </div>
 
-                            <div class="col-lg-2 col-sm-5">
+                            <div class="col-sm-5" :class="{'col-lg-2': currency_types.length > 1, 'col-lg-3': currency_types.length <= 1}">
                                 <div
                                     class="form-group"
                                     :class="{
@@ -206,7 +219,7 @@
                                     ></small>
                                 </div>
                             </div>
-                            <div class="col-lg-2 col-4">
+                            <div class="col-4" :class="{'col-lg-2': currency_types.length > 1, 'col-lg-3': currency_types.length <= 1}">
                                 <div
                                     class="form-group"
                                     :class="{
@@ -234,7 +247,7 @@
                                     ></small>
                                 </div>
                             </div>
-                            <div class="col-lg-2 col-4">
+                            <div class="col-lg-2 col-4" v-if="currency_types.length > 1">
                                 <div
                                     class="form-group"
                                     :class="{
@@ -263,7 +276,7 @@
                                     ></small>
                                 </div>
                             </div>
-                            <div class="col-lg-2 col-4">
+                            <div class="col-lg-2 col-4" v-if="currency_types.length > 1">
                                 <div
                                     class="form-group"
                                     :class="{
@@ -1455,7 +1468,7 @@
                                                                 :clearable="
                                                                     false
                                                                 "
-                                                                format="dd/MM/yyyy"
+                                                                :format="dpDateFormat"
                                                                 type="date"
                                                                 @change="
                                                                     changeCreditFeeDate(
@@ -1612,7 +1625,7 @@
                                                                 :clearable="
                                                                     false
                                                                 "
-                                                                format="dd/MM/yyyy"
+                                                                :format="dpDateFormat"
                                                                 type="date"
                                                                 value-format="yyyy-MM-dd"
                                                                 :readonly="
@@ -1987,6 +2000,7 @@
             :external="true"
             :input_person="personFormInput"
             :document_type_id="form.document_type_id"
+            :recordId="editPerson ? form.customer_id : null"
         ></person-form>
 
         <sale-notes-options
@@ -2244,6 +2258,17 @@ export default {
 
             return term
         },
+        getCustomer(){
+            const customer = this.customers.find(
+                c => String(c.id) === String(this.form.customer_id)
+            );
+            console.log('getCustomer', {
+                customer_id: this.form.customer_id,
+                customers: this.customers,
+                customer
+            });
+            return customer || {};
+        },
     },
     watch: {
         'form.customer_id': 'checkCustomerExpiredDebt',
@@ -2270,6 +2295,7 @@ export default {
                     preventDefault: true
                 }
             ],
+            editPerson: false,
             isVisible: false,
             focus_on_client: false,
             sellers: [],
@@ -2339,6 +2365,8 @@ export default {
         this.loadConfiguration();
         this.$store.commit("setConfiguration", this.configuration);
 
+        console.log('Configuration in created hook:', this.configuration);
+
         // Cargar price_options desde la API de price labels activos
         await this.loadPriceOptions();
 
@@ -2353,12 +2381,10 @@ export default {
 
             this.payment_method_types = response.data.payment_method_types;
             this.company = response.data.company;
-            if (this.config.currency_type_id === undefined) {
-                this.form.currency_type_id =
-                    this.currency_types.length > 0
-                        ? this.currency_types[0].id
-                        : null;
-            }
+            const configCurrencyAvailable = this.currency_types.some(c => c.id === this.config.currency_type_id);
+            this.form.currency_type_id = (this.config.currency_type_id && configCurrencyAvailable)
+                ? this.config.currency_type_id
+                : (this.currency_types.length > 0 ? this.currency_types[0].id : null);
             this.form.establishment_id =
                 this.establishments.length > 0
                     ? this.establishments[0].id
@@ -2419,6 +2445,12 @@ export default {
                         price_label_id: label.id
                     });
                 });
+
+                // Seleccionar el label marcado como default; si no hay, queda con el ya asignado (Precio Principal)
+                const defaultLabel = labels.find(l => l.is_default);
+                if (defaultLabel) {
+                    this.selected_option_price = `price_label_${defaultLabel.id}`;
+                }
             } catch (error) {
                 console.error('Error al cargar price labels:', error);
             }
@@ -2834,7 +2866,13 @@ export default {
             if (seller !== undefined) {
                 this.form.seller_id = seller.id;
             }
-            this.getConsigneds()
+
+            if (customer.price_label_id) {
+                this.selected_option_price = `price_label_${customer.price_label_id}`;
+            } 
+
+
+            this.getConsigneds();
         },
         searchRemoteCustomers(input) {
             this.customerSearchTerm = input;
@@ -2855,6 +2893,10 @@ export default {
             } else {
                 this.allCustomers();
                 this.input_person.number = null;
+                if (this.form.customer_id) {
+                    this.form.customer_id = null;
+                    this.customer_addresses = [];
+                }
             }
         },
         initForm() {
@@ -2932,13 +2974,10 @@ export default {
         resetForm() {
             this.activePanel = 0;
             this.initForm();
-            //this.form.currency_type_id = (this.currency_types.length > 0)?this.currency_types[0].id:null
-            if (this.config.currency_type_id === undefined) {
-                this.form.currency_type_id =
-                    this.currency_types.length > 0
-                        ? this.currency_types[0].id
-                        : null;
-            }
+            const configCurrencyAvailable = this.currency_types.some(c => c.id === this.config.currency_type_id);
+            this.form.currency_type_id = (this.config.currency_type_id && configCurrencyAvailable)
+                ? this.config.currency_type_id
+                : (this.currency_types.length > 0 ? this.currency_types[0].id : null);
             this.form.establishment_id =
                 this.establishments.length > 0
                     ? this.establishments[0].id
@@ -2982,11 +3021,61 @@ export default {
             if (this.recordItem) {
                 this.form.items[this.recordItem.aux_index] = row;
                 this.recordItem = null;
+            } else if (this.shouldUnifyAmountItems(row)) {
+                const index = this.getUnifiedItemIndex(row);
+
+                if (index !== -1) {
+                    const newItem = JSON.parse(
+                        JSON.stringify(this.form.items[index])
+                    );
+
+                    newItem.quantity =
+                        parseFloat(newItem.quantity) + parseFloat(row.quantity);
+
+                    const unifiedRow = calculateRowItem(
+                        newItem,
+                        this.form.currency_type_id,
+                        this.form.exchange_rate_sale,
+                        this.percentage_igv
+                    );
+
+                    this.form.items[index] = unifiedRow;
+                } else {
+                    this.form.items.push(JSON.parse(JSON.stringify(row)));
+                }
             } else {
                 this.form.items.push(JSON.parse(JSON.stringify(row)));
             }
 
             this.calculateTotal();
+        },
+        shouldUnifyAmountItems(row) {
+            return (
+                this.configuration &&
+                this.configuration.show_unify_amount_items &&
+                row.item &&
+                !row.item.series_enabled &&
+                !row.item.lots_enabled
+            );
+        },
+        getUnifiedItemIndex(row) {
+            const presentationId = _.get(row, 'item.presentation.id', null);
+
+            return this.form.items.findIndex(item => {
+                const itemPresentationId = _.get(
+                    item,
+                    'item.presentation.id',
+                    null
+                );
+
+                return (
+                    String(item.item_id) === String(row.item_id) &&
+                    String(itemPresentationId || '') === String(presentationId || '') &&
+                    String(item.affectation_igv_type_id || '') === String(row.affectation_igv_type_id || '') &&
+                    String(item.unit_price || '') === String(row.unit_price || '') &&
+                    String(item.warehouse_id || '') === String(row.warehouse_id || '')
+                );
+            });
         },
         clickRemoveItem(index) {
             this.form.items.splice(index, 1);
@@ -3343,6 +3432,28 @@ export default {
                 error_by_item: error_by_item
             };
         },
+        async autoSendPdfMail(customer = null) {
+            if (!this.config.auto_send_pdf_email) return;
+
+            const c = customer || this.getCustomer;
+            if (!c || !c.email) {
+                this.$message.warning('El cliente no tiene correo registrado. No se pudo enviar el comprobante.');
+                return;
+            }
+
+            this.$http.post(`/${this.resource}/email`, {
+                customer_email: c.email,
+                id: this.saleNotesNewId
+            }).then(response => {
+                if (response.data.success) {
+                    this.$message.success('El correo fue enviado satisfactoriamente');
+                } else {
+                    this.$message.error('Error al enviar el correo');
+                }
+            }).catch(() => {
+                this.$message.error('Error al enviar el correo');
+            });
+        },
         async submit() {
             if (this.config.affect_all_documents) {
                 this.form.terms_condition = this.config.terms_condition_sale;
@@ -3399,13 +3510,16 @@ export default {
             this.loading_submit = true;
             this.$http
                 .post(`/${this.resource}`, this.form)
-                .then(response => {
+                .then(async response => {
                     if (response.data.success) {
                         this.form_payment.sale_note_id = response.data.data.id;
                         this.$eventHub.$emit("reloadDataItems", null);
                         // if(!this.id) this.sale_note_payment()
-                        this.resetForm();
                         this.saleNotesNewId = response.data.data.id;
+                        const customerForMail = this.getCustomer;
+                        await this.autoSendPdfMail(customerForMail);
+                        this.resetForm();
+                        //this.saleNotesNewId = response.data.data.id;
                         this.showDialogOptions = true;
                         this.saveCashDocument(response.data.data.id);
 
@@ -3422,7 +3536,10 @@ export default {
                     }
                 })
                 .then(() => {
-                    this.form.currency_type_id = this.config.currency_type_id;
+                    const configCurrencyAvailable = this.currency_types.some(c => c.id === this.config.currency_type_id);
+                    this.form.currency_type_id = (this.config.currency_type_id && configCurrencyAvailable)
+                        ? this.config.currency_type_id
+                        : (this.currency_types.length > 0 ? this.currency_types[0].id : null);
                     this.loading_submit = false;
                 });
         },
@@ -3454,6 +3571,11 @@ export default {
                 .then(response => {
                     this.customers = response.data.customers;
                     this.form.customer_id = customer_id;
+
+                    let customer = _.find(this.customers, { id: customer_id });
+                    this.selected_option_price = customer?.price_label_id
+                        ? `price_label_${customer.price_label_id}`
+                        : 1;
                 });
         },
         async selectDefaultCustomer() {
@@ -3489,6 +3611,10 @@ export default {
 
                 if (alt !== undefined) {
                     this.form.customer_id = this.config.establishment.customer_id;
+                    this.selected_option_price = alt.price_label_id
+                    ? `price_label_${alt.price_label_id}`
+                    : 1;
+                    
                     let seller = this.sellers.find(
                         element => element.id == alt.seller_id
                     );

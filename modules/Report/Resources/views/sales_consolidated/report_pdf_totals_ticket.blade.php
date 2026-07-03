@@ -67,7 +67,7 @@
 </div>
 <div>
 
-    <strong>Empresa: </strong>{{$company->name}}<br>
+    @include('partials.report_company_header_ticket')<br>
     <strong>Ruc: </strong>{{$company->number}}<br>
     <strong>Establecimiento: </strong>{{$establishment->address}}
     - {{$establishment->department->description}} - {{$establishment->district->description}}<br>

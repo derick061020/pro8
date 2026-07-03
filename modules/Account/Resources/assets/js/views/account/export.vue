@@ -93,16 +93,22 @@
                     <!--<div class="row">-->
                         <div class="col-md-3 form-modern">
                             <label class="control-label">Exportar a</label>
-                            <el-select v-model="form.type">
-                                <el-option key="concar" value="concar" label="CONCAR"></el-option>
-                                <el-option key="concar_simple" value="concar_simple" label="CONCAR SIMPLE"></el-option>
-                                <el-option key="siscont" value="siscont" label="SISCONT"></el-option>
-                                <el-option key="siscont" value="siscont_excel" label="SISCONT EXCEL"></el-option>
-                                <el-option key="foxcont" value="foxcont" label="FOXCONT"></el-option>
-                                <el-option key="contasis" value="contasis" label="CONTASIS"></el-option>
-                                <el-option key="adsoft" value="adsoft" label="ADSOFT"></el-option>
-                                <el-option key="sumerius" value="sumerius" label="SUMERIUS"></el-option>
-                            </el-select>
+                            <div class="d-flex align-items-center">
+                                <el-select v-model="form.type" class="flex-grow-1">
+                                    <el-option key="concar" value="concar" label="CONCAR"></el-option>
+                                    <el-option key="concar_simple" value="concar_simple" label="CONCAR SIMPLE"></el-option>
+                                    <el-option key="siscont" value="siscont" label="SISCONT"></el-option>
+                                    <el-option key="siscont" value="siscont_excel" label="SISCONT EXCEL"></el-option>
+                                    <el-option key="foxcont" value="foxcont" label="FOXCONT"></el-option>
+                                    <el-option key="contasis" value="contasis" label="CONTASIS"></el-option>
+                                    <el-option key="adsoft" value="adsoft" label="ADSOFT"></el-option>
+                                    <el-option key="sumerius" value="sumerius" label="SUMERIUS"></el-option>
+                                    <el-option key="ejb" value="ejb_excel" label="EJB EXCEL"></el-option>
+                                </el-select>
+                                <el-tooltip v-if="form.type === 'ejb_excel'" content="Configuración" effect="dark" placement="top">
+                                    <el-button class="ms-2" icon="el-icon-setting" @click.prevent="clickConfiguration()"></el-button>
+                                </el-tooltip>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -120,18 +126,22 @@
             </div>
         </div>
 
-        
+        <account-form-ejb :showDialog.sync="showDialog" :recordId="recordId"></account-form-ejb>
     </div>
 </template>
 
 <script>
     import queryString from 'query-string'
+    import AccountFormEjb from './partials/form.vue'
 
     export default {
+        components: {AccountFormEjb},
         data() {
             return {
                 loading: false,
                 loading_submit: false,
+                showDialog: false,
+                recordId: null,
                 title: null,
                 resource: 'account',
                 // establishments: [],
@@ -203,6 +213,10 @@
             //         this.form.month_end = this.form.month_start
             //     }
             // },
+            clickConfiguration(recordId = null) {
+                this.recordId = recordId;
+                this.showDialog = true;
+            },
             clickDownload() {
                 this.loading_submit = true;
                 let query = queryString.stringify({

@@ -15,6 +15,7 @@ class PurchaseOrderItem extends ModelTenant
     public $timestamps = false;
 
     protected $fillable = [
+        'purchase_order_id',
         'purchase_id',
         'item_id',
         'item',

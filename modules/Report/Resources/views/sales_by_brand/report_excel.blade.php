@@ -19,7 +19,7 @@
                         <p><b>Empresa: </b></p>
                     </td>
                     <td align="center" colspan="3">
-                        <p><strong>{{$company->name}}</strong></p>
+                        <p>@include('partials.report_company_header', ['showEmpresaLabel' => false])</p>
                     </td>
                 </tr>
                 <tr>

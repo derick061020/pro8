@@ -74,10 +74,10 @@
             <!-- <td class="text-right">{{ row.total_free }}</td>
             <td class="text-right">{{ row.total_unaffected }}</td>
             <td class="text-end">{{ row.total_exonerated }}</td> -->
-            <td class="text-end">{{row.currency_type_id === 'PEN' ? 'S/' : '$'}} {{ row.total_taxed }}</td>
-            <td class="text-end">{{row.currency_type_id === 'PEN' ? 'S/' : '$'}} {{ row.total_igv }}</td>
+            <td class="text-end">{{row.currency_type_id === 'PEN' ? 'S/' : '$'}} {{ formatDecimal(row.total_taxed) }}</td>
+            <td class="text-end">{{row.currency_type_id === 'PEN' ? 'S/' : '$'}} {{ formatDecimal(row.total_igv) }}</td>
             <!-- <td class="text-right">{{ row.total_perception ? row.total_perception : 0 }}</td> -->
-            <td class="text-end">{{row.currency_type_id === 'PEN' ? 'S/' : '$'}} {{ row.total }}</td>
+            <td class="text-end">{{row.currency_type_id === 'PEN' ? 'S/' : '$'}} {{ formatDecimal(row.total) }}</td>
 
                         <td class="text-center">
 
@@ -201,10 +201,32 @@ export default {
           recordId: null,
           showDialogOptions: false,
           showDialogGenerateDocument: false,
+          decimal_quantity: 2,
         };
       },
-      created() {},
+      created() {
+        this.loadDecimalQuantity()
+      },
       methods: {
+        async loadDecimalQuantity() {
+            try {
+              const response = await this.$http.get('/configurations/record')
+              const decimalQuantity = response.data.data.decimal_quantity
+
+              this.decimal_quantity = parseInt(decimalQuantity || 2)
+            } catch (error) {
+              this.decimal_quantity = 2
+            }
+          },
+          formatDecimal(value) {
+            const number = parseFloat(value || 0)
+
+            if (isNaN(number)) {
+              return Number(0).toFixed(this.decimal_quantity)
+            }
+
+            return number.toFixed(this.decimal_quantity)
+          },
           clickCreate(id = '') {
               location.href = `/${this.resource}/create/${id}`
           },

@@ -48,7 +48,7 @@ $type = isset($type)?$type:'';
                 <p><b>Empresa: </b></p>
             </td>
             <td align="center">
-                <p><strong>{{$company->name}}</strong></p>
+                <p>@include('partials.report_company_header', ['showEmpresaLabel' => false])</p>
             </td>
             <td>
                 <p><strong>Fecha: </strong></p>

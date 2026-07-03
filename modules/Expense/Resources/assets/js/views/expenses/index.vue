@@ -43,28 +43,28 @@
                             >Pagos</button>
                         </td>
                         <td class="text-center">{{ row.currency_type_id }}</td>
-                        <td class="text-end">{{row.currency_type_id === 'PEN' ? 'S/' : '$'}} {{ row.total }}</td>
+                        <td class="text-end">{{row.currency_type_id === 'PEN' ? 'S/' : '$'}} {{ formatDecimal(row.total) }}</td>
 
                         <td class="text-end">
 
-                            <button type="button" style="min-width: 41px" class="btn waves-effect waves-light btn-xs btn-success m-1__2 me-1"
+                            <button type="button" class="btn btn-xs btn-success btn-shad me-1"
                                     @click.prevent="clickPrint(row.external_id)">
-                                    <i class="fas fa-print"></i>
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-printer"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M17 17h2a2 2 0 0 0 2 -2v-4a2 2 0 0 0 -2 -2h-14a2 2 0 0 0 -2 2v4a2 2 0 0 0 2 2h2" /><path d="M17 9v-4a2 2 0 0 0 -2 -2h-6a2 2 0 0 0 -2 2v4" /><path d="M7 15a2 2 0 0 1 2 -2h6a2 2 0 0 1 2 2v4a2 2 0 0 1 -2 2h-6a2 2 0 0 1 -2 -2l0 -4" /></svg>
                             </button>
 
-                            <button type="button" v-if="row.state_type_id != '11'" style="min-width: 41px" class="btn waves-effect waves-light btn-xs btn-primary m-1__2 me-1"
+                            <button type="button" v-if="row.state_type_id != '11'" class="btn btn-xs btn-primary btn-shad me-1"
                                     @click.prevent="clickCreate(row.id)">
-                                    <i class="fa fa-pen"></i>
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-edit"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M7 7h-1a2 2 0 0 0 -2 2v9a2 2 0 0 0 2 2h9a2 2 0 0 0 2 -2v-1" /><path d="M20.385 6.585a2.1 2.1 0 0 0 -2.97 -2.97l-8.415 8.385v3h3l8.385 -8.415" /><path d="M16 5l3 3" /></svg>
                             </button>
 
-                            <button type="button" style="min-width: 41px" class="btn waves-effect waves-light btn-xs btn-info m-1__2 me-1"
+                            <button type="button" class="btn btn-xs btn-info btn-shad me-1"
                                     @click.prevent="clickPayment(row.id)">
-                                    <i class="fa fa-search"></i>
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-search"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M3 10a7 7 0 1 0 14 0a7 7 0 1 0 -14 0" /><path d="M21 21l-6 -6" /></svg>
                             </button>
-                            <button type="button" style="min-width: 41px" class="btn waves-effect waves-light btn-xs btn-danger m-1__2 me-1"
+                            <button type="button" class="btn btn-xs btn-danger btn-shad me-1"
                                     @click.prevent="clickVoided(row.id)"
                                     v-if="row.state_type_id === '05'">
-                                    <i class="fa fa-trash"></i>
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-trash"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M4 7l16 0" /><path d="M10 11l0 6" /><path d="M14 11l0 6" /><path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2 -2l1 -12" /><path d="M9 7v-3a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v3" /></svg>
                             </button>
                         </td>
 
@@ -105,12 +105,33 @@
                 showDialogPayments: false,
                 showDialogExpensePayments: false,
                 recordId: null,
-                showDialogOptions: false
+                showDialogOptions: false,
+                decimal_quantity: 2
             }
         },
         created() {
+            this.loadDecimalQuantity()
         },
         methods: {
+            async loadDecimalQuantity() {
+                try {
+                    const response = await this.$http.get('/configurations/record')
+                    const decimalQuantity = response.data.data.decimal_quantity
+
+                    this.decimal_quantity = parseInt(decimalQuantity || 2)
+                } catch (error) {
+                    this.decimal_quantity = 2
+                }
+            },
+            formatDecimal(value) {
+                const number = parseFloat(value || 0)
+
+                if (isNaN(number)) {
+                    return Number(0).toFixed(this.decimal_quantity)
+                }
+
+                return number.toFixed(this.decimal_quantity)
+            },
             clickPrint(external_id){
                 window.open(`/${this.resource}/print/${external_id}`, '_blank');
             },

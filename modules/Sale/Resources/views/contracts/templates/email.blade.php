@@ -14,9 +14,12 @@
     </style>
 </head>
 <body>
+@php
+    use App\CoreFacturalo\Helpers\CompanyDocumentDisplay as EmailContractCo;
+@endphp
 <p>Estimad@: 
 
-    {{ $company->name }}
+    {{ EmailContractCo::commercialLine($company) }}
   
     , informamos que su contrato ha sido emitido exitosamente.</p>
 

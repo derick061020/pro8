@@ -1,4 +1,4 @@
-<article class="auth__image" style="padding: {{ ($login->padding_in_form ?? false) ? '0' : '2.5%' }}; display: flex; justify-content: center; align-items: center; overflow: hidden; background-color: {{ $loginBgColor ?? '#ffffff' }};">
+<article class="auth__image{{ !$useLoginGlobal ? ' d-none' : '' }}" style="padding: {{ ($login->padding_in_form ?? false) ? '0' : '2.5%' }}; display: flex; justify-content: center; align-items: center; overflow: hidden; background-color: {{ $loginBgColor ?? '#ffffff' }};">
     <img 
         src="{{ $login->image }}" 
         alt="Background Image" 

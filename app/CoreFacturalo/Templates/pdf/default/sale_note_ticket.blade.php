@@ -26,7 +26,7 @@
 
 @if($company->logo)
     <div class="text-center company_logo_box pt-5">
-        <img src="data:{{mime_content_type(public_path("{$logo}"))}};base64, {{base64_encode(file_get_contents(public_path("{$logo}")))}}" alt="{{$company->name}}" class="company_logo_ticket contain">
+        <img src="data:{{mime_content_type(public_path("{$logo}"))}};base64, {{base64_encode(file_get_contents(public_path("{$logo}")))}}" alt="{{ \App\CoreFacturalo\Helpers\CompanyDocumentDisplay::logoAlt($company) }}" class="company_logo_ticket contain">
     </div>
 {{--@else--}}
     {{--<div class="text-center company_logo_box pt-5">--}}
@@ -35,7 +35,7 @@
 @endif
 <table class="full-width">
     <tr>
-        <td class="text-center"><h4>{{ $company->name }}</h4></td>
+        <td class="text-center">@include('pdf.partials.company_document_header_names')</td>
     </tr>
     <tr>
         <td class="text-center"><h5>{{ 'RUC '.$company->number }}</h5></td>
@@ -246,7 +246,9 @@
                 @endif
                 @if($row->discounts)
                     @foreach($row->discounts as $dtos)
-                        <br/><small>{{ $dtos->factor * 100 }}% {{$dtos->description }}</small>
+                        @if(isset($dtos->factor))
+                            <br/><small>{{ $dtos->factor * 100 }}% {{$dtos->description }}</small>
+                        @endif
                     @endforeach
                 @endif
                 @if($row->item->is_set == 1)
@@ -328,10 +330,10 @@
                 <td class="text-right font-bold desc">{{ number_format($document->total_taxed, 2) }}</td>
             </tr>
         @endif --}}
-         @if($document->total_discount > 0)
+         @if($document->total_discount_with_igv > 0)
             <tr>
                 <td colspan="5" class="text-right font-bold desc">{{(($document->total_prepayment > 0) ? 'ANTICIPO':'DESCUENTO TOTAL')}}: {{ $document->currency_type->symbol }}</td>
-                <td class="text-right font-bold desc">{{ number_format($document->total_discount, 2) }}</td>
+                <td class="text-right font-bold desc">{{ number_format($document->total_discount_with_igv, 2) }}</td>
             </tr>
         @endif
         {{--<tr>
@@ -347,7 +349,8 @@
         @endif
 
         <tr>
-            <td colspan="5" class="text-right font-bold desc">TOTAL A PAGAR: {{ $document->currency_type->symbol }}</td>
+            <td colspan="3" class="text-left font-bold desc" style="white-space: nowrap;">Productos: {{ rtrim(rtrim(number_format(collect($document->items)->sum(function ($item) { return (float) data_get($item, 'quantity', 0); }), 2, '.', ''), '0'), '.') }}</td>
+            <td colspan="2" class="text-right font-bold desc">TOTAL A PAGAR: {{ $document->currency_type->symbol }}</td>
             <td class="text-right font-bold desc">{{ number_format($document->total, 2) }}</td>
         </tr>
 

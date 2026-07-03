@@ -11,7 +11,6 @@
     use App\Models\Tenant\Person;
     use Modules\Hotel\Models\HotelRoomRate;
     use App\Models\Tenant\Establishment;
-    use Modules\Hotel\Models\HotelRentOrder;
 
     /**
      * Class \Modules\Hotel\Models\HotelRent
@@ -29,10 +28,6 @@
      * @property string                               $payment_status
      * @property Carbon                               $output_date
      * @property string                               $output_time
-     * @property Carbon|null                          $rental_date_time
-     * @property decimal|null                         $rental_price
-     * @property string|null                          $rental_period_type
-     * @property bool                                 $is_reserve
      * @property int                                  $arrears
      * @property string                               $status
      * @property Carbon|null                          $created_at
@@ -58,10 +53,6 @@
             'customer_id',
             'customer',
             'notes',
-            'license_plate',
-            'travel_reason',
-            'adults',
-            'children',
             'towels',
             'hotel_room_id',
             'hotel_rate_id',
@@ -73,10 +64,6 @@
             'output_time',
             'input_date',
             'input_time',
-            'rental_date_time',
-            'rental_price',
-            'rental_period_type',
-            'is_reserve',
             'arrears',
             'status',
             'establishment_id',
@@ -88,10 +75,7 @@
             'hotel_room_id' => 'int',
             'duration' => 'int',
             'quantity_persons' => 'int',
-            'arrears' => 'int',
-            'is_reserve' => 'boolean',
-            'rental_date_time' => 'datetime',
-            'rental_price' => 'decimal:2',
+            'arrears' => 'int'
         ];
 
         public function getCustomerAttribute($value)
@@ -146,22 +130,6 @@
         public function establishment()
         {
             return $this->belongsTo(Establishment::class)->select('id', 'description');
-        }
-
-        /**
-         * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
-         */
-        public function customer()
-        {
-            return $this->belongsTo(Person::class, 'customer_id');
-        }
-
-        /**
-         * @return \Illuminate\Database\Eloquent\Relations\HasMany
-         */
-        public function orders()
-        {
-            return $this->hasMany(HotelRentOrder::class, 'hotel_rent_id');
         }
         
         /**
@@ -225,7 +193,7 @@
         
         /**
          * Retorna moneda nacional por defecto
-         *
+         * 
          * @TODO considerar registro de moneda al rentar habitacion
          *
          * @return string
@@ -233,42 +201,6 @@
         public function getDefaultCurrency()
         {
             return self::NATIONAL_CURRENCY_ID;
-        }
-
-        /**
-         * Busca un alquiler/reserva activo que se solape con el rango
-         * [newStart, newEnd) para la misma habitación.
-         *
-         * Verifica con precisión de fecha+hora (no solo fecha). Devuelve el
-         * registro en conflicto o null si la franja está libre.
-         *
-         * @param  int          $roomId
-         * @param  Carbon       $newStart  Inicio del nuevo rango (input_date + input_time)
-         * @param  Carbon       $newEnd    Fin del nuevo rango (output_date + output_time)
-         * @param  int|null     $excludeId Excluir un id (útil al editar)
-         * @return HotelRent|null
-         */
-        public static function findOverlappingRent($roomId, Carbon $newStart, Carbon $newEnd, $excludeId = null)
-        {
-            $candidates = self::where('hotel_room_id', $roomId)
-                ->where('status', '!=', 'FINALIZADO')
-                ->where('input_date',  '<=', $newEnd->format('Y-m-d'))
-                ->where('output_date', '>=', $newStart->format('Y-m-d'))
-                ->when($excludeId, function ($q) use ($excludeId) {
-                    return $q->where('id', '!=', $excludeId);
-                })
-                ->get();
-
-            foreach ($candidates as $r) {
-                $inTime  = $r->input_time  ?: '14:00';
-                $outTime = $r->output_time ?: '12:00';
-                $existingStart = Carbon::parse("{$r->input_date} {$inTime}");
-                $existingEnd   = Carbon::parse("{$r->output_date} {$outTime}");
-                if ($newStart->lt($existingEnd) && $newEnd->gt($existingStart)) {
-                    return $r;
-                }
-            }
-            return null;
         }
 
     }

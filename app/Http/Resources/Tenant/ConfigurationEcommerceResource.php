@@ -39,7 +39,19 @@ class ConfigurationEcommerceResource extends JsonResource
             'customised_link_two' => $this->customised_link_two,
             'customised_link_three' => $this->customised_link_three,
             'color_ecommerce' => $this->color_ecommerce,
-            'preferences' => $this->preferences
+            'preferences' => $this->preferences,
+            'terms_conditions'              => $this->terms_conditions,
+            'privacy_policy'               => $this->privacy_policy,
+            'about_us'                     => $this->about_us,
+            'enable_electronic_documents'  => (bool) $this->enable_electronic_documents,
+            'enable_store_pickup'           => (bool) $this->enable_store_pickup,
+            'enable_yape'                   => (bool) $this->enable_yape,
+            'enable_transfer'               => (bool) $this->enable_transfer,
+            'delivery_no_coverage_message' => $this->delivery_no_coverage_message,
+            'publicidad_activa' => (bool) $this->publicidad_activa,
+            'publicidad_texto' => $this->publicidad_texto,
+            'publicidad_color_fondo' => $this->publicidad_color_fondo,
+            'publicidad_link' => $this->publicidad_link
         ];
     }
 }

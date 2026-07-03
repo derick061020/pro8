@@ -114,7 +114,109 @@
         
                     </div>
                 </el-tab-pane>
+                <el-tab-pane label="Culqi" name="03">
+                    <div class="row pt-1">
+                        <div class="col-md-12">
+                            <h4 class="control-label">Habilitar</h4>
+                            <div :class="{'has-danger': errors.enabled_culqi}"
+                                    class="form-group">
+                                <el-switch v-model="form.enabled_culqi"
+                                            active-text="Si"
+                                            inactive-text="No"></el-switch>
+                                <small v-if="errors.enabled_culqi"
+                                        class="form-control-feedback"
+                                        v-text="errors.enabled_culqi[0]"></small>
+                            </div>
+                        <template v-if="form.enabled_culqi">
 
+                            <div class="col-md-12 mt-3">
+                                <div class="form-group" :class="{'has-danger': errors.telephone_yape}">
+                                    <label class="control-label">Public Key <span class="text-danger">*</span></label>
+                                    <el-input v-model="form.publickey_culqi" placeholder="977523641"></el-input>
+                                    <small class="form-control-feedback" v-if="errors.telephone_yape" v-text="errors.telephone_yape[0]"></small>
+                                </div>
+                            </div>
+
+                            <div class="col-md-12 mt-3">
+                                <div class="form-group" :class="{'has-danger': errors.name_yape}">
+                                    <label class="control-label">Private Key <span class="text-danger">*</span></label>
+                                    <el-input v-model="form.privatekey_culqi"></el-input>
+                                    <small class="form-control-feedback" v-if="errors.name_yape" v-text="errors.name_yape[0]"></small>
+                                </div>
+                            </div>
+                            <div class="col-md-12 mt-3">
+                                <div class="form-group" :class="{'has-danger': errors.name_yape}">
+                                    <label class="control-label">ID RSA <span class="text-danger">*</span></label>
+                                    <el-input v-model="form.idrsa_culqi"></el-input>
+                                    <small class="form-control-feedback" v-if="errors.name_yape" v-text="errors.name_yape[0]"></small>
+                                </div>
+                            </div>
+
+                            <div class="col-md-12 mt-3">
+                                <div class="form-group" :class="{'has-danger': errors.name_yape}">
+                                    <label class="control-label">RSA Key <span class="text-danger">*</span></label>
+                                    <el-input v-model="form.rsa_culqi"></el-input>
+                                    <small class="form-control-feedback" v-if="errors.name_yape" v-text="errors.name_yape[0]"></small>
+                                </div>
+                            </div>
+                        </template>
+
+                        </div>
+                    </div>
+                        
+                </el-tab-pane>
+
+                <el-tab-pane label="Izipay" name="04">
+                    <div class="row pt-1">
+                        <div class="col-md-12">
+                            <h4 class="control-label">Habilitar</h4>
+                            <div :class="{'has-danger': errors.enabled_izipay}"
+                                    class="form-group">
+                                <el-switch v-model="form.enabled_izipay"
+                                            active-text="Si"
+                                            inactive-text="No"></el-switch>
+                                <small v-if="errors.enabled_izipay"
+                                        class="form-control-feedback"
+                                        v-text="errors.enabled_izipay[0]"></small>
+                            </div>
+                        <template v-if="form.enabled_izipay">
+                            <div class="row">
+                            <div class="col-md-12 mt-3">
+                                <div class="form-group" :class="{'has-danger': errors.username_izipay}">
+                                    <label class="control-label">Usuario <span class="text-danger">*</span></label>
+                                    <el-input v-model="form.username_izipay" placeholder="977523641"></el-input>
+                                    <small class="form-control-feedback" v-if="errors.username_izipay" v-text="errors.username_izipay[0]"></small>
+                                </div>
+                            </div>
+
+                            <div class="col-md-12 mt-3">
+                                <div class="form-group" :class="{'has-danger': errors.password_izipay}">
+                                    <label class="control-label">Contraseña <span class="text-danger">*</span></label>
+                                    <el-input v-model="form.password_izipay"></el-input>
+                                    <small class="form-control-feedback" v-if="errors.password_izipay" v-text="errors.password_izipay[0]"></small>
+                                </div>
+                            </div>
+                            <div class="col-md-12 mt-3">
+                                <div class="form-group" :class="{'has-danger': errors.publickey_izipay}">
+                                    <label class="control-label">Public Key <span class="text-danger">*</span></label>
+                                    <el-input v-model="form.publickey_izipay"></el-input>
+                                    <small class="form-control-feedback" v-if="errors.publickey_izipay" v-text="errors.publickey_izipay[0]"></small>
+                                </div>
+                            </div>
+
+                            <div class="col-md-12 mt-3">
+                                <div class="form-group" :class="{'has-danger': errors.sha256key_izipay}">
+                                    <label class="control-label">SHA256 Key <span class="text-danger">*</span></label>
+                                    <el-input v-model="form.sha256key_izipay"></el-input>
+                                    <small class="form-control-feedback" v-if="errors.sha256key_izipay" v-text="errors.sha256key_izipay[0]"></small>
+                                </div>
+                            </div>
+                            </div>
+                        </template>
+                        </div>
+                    </div>
+                        
+                </el-tab-pane>
                 <div class="form-actions text-end mt-3">
                     <el-button type="primary" @click="submit" :loading="loading_submit">Guardar</el-button>
                 </div>

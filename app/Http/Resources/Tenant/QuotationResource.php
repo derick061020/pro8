@@ -5,6 +5,7 @@ namespace App\Http\Resources\Tenant;
 use App\Models\Tenant\Quotation;
 use Illuminate\Http\Resources\Json\JsonResource;
 use App\Models\Tenant\Item;
+use App\Models\Tenant\Person;
 use Modules\Inventory\Models\Warehouse as ModuleWarehouse;
 
 
@@ -22,6 +23,7 @@ class QuotationResource extends JsonResource
         $quotation = Quotation::find($this->id);
         $quotation->payments = self::getTransformPayments($quotation->payments);
         $quotation->items = self::getTransformItems($quotation->items);
+        $customer = Person::find($this->customer_id)->getCollectionData();
 
         return [
             'id' => $this->id,
@@ -34,6 +36,7 @@ class QuotationResource extends JsonResource
                 "extension_only" => "pdf"
             ],
             'quotation' => $quotation,
+            'customer' => $customer,
             'message_text' => "Su cotización {$this->number_full} ha sido generado correctamente, " .
                 "puede revisarlo en el siguiente enlace: " . url('') . "/print/quotation/{$this->external_id}/a4" . "",
             'number_full' => $this->number_full,

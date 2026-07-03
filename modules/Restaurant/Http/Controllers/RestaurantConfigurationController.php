@@ -42,7 +42,12 @@ class RestaurantConfigurationController extends Controller
         return [
             'success' => true,
             'data' => $configurations->getCollectionData(),
-            'info' => ['ruc' => $company->number, 'userEmail' => $user->email, 'socketServer' => config('tenant.socket_server') ?? 'http://localhost:8070'],
+            'info' => [
+                'ruc' => $company->number,
+                'userEmail' => $user->email,
+                'socketServer' => config('tenant.socket_server') ?? 'http://localhost:8070',
+                'userType' => $user->type,
+            ],
         ];
     }
 
@@ -68,6 +73,7 @@ class RestaurantConfigurationController extends Controller
                 'shape' => $row->shape,
                 'environment' => $row->environment,
                 'waiter' => $row->waiter,
+                'comentarios' => $row->comentarios,
                 'open' => false,
                 'close' => false,
                 'group_id' => $row->group_id,
@@ -287,6 +293,12 @@ class RestaurantConfigurationController extends Controller
         $table = RestaurantTable::findOrFail($id);
         //$data = $request->all();
         $data = $request->except(['group_id', 'is_main_table']); // Proteger campos de grupo
+        if(isset($data['products']) && is_array($data['products'])) {
+            $data['products'] = array_map(function($product) {
+                return $product; // Preserva todo incluyendo 'name' editado
+            }, $data['products']);
+        }
+
         $data['status'] = (count($data['products'])<1)?$data['status']:'notavailable';
 
         $isDeliveryOrTakeaway = ($table->environment === 'Delivery' || $table->environment === 'Para Llevar');

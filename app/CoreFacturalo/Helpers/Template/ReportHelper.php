@@ -144,6 +144,14 @@
             ) {
                 $customer = $type_doc->customer;
             }
+
+            if ($customer !== null && !($customer instanceof \Illuminate\Database\Eloquent\Model)) {
+                $customer_id = $type_doc->customer_id ?? null;
+                if ($customer_id) {
+                    $customer = \App\Models\Tenant\Person::find($customer_id) ?? $customer;
+                }
+            }
+
             if ($customer != null) {
                 if (
                     $customer->district &&

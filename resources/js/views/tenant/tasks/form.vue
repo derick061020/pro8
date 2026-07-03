@@ -70,7 +70,7 @@
                     'RegularizeWeightedAverageCostCommand': 'Regularizar costo ponderado de los productos',
                     'RestoreDatabase': 'Restaurar base de datos demo de un archivo SQL',
                     'SendAllServerCommand': 'Enviar los documentos hacia el servidor offline',
-                    'SendAllSunatCommand': 'Enviar a SUNAT con el servidor offline',
+                    'SendAllSunatCommand': 'Enviar a SUNAT facturas',
                     'StatusServerCommand': 'Guardar data respecto a datos del servidor',
                     'SummaryQueryCommand': 'Consulta de resúmenes a SUNAT',
                     'SummarySendCommand': 'Envío de resúmenes a SUNAT',

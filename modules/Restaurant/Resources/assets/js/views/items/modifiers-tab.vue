@@ -43,7 +43,7 @@
                 label="Selección"
                 width="140">
                 <template slot-scope="scope">
-                    <span>{{ scope.row.selection_type }}</span>
+                    <span>{{ scope.row.selection_type === 'single' ? 'Única' : 'Múltiple' }}</span>
                 </template>
             </el-table-column>
             <el-table-column

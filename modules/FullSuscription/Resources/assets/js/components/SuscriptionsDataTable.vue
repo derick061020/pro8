@@ -1,67 +1,86 @@
 <template>
     <div v-loading="loading_submit">
         <div class="row ">
-            <div class="col-md-12 col-lg-12 col-xl-12 filter-container">
-                <div class="btn-filter-content">
+            <div class="col-md-12 col-lg-12 col-xl-12 filter-container" v-if="applyFilter && !hideFilter">
+                <div class="btn-filter-content d-flex">
                     <el-button
                         type="secondary"
-                        class="btn-show-filter mb-2"
+                        class="btn-show-filter mb-2 me-2"
                         :class="{ shift: isVisible }"
                         @click="toggleInformation"
                     >
                         {{ isVisible ? "Ocultar filtros" : "Mostrar filtros" }}
                     </el-button>
+                    <el-button
+                        v-if="hasActiveFilters"
+                        @click="clearFilters"
+                        class="mb-2"
+                        type="secondary"
+                        icon="el-icon-refresh"
+                    >
+                        Limpiar filtros
+                    </el-button>
                 </div>
-                <div v-if="applyFilter && isVisible"
-                     class="row mx-0">
-                    <div class="col-lg-4 col-md-4 col-sm-12 pb-2">
-                        <div class="d-flex">
-                            <div class="d-flex align-items-center" style="width:100px">
-                                Filtrar por:
-                            </div>
-                            <el-select
-                                v-model="search.column"
-                                placeholder="Select"
-                                @change="changeClearInput"
-                            >
-                                <el-option
-                                    v-for="(label, key) in columns"
-                                    :key="key"
-                                    :label="label"
-                                    :value="key"
-                                ></el-option>
-                            </el-select>
-                        </div>
-                    </div>
+                <div v-if="isVisible" class="row mx-0">
+                    <!-- Búsqueda de nombre/descripción -->
                     <div class="col-lg-3 col-md-4 col-sm-12 pb-2">
-                        <template
-                            v-if="
-                                search.column === 'date_of_issue' ||
-                                    search.column === 'date_of_due' ||
-                                    search.column === 'date_of_payment' ||
-                                    search.column === 'delivery_date'
-                            "
+                        <el-input
+                            v-model="planFilters.q"
+                            placeholder="Buscar plan..."
+                            prefix-icon="el-icon-search"
+                            style="width: 100%;"
+                            @input="onSearchInput"
+                            clearable
+                        ></el-input>
+                    </div>
+
+                    <!-- Filtro por frecuencia/período -->
+                    <div class="col-lg-3 col-md-4 col-sm-12 pb-2">
+                        <el-select
+                            v-model="planFilters.frequency"
+                            placeholder="Frecuencia"
+                            style="width: 100%;"
+                            @change="applyFilters"
+                            clearable
                         >
-                            <el-date-picker
-                                v-model="search.value"
-                                placeholder="Buscar"
-                                style="width: 100%;"
-                                type="date"
-                                value-format="yyyy-MM-dd"
-                                @change="getRecords"
-                            >
-                            </el-date-picker>
-                        </template>
-                        <template v-else>
-                            <el-input
-                                v-model="search.value"
-                                placeholder="Buscar"
-                                prefix-icon="el-icon-search"
-                                style="width: 100%;"
-                                @input="getRecords"
-                            >
-                            </el-input>
-                        </template>
+                            <el-option label="Todas" value=""></el-option>
+                            <el-option
+                                v-for="period in periods"
+                                :key="period.id"
+                                :label="period.name"
+                                :value="period.id"
+                            ></el-option>
+                        </el-select>
+                    </div>
+
+                    <!-- Filtro por estado -->
+                    <div class="col-lg-3 col-md-4 col-sm-12 pb-2">
+                        <el-select
+                            v-model="planFilters.status"
+                            placeholder="Estado"
+                            style="width: 100%;"
+                            @change="applyFilters"
+                            clearable
+                        >
+                            <el-option label="Todos" value=""></el-option>
+                            <el-option label="Activos" :value="true"></el-option>
+                            <el-option label="Inactivos" :value="false"></el-option>
+                        </el-select>
+                    </div>
+
+                    <!-- Filtro por período de prueba -->
+                    <div class="col-lg-3 col-md-4 col-sm-12 pb-2">
+                        <el-select
+                            v-model="planFilters.trial"
+                            placeholder="Período de Prueba"
+                            style="width: 100%;"
+                            @change="applyFilters"
+                            clearable
+                        >
+                            <el-option label="Todos" value=""></el-option>
+                            <el-option label="Con Prueba" value="with"></el-option>
+                            <el-option label="Sin Prueba" value="without"></el-option>
+                        </el-select>
                     </div>
                 </div>
             </div>
@@ -99,14 +118,18 @@
 </template>
 
 <script>
-import queryString from "query-string";
 import {mapActions, mapState} from "vuex/dist/vuex.mjs";
 
 export default {
     props: {
         extraquery: {
             type: Object,
-            default: {},
+            default: () => ({}),
+            required: false
+        },
+        periods: {
+            type: Array,
+            default: () => [],
             required: false
         },
         productType: {
@@ -114,21 +137,31 @@ export default {
             required: false,
             default: ''
         },
-        // resource: String,
         applyFilter: {
             type: Boolean,
             default: true,
             required: false
         },
         pharmacy: Boolean,
+        hideFilter: {
+            type: Boolean,
+            default: false,
+        },
     },
     data() {
         return {
-            search: {
-                column: null,
-                value: null
+            planFilters: {
+                q: null,           // búsqueda por nombre/descripción
+                frequency: null,   // período/frecuencia
+                status: null,      // estado (true/false)
+                trial: null        // período de prueba (with/without)
             },
-            columns: [],
+            originalFilters: {
+                q: null,
+                frequency: null,
+                status: null,
+                trial: null
+            },
             records: [],
             pagination: {},
             isVisible: false,
@@ -136,6 +169,7 @@ export default {
             fromPharmacy: false,
             showLeftShadow: false,
             showRightShadow: false,
+            searchTimeout: null,  // para el debounce
         };
     },
     created() {
@@ -150,14 +184,6 @@ export default {
         this.$root.$refs.DataTable = this;
     },
     async mounted() {
-        let column_resource = _.split(this.resource, "/");
-        let url = _.head(column_resource);
-        await this.$http
-            .get(`/full_suscription/${url}/columns`)
-            .then(response => {
-                this.columns = response.data;
-                this.search.column = _.head(Object.keys(this.columns));
-            });
         await this.getRecords();
 
         this.$nextTick(() => {
@@ -172,10 +198,10 @@ export default {
         checkScrollShadows() {
             const el = this.$refs.scrollContainer;
             if (!el) return;
-            
+
             const scrollLeft = el.scrollLeft;
             const scrollRight = el.scrollWidth - el.clientWidth - scrollLeft;
-            
+
             this.showLeftShadow = scrollLeft > 1;
             this.showRightShadow = scrollRight > 1;
         },
@@ -201,37 +227,66 @@ export default {
                         response.data.meta.per_page
                     );
                 })
-                .catch(error => {
+                .catch(() => {
                 })
                 .then(() => {
                     this.loading_submit = false;
                 });
         },
         getQueryParameters() {
-            if (this.productType == 'ZZ') {
-                this.search.type = 'ZZ';
-            }
-            return {
+            // Construir objeto de parámetros de consulta con los filtros
+            const queryParams = {
                 page: this.pagination.current_page,
                 limit: this.limit,
                 isPharmacy: this.fromPharmacy,
-                ...this.search,
-                ...this.extraquery
             };
-            return queryString.stringify({
-                page: this.pagination.current_page,
-                limit: this.limit,
-                isPharmacy: this.fromPharmacy,
-                ...this.search
-            });
+
+            // Agregar filtros de planes si tienen valor
+            if (this.planFilters.q && this.planFilters.q.trim().length > 0) {
+                queryParams.q = this.planFilters.q.trim();
+            }
+            if (this.planFilters.frequency && this.planFilters.frequency !== '') {
+                queryParams.frequency = this.planFilters.frequency;
+            }
+            if (this.planFilters.status !== null && this.planFilters.status !== '') {
+                queryParams.status = this.planFilters.status;
+            }
+            if (this.planFilters.trial && this.planFilters.trial !== '') {
+                queryParams.trial = this.planFilters.trial;
+            }
+
+            return queryParams;
         },
-        changeClearInput() {
-            this.search.value = "";
+
+        // Búsqueda con debounce (300ms)
+        onSearchInput() {
+            if (this.searchTimeout) {
+                clearTimeout(this.searchTimeout);
+            }
+            this.searchTimeout = setTimeout(() => {
+                this.applyFilters();
+            }, 300);
+        },
+
+        // Aplicar filtros y recargar datos
+        applyFilters() {
+            // Resetear a página 1 cuando se aplican filtros
+            this.pagination.current_page = 1;
             this.getRecords();
         },
-        getSearch() {
-            return this.search;
-        }
+
+        // Limpiar todos los filtros
+        clearFilters() {
+            this.planFilters = {
+                q: null,
+                frequency: null,
+                status: null,
+                trial: null
+            };
+            this.originalFilters = { ...this.planFilters };
+            this.pagination.current_page = 1;
+            this.getRecords();
+        },
     },
 
     computed: {
@@ -240,6 +295,10 @@ export default {
             'table_data',
             'resource',
         ]),
+
+        hasActiveFilters() {
+            return JSON.stringify(this.planFilters) !== JSON.stringify(this.originalFilters);
+        },
     },
 };
 </script>

@@ -1,10 +1,9 @@
 @php
-    $max_prices_columns = \App\Models\Tenant\ItemUnitType::select(\DB::raw('count(item_id) as total'))
-    ->wherein('item_id',$records->pluck('id'))
-    ->groupby('item_id')
-    ->get()->max('total');
-
-    @endphp<!DOCTYPE html>
+    $max_prices_columns = $records->map(function ($item) {
+        return $item->item_unit_types->unique('id')->count();
+    })->max() ?: 0;
+@endphp
+<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
@@ -54,9 +53,9 @@
                         <th>Unidad</th>
                         <th>Descripcion</th>
                         <th>Factor</th>
-                        <th>Precio 1</th>
-                        <th>Precio 2</th>
-                        <th>Precio 3</th>
+                        @foreach($price_labels as $label)
+                            <th>{{ $label->label }}</th>
+                        @endforeach
                     @endfor
                 </tr>
                 </thead>
@@ -64,7 +63,7 @@
                 @foreach($records as $key => $value)
                     @php
                     /** @var \App\Models\Tenant\Item $value */
-                        $item_unit_types = $value->item_unit_types->toArray();
+                        $item_unit_types = $value->item_unit_types->unique('id')->values();
                     @endphp
                     <tr>
                         <td class="celda">{{$loop->iteration}}</td>
@@ -93,28 +92,14 @@
                         <td class="celda">{{$value->date_of_due }}</td>
                         @for($i=0;$i<$max_prices_columns;$i++)
                             @php
-                                $unidad = '';
-                                $descripcion = '';
-                                $factor = '';
-                                $precio_1 = '';
-                                $precio_2 = '';
-                                $precio_3 = '';
-                                if(isset($item_unit_types[$i])){
-                                    $temp = $item_unit_types[$i];
-                                    $unidad = $temp['unit_type_id'];
-                                    $descripcion = $temp['description'];
-                                    $factor = $temp['quantity_unit'];
-                                    $precio_1 = $temp['price1'];
-                                    $precio_2 = $temp['price2'];
-                                    $precio_3 = $temp['price3'];
-                                }
+                                $temp = $item_unit_types[$i] ?? null;
                             @endphp
-                            <td>{{$unidad}}</td>
-                            <td>{{$descripcion}}</td>
-                            <td>{{$factor}}</td>
-                            <td>{{$precio_1}}</td>
-                            <td>{{$precio_2}}</td>
-                            <td>{{$precio_3}}</td>
+                            <td>{{ $temp ? $temp->unit_type_id : '' }}</td>
+                            <td>{{ $temp ? $temp->description : '' }}</td>
+                            <td>{{ $temp ? $temp->quantity_unit : '' }}</td>
+                            @foreach($price_labels as $label)
+                                <td>{{ $temp ? (optional($temp->prices->firstWhere('price_label_id', $label->id))->price ?? 0) : '' }}</td>
+                            @endforeach
                         @endfor
                     </tr>
                 @endforeach

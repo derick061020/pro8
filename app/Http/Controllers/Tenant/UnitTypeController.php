@@ -6,15 +6,21 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Tenant\UnitTypeRequest;
 use App\Http\Resources\Tenant\UnitTypeCollection;
 use App\Http\Resources\Tenant\UnitTypeResource;
+use Illuminate\Http\Request;
 use Exception;
 
 class UnitTypeController extends Controller
 {
-    public function records()
+    public function records(Request $request)
     {
-        $records = UnitType::all();
+        $records = UnitType::query();
+        $active = $request->input('active');
 
-        return new UnitTypeCollection($records);
+        if ($active === '1' || $active === 1 || $active === '0' || $active === 0) {
+            $records->where('active', $active ? 1 : 0);
+        }
+
+        return new UnitTypeCollection($records->get());
     }
 
     public function record($id)
@@ -37,24 +43,33 @@ class UnitTypeController extends Controller
         ];
     }
 
+    public function active(Request $request)
+    {
+        $id = $request->input('id');
+        $unit_type = UnitType::findOrFail($id);
+        $unit_type->active = $request->boolean('active') ? 1 : 0;
+        $unit_type->save();
+
+        return [
+            'success' => true,
+            'message' => 'Estado actualizado con éxito',
+        ];
+    }
+
     public function destroy($id)
     {
         try {
-            
             $record = UnitType::findOrFail($id);
             $record->delete();
 
             return [
                 'success' => true,
-                'message' => 'Unidad eliminada con éxito'
+                'message' => 'Unidad eliminada con éxito',
             ];
-
         } catch (Exception $e) {
-
-            return ($e->getCode() == '23000') ? ['success' => false,'message' => 'La unidad esta siendo usada por otros registros, no puede eliminar'] : ['success' => false,'message' => 'Error inesperado, no se pudo eliminar la unidad'];
-
+            return $e->getCode() === '23000'
+                ? ['success' => false, 'message' => 'La unidad esta siendo usada por otros registros, no puede eliminar']
+                : ['success' => false, 'message' => 'Error inesperado, no se pudo eliminar la unidad'];
         }
-
-        
     }
 }

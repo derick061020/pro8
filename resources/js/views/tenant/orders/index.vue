@@ -29,23 +29,33 @@
                     <span>Pedidos</span>
                 </li>
             </ol>
-            <div class="right-wrapper pull-right"></div>
+            <div class="right-wrapper pull-right">
+                <button
+                    class="btn btn-custom btn-sm mt-2 me-4"
+                    @click="showStatusModal = true"
+                    title="Gestionar estados"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                        <path d="M10.325 4.317c.426 -1.756 2.924 -1.756 3.35 0a1.724 1.724 0 0 0 2.573 1.066c1.543 -.94 3.31 .826 2.37 2.37a1.724 1.724 0 0 0 1.065 2.572c1.756 .426 1.756 2.924 0 3.35a1.724 1.724 0 0 0 -1.066 2.573c.94 1.543 -.826 3.31 -2.37 2.37a1.724 1.724 0 0 0 -2.572 1.065c-.426 1.756 -2.924 1.756 -3.35 0a1.724 1.724 0 0 0 -2.573 -1.066c-1.543 .94 -3.31 -.826 -2.37 -2.37a1.724 1.724 0 0 0 -1.065 -2.572c-1.756 -.426 -1.756 -2.924 0 -3.35a1.724 1.724 0 0 0 1.066 -2.573c-.94 -1.543 .826 -3.31 2.37 -2.37c1 .608 2.296 .07 2.572 -1.065z"/>
+                        <path d="M9 12a3 3 0 1 0 6 0a3 3 0 0 0 -6 0"/>
+                    </svg>
+                    Gestionar estados
+                </button>
+            </div>
         </div>
         <div class="card tab-content-default row-new mb-0">
-            <!-- <div class="card-header bg-info">
-        <h3 class="my-0">Listado de Pedidos Tienda Virtual</h3>
-      </div> -->
             <div class="card-body">
-                <data-table :resource="resource">
+                <data-table :resource="resource" :status-options="options">
                     <tr slot="heading" width="100%">
                         <!-- <th>#</th> -->
-                        <th>Codigo de Pedido</th>
+                        <th># Pedido</th>
                         <th>Cliente</th>
                         <th class="text-center">Detalle Productos</th>
                         <th class="text-end">Total</th>
                         <th>Fecha Emision</th>
                         <th>Medio Pago</th>
-                        <th>Estatus del Pedido</th>
+                        <th>Estado</th>
                         <th class="text-center">Documento</th>
                         <th class="text-end">Opciones</th>
                     </tr>
@@ -297,6 +307,10 @@
             :dataSaleNote="dataSaleNote"
         >
         </sale-note-form>
+        <status-order-modal
+            :showDialog.sync="showStatusModal"
+            :options="options"
+        ></status-order-modal>
     </div>
 </template>
 <style>
@@ -318,13 +332,15 @@ import queryString from "query-string";
 import OptionsForm from "../pos/partials/options.vue";
 import DocumentForm from "./partials/document_form.vue";
 import SaleNoteForm from "./partials/sale_note_form.vue";
+import StatusOrderModal from "./partials/status_order_modal.vue";
 
 export default {
     props: ["user"],
 
-    components: { DataTable, OptionsForm, DocumentForm, SaleNoteForm },
+    components: { DataTable, OptionsForm, DocumentForm, SaleNoteForm, StatusOrderModal },
     data() {
         return {
+            showStatusModal: false,
             showDialog: false,
             showImportDialog: false,
             showImageDetail: false,
@@ -346,7 +362,8 @@ export default {
             document_types: [],
             order_id: null,
             dataSaleNote: {},
-            showDialogSaleNote: false
+            showDialogSaleNote: false,
+            statusFilter: null
         };
     },
     async created() {
@@ -354,9 +371,17 @@ export default {
             this.options = response.data;
         });
         this.events();
+        this.$eventHub.$on('statusesUpdated', () => {
+            this.loadStatuses()
+        })
     },
     computed: {},
     methods: {
+        loadStatuses() {
+            this.$http.get(`/statusOrder/records`).then(response => {
+                this.options = response.data;
+            });
+        },
         formatDate(date) {
             if (!date) return null;
             const parsedDate = moment(date);

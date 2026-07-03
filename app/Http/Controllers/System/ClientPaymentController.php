@@ -5,10 +5,12 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\System\ClientPaymentRequest;
 use App\Http\Requests\System\DocumentRequest;
 use App\Http\Resources\System\ClientPaymentCollection;
+use App\Http\Resources\System\PaymentOrderCollection;
 use App\Models\System\Client;
 use App\Models\System\ClientPayment;
 use App\Models\System\PaymentMethodType;
 use App\Models\System\CardBrand;
+use App\Models\System\PaymentOrder;
 use Hyn\Tenancy\Environment;
 use Illuminate\Support\Facades\DB;
 
@@ -18,9 +20,13 @@ class ClientPaymentController extends Controller
 {
     public function records($client_id)
     {
-        $records = ClientPayment::where('client_id', $client_id)->get();
+        // Órdenes de pago pendientes del cliente: Pendiente (1) y Vencido (3), es decir, no pagadas ni anuladas.
+        $records = PaymentOrder::where('client_id', $client_id)
+            ->whereIn('order_state_id', [1, 3])
+            ->orderBy('date_of_due')
+            ->get();
 
-        return new ClientPaymentCollection($records);
+        return new PaymentOrderCollection($records);
     }
 
     public function tables()

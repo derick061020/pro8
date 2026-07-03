@@ -27,7 +27,7 @@
     <div class="col-lg-12">
         <div class="cart-table-container">
             <div class="dropdown dropdown-table d-flex justify-content-between align-items-center">
-                <div class="d-flex align-items-center mt-1">                    
+                <div class="d-flex align-items-center mt-1">
                     <template v-if="filterId == 1">
                         <span>
                             Fecha de inicio
@@ -67,8 +67,8 @@
                         <span>
                             Por estado:
                         </span>
-                        <el-select 
-                            v-model="filters.state_order_id" 
+                        <el-select
+                            v-model="filters.state_order_id"
                             placeholder="Seleccionar estado"
                             size="small"
                             style="width: 200px; margin-left: 8px;"
@@ -108,10 +108,10 @@
                   <li><a href="#" @click="filterRecords('2')" >Pago verificado</a></li>
                   <li><a href="#" @click="filterRecords('3')" >Despachado</a></li>
                   <li><a href="#" @click="filterRecords('4')" >Confirmado por el cliente</a></li> --}}
-                  <li><a @click="filterId = 1; filters={date_of_issue: new Date().toISOString().split('T')[0]}; getRecords()" href="#">Por fecha</a></li> 
+                  <li><a @click="filterId = 1; filters={date_of_issue: new Date().toISOString().split('T')[0]}; getRecords()" href="#">Por fecha</a></li>
                   <li><a @click="filterId = 2; filters={state_order_id: 'all'}; getRecords()" href="#">Estado</a></li>
                 </ul>
-              </div>        
+              </div>
             <table class="table table-cart">
                 <thead>
                     <tr>
@@ -119,6 +119,7 @@
                         <th class="price-col">Total</th>
                         <th class="qty-col">Fecha de creación</th>
                         <th class="qty-col">Estado</th>
+                        <th class="qty-col">Cupón</th>
                         <th class="qty-col" v-if="phone_whatsapp"></th>
                     </tr>
                 </thead>
@@ -132,6 +133,10 @@
                             @{{ row.created_at }}
                         </td>
                         <td>@{{ row.status_order_description }}</td>
+                        <td>
+                            <span v-if="row.discount_coupon_code">@{{ row.discount_coupon_code }}</span>
+                            <span v-else>-</span>
+                        </td>
                         <td v-if="phone_whatsapp">
                             <div v-if="row.status_order_id < 4">
                                 <button class="btn btn-default btn-sm text-success ml-auto" @click="clickSendWhatsapp(row.order_id)" ><i class="fab fa-whatsapp fa-2x"></i>
@@ -199,7 +204,7 @@
         computed: {
             pagL: function () {
                 return this.page == 1 ? true: false
-            }, 
+            },
             pagR: function () {
                 return this.page != this.last_page ? false: true
             }
@@ -232,18 +237,18 @@
                 }
 
                 try {
-                    let response = await axios.get(`/ecommerce/orders${parameters}`);            
-                    
+                    let response = await axios.get(`/ecommerce/orders${parameters}`);
+
                     this.records = response.data.data || [];
                     this.filter_records = response.data.data || [];
                     this.last_page = response.data.last_page || 1;
-                    this.loading = false;   
+                    this.loading = false;
                 } catch (error) {
                     console.error('Error al cargar pedidos:', error);
                     this.records = [];
                     this.filter_records = [];
                     this.loading = false;
-                    
+
                     // Mostrar mensaje de error al usuario
                     if (error.response && error.response.status === 401) {
                         alert('Sesión expirada. Por favor, inicie sesión nuevamente.');
@@ -259,7 +264,7 @@
                         this.page += 1;
                         this.getRecords();
                     }
-                    
+
                 } else if (type == "back") {
                     this.filter_records = [];
                     if(!this.pagL) {

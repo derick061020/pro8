@@ -137,7 +137,7 @@
                     </div>
                 </div>
                 <div class="col-md-12 text-center pt-2" v-if="showAddButton && (document.total_difference > 0)">
-                    <el-button type="primary" icon="el-icon-plus" @click="clickAddRow">Nuevo</el-button>
+                    <el-button :loading="loadingFetch" type="primary" icon="el-icon-plus" @click="clickAddRow">Nuevo</el-button>
                 </div>
             </div>
         </div>
@@ -185,6 +185,7 @@
                 index_file: null,
                 fileList: [],
                 showAddButton: true,
+                loadingFetch: false,
                 document: {},
                 showDialogOptions: false,
                 showDialogClose:false,
@@ -243,6 +244,7 @@
                 this.showAddButton = true;
             },
             async getData() {
+                this.loadingFetch = true;
                 this.initForm();
                 await this.$http.get(`/${this.resource}/document/${this.documentId}`)
                     .then(response => {
@@ -253,7 +255,9 @@
                     .then(response => {
                         this.records = response.data.data
                     });
-                this.$eventHub.$emit('reloadDataUnpaid')
+
+                // await this.$eventHub.$emit('reloadDataUnpaid')
+                this.loadingFetch = false;
 
             },
             clickAddRow() {

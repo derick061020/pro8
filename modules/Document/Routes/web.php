@@ -11,7 +11,7 @@ if($current_hostname) {
                 Route::get('', 'DocumentController@index')->name('tenant.documents.not_sent')->middleware('redirect.level','tenant.internal.mode','check.email.verified');
                 Route::get('records', 'DocumentController@records');
                 Route::get('data_table', 'DocumentController@data_table');
-
+                Route::get('count', 'DocumentController@pointCountNotSent');
             });
 
             /**

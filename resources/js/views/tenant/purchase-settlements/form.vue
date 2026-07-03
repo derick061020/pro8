@@ -404,6 +404,7 @@
             </div>
     
             <purchase-form-item :currency-type-id-active="form.currency_type_id"
+                                :currency-types="currency_types"
                                 :exchange-rate-sale="form.exchange_rate_sale"
                                 :showDialog.sync="showDialogAddItem"
                                 :localHasGlobalIgv="localHasGlobalIgv"

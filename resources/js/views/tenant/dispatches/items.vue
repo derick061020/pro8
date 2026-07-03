@@ -31,6 +31,13 @@
                         <a href="#"  class="text-center font-weight-bold text-info" @click.prevent="clickLotGroup">[&#10004; Seleccionar lote]</a>
                     </div>
                 </template>
+                <div class="col-lg-6" v-if="showWeightInput">
+                    <div class="form-group" :class="{'has-danger': errors.weight}">
+                        <label class="control-label">Peso</label>
+                        <el-input-number v-model="form.weight" :precision="4" :step="1" :min="0.01" :max="99999999"></el-input-number>
+                        <small class="form-control-feedback" v-if="errors.weight" v-text="errors.weight[0]"></small>
+                    </div>
+                </div>
             </div>
         </div>
         <span slot="footer" class="dialog-footer">
@@ -56,7 +63,7 @@
 
     export default {
         components: {itemForm, LotsGroup},
-        props: ['dialogVisible'],
+        props: ['dialogVisible', 'showWeightInput'],
         data() {
             return {
                 titleDialog: 'Agregar Producto',
@@ -105,9 +112,11 @@
                     this.form.quantity = Math.abs(this.form.quantity)
                     if(isNaN(this.form.quantity))this.form.quantity = 0;
                     const item = this.items.find((item) => item.id == this.form.item)
+                    item.weight = this.form.weight;
                     item.IdLoteSelected = this.form.IdLoteSelected;
                     item.unit_price = item.sale_unit_price;
                     item.total_value = item.sale_unit_price*this.form.quantity;
+                    item.total = item.sale_unit_price * this.form.quantity;
                     this.$emit('addItem', {
                         item,
                         quantity: this.form.quantity,

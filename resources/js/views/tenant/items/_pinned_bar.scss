@@ -1,0 +1,329 @@
+/**
+ * Estilos para la barra fijada del formulario de ítem.
+ *
+ * Importado SIN scope desde _pinned_bar.vue. Los selectores
+ * `.field-pinnable`, `.pin-from-form-btn`, `.layout-editing-active`,
+ * `.ifb-dialog-title*` viven dentro de form.vue, por eso no scoped.
+ *
+ * Se apoya en utilidades Bootstrap 5.3 (d-flex, gap-*, text-muted,
+ * small, border, rounded, bg-light, mb-*, row, col-md-*) ya disponibles
+ * en el proyecto, así que aquí solo viven los estilos que Bootstrap
+ * no cubre: badge, card de pin, handle de resize, panel selector,
+ * overlay "Fijar arriba".
+ */
+
+$ifb-color-primary: #2456c6;
+$ifb-color-primary-bg: #eef5ff;
+$ifb-color-primary-border: #b6c8ee;
+$ifb-color-muted: #8492a6;
+$ifb-color-danger: #f56c6c;
+
+/* ───── Header del el-dialog cuando estamos editando ───── */
+
+.ifb-dialog-title {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding-right: 28px; /* deja espacio para el botón X de el-dialog */
+}
+
+.ifb-dialog-title-text {
+    flex: 1;
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.ifb-dialog-title-actions {
+    display: inline-flex;
+    gap: 6px;
+    flex-shrink: 0;
+}
+
+/* ───── Badge "PERSONALIZANDO BARRA FIJADA" ───── */
+
+.ifb-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 12px;
+    border-radius: 14px;
+    background: $ifb-color-primary-bg;
+    color: $ifb-color-primary;
+    font-weight: 600;
+    font-size: 12px;
+    letter-spacing: 0.4px;
+}
+
+/* ───── Card de cada pin en modo edición ───── */
+
+.pinned-cell-edit {
+    padding: 6px;
+    position: relative;
+}
+
+.pinned-cell-edit-inner {
+    border: 1px solid #d8e1f1;
+    border-radius: 6px;
+    background: #fff;
+    padding: 10px 12px;
+    height: 100%;
+    position: relative;
+    transition: box-shadow 0.15s, border-color 0.15s;
+
+    &:hover {
+        border-color: $ifb-color-primary-border;
+        box-shadow: 0 2px 6px rgba(36, 86, 198, 0.08);
+    }
+}
+
+.pinned-cell-edit-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+    font-size: 12px;
+
+    .ifb-drag-handle {
+        cursor: grab;
+        color: $ifb-color-muted;
+        &:active { cursor: grabbing; }
+    }
+
+    .ifb-pin-label {
+        flex: 1;
+        font-weight: 600;
+        color: #374151;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .ifb-required {
+        color: $ifb-color-danger;
+        margin-left: 2px;
+    }
+
+    .ifb-pin-remove {
+        background: transparent;
+        border: 0;
+        color: $ifb-color-muted;
+        cursor: pointer;
+        padding: 0 4px;
+        font-size: 16px;
+        line-height: 1;
+        border-radius: 4px;
+        &:hover {
+            color: $ifb-color-danger;
+            background: rgba(245, 108, 108, 0.08);
+        }
+    }
+}
+
+/* Oculta el label del input dentro del slot: el toolbar ya muestra el nombre */
+.pinned-cell-edit-preview {
+    .control-label { display: none !important; }
+    .el-input, .el-select, .el-date-editor { width: 100%; }
+}
+
+/* ───── Handle de resize por el borde derecho ───── */
+
+.ifb-resize-handle {
+    position: absolute;
+    top: 8px;
+    right: -3px;
+    bottom: 8px;
+    width: 6px;
+    cursor: ew-resize;
+    border-radius: 3px;
+    z-index: 2;
+    transition: background 0.15s;
+
+    &::after {
+        content: "";
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 2px;
+        height: 30%;
+        min-height: 18px;
+        background: #c8d6f0;
+        border-radius: 2px;
+        transition: background 0.15s, height 0.15s;
+    }
+
+    &:hover, &.ifb-resize-handle--active {
+        background: rgba(36, 86, 198, 0.06);
+        &::after {
+            background: $ifb-color-primary;
+            height: 50%;
+        }
+    }
+}
+
+.pinned-cell-edit--resizing {
+    user-select: none;
+    .pinned-cell-edit-inner {
+        border-color: $ifb-color-primary;
+        box-shadow: 0 2px 8px rgba(36, 86, 198, 0.18);
+    }
+}
+
+/* ───── Panel "Agregar campo a la barra fijada" ───── */
+
+.ifb-add-trigger {
+    width: 100%;
+    margin-top: 8px;
+    padding: 12px;
+    border: 1px dashed $ifb-color-primary-border;
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.5);
+    color: $ifb-color-primary;
+    font-weight: 500;
+    text-align: center;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+
+    &:hover {
+        background: $ifb-color-primary-bg;
+        border-color: $ifb-color-primary;
+    }
+
+    .el-icon-plus { margin-right: 6px; }
+}
+
+.ifb-add-panel {
+    margin-top: 10px;
+    border: 1px solid #e4eaf3;
+    border-radius: 8px;
+    background: #fff;
+    overflow: hidden;
+    box-shadow: 0 4px 14px rgba(15, 23, 42, 0.06);
+}
+
+.ifb-add-panel-body {
+    max-height: 360px;
+    overflow-y: auto;
+}
+
+.ifb-add-group + .ifb-add-group {
+    border-top: 1px solid #f0f4fb;
+}
+
+.ifb-add-group-title {
+    padding: 8px 12px 4px;
+    font-size: 11px;
+    font-weight: 700;
+    color: $ifb-color-muted;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+    background: #fafcff;
+}
+
+.ifb-add-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+    cursor: pointer;
+    transition: background 0.12s;
+
+    &:hover { background: $ifb-color-primary-bg; }
+
+    &.is-disabled {
+        cursor: not-allowed;
+        opacity: 0.5;
+        &:hover { background: transparent; }
+    }
+
+    .ifb-add-row-icon {
+        color: $ifb-color-primary;
+        font-size: 14px;
+        width: 18px;
+        flex-shrink: 0;
+    }
+
+    .ifb-add-row-label {
+        flex: 1;
+        font-size: 13px;
+        color: #1f2937;
+    }
+
+    .ifb-add-row-type {
+        font-size: 11px;
+        color: $ifb-color-muted;
+        background: #f3f6fc;
+        padding: 2px 8px;
+        border-radius: 10px;
+    }
+}
+
+/* ───── Bloque editable wrapper (fondo dashed) ───── */
+
+.pinned-bar-editing {
+    background: #f5f8ff;
+    border: 1px dashed $ifb-color-primary-border;
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 1rem;
+}
+
+/* ───── Overlay "Fijar arriba" sobre campos del form (form.vue) ───── */
+
+.layout-editing-active .field-pinnable {
+    position: relative;
+    border-radius: 6px;
+    transition: background 0.15s;
+
+    &::before {
+        content: "";
+        position: absolute;
+        inset: -4px;
+        border: 1px dashed transparent;
+        border-radius: 6px;
+        pointer-events: none;
+        transition: border-color 0.15s;
+    }
+
+    &:hover {
+        background: rgba(36, 86, 198, 0.04);
+        &::before { border-color: rgba(36, 86, 198, 0.5); }
+        .pin-from-form-btn {
+            opacity: 1;
+            transform: translateY(0);
+            pointer-events: auto;
+        }
+    }
+}
+
+.pin-from-form-btn {
+    position: absolute;
+    top: 2px;
+    right: 6px;
+    z-index: 3;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 10px;
+    background: #fff;
+    border: 1px solid $ifb-color-primary-border;
+    border-radius: 14px;
+    color: $ifb-color-primary;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 2px 6px rgba(36, 86, 198, 0.12);
+    opacity: 0;
+    transform: translateY(-4px);
+    pointer-events: none;
+    transition: opacity 0.15s, transform 0.15s, background 0.15s, color 0.15s;
+
+    &:hover {
+        background: $ifb-color-primary;
+        color: #fff;
+    }
+}

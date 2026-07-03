@@ -18,7 +18,6 @@
                             <tr width="100%">
                                 <th>DNI/RUC</th>
                                 <th>Apellidos y nombres</th>
-                                <th width="15%">Tipo</th>
                                 <th width="15%"><a href="#" @click.prevent="clickAddPerson" class="text-center font-weight-bold text-info">[+ Agregar]</a></th>
                             </tr>
                         </thead>
@@ -32,14 +31,6 @@
                                 <td>
                                     <div class="form-group mb-2 me-2" >
                                         <el-input v-model="row.name"></el-input>
-                                    </div>
-                                </td>
-                                <td>
-                                    <div class="form-group mb-2 me-2" >
-                                        <el-select v-model="row.type" placeholder="Seleccionar tipo">
-                                            <el-option label="Adulto" value="adult"></el-option>
-                                            <el-option label="Niño" value="child"></el-option>
-                                        </el-select>
                                     </div>
                                 </td>
                                 <td class="series-table-actions text-center">
@@ -80,14 +71,6 @@
         async created() {
 
         },
-        watch: {
-            persons: {
-                handler: function(newVal) {
-                    this.calculatePersonCounts();
-                },
-                deep: true
-            }
-        },
         methods: {
             async duplicateDocument(data, index)
             {
@@ -119,37 +102,21 @@
                 return {success:true}
 
             },
-            calculatePersonCounts() {
-                const adults = this.persons.filter(p => p.type === 'adult').length;
-                const children = this.persons.filter(p => p.type === 'child').length;
-                
-                this.$emit('updatePersonCounts', {
-                    adults: adults,
-                    children: children
-                });
-            },
             async submit(){
 
                 let val_persons = await this.validatePersons()
                 if(!val_persons.success)
                     return this.$message.error(val_persons.message);
 
-                // Emitir una copia nueva del array para forzar reactividad en el
-                // padre, evitando que Vue no detecte cambios cuando se mutan
-                // elementos del array por referencia compartida.
-                const personsCopy = this.persons.map(p => ({ ...p }));
-                await this.$emit('addRowPerson', personsCopy);
-                this.calculatePersonCounts();
+                await this.$emit('addRowPerson', this.persons);
                 await this.$emit('update:showDialog', false)
 
             },
             clickAddPerson() {
                 this.persons.push({
                     number: null,
-                    name:  '',
-                    type: 'adult'
+                    name:  ''
                 });
-                this.calculatePersonCounts();
             },
 
             close() {
@@ -157,7 +124,6 @@
             },
             clickCancel(index) {
                 this.persons.splice(index, 1);
-                this.calculatePersonCounts();
             },
             async clickCancelSubmit() {
                 await this.$emit('update:showDialog', false)

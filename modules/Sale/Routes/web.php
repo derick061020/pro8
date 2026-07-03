@@ -52,6 +52,8 @@ if($current_hostname) {
 
                 Route::get('tables', 'SaleOpportunityController@tables');
                 Route::get('table/{table}', 'SaleOpportunityController@table');
+                Route::get('filter', 'SaleOpportunityController@filter');
+                Route::get('state-type/{state_type_id}/{id}', 'SaleOpportunityController@updateStateType');
                 Route::get('item/tables', 'SaleOpportunityController@item_tables');
                 Route::post('email', 'SaleOpportunityController@email');
 

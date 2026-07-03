@@ -145,6 +145,24 @@ class SaleOpportunityController extends Controller
         return compact('customers', 'establishments','currency_types','company');
     }
 
+    public function filter()
+    {
+        $state_types = \App\Models\Tenant\StateType::whereIn('id', ['01', '05', '09', '11'])->get();
+
+        return compact('state_types');
+    }
+
+    public function updateStateType($state_type_id, $id)
+    {
+        $record = SaleOpportunity::find($id);
+        $record->state_type_id = $state_type_id;
+        $record->save();
+
+        return [
+            'success' => true,
+            'message' => 'Estado actualizado correctamente'
+        ];
+    }
 
     public function option_tables()
     {
@@ -277,6 +295,7 @@ class SaleOpportunityController extends Controller
                 $warehouse = Warehouse::where('establishment_id', auth()->user()->establishment_id)->first();
 
                 $items = Item::orderBy('description')->whereIsActive()->whereNotIsSet()
+                    ->with('item_unit_types.prices')
                     // ->with(['warehouses' => function($query) use($warehouse){
                     //     return $query->where('warehouse_id', $warehouse->id);
                     // }])
@@ -298,17 +317,17 @@ class SaleOpportunityController extends Controller
                         'is_set' => (bool) $row->is_set,
                         'has_igv' => (bool) $row->has_igv,
                         'calculate_quantity' => (bool) $row->calculate_quantity,
-                        'item_unit_types' => collect($row->item_unit_types)->transform(function($row) {
+                        'item_unit_types' => collect($row->item_unit_types)->transform(function($iut) {
                             return [
-                                'id' => $row->id,
-                                'description' => "{$row->description}",
-                                'item_id' => $row->item_id,
-                                'unit_type_id' => $row->unit_type_id,
-                                'quantity_unit' => $row->quantity_unit,
-                                'price1' => $row->price1,
-                                'price2' => $row->price2,
-                                'price3' => $row->price3,
-                                'price_default' => $row->price_default,
+                                'id'            => $iut->id,
+                                'description'   => "{$iut->description}",
+                                'item_id'       => $iut->item_id,
+                                'unit_type_id'  => $iut->unit_type_id,
+                                'quantity_unit' => $iut->quantity_unit,
+                                'price1'        => optional($iut->prices->firstWhere('price_label_id', 1))->price ?? 0,
+                                'price2'        => optional($iut->prices->firstWhere('price_label_id', 2))->price ?? 0,
+                                'price3'        => optional($iut->prices->firstWhere('price_label_id', 3))->price ?? 0,
+                                'price_default' => $iut->price_default,
                             ];
                         }),
                         'warehouses' => collect($row->warehouses)->transform(function($row) {

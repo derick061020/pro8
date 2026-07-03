@@ -414,17 +414,10 @@ export default {
             this.form.products = this.form.products
                 .filter((item) => item.is_registered === false);
 
-            // NO generar comprobante automáticamente al agregar productos pagados
-            // Los productos pagados se agregan pero no generan comprobante
             if (this.isAtLeastOnePaid(this.form.products)) {
                 const paidProducts = this.form.products.filter(item => item.payment_status === "PAID");
                 this.document.items.push(...paidProducts);
-                // Comentado: await this.onGoToInvoice();
-                this.$message({
-                    message: 'Producto(s) pagado(s) agregado(s) a la habitación. No se generó comprobante automáticamente.',
-                    type: 'info',
-                    duration: 3000
-                });
+                await this.onGoToInvoice();
             }
 
             this.loading = true;

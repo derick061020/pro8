@@ -126,7 +126,7 @@
                     </div>
                 </div>
                 <div class="col-md-12 text-center pt-2" v-if="showAddButton && (purchase.total_difference > 0)">
-                    <el-button type="primary" icon="el-icon-plus" @click="clickAddRow">Nuevo</el-button>
+                    <el-button type="primary" :loading="showButtonAdd" icon="el-icon-plus" @click="clickAddRow">Nuevo</el-button>
                 </div>
             </div>
         </div>
@@ -150,6 +150,7 @@
                 payment_method_types: [],
                 headers: headers_token,
                 index_file: null,
+                showButtonAdd: false,
                 fileList: [],
                 showAddButton: true,
                 purchase: {}
@@ -207,6 +208,7 @@
             },
             async getData() {
                 this.initForm();
+                this.showButtonAdd = true 
                 await this.$http.get(`/${this.resource}/purchase/${this.purchaseId}`)
                     .then(response => {
                         this.purchase = response.data;
@@ -216,6 +218,7 @@
                     .then(response => {
                         this.records = response.data.data
                     });
+                this.showButtonAdd = false
                 this.$eventHub.$emit('reloadDataToPay')
 
             },

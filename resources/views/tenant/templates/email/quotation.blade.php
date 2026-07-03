@@ -14,9 +14,12 @@
     </style>
 </head>
 <body>
+@php
+    use App\CoreFacturalo\Helpers\CompanyDocumentDisplay as EmailQuotCo;
+@endphp
 <p>Estimad@: 
 
-    {{ $company->name }}
+    {{ EmailQuotCo::commercialLine($company) }}
   
     , informamos que su cotización ha sido emitida exitosamente.</p>
 

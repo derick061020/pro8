@@ -11,7 +11,8 @@
             <div class="form-body">
                 <div class="row">
                     <div
-                        class="col-md-7 col-lg-7 col-xl-7 product-search-model"
+                        class="product-search-model"
+                        :class="{'col-md-7 col-lg-7 col-xl-7': affectation_igv_types.length > 1, 'col-12': affectation_igv_types.length <= 1}"
                     >
                         <el-tooltip
                             slot="append"
@@ -140,7 +141,7 @@
                             ></small>
                         </div>
                     </div>
-                    <div class="col-md-5">
+                    <div class="col-md-5" v-if="affectation_igv_types.length > 1">
                         <div
                             :class="{
                                 'has-danger': errors.affectation_igv_type_id
@@ -324,7 +325,7 @@
                             <small class="form-control-feedback" v-if="errors.item_unit_type_id" v-text="errors.item_unit_type_id[0]"></small>
                         </div>
                     </div>-->
-                    <div class="col-md-12 mt-3">
+                    <div class="col-md-12 mt-3" v-if="config.show_item_discounts_charges_attributes !== false">
                         <section
                             id="card-section"
                             class="card mb-2 card-transparent"

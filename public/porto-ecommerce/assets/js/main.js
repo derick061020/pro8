@@ -523,7 +523,11 @@ function(e) {
 					);
 			});
 			
-			jQuery(".cart-count").append(count);
+			if(count > 0){
+				jQuery(".cart-count").append(count).show();
+			}else{
+				jQuery(".cart-count").hide();
+			}
 
 		},
 		addToCart: function()

@@ -56,14 +56,14 @@
                 <div class="text-center company_logo_box">
                     <img
                         src="data:{{mime_content_type(public_path("{$logo}"))}};base64, {{base64_encode(file_get_contents(public_path("{$logo}")))}}"
-                        alt="{{$company->name}}" class="company_logo" style="max-width: 60%; margin-left: 20%;">
+                        alt="{{ \App\CoreFacturalo\Helpers\CompanyDocumentDisplay::logoAlt($company) }}" class="company_logo" style="max-width: 60%; margin-left: 20%;">
                 </div>
             @endif
         </td>
     </tr>
     <tr>
         <td class="text-center text-uppercase">
-            {{ $company->name }}<br>
+            @include('pdf.partials.company_document_header_names_plain')<br>
             {{ 'RUC '.$company->number }}
         </td>
     </tr>
@@ -457,7 +457,7 @@
         </tr>
     @endif
 
-    @if($document->total_discount > 0 && $document->subtotal > 0)
+    @if($document->total_discount_with_igv > 0 && $document->subtotal > 0)
         <tr>
             <td colspan="3" class="desc-ticket text-uppercase">SUBTOTAL:
                 {{ $document->currency_type->symbol }}</td>
@@ -466,14 +466,14 @@
         </tr>
     @endif
 
-    @if($document->total_discount > 0)
+    @if($document->total_discount_with_igv > 0)
         <tr>
             <td colspan="3"
                 class="desc-ticket text-uppercase">{{(($document->total_prepayment > 0) ? 'ANTICIPO':'DESCUENTO TOTAL')}}
                 :
                 {{ $document->currency_type->symbol }}</td>
             <td colspan="2"
-                class="text-right desc-ticket text-uppercase">{{ number_format($document->total_discount, 2) }}</td>
+                class="text-right desc-ticket text-uppercase">{{ number_format($document->total_discount_with_igv, 2) }}</td>
         </tr>
     @endif
 

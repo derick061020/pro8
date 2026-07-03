@@ -1,9 +1,9 @@
 @extends('tenant.layouts.auth')
 
 @section('content')
-<section class="auth auth__form-{{ $login->position_form }}">
+<section class="auth auth__form-{{ $login->position_form }} {{ !$useLoginGlobal ? ' d-flex align-items-center justify-content-center' : '' }}">
     @include('tenant.auth.partials.side_left')
-    <article class="auth__form">
+    <article class="auth__form {{ !$useLoginGlobal ? 'h-auto login-container px-5 py-4' : '' }}">
         <form method="POST" action="{{ route('login') }}">
             @csrf
             @if ($useLoginGlobal)
@@ -24,7 +24,7 @@
                 @endif
             @endif            
             <div class="text-center title-login-container">
-                <h1 class="auth__title"><span class="text-xs">Bienvenido a</span><br><b>{{ $company->trade_name }}</b></h1>
+                <h1 class="auth__title {{ !$useLoginGlobal ? 'mt-0' : '' }}"><span class="text-xs">Bienvenido a</span><br><b>{{ $company->trade_name }}</b></h1>
                 <p class="auth__subtitle">Ingresa a tu cuenta</p>
                 <p class="auth__subtitle__black d-none">
                     Ingrese su correo electrónico y contraseña a continuación para iniciar sesión en su cuenta.
@@ -40,7 +40,7 @@
             <div class="form-group">
                 <label for="password" class="label-password">
                     Contraseña
-                    <a class="forgot-password d-none" href="{{ url('password/reset') }}" tabindex="5">¿Olvidaste tu contraseña?</a>
+                    <a class="forgot-password d-none" href="{{ route('password.request') }}" tabindex="5">¿Olvidaste tu contraseña?</a>
                 </label>
                 <div class="position-relative">
                     <input type="password" name="password" id="password" placeholder="********" class="form-control hide-password {{ $errors->has('password') ? 'is-invalid' : '' }}">
@@ -58,7 +58,7 @@
                     <input name="remember" id="RememberMe" type="checkbox" {{ old('remember') ? 'checked' : '' }}>
                     <label class="m-0" for="RememberMe">Recordarme</label>
                 </div>
-                <a class="forgot-password-modern d-none" href="{{ url('password/reset') }}" tabindex="5">¿Olvidaste tu contraseña?</a>
+                <a class="forgot-password-modern d-none" href="{{ route('password.request') }}" tabindex="5">¿Olvidaste tu contraseña?</a>
             </div>
 
             <button type="submit" class="btn btn-signin btn-block">
@@ -66,7 +66,7 @@
                 iniciar sesión
             </button>
             <div class="text-center p-4 password-down">
-                <a href="{{ url('password/reset') }}" tabindex="5">¿Has olvidado tu contraseña?</a>
+                <a href="{{ route('password.request') }}" tabindex="5">¿Has olvidado tu contraseña?</a>
             </div>
             @include('tenant.auth.partials.socials')
         </form>

@@ -75,7 +75,12 @@
                                                             </div>
                                                         </template>
                                                     </el-select>
-                                                    <span class="btn-add-new btn-add-new-p-quotation" @click.prevent="showDialogNewPerson = true" title="Agregar nuevo proveedor">
+                                                    <template v-if="row.supplier_id">
+                                                        <span class="btn-add-new btn-add-new-p-quotation btn-edit-person" @click.prevent="personRecordId = row.supplier_id; showDialogNewPerson = true" title="Editar proveedor">
+                                                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-user-edit"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0" /><path d="M6 21v-2a4 4 0 0 1 4 -4h3.5" /><path d="M18.42 15.61a2.1 2.1 0 0 1 2.97 2.97l-3.39 3.42h-3v-3l3.42 -3.39" /></svg>
+                                                        </span>
+                                                    </template>
+                                                    <span class="btn-add-new btn-add-new-p-quotation" @click.prevent="personRecordId = null; showDialogNewPerson = true" title="Agregar nuevo proveedor">
                                                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-user-plus"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0" /><path d="M16 19h6" /><path d="M19 16v6" /><path d="M6 21v-2a4 4 0 0 1 4 -4h4" /></svg>
                                                     </span>
                                                 </div>
@@ -165,6 +170,7 @@
         <person-form :showDialog.sync="showDialogNewPerson"
                        type="suppliers"
                        :external="true"
+                       :recordId="personRecordId"
                        :document_type_id = form.document_type_id
                        :input_person="personFormInput"></person-form>
 
@@ -221,6 +227,7 @@
                 resource: 'purchase-quotations',
                 showDialogAddItem: false,
                 showDialogNewPerson: false,
+                personRecordId: null,
                 showDialogOptions: false,
                 loading_submit: false,
                 loading_form: false,
@@ -363,7 +370,7 @@
             clickRemoveItem(index) {
                 this.form.items.splice(index, 1)
             }, 
-            async validateSuppliers(){
+            /*async validateSuppliers(){
 
                 let cont = 0
                 await this.form.suppliers.forEach(element => {
@@ -376,12 +383,12 @@
                     return {success:false, message:'El campo correo electrónico es requerido'}
 
                 return {success:true}
-            },
+            },*/
             async submit() {
                  
-                let validate = await this.validateSuppliers()
+                /*let validate = await this.validateSuppliers()
                 if(!validate.success)
-                    return this.$message.error(validate.message);
+                    return this.$message.error(validate.message);*/
 
 
                 this.loading_submit = true
@@ -415,6 +422,7 @@
                 })             
             },
             openNewPersonDialog() {
+                this.personRecordId = null
                 this.showDialogNewPerson = true
             },
         }

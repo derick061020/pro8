@@ -167,9 +167,7 @@ class ExpenseController extends Controller
             {
                 $record_payment = $doc->payments()->create($row);
                 
-                if($row['expense_method_type_id'] == 1){
                     $row['payment_destination_id'] = 'cash';
-                }
 
                 $this->createGlobalPayment($record_payment, $row);
             }

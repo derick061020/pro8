@@ -6,6 +6,28 @@
     $document_number = $document->series.'-'.str_pad($document->number, 8, '0', STR_PAD_LEFT);
     // $document_type_driver = App\Models\Tenant\Catalogs\IdentityDocumentType::findOrFail($document->driver->identity_document_type_id);
 
+    // Obtener configuración de columnas para Plantilla_personalizable
+    $columnsConfig = \App\Models\Tenant\TemplateColumnsConfig::where('establishment_id', $document->establishment_id)
+        ->where('template_name', 'Plantilla_personalizable')
+        ->first();
+
+    $showColumns = $columnsConfig ? $columnsConfig->columns_config : [
+        'codigo' => true,
+        'cantidad' => true,
+        'unidad' => true,
+        'descripcion' => true,
+        'serie' => false,
+        'modelo' => false,
+        'marca' => false,
+        'lote' => false,
+        'fecha_vencimiento' => false,
+        'precio_unitario' => true,
+        'descuento' => true,
+        'total' => true,
+        'tipo_persona' => false,
+        'peso_total' => false,
+    ];
+
 @endphp
 <html>
 <head>
@@ -19,11 +41,11 @@
             <td width="20%">
                 <img
                     src="data:{{mime_content_type(public_path("storage/uploads/logos/{$company->logo}"))}};base64, {{base64_encode(file_get_contents(public_path("storage/uploads/logos/{$company->logo}")))}}"
-                    alt="{{$company->name}}" alt="{{ $company->name }}" class="company_logo" style="max-width: 300px">
+                    alt="{{ \App\CoreFacturalo\Helpers\CompanyDocumentDisplay::logoAlt($company) }}" alt="{{ \App\CoreFacturalo\Helpers\CompanyDocumentDisplay::logoAlt($company) }}" class="company_logo" style="max-width: 300px">
             </td>
             <td width="50%" class="text-center">
                 <div class="text-left">
-                    <h3 class="">{{ $company->name }}</h3>
+                    @include('pdf.partials.company_document_header_names', ['tagPrimary' => 'h3', 'tagLegal' => 'h4'])
                     <h4>{{ 'RUC '.$company->number }}</h4>
                     <h5 style="text-transform: uppercase;">
                         {{ ($establishment->address !== '-')? $establishment->address : '' }}
@@ -42,7 +64,7 @@
         @else
             <td width="70%" class="pl-1 text-left">
                 <div class="text-left">
-                    <h3 class="">{{ $company->name }}</h3>
+                    @include('pdf.partials.company_document_header_names', ['tagPrimary' => 'h3', 'tagLegal' => 'h4'])
                     <h4>{{ 'RUC '.$company->number }}</h4>
                     <h5 style="text-transform: uppercase;">
                         {{ ($establishment->address !== '-')? $establishment->address : '' }}
@@ -219,7 +241,7 @@
                 <td>{{ $row['document_type']['description'] }}: {{ $row['number'] }}</td>
             </tr>
             <tr>
-                <td>PROOVEDOR {{ $row['name'] }}</td>
+                <td>PROVEEDOR {{ $row['name'] }}</td>
                 <td>RUC: {{ $row['customer'] }}</td>
             </tr>
         @endforeach
@@ -478,6 +500,12 @@ foreach($document->items as $row) {
         break;
     }
 }
+
+$showSerie    = $showSerie    && ($showColumns['serie'] ?? false);
+$showModel    = $showModel    && ($showColumns['modelo'] ?? false);
+$showBrand    = $showBrand    && ($showColumns['marca'] ?? false);
+$showLot      = $showLot      && ($showColumns['lote'] ?? false);
+$showDateDue  = $showDateDue  && ($showColumns['fecha_vencimiento'] ?? false);
 @endphp
 
 <table class="full-width border-box mt-10 mb-10">
@@ -485,8 +513,12 @@ foreach($document->items as $row) {
     @if($configuration["enabled_price_items_dispatch"])
     <tr>
         <th class="border-top-bottom text-center" width="8%">Item</th>
-        <th class="border-top-bottom text-center" width="8%">Código</th>
-        <th class="border-top-bottom text-left">Descripción</th>
+        @if($showColumns['codigo'] ?? true)
+            <th class="border-top-bottom text-center" width="8%">Código</th>
+        @endif
+        @if($showColumns['descripcion'] ?? true)
+            <th class="border-top-bottom text-left">Descripción</th>
+        @endif
         @if($showSerie)
             <th class="border-top-bottom text-left">Serie</th>
         @endif
@@ -502,20 +534,40 @@ foreach($document->items as $row) {
         @if($showDateDue)
             <th class="border-top-bottom text-center">F. Venc.</th>
         @endif
-        <th class="border-top-bottom text-center" width="8%">Unidad</th>
-        <th class="border-top-bottom text-center" width="9%">Cantidad</th>
-        <th class="border-top-bottom text-center"width="8%">Precio</th>
-        <th class="border-top-bottom text-right"width="8%">Total</th>
+        @if($showColumns['unidad'] ?? true)
+            <th class="border-top-bottom text-center" width="8%">Unidad</th>
+        @endif
+        @if($showColumns['cantidad'] ?? true)
+            <th class="border-top-bottom text-center" width="9%">Cantidad</th>
+        @endif
+        @if($showColumns['precio_unitario'] ?? true)
+            <th class="border-top-bottom text-center" width="8%">Precio</th>
+        @endif
+        @if($showColumns['total'] ?? true)
+            <th class="border-top-bottom text-right" width="8%">Total</th>
+        @endif
     </tr>
     @else
     <tr>
         <th class="border-top-bottom text-center">Item</th>
-        <th class="border-top-bottom text-center">Código</th>
-        <th class="border-top-bottom text-left">Descripción</th>
-        <th class="border-top-bottom text-left">Serie</th>
-        <th class="border-top-bottom text-left">Modelo</th>
-        <th class="border-top-bottom text-center">Unidad</th>
-        <th class="border-top-bottom text-right">Cantidad</th>
+        @if($showColumns['codigo'] ?? true)
+            <th class="border-top-bottom text-center">Código</th>
+        @endif
+        @if($showColumns['descripcion'] ?? true)
+            <th class="border-top-bottom text-left">Descripción</th>
+        @endif
+        @if($showSerie)
+            <th class="border-top-bottom text-left">Serie</th>
+        @endif
+        @if($showModel)
+            <th class="border-top-bottom text-left">Modelo</th>
+        @endif
+        @if($showColumns['unidad'] ?? true)
+            <th class="border-top-bottom text-center">Unidad</th>
+        @endif
+        @if($showColumns['cantidad'] ?? true)
+            <th class="border-top-bottom text-right">Cantidad</th>
+        @endif
     </tr>
     @endif
     </thead>
@@ -524,7 +576,10 @@ foreach($document->items as $row) {
         @if($configuration["enabled_price_items_dispatch"])
             <tr>
             <td class="text-center">{{ $loop->iteration }}</td>
+            @if($showColumns['codigo'] ?? true)
             <td class="text-center">{{ $row->item->internal_id }}</td>
+            @endif
+            @if($showColumns['descripcion'] ?? true)
             <td class="text-left">
                 @if($row->name_product_pdf)
                     {!!$row->name_product_pdf!!}
@@ -557,11 +612,12 @@ foreach($document->items as $row) {
                     *** Pago Anticipado ***
                 @endif
             </td>
+            @endif
             @if($showSerie)
             <td class="text-left align-top">
                 @isset($row->item->lots)
                     @foreach($row->item->lots as $lot)
-                        @if( isset($lot->has_sale) && $lot->has_sale)
+                        @if(!empty($lot->series))
                             <span style="font-size: 9px">{{ $lot->series }}</span><br>
                         @endif
                     @endforeach
@@ -602,7 +658,10 @@ foreach($document->items as $row) {
                     {{ $cleanedDate }}
                 </td>
             @endif
+            @if($showColumns['unidad'] ?? true)
             <td class="text-center">{{ $row->item->unit_type_id }}</td>
+            @endif
+            @if($showColumns['cantidad'] ?? true)
             <td class="text-center">
                 @if(((int)$row->quantity != $row->quantity))
                     {{ $row->quantity }}
@@ -610,13 +669,21 @@ foreach($document->items as $row) {
                     {{ number_format($row->quantity, 0) }}
                 @endif
             </td>
+            @endif
+            @if($showColumns['precio_unitario'] ?? true)
             <td class="text-center">{{ number_format($row->item->unit_price, 2) }}</td>
+            @endif
+            @if($showColumns['total'] ?? true)
             <td class="text-right">{{ number_format($row->item->total, 2) }}</td>
+            @endif
         </tr>
         @else 
             <tr>
             <td class="text-center">{{ $loop->iteration }}</td>
+            @if($showColumns['codigo'] ?? true)
             <td class="text-center">{{ $row->item->internal_id }}</td>
+            @endif
+            @if($showColumns['descripcion'] ?? true)
             <td class="text-left">
                 @if($row->name_product_pdf)
                     {!!$row->name_product_pdf!!}
@@ -649,35 +716,25 @@ foreach($document->items as $row) {
                     *** Pago Anticipado ***
                 @endif
             </td>
-            {{-- <td class="text-left">
-                @php
-                    $current_item = $items ? $items->where('item_id', $row->item_id)->first() : null;
-                @endphp
-                @if($current_item && count($current_item->item->lots) > 0)
-                    @foreach($current_item->item->lots as $lot)
-                        {{$lot->series}}
-                        @if(!$loop->first && $loop->last)
-                            -
+            @endif
+            @if($showSerie)
+            <td class="text-left align-top">
+                @isset($row->item->lots)
+                    @foreach($row->item->lots as $lot)
+                        @if(!empty($lot->series))
+                            <span style="font-size: 9px">{{ $lot->series }}</span><br>
                         @endif
                     @endforeach
-                @endif
-            </td> --}}
+                @endisset
+            </td>
+            @endif
+            @if($showModel)
             <td class="text-left">{{ $row->item->model ?? '' }}</td>
-            {{-- <td class="text-left">
-                @php
-                    $current_item = $items ? $items->where('item_id', $row->item_id)->first() : null;
-                @endphp
-                @if($current_item && count($current_item->item->lots) > 0)
-                    @foreach($current_item->item->lots as $lot)
-                        {{$lot->series}}
-                        @if(!$loop->first && $loop->last)
-                            -
-                        @endif
-                    @endforeach
-                @endif
-            </td> --}}
-            <td class="text-left">{{ $row->item->model ?? '' }}</td>
+            @endif
+            @if($showColumns['unidad'] ?? true)
             <td class="text-center">{{ $row->item->unit_type_id }}</td>
+            @endif
+            @if($showColumns['cantidad'] ?? true)
             <td class="text-right">
                 @if(((int)$row->quantity != $row->quantity))
                     {{ $row->quantity }}
@@ -685,6 +742,7 @@ foreach($document->items as $row) {
                     {{ number_format($row->quantity, 0) }}
                 @endif
             </td>
+            @endif
          </tr>
         @endif
     @endforeach

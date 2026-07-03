@@ -107,7 +107,7 @@
                             }
                             $pack = $item->getSetItems();
                             $item = $value->item;
-                            $stablihsment = \App\CoreFacturalo\Helpers\Template\ReportHelper::getLocationData($value); 
+                            $stablihsment = \App\CoreFacturalo\Helpers\Template\ReportHelper::getLocationData($document);
                             ?>
                             @include('report::general_items.partials.report_excel_body_sale',
                                     [

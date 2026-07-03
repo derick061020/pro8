@@ -22,6 +22,7 @@
         @endif
         {{-- <link href="{{ mix('css/app.css') }}" id="app-style" rel="stylesheet" type="text/css" /> --}}
         @vite(['resources/js/system.js'])
+        @stack('styles')
 
     </head>
     <body>

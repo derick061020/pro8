@@ -35,7 +35,6 @@ use Modules\Restaurant\Models\RestaurantRole;
 use Modules\MobileApp\Models\AppModule;
 use Modules\LevelAccess\Models\SystemActivityLog;
 use Modules\LevelAccess\Models\AuthorizedDiscountUser;
-use App\Models\Tenant\HotelCleaning;
 
 
 /**
@@ -652,9 +651,6 @@ $withEstablishment = true){
             case 'client':
                 $type =  'Cliente' ;
                 break;
-            case 'limpiador':
-                $type =  'Limpiador' ;
-                break;
             default:
                 # code...
                 break;
@@ -776,14 +772,6 @@ $withEstablishment = true){
     public function incomes()
     {
         return $this->hasMany(Income::class);
-    }
-
-    /**
-     * @return HasMany
-     */
-    public function cleanings()
-    {
-        return $this->hasMany(HotelCleaning::class, 'user_id');
     }
 
     /**

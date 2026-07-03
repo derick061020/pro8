@@ -3,6 +3,7 @@ import Vue from 'vue'
 // Imports
 import TenantItemAditionalInfoSelector from './views/tenant/components/partials/item_extra_info.vue'
 import TenantItemAditionalInfoModal from './views/tenant/components/partials/modal_item_info_attributes.vue'
+import NotificationHeader from './components/NotificationHeader.vue'
 
 import TenantDashboardIndex from '../../modules/Dashboard/Resources/assets/js/views/index.vue'
 import TenantDashboardSalesByProduct from '../../modules/Dashboard/Resources/assets/js/views/items/SalesByProduct.vue'
@@ -176,7 +177,7 @@ import TenantIncentivesIndex from '../../modules/Item/Resources/assets/js/views/
 import TenantItemLotsIndex from '../../modules/Item/Resources/assets/js/views/item-lots/index.vue'
 
 import TenantEcommerceConfigurationInfo from '../../modules/Ecommerce/Resources/assets/js/views/configuration/index.vue'
-import TenantEcommerceConfigurationCulqi from '../../modules/Ecommerce/Resources/assets/js/views/configuration_culqi/index.vue'
+import TenantEcommerceConfigurationCulqi from '../../modules/Ecommerce/Resources/assets/js/views/payment_gateways/index.vue'
 import TenantEcommerceConfigurationPaypal from '../../modules/Ecommerce/Resources/assets/js/views/configuration_paypal/index.vue'
 import TenantEcommerceConfigurationLogo from '../../modules/Ecommerce/Resources/assets/js/views/configuration_logo/index.vue'
 import TenantEcommerceConfigurationSocial from '../../modules/Ecommerce/Resources/assets/js/views/configuration_social/index.vue'
@@ -268,7 +269,6 @@ import TenantHotelSucursale from '@viewsModuleHotel/rooms/partials/ButtonSucursa
 import TenantHotelRent from '@viewsModuleHotel/rooms/Rent.vue'
 import TenantHotelRentAddProduct from '@viewsModuleHotel/rooms/AddProductToRoom.vue'
 import TenantHotelRentCheckout from '@viewsModuleHotel/rooms/Checkout.vue'
-import TenantHotelReservationCalendar from '@viewsModuleHotel/reservations/Calendar.vue'
 
 // Trámite documentario
 import TenantDocumentaryOffices from '@viewsModuleDocumentary/offices/Offices.vue'
@@ -312,6 +312,7 @@ import TenantSuscriptionClientIndex from '../../modules/Suscription/Resources/as
 import TenantSuscriptionPlansIndex from '../../modules/Suscription/Resources/assets/js/plans/index.vue'
 import TenantSuscriptionPaymentsIndex from '../../modules/Suscription/Resources/assets/js/payments/index.vue'
 import DataTablePaymentReceipt from '../js/components/DataTablePaymentReceipt.vue'
+import DataTablePaymentReceiptOrder from '../js/components/DataTablePaymentReceiptOrder.vue'
 import TenantIndexPaymentReceipt from '../../modules/Suscription/Resources/assets/js/payment_receipt/index.vue'
 
 // Suscription - extras
@@ -323,6 +324,10 @@ import TenantFullSuscriptionClientIndex from '../../modules/FullSuscription/Reso
 import TenantFullSuscriptionPlansIndex from '../../modules/FullSuscription/Resources/assets/js/plans/index.vue'
 import TenantFullSuscriptionPaymentsIndex from '../../modules/FullSuscription/Resources/assets/js/payments/index.vue'
 import TenantFullSuscriptionIndexPaymentReceipt from '../../modules/FullSuscription/Resources/assets/js/payment_receipt/index.vue'
+import FullSuscriptionPaymentReminders from '../../modules/FullSuscription/Resources/assets/js/payment-reminders/index.vue'
+import FullSuscriptionPendingPayments from '../../modules/FullSuscription/Resources/assets/js/pending_payments/index.vue'
+import FullSuscriptionPendingPaymentsViewOrder from '../../modules/FullSuscription/Resources/assets/js/pending_payments/view-order.vue'
+import FullSuscriptionPlansClient from '../../modules/FullSuscription/Resources/assets/js/plans/client.vue'
 
 // Bank loans
 import TenantBankloansIndex from '../../modules/Expense/Resources/assets/js/views/bank_loans/index.vue'
@@ -375,6 +380,13 @@ import TenatnEditorTag from '../../modules/Item/Resources/assets/js/views/editor
 import EmptyState from './components/EmptyState.vue'
 import TenantItemAffectations from './views/tenant/item_affectations/index.vue';
 import TenantcustomFieldsIndex from '@viewsModuleCustomField/custom_fields/index.vue';
+import CheckoutIzipay from './components/checkouts/izipay.vue'
+import CheckoutCulqi from './components/checkouts/culqi.vue'
+import CheckoutTenant from './components/checkouts/CheckoutTenant.vue'
+import CheckoutAdmin from './components/checkouts/CheckoutAdmin.vue'
+
+import TenantClaimsBookIndex from '@viewsModuleClaimsBook/views/index.vue'
+import TenantClaimsBookForm from '@viewsModuleClaimsBook/views/claim_form.vue'
 
 //componente agregado para issue #93 añadir icono cuando no hay datos
 Vue.component('empty-state', EmptyState);
@@ -391,6 +403,7 @@ Vue.component('tenant-qr-api', TenantQrApi);
 // Registrations
 Vue.component('tenant-item-aditional-info-selector', TenantItemAditionalInfoSelector)
 Vue.component('tenant-item-aditional-info-modal', TenantItemAditionalInfoModal)
+Vue.component('tenant-notifications-header', NotificationHeader)
 
 Vue.component('tenant-dashboard-index', TenantDashboardIndex)
 Vue.component('tenant-dashboard-sales-by-product', TenantDashboardSalesByProduct)
@@ -658,7 +671,6 @@ Vue.component('tenant-hotel-sucursale', TenantHotelSucursale)
 Vue.component('tenant-hotel-rent', TenantHotelRent)
 Vue.component('tenant-hotel-rent-add-product', TenantHotelRentAddProduct)
 Vue.component('tenant-hotel-rent-checkout', TenantHotelRentCheckout)
-Vue.component('tenant-hotel-reservation-calendar', TenantHotelReservationCalendar)
 
 // Trámite documentario
 Vue.component('tenant-documentary-offices', TenantDocumentaryOffices)
@@ -702,6 +714,7 @@ Vue.component('tenant-suscription-client-index', TenantSuscriptionClientIndex)
 Vue.component('tenant-suscription-plans-index', TenantSuscriptionPlansIndex)
 Vue.component('tenant-suscription-payments-index', TenantSuscriptionPaymentsIndex)
 Vue.component('data-table-payment-receipt', DataTablePaymentReceipt)
+Vue.component('data-table-payment-receipt-order', DataTablePaymentReceiptOrder)
 Vue.component('tenant-index-payment-receipt', TenantIndexPaymentReceipt)
 
 // Suscription extras
@@ -713,6 +726,10 @@ Vue.component('tenant-full-suscription-client-index', TenantFullSuscriptionClien
 Vue.component('tenant-full-suscription-plans-index', TenantFullSuscriptionPlansIndex)
 Vue.component('tenant-full-suscription-payments-index', TenantFullSuscriptionPaymentsIndex)
 Vue.component('tenant-full-suscription-index-payment-receipt', TenantFullSuscriptionIndexPaymentReceipt)
+Vue.component('full-suscription-payment-reminders', FullSuscriptionPaymentReminders)
+Vue.component('full-suscription-pending-payments', FullSuscriptionPendingPayments)
+Vue.component('full-suscription-pending-payments-view-order', FullSuscriptionPendingPaymentsViewOrder)
+Vue.component('full-suscription-plans-client', FullSuscriptionPlansClient)
 
 // Bank loans
 Vue.component('tenant-bankloans-index', TenantBankloansIndex)
@@ -757,3 +774,14 @@ Vue.component('tenant-system-activity-logs-transactions-index', TenantSystemActi
 Vue.component('tenant-remember-change-password', TenantRememberChangePassword)
 Vue.component('tenant-report-pending-account-commissions-index', TenantReportPendingAccountCommissionsIndex)
 Vue.component('tenant-item-editor-tag', TenatnEditorTag)
+
+// Libro de Reclamaciones
+Vue.component('tenant-claims-book-index',          TenantClaimsBookIndex)
+Vue.component('tenant-claims-book-form',           TenantClaimsBookForm)
+
+//Checkout
+
+Vue.component('tenant-checkout-culqi', CheckoutCulqi)
+Vue.component('tenant-checkout-izipay', CheckoutIzipay)
+Vue.component('checkout-admin', CheckoutAdmin)
+Vue.component('checkout-tenant', CheckoutTenant)

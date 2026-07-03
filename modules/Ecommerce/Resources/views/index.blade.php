@@ -11,7 +11,7 @@
             @if(!$tagid)
                 @include('ecommerce::layouts.partials_ecommerce.home_slider')
             @endif
-            <div class="row py-4">
+            <div class="row py-4 mx-0">
                 @include('ecommerce::layouts.partials_ecommerce.categories')
             </div>
             <div class="row py-4">

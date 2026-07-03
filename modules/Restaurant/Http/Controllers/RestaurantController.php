@@ -34,6 +34,25 @@ use App\Models\Tenant\Person;
 
 class RestaurantController extends Controller
 {
+    /**
+     * Descripción general reutilizable para meta tags y otros lugares
+     */
+    public static function getRestaurantDescription($company = null)
+    {
+        // Buscar el nombre comercial en varios campos posibles
+        $trade_name = data_get($company, 'trade_name')
+            ?: 'Tu Restaurante';
+        return "Disfruta lo mejor de la gastronomía en {$trade_name}. Descubre una amplia variedad de platos deliciosos, ingredientes de calidad y atención excepcional, con pedidos fáciles y servicio rápido y confiable.";
+    }
+
+    public function __construct(){
+
+        // Compartir descripción restaurante globalmente usando el modelo Company
+        $companyModel = \App\Models\Tenant\Company::first();
+        $restaurantDescription = self::getRestaurantDescription($companyModel);
+        view()->share('restaurantDescription', $restaurantDescription);
+    }
+
     public function menu($name = null)
     {
         if($name) {
@@ -47,6 +66,9 @@ class RestaurantController extends Controller
         $preferences = $configEcommerce && $configEcommerce->preferences
             ? (is_string($configEcommerce->preferences) ? json_decode($configEcommerce->preferences, true) : $configEcommerce->preferences)
             : ['show_description' => 1, 'show_stock' => 0, 'only_available_products' => 0];
+
+        // Obtener el modelo Company para meta tags y descripción
+        $company = \App\Models\Tenant\Company::first();
 
         // Query base
         $query = Item::where([['apply_restaurant', 1], ['internal_id','!=', null]]);
@@ -67,11 +89,16 @@ class RestaurantController extends Controller
             ->where('type', 'spots')
             ->get();
 
+        // Obtener la descripción general para meta tags
+        $restaurantDescription = self::getRestaurantDescription($company);
+
         return view('restaurant::index', [
             'dataPaginate' => $dataPaginate,
             'configuration' => $configuration->stock_control,
             'spots' => $spots,
-            'preferences' => $preferences
+            'preferences' => $preferences,
+            'restaurantDescription' => $restaurantDescription,
+            'company' => $company
         ])->with('categories', $categories);
     }
 
@@ -155,8 +182,9 @@ class RestaurantController extends Controller
     }
 
 
-    public function item($id, $promotion_id = null)
+    public function item($slug, $promotion_id = null)
     {
+        $id = (int) $slug;
         $row = Item::find($id);
         $exchange_rate_sale = $this->getExchangeRateSale();
         $sale_unit_price = ($row->has_igv) ? $row->sale_unit_price : $row->sale_unit_price*1.18;

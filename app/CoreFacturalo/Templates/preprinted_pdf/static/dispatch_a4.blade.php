@@ -18,7 +18,7 @@
     <tr>
         @if($company->logo)
             <td width="10%">
-                <img src="data:{{mime_content_type(public_path("storage/uploads/logos/{$company->logo}"))}};base64, {{base64_encode(file_get_contents(public_path("storage/uploads/logos/{$company->logo}")))}}" alt="{{$company->name}}" alt="{{ $company->name }}"  class="company_logo" style="max-width: 300px">
+                <img src="data:{{mime_content_type(public_path("storage/uploads/logos/{$company->logo}"))}};base64, {{base64_encode(file_get_contents(public_path("storage/uploads/logos/{$company->logo}")))}}" alt="{{ \App\CoreFacturalo\Helpers\CompanyDocumentDisplay::logoAlt($company) }}" class="company_logo" style="max-width: 300px">
             </td>
         @else
             <td width="10%">
@@ -27,7 +27,7 @@
         @endif
         <td width="50%" class="pl-3 text-center">
             <div>
-                <h3 style="text-transform: uppercase;">{{ $company->name }}</h3>
+                @include('pdf.partials.company_document_header_names', ['tagPrimary' => 'h3', 'tagLegal' => 'h4', 'primaryStyle' => 'text-transform: uppercase;', 'legalLineStyle' => 'font-weight:400;font-size:0.95em;margin:0.1rem 0 0 0;line-height:1.25;text-transform: uppercase;'])
             </div>
         </td>
         <td width="40%" class="border-box p-4 text-center">

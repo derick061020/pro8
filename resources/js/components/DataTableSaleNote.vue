@@ -94,9 +94,9 @@
                     </table>
 
                     <div class="row mb-5">
-                        <div class="col-md-4 text-center">Total notas de venta en soles S/ {{totals.total_pen}}</div>
-                        <div class="col-md-4 text-center">Total pagado en soles S/ {{totals.total_paid_pen}}</div>
-                        <div class="col-md-4 text-center">Total por cobrar en soles S/ {{totals.total_pending_paid_pen}}</div>
+                        <div class="col-md-4 text-center">Total notas de venta en soles S/ {{ formatDecimal(totals.total_pen)}}</div>
+                        <div class="col-md-4 text-center">Total pagado en soles S/ {{ formatDecimal(totals.total_paid_pen)}}</div>
+                        <div class="col-md-4 text-center">Total por cobrar en soles S/ {{ formatDecimal(totals.total_pending_paid_pen)}}</div>
                     </div>
 
                     <div>
@@ -153,6 +153,7 @@
                 recordItem: null,
                 showLeftShadow: false,
                 showRightShadow: false,
+                decimal_quantity: 2
             }
         },
         computed: {
@@ -162,6 +163,7 @@
                 this.getRecords()
                 this.getTotals()
             })
+            this.loadDecimalQuantity();
         },
         async mounted () {
             let column_resource = _.split(this.resource, '/')
@@ -188,6 +190,23 @@
             });
         },
         methods: {
+            loadDecimalQuantity() {
+                // Obtener la configuración general para los decimales
+                this.$http ? this.$http.get('/configurations/record').then(response => {
+                    if (response.data && response.data.data && response.data.data.decimal_quantity) {
+                        this.decimal_quantity = response.data.data.decimal_quantity;
+                    }
+                }) :
+                (window.axios && window.axios.get('/configurations/record').then(response => {
+                    if (response.data && response.data.data && response.data.data.decimal_quantity) {
+                        this.decimal_quantity = response.data.data.decimal_quantity;
+                    }
+                }));
+            },
+            formatDecimal(value) {
+                if (value === undefined || value === null || isNaN(value)) return '';
+                return Number(value).toLocaleString('en-US', { minimumFractionDigits: this.decimal_quantity, maximumFractionDigits: this.decimal_quantity });
+            },
             checkScrollShadows() {
                 const el = this.$refs.scrollContainer;
                 if (!el) return;
@@ -216,7 +235,22 @@
             },
             getRecords() {
                 return this.$http.get(`/${this.resource}/records?${this.getQueryParameters()}`).then((response) => {
-                    this.records = response.data.data
+                    this.records = (response.data.data || []).map(row => {
+                        let customFieldsData = {};
+                        if (typeof row.custom_fields_data === 'object' && row.custom_fields_data !== null) {
+                            customFieldsData = row.custom_fields_data;
+                        } else if (typeof row.custom_fields_data === 'string') {
+                            try { 
+                                customFieldsData = JSON.parse(row.custom_fields_data) || {};
+                            } catch (e) {
+                                customFieldsData = {};
+                            }
+                        } 
+                        return {
+                            ...row,
+                            custom_fields_data: customFieldsData
+                        };
+                    });
                     this.pagination = response.data.meta
                     this.pagination.per_page = parseInt(response.data.meta.per_page)
                 });

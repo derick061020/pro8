@@ -526,6 +526,7 @@
         }
 
 
+
         /**
          *
          * Filtro para no incluir relaciones en consulta
@@ -602,5 +603,23 @@
         public function setAdditionalDataAttribute($value)
         {
             $this->attributes['additional_data'] = (is_null($value)) ? null : json_encode($value);
+        }
+
+        public function getUnitPrice($isPreview = false, $document = null) 
+        {
+            $unit_price = optional($this->item)->unit_price ? $this->item->unit_price : $this->unit_price;
+            $currency_type_id = isset($this->item->currency_type_id) ? $this->item->currency_type_id : Item::find($this->item_id)->currency_type_id;
+
+            if($isPreview)
+            {
+                if ($document->currency_type_id === $currency_type_id) return $unit_price; 
+                if($document->currency_type_id === 'PEN' && $currency_type_id === 'USD') return $unit_price * $document->exchange_rate_sale;
+                return  ($document->currency_type_id === 'USD') ? $unit_price / $document->exchange_rate_sale : $unit_price;
+            } else {
+                if ($this->document->currency_type_id === $currency_type_id) return $unit_price;
+                if ($this->document->currency_type_id === 'PEN' && $currency_type_id === 'USD') return $unit_price * $this->document->exchange_rate_sale ;
+                return $this->isCurrencyTypeUsd() ? $unit_price / $this->document->exchange_rate_sale : $unit_price;
+            }
+
         }
     }

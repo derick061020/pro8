@@ -288,7 +288,7 @@ export default {
                 person_id: null,
                 document_type_id: null,
                 date_range_type_id: 'date_of_issue',
-                order_state_type_id: 'pending',
+                order_state_type_id: 'all_states',
                 type_person: null,
                 seller_id: null,
                 date_start: moment().startOf('month').format('YYYY-MM-DD'),

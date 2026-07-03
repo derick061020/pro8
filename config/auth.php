@@ -117,6 +117,14 @@ return [
             'expire' => 60,
             'connection' => 'tenant'
         ],
+        // Reset para ADMINISTRADORES del panel reseller
+        'admins' => [
+            'provider' => 'admins',
+            'table' => 'password_resets',
+            'expire' => 60,
+            'connection' => 'system' // ← IMPORTANTE
+        ],
+         // FIN DE AÑADIDO ESTO:
         'customers' => [
             'provider' => 'customers',
             'table' => 'password_resets',

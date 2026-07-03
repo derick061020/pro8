@@ -101,6 +101,7 @@
                 currency_types: [],
                 system_isc_types: [],
                 affectation_igv_types: [],
+                decimal_quantity: 2,
             }
         },
         watch: {
@@ -113,6 +114,7 @@
         async created() {
 
             await this.initForm()
+            await this.loadDecimalQuantity()
             await this.reloadTables()
  
             this.$eventHub.$on('reloadTables', ()=>{
@@ -122,6 +124,28 @@
         },
 
         methods: {
+            async loadDecimalQuantity() {
+                try {
+                    const response = await this.$http.get('/configurations/record')
+                    const decimalQuantity = response.data.data.decimal_quantity
+
+                    this.decimal_quantity = parseInt(decimalQuantity || 2)
+                } catch (error) {
+                    this.decimal_quantity = 2
+                }
+            },
+            formatDecimal(value) {
+                if (value === undefined || value === null || value === '') return '';
+
+                const stringValue = value.toString();
+                const prefix = stringValue.replace(/[0-9.,\-\s]/g, '');
+                const cleanValue = stringValue.replace(/[^0-9.\-]/g, '');
+                const number = Number(cleanValue);
+
+                if (isNaN(number)) return value;
+
+                return `${prefix ? prefix + ' ' : ''}${number.toLocaleString('en-US', { minimumFractionDigits: this.decimal_quantity, maximumFractionDigits: this.decimal_quantity })}`;
+            },
             async reloadTables(){
 
                 await this.$http.get(`/${this.resource}/tables`)
@@ -158,6 +182,7 @@
                     this.$http.get(`/${this.resource}/record/${this.recordId}`)
                         .then(response => {
                             this.form = response.data.data
+                            this.form.purchase_unit_price = this.form.purchase_unit_price ? this.formatDecimal(this.form.purchase_unit_price) : 0
                         })
                 } else if (this.input_item) {
                     this.form.name = this.input_item
@@ -169,6 +194,7 @@
                     this.$http.get(`/${this.resource}/record/${this.recordId}`)
                         .then(response => {
                             this.form = response.data.data
+                            this.form.purchase_unit_price = this.form.purchase_unit_price ? this.formatDecimal(this.form.purchase_unit_price) : 0
                         })
                 }
             }, 

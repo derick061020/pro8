@@ -38,13 +38,13 @@
                 <data-table :resource="resource">
                     <tr slot="heading" width="100%">
                         <!-- <th>#</th> -->
-                        <th>Codigo de Pedido</th>
+                        <th># Pedido</th>
                         <th>Cliente</th>
                         <th class="text-center">Detalle Productos</th>
                         <th class="text-end">Total</th>
                         <th>Fecha Emision</th>
                         <th>Medio Pago</th>
-                        <th>Estatus del Pedido</th>
+                        <th>Estado</th>
                         <th class="text-center">Documento</th>
                         <th class="text-end">Opciones</th>
                     </tr>

@@ -149,6 +149,7 @@ class FixedAssetPurchaseController extends Controller
             
             foreach ($data['items'] as $row)
             {
+                $row['fixed_asset_item_id'] = $row['item']['id'];
                 $doc->items()->create($row); 
             }
 

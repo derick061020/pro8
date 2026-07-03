@@ -2486,3 +2486,12 @@ ul.contact-info li a:hover {
 .dropdown-menu.show{
     max-height: max-content;
 }
+.cart-icon-ecommerce{
+    display: none !important;
+}
+.cart-count-ecommerce{
+    display: none !important;
+}
+.user-name-ecommerce{
+    display: none !important;
+}

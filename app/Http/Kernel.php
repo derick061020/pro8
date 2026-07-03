@@ -73,5 +73,6 @@ class Kernel extends HttpKernel
         'tenant.auto.login' => \Modules\MultiUser\Http\Middleware\Tenant\AutoLogin::class,
         'check.email.verified' => \Modules\LevelAccess\Http\Middleware\CheckEmailIsVerified::class,
         'enable.guest.register' => \App\Http\Middleware\EnableGuestRegister::class,
+        'reseller.system.admin' => \App\Http\Middleware\EnsureResellerSystemAdminPermissions::class,
     ];
 }

@@ -4,6 +4,9 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
+use Database\Seeders\Libs\Migration\PolymorphicRelationSeeder;
+use Hyn\Tenancy\Environment;
+use Hyn\Tenancy\Models\Website;
 
 class TenancyDatabaseSeeder extends Seeder
 {
@@ -14,6 +17,9 @@ class TenancyDatabaseSeeder extends Seeder
      */
     public function run()
     {
+        // $this->call([
+        //     PolymorphicRelationSeeder::class,
+        // ]);
 
         // $id = DB::table('items')->insertGetId(
         //     ['name' => 'Laptop Razer', 'second_name' => 'Laptop Razer', 'description' => 'Laptop Razer','item_type_id' => '01',
@@ -180,6 +186,9 @@ class TenancyDatabaseSeeder extends Seeder
         //         'is_migrated_address' => true
         //     ]);
         //  }
+
+
+        // Migracion de datos del prox a pro8
 
     }
 }

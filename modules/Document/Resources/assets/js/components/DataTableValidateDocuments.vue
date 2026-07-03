@@ -4,7 +4,7 @@
 
             <div class="col-md-12 col-lg-12 col-xl-12 ">
                   
-                <div class="row mt-2"> 
+                <div class="row mx-0"> 
                     <div class="col-lg-4 col-md-4 ">
                         <div class="form-group" :class="{'has-danger': errors.document_type_id}"> 
                             <label class="control-label">Tipo comprobante<span class="text-danger"> *</span></label>
@@ -41,7 +41,7 @@
                         </div>
                     </div> 
                      
-                    <div class="col-lg-8 col-md-8 col-md-8 col-sm-12 mt-4"> 
+                    <div class="col-12 d-flex mt-4"> 
                         <el-button class="submit me-2" type="primary" @click.prevent="getRecordsByFilter" :loading="loading_submit" icon="el-icon-check" >Validar documentos</el-button>
                         <el-button class="submit me-2" type="info" @click.prevent="cleanInputs"  icon="el-icon-delete" >Limpiar </el-button>
 

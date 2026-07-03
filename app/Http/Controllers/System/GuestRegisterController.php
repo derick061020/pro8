@@ -4,6 +4,7 @@ namespace App\Http\Controllers\System;
 
 use App\Http\Controllers\Controller;
 use App\Models\System\Configuration;
+use App\Models\System\Plan;
 use App\Http\Requests\System\{
     GuestRegisterClientRequest,
     SendEmailGuestRegisterRequest,
@@ -38,13 +39,25 @@ class GuestRegisterController extends Controller
      */
     private function getDataRegister()
     {
-        $configuration = Configuration::select(['use_login_global', 'login'])->first();
+        $configuration = Configuration::select(['use_login_global', 'login', 'guest_register_plan_id'])->first();
         $use_login_global = $configuration->use_login_global;
         $login = $configuration->login;
+        $plan_default = $configuration->guest_register_plan_id;
         $default_background_image_login = asset('images/'.self::DEFAULT_BACKGROUND_IMAGE_LOGIN);
         $base_url = '.' . config('tenant.app_url_base');
 
-        return compact('login', 'use_login_global', 'default_background_image_login', 'base_url');
+        $plans = Plan::where('locked', false)
+            ->select(
+                'id', 'name', 'pricing',
+                'limit_users', 'limit_documents',
+                'establishments_limit', 'establishments_unlimited',
+                'sales_limit', 'sales_unlimited',
+                'include_sale_notes_sales_limit', 'include_sale_notes_limit_documents'
+            )
+            ->orderBy('pricing')
+            ->get();
+
+        return compact('login', 'use_login_global', 'default_background_image_login', 'base_url', 'plans', 'plan_default');
     }
 
     /**
@@ -105,19 +118,22 @@ class GuestRegisterController extends Controller
         try
         {
             $inputs = $this->inputsToRegister($request);
-            
+
             $response = app(ClientController::class)->store($inputs);
 
             if(!$response['success']) return $response;
 
+            $payment_uuid = $response['guest_register']['payment_uuid'] ?? null;
+
             return [
                 'success' => true,
                 'message' => 'Cuenta registrada correctamente.',
-                'guest_register' => $response['guest_register']
+                'guest_register' => $response['guest_register'],
+                'payment_url' => $payment_uuid ? route('payment.public.show', ['uuid' => $payment_uuid]) : null,
             ];
 
-        } 
-        catch (Exception $e) 
+        }
+        catch (Exception $e)
         {
             return [
                 'success' => false,

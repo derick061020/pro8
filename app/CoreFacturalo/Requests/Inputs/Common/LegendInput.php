@@ -70,7 +70,7 @@ class LegendInput
 
         if(Configuration::isEnabledLegendForestToXml() && in_array($inputs['document_type_id'], ['01', '03']))
         {
-            $search_legends = LegendType::filterLegendsForest()->get();
+            $search_legends = [LegendType::filterLegendsForest()->first()];
 
             foreach ($search_legends as $value) 
             {

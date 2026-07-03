@@ -1,4 +1,5 @@
 /node_modules
+.claude/settings.local.json
 /public/hot
 /public/downloads
 public/cookie.txt
@@ -40,3 +41,5 @@ public/porto-light/js/bloquear_cliente.js
 .codegpt
 
 .github/copilot-instructions.md
+
+.antigravitycli

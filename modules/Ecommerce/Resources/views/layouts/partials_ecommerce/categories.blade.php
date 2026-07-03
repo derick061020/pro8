@@ -17,7 +17,7 @@
             <div class="container">
                 <ul id="scrollContainer" class="menu restaurante sf-arrows sf-js-enabled" style="touch-action: pan-y;">
                 @foreach ($categories as $category)
-                    @php $categorySlug = Str::slug($category->name, '-'); @endphp
+                    @php $categorySlug = \Illuminate\Support\Str::slug($category->name, '-'); @endphp
                     <li class="menu-item ecommerce {{ $currentCategorySlug == $categorySlug ? 'selected-category' : '' }}" style="cursor:pointer;" onclick="window.location='{{ route('tenant.ecommerce.category', $categorySlug) }}'">
                         <a href="{{ route('tenant.ecommerce.category', $categorySlug) }}">
                             @if($category->image && file_exists(public_path('storage/uploads/categories/'. $category->image)))

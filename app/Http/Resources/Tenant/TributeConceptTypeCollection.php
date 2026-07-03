@@ -17,7 +17,7 @@ class TributeConceptTypeCollection extends ResourceCollection
         return $this->collection->transform(function($row, $key) {
             return [
                 'id' => $row->id,
-                'active' => ($row->active)?'Si':'No',
+                'active' => (bool) $row->active,
                 'description' => $row->description,
             ];
         });

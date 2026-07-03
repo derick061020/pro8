@@ -380,13 +380,46 @@ export default {
             filterPersons() {
                 this.persons = this.all_persons
             },
-            clickDownload(type) {
+            async clickDownload(type) {
+                // Excel: sin cambios (no tiene lógica de bandeja por ahora)
+                if (type === 'excel') {
+                    window.open(`/${this.resource}/${type}/?${this.getQueryParameters()}`, '_blank');
+                    return;
+                }
 
-                // let query = queryString.stringify({
-                //     ...this.form
-                // });
+                // PDF: puede volver un PDF (liviano) o un JSON (pesado → bandeja)
+                try {
+                    const response = await this.$http.get(
+                        `/${this.resource}/${type}/?${this.getQueryParameters()}`,
+                        { responseType: 'blob' }
+                    );
 
-                window.open(`/${this.resource}/${type}/?${this.getQueryParameters()}`, '_blank');
+                    // Cuando la respuesta es JSON, el blob tiene type 'application/json'
+                    if (response.data.type === 'application/json') {
+                        const text = await response.data.text();
+                        const data = JSON.parse(text);
+                        this.$message.success(
+                            data.message || 'El reporte se está procesando; revísalo en la bandeja de descargas.'
+                        );
+                        return;
+                    }
+
+                    // Es PDF → abrir en pestaña nueva
+                    const blob = new Blob([response.data], { type: 'application/pdf' });
+                    const url = window.URL.createObjectURL(blob);
+                    // reemplazo del window.open para el PDF
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `Reporte_Consolidado_Items_Ventas_${Date.now()}.pdf`;
+                    document.body.appendChild(a);
+                    a.click();
+                    a.remove();
+                    setTimeout(() => window.URL.revokeObjectURL(url), 10000);
+
+                } catch (error) {
+                    console.log(error);
+                    this.$message.error('Ocurrió un error al generar el reporte');
+                }
             },
             initForm(){
 

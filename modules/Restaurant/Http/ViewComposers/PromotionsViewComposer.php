@@ -16,6 +16,7 @@ class PromotionsViewComposer
                 $query->whereNull('type')
                       ->orWhere('type', '!=', 'spots');
             })
+            ->with('item')
             ->get();
         
         // Spots publicitarios

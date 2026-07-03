@@ -64,7 +64,8 @@
 
            await this.$http.get(`/${this.resource}/tables`)
                 .then(response => {
-                    this.users = response.data.users
+                    
+                    this.users = response.data.users.filter(user => user.restaurant_role_id !== 1)
                     this.user = response.data.user
                 })
 

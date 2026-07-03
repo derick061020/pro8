@@ -28,11 +28,13 @@ class PriceLabel extends ModelTenant
         'position',
         'label',
         'is_active',
+        'is_default',
     ];
 
     protected $casts = [
         'position' => 'integer',
         'is_active' => 'boolean',
+        'is_default' => 'boolean',
     ];
 
     /**
@@ -89,6 +91,7 @@ class PriceLabel extends ModelTenant
             'position' => $this->position,
             'label' => $this->label,
             'is_active' => (bool) $this->is_active,
+            'is_default' => (bool) $this->is_default,
             // 'is_original' => $this->isOriginal(),
             'created_at' => $this->created_at ? $this->created_at->format('Y-m-d H:i:s') : null,
             'updated_at' => $this->updated_at ? $this->updated_at->format('Y-m-d H:i:s') : null,

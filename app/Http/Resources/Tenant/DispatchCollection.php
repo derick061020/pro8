@@ -30,7 +30,7 @@ class DispatchCollection extends ResourceCollection
 			if (in_array($row->state_type_id, ['05', '07'])) {
 				$has_cdr = true;
 			}
-
+			dd($row->custom_fields_data);
 			return [
 				'id'                     => $row->id,
 				'external_id'            => $row->external_id,
@@ -41,6 +41,7 @@ class DispatchCollection extends ResourceCollection
 				'customer_id'            => $row->customer_id,
 				'customer_name'          => $row->customer->name,
 				'customer_number'        => $row->customer->identity_document_type->description . ' ' . $row->customer->number,
+				'custom_fields_data'     => $row->custom_fields_data,
 				'date_of_shipping'       => $row->date_of_shipping->format('Y-m-d'),
 				'state_type_id'          => $row->state_type_id,
 				'state_type_description' => $row->state_type->description,

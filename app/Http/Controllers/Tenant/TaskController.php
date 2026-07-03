@@ -14,7 +14,7 @@ class TaskController extends Controller
      * Exclude
      * @var array
      */
-    private $exclude = ['.', '..', 'TenantCommand.php'];
+    private $exclude = ['.', '..', 'TenantCommand.php', 'InsertStartBillingCycleForClient.php', 'SearchMostUsedAffectationIgvTypes.php', 'SuscriptionCreateOrdersCommand.php', 'SuscriptionMarkOrdersAsExpiredCommand.php', 'SuscriptionSendRemindersCommand.php', 'PaymentOrderCommand.php' ];
     
     /**
      * Path

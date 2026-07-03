@@ -17,7 +17,8 @@
                                     :multiple="false"
                                     :on-error="errorUpload"
                                     :limit="1"
-                                    :on-success="successUpload">
+                                    :on-success="successUpload"
+                                    :before-upload="beforeUpload">
                                 <el-button slot="trigger" type="primary">Seleccione un archivo (xlsx)</el-button>
                             </el-upload>
                             <small class="form-control-feedback" v-if="errors.file" v-text="errors.file[0]"></small>
@@ -83,6 +84,14 @@
             },
             errorUpload(response) {
                 console.log(response)
+            },
+            beforeUpload(file) {
+                // Verificación de tipo de archivo antes de la carga
+                const isXlsx = file.type === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+                if (!isXlsx) {
+                    this.$message.error('Solo se permiten archivos Excel (.xlsx)');
+                }
+                return isXlsx;
             }
         }
     }

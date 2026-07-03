@@ -41,12 +41,12 @@
         <hr v-if="showWelcomePanel">
 
         <div class="card mb-0 row-new bg-transparent dashboard-cards mt-0">            
-            <div class="row" v-show="showFilters">
+            <div class="row px-2" v-show="showFilters">
                 <div class="col-12">
                     <section class="card card-dashboard">
                         <div class="card-body pt-2 pb-0">
                             <div class="row border-bottom mb-2 no-gutters">
-                                <small class="col-12 text-center">Filtrar datos históricos</small>
+                                <small class="col-12 text-center txt-dark">Filtrar datos históricos</small>
                             </div>
                             <div class="row">
                                 <div :class="filterColumnClass" class="form-group">
@@ -517,7 +517,7 @@
                                         <loader-graph :rows="4" :columns="1" :radius="100" :hideCircle="true"></loader-graph>
                                     </template>
                                 </div>
-                                <div class="card-body pb-0 card-body-border-radius" v-show="!loaders.top_customers">
+                                <div class="card-body card-body-border-radius" v-show="!loaders.top_customers">
                                     <label>Top clientes</label>
                                     <div class="mt-3">
                                         <el-checkbox  v-model="form.enabled_transaction_customer" @change="loadDataAditional">Ordenar por transacciones</el-checkbox><br>

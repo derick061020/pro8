@@ -6,8 +6,9 @@
         <div class="col-lg-12 mt-5 mb-5 text-center">
             <div class="content-logo">
             <a href="{{ route("tenant.restaurant.menu") }}" class="logo" style="max-width: 180px">
-                    @if($information->logo)
-                        <img src="{{ asset('storage/uploads/logos/'.$information->logo) }}" alt="Logo" />
+                    @php($headerLogo = data_get($company ?? null, 'logo') ?: data_get($information ?? null, 'logo'))
+                    @if($headerLogo)
+                        <img src="{{ asset('storage/uploads/logos/'.$headerLogo) }}" alt="Logo" />
                     @else
                         <img src="{{asset('logo/tulogo.png')}}" alt="Logo" />
                     @endif

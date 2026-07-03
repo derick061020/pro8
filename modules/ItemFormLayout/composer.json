@@ -1,0 +1,23 @@
+{
+    "name": "nwidart/itemformlayout",
+    "description": "",
+    "authors": [
+        {
+            "name": "FacturaloPeru",
+            "email": "dev@facturaloperu.com"
+        }
+    ],
+    "extra": {
+        "laravel": {
+            "providers": [],
+            "aliases": {
+
+            }
+        }
+    },
+    "autoload": {
+        "psr-4": {
+            "Modules\\ItemFormLayout\\": ""
+        }
+    }
+}

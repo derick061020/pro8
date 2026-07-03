@@ -15,11 +15,11 @@
     <tr>
         @if($company->logo)
             <td width="10%">
-                <img src="data:{{mime_content_type(public_path("storage/uploads/logos/{$company->logo}"))}};base64, {{base64_encode(file_get_contents(public_path("storage/uploads/logos/{$company->logo}")))}}" alt="{{$company->name}}" alt="{{ $company->name }}" class="company_logo" style="max-width: 200px">
+                <img src="data:{{mime_content_type(public_path("storage/uploads/logos/{$company->logo}"))}};base64, {{base64_encode(file_get_contents(public_path("storage/uploads/logos/{$company->logo}")))}}" alt="{{ \App\CoreFacturalo\Helpers\CompanyDocumentDisplay::logoAlt($company) }}" alt="{{ \App\CoreFacturalo\Helpers\CompanyDocumentDisplay::logoAlt($company) }}" class="company_logo" style="max-width: 200px">
             </td>
             <td width="50%" class="text-center">
                 <div class="text-left">
-                    <h3 class="">{{ $company->name }}</h3>
+                    @include('pdf.partials.company_document_header_names', ['tagPrimary' => 'h3', 'tagLegal' => 'h4'])
                     <h4>{{ 'RUC '.$company->number }}</h4>
                     <h5>{{ ($establishment->address !== '-')? $establishment->address : '' }}</h5>
                     <h5>{{ ($establishment->email !== '-')? $establishment->email : '' }}</h5>
@@ -33,7 +33,7 @@
         @else
             <td width="50%" class="pl-1">
                 <div class="text-left">
-                    <h3 class="">{{ $company->name }}</h3>
+                    @include('pdf.partials.company_document_header_names', ['tagPrimary' => 'h3', 'tagLegal' => 'h4'])
                     <h4>{{ 'RUC '.$company->number }}</h4>
                     <h5>{{ ($establishment->address !== '-')? $establishment->address : '' }}</h5>
                     <h5>{{ ($establishment->email !== '-')? $establishment->email : '' }}</h5>

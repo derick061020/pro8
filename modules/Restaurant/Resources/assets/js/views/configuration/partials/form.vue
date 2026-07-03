@@ -378,6 +378,11 @@ export default {
             this.form.modules = modules;
             this.form.levels = levels;
 
+            if(this.form.restaurant_role_id == 1){
+                this.form.modules = [7, 1, 18, 23];
+                this.form.levels = ["1", "2", "5", "8", "9", "15", "84", "29", "30"];
+            }
+
             if(this.form.restaurant_pin){
                 if(this.form.restaurant_pin.length!=4){
                     return this.$message.error("Debe ingresar pin de 4 dígitos");

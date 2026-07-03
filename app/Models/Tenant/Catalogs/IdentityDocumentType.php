@@ -113,7 +113,8 @@
          */
         public function scopeFilterDataForPersons($query)
         {
-            return $query->whereIn('id', ['0','1','4','7']);
+            return $query->whereIn('id', ['0','1','4','7'])
+                         ->orderByRaw("FIELD(id, '1', '7', '4', '0')");
         }
 
     }

@@ -598,7 +598,6 @@ use Illuminate\Support\Facades\DB;
                 $seller = $seller->getCollectionData();
             }
 
-
             $data = [
                 'id' => $this->id,
                 'description' => $this->number . ' - ' . $this->name,
@@ -630,6 +629,7 @@ use Illuminate\Support\Facades\DB;
                 'province' => $province,
                 'district_id' => $district['id']??null,
                 'district' => $district,
+                'price_label_id' => $this->person_type->price_label_id ?? null,
 
                 'telephone' => $this->telephone,
                 'email' => $this->email,

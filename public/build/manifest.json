@@ -1,13 +1,53 @@
 {
-  "_vue-clipboard-3a54d163.js": {
+  "__plugin-vue2_normalizer-fcd81e8a.js": {
     "assets": [
       "assets/element-icons-ab40a589.woff",
       "assets/element-icons-a30f5b3b.ttf"
     ],
     "css": [
-      "assets/vue-clipboard-e359d463.css"
+      "assets/_plugin-vue2_normalizer-ceb821ee.css"
     ],
-    "file": "assets/vue-clipboard-3a54d163.js"
+    "file": "assets/_plugin-vue2_normalizer-fcd81e8a.js"
+  },
+  "_claim_form-bae5a303.js": {
+    "css": [
+      "assets/claim_form-752a1451.css"
+    ],
+    "file": "assets/claim_form-bae5a303.js",
+    "imports": [
+      "__plugin-vue2_normalizer-fcd81e8a.js"
+    ]
+  },
+  "_plugin-vue2_normalizer.css": {
+    "file": "assets/_plugin-vue2_normalizer-ceb821ee.css",
+    "src": "_plugin-vue2_normalizer.css"
+  },
+  "_vue-clipboard-0476b9c6.js": {
+    "css": [
+      "assets/vue-clipboard-aa33dfa0.css"
+    ],
+    "file": "assets/vue-clipboard-0476b9c6.js",
+    "imports": [
+      "__plugin-vue2_normalizer-fcd81e8a.js"
+    ]
+  },
+  "claim_form.css": {
+    "file": "assets/claim_form-752a1451.css",
+    "src": "claim_form.css"
+  },
+  "modules/ClaimsBook/Resources/assets/js/app.js": {
+    "file": "assets/app-faebb4ab.js",
+    "imports": [
+      "__plugin-vue2_normalizer-fcd81e8a.js",
+      "_claim_form-bae5a303.js"
+    ],
+    "isEntry": true,
+    "src": "modules/ClaimsBook/Resources/assets/js/app.js"
+  },
+  "modules/Ecommerce/Resources/assets/js/frontend/cart-app.js": {
+    "file": "assets/cart-app-15704f00.js",
+    "isEntry": true,
+    "src": "modules/Ecommerce/Resources/assets/js/frontend/cart-app.js"
   },
   "node_modules/element-ui/lib/theme-chalk/fonts/element-icons.ttf": {
     "file": "assets/element-icons-a30f5b3b.ttf",
@@ -17,85 +57,41 @@
     "file": "assets/element-icons-ab40a589.woff",
     "src": "node_modules/element-ui/lib/theme-chalk/fonts/element-icons.woff"
   },
-  "public/images/labeling_machines_img/Bartender.svg": {
-    "file": "assets/Bartender-b9fc2af0.svg",
-    "src": "public/images/labeling_machines_img/Bartender.svg"
-  },
-  "public/images/labeling_machines_img/Cybra.png": {
-    "file": "assets/Cybra-0baac118.png",
-    "src": "public/images/labeling_machines_img/Cybra.png"
-  },
-  "public/images/labeling_machines_img/Honeywell.svg": {
-    "file": "assets/Honeywell-26b9a232.svg",
-    "src": "public/images/labeling_machines_img/Honeywell.svg"
-  },
-  "public/images/labeling_machines_img/Labeljoy.svg": {
-    "file": "assets/Labeljoy-506e8ad6.svg",
-    "src": "public/images/labeling_machines_img/Labeljoy.svg"
-  },
-  "public/images/labeling_machines_img/Nicelabel.svg": {
-    "file": "assets/Nicelabel-f0eff1ff.svg",
-    "src": "public/images/labeling_machines_img/Nicelabel.svg"
-  },
-  "public/images/labeling_machines_img/Teklynx.svg": {
-    "file": "assets/Teklynx-0603f01e.svg",
-    "src": "public/images/labeling_machines_img/Teklynx.svg"
-  },
-  "public/images/labeling_machines_img/Tlashford.png": {
-    "file": "assets/Tlashford-de70d63e.png",
-    "src": "public/images/labeling_machines_img/Tlashford.png"
-  },
-  "public/images/labeling_machines_img/Zebra.svg": {
-    "file": "assets/Zebra-32a3c31c.svg",
-    "src": "public/images/labeling_machines_img/Zebra.svg"
-  },
-  "public/images/labeling_machines_img/golabel.png": {
-    "file": "assets/golabel-6a3ee9ed.png",
-    "src": "public/images/labeling_machines_img/golabel.png"
-  },
   "resources/js/app.css": {
-    "file": "assets/app-d0a6bd33.css",
+    "file": "assets/app-a0140963.css",
     "src": "resources/js/app.css"
   },
   "resources/js/app.js": {
-    "assets": [
-      "assets/Bartender-b9fc2af0.svg",
-      "assets/Cybra-0baac118.png",
-      "assets/golabel-6a3ee9ed.png",
-      "assets/Honeywell-26b9a232.svg",
-      "assets/Labeljoy-506e8ad6.svg",
-      "assets/Nicelabel-f0eff1ff.svg",
-      "assets/Teklynx-0603f01e.svg",
-      "assets/Tlashford-de70d63e.png",
-      "assets/Zebra-32a3c31c.svg"
-    ],
     "css": [
-      "assets/app-d0a6bd33.css"
+      "assets/app-a0140963.css"
     ],
-    "file": "assets/app-2f17deee.js",
+    "file": "assets/app-cd479a6e.js",
     "imports": [
-      "_vue-clipboard-3a54d163.js"
+      "_vue-clipboard-0476b9c6.js",
+      "__plugin-vue2_normalizer-fcd81e8a.js",
+      "_claim_form-bae5a303.js"
     ],
     "isEntry": true,
     "src": "resources/js/app.js"
   },
   "resources/js/system.css": {
-    "file": "assets/system-aa981ac8.css",
+    "file": "assets/system-5b696ea6.css",
     "src": "resources/js/system.css"
   },
   "resources/js/system.js": {
     "css": [
-      "assets/system-aa981ac8.css"
+      "assets/system-5b696ea6.css"
     ],
-    "file": "assets/system-202c49ab.js",
+    "file": "assets/system-1ec76912.js",
     "imports": [
-      "_vue-clipboard-3a54d163.js"
+      "_vue-clipboard-0476b9c6.js",
+      "__plugin-vue2_normalizer-fcd81e8a.js"
     ],
     "isEntry": true,
     "src": "resources/js/system.js"
   },
   "vue-clipboard.css": {
-    "file": "assets/vue-clipboard-e359d463.css",
+    "file": "assets/vue-clipboard-aa33dfa0.css",
     "src": "vue-clipboard.css"
   }
 }

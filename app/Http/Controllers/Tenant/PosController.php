@@ -222,6 +222,7 @@ class PosController extends Controller
                     'is_agent_retention' => $row->is_agent_retention,
                     'discount_type' => $row->discount_type,
                     'discount_amount' => $row->discount_amount,
+                    'email' => $row->email,
                     'plates' => $row->plates->transform(function ($plate) {
                         return [
                             'id' => $plate->id,

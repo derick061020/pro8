@@ -251,7 +251,22 @@
             },
             getRecords() {
                 return this.$http.get(`/${this.resource}/records?${this.getQueryParameters()}`).then((response) => {
-                    this.records = response.data.data
+                    this.records = (response.data.data || []).map(row => {
+                        let customFieldsData = {};
+                        if (typeof row.custom_fields_data === 'object' && row.custom_fields_data !== null) {
+                            customFieldsData = row.custom_fields_data;
+                        } else if (typeof row.custom_fields_data === 'string') {
+                            try { 
+                                customFieldsData = JSON.parse(row.custom_fields_data) || {};
+                            } catch (e) {
+                                customFieldsData = {};
+                            }
+                        } 
+                        return {
+                            ...row,
+                            custom_fields_data: customFieldsData
+                        };
+                    });
                     this.pagination = response.data.meta
                     this.pagination.per_page = parseInt(response.data.meta.per_page)
                     this.loading_submit = false

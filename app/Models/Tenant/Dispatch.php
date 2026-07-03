@@ -624,6 +624,7 @@ class Dispatch extends ModelTenant
             'customer_id' => $this->customer_id,
             'customer_name' => $customer_name,
             'customer_number' => $customer_number,
+            'custom_fields_data' => $this->custom_fields_data,
             'sender_name' => $sender_name,
             'sender_number' => $sender_number,
             'receiver_name' => $receiver_name,

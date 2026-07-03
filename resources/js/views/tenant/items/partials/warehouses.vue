@@ -26,10 +26,10 @@
                                     <th
                                         class="text-right"
                                         :class="{
-                                            'text-danger': row.stock <= 0
+                                            'text-danger': Number(row.stock) <= 0
                                         }"
                                     >
-                                        {{ row.stock }}
+                                        {{ (row.stock == null) ? '-' : Number(row.stock).toFixed(2) }}
                                     </th>
                                 </tr>
                             </tbody>
@@ -37,33 +37,36 @@
 
                         <template v-if="item_unit_types.length > 0">
                             <h5>Lista de Precios Creados</h5>
-                            <table class="table">
-                                <thead>
-                                    <tr>
-                                        <th>Unidad</th>
-                                        <th>Description</th>
-                                        <th>Factor</th>
-                                        <th>{{ config.price1_label }}</th>
-                                        <th>{{ config.price2_label }}</th>
-                                        <th>{{ config.price3_label }}</th>
-                                        <th>P.Defecto</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr
-                                        v-for="(row, index) in item_unit_types"
-                                        :key="index"
-                                    >
-                                        <th>{{ row.unit_type_id }}</th>
-                                        <th>{{ row.description }}</th>
-                                        <th>{{ row.quantity_unit }}</th>
-                                        <th>{{ row.price1 }}</th>
-                                        <th>{{ row.price2 }}</th>
-                                        <th>{{ row.price3 }}</th>
-                                        <th>Precio {{ row.price_default }}</th>
-                                    </tr>
-                                </tbody>
-                            </table>
+                            <div class="table-responsive">
+                                <table class="table">
+                                    <thead>
+                                        <tr>
+                                            <th>Unidad</th>
+                                            <th>Description</th>
+                                            <th>Factor</th>
+
+                                            <template v-for="pl in price_labels">
+                                                <th v-if="pl.is_active !== false">{{ pl.label }}</th>
+                                            </template>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr
+                                            v-for="(row, index) in item_unit_types"
+                                            :key="index"
+                                        >
+                                            <th>{{ row.unit_type_id }}</th>
+                                            <th>{{ row.description }}</th>
+                                            <th>{{ row.quantity_unit }}</th>
+                                            <template v-for="(price, priceIndex) in row.prices">
+                                                <th v-if="price_labels[priceIndex] && price_labels[priceIndex].is_active !== false">
+                                                    {{ price.price }}
+                                                </th>
+                                            </template>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
                         </template>
                     </div>
                 </div>
@@ -79,7 +82,7 @@
 
 <script>
 export default {
-    props: ["showDialog", "warehouses", "item_unit_types", 'config'],
+    props: ["showDialog", "warehouses", "item_unit_types", 'config', 'price_labels'],
     data() {
         return {
             showImportDialog: false,
@@ -93,6 +96,7 @@ export default {
     },
     methods: {
         close() {
+            console.log(this.price_labels);
             this.$emit("update:showDialog", false);
         }
     }

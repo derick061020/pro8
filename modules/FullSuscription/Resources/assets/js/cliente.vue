@@ -14,7 +14,7 @@
                                  name="first">
                         <span slot="label">{{ titleTabDialog }}</span>
                         <div class="row">
-                            <div class="col-md-6">
+                            <div class="col-md-4">
                                 <div :class="{'has-danger': errors.identity_document_type_id}"
                                      class="form-group">
                                     <label class="control-label">Tipo Doc. Identidad <span class="text-danger">*</span></label>
@@ -33,6 +33,23 @@
                                            v-text="errors.identity_document_type_id[0]"></small>
                                 </div>
                             </div>
+                            <div class="col-md-2">
+                                <div :class="{'has-danger': errors.nationality_id}"
+                                     class="form-group">
+                                    <label class="control-label">Nacionalidad</label>
+                                    <el-select v-model="form.nationality_id"
+                                               dusk="nationality_id"
+                                               filterable>
+                                        <el-option v-for="option in countries"
+                                                   :key="option.id"
+                                                   :label="option.description"
+                                                   :value="option.id"></el-option>
+                                    </el-select>
+                                    <small v-if="errors.nationality_id"
+                                           class="form-control-feedback"
+                                           v-text="errors.nationality_id[0]"></small>
+                                </div>
+                            </div>
                             <div class="col-md-6">
                                 <div :class="{'has-danger': errors.number}"
                                      class="form-group">
@@ -43,26 +60,23 @@
                                                          :identity_document_type_id="form.identity_document_type_id"
                                                          @search="searchNumber"></x-input-service>
                                     </div>
-                                    <div v-else>
+                                    <div v-else style="display: flex;">
                                         <el-input v-model="form.number"
-                                                  :maxlength="maxLength"
-                                                  dusk="number">
-                                            <template
-                                                v-if="form.identity_document_type_id === '6' || form.identity_document_type_id === '1'">
-                                                <el-button slot="append"
-                                                           :loading="loading_search"
-                                                           icon="el-icon-search"
-                                                           type="primary"
-                                                           @click.prevent="searchCustomer">
-                                                    <template v-if="form.identity_document_type_id === '6'">
-                                                        SUNAT
-                                                    </template>
-                                                    <template v-if="form.identity_document_type_id === '1'">
-                                                        RENIEC
-                                                    </template>
-                                                </el-button>
-                                            </template>
+                                                :maxlength="maxLength"
+                                                dusk="number"
+                                                style="flex: 1;">
                                         </el-input>
+                                        
+                                        <el-button v-if="form.identity_document_type_id === '6' || form.identity_document_type_id === '1'"
+                                                class="sunat-button"
+                                                :loading="loading_search"
+                                                icon="el-icon-search"
+                                                type="primary"
+                                                style="border-radius: 0 4px 4px 0; margin-left: -1px; height: 40px;"
+                                                @click.prevent="searchCustomer">
+                                            <template v-if="form.identity_document_type_id === '6'">SUNAT</template>
+                                            <template v-if="form.identity_document_type_id === '1'">RENIEC</template>
+                                        </el-button>
                                     </div>
 
                                     <small v-if="errors.number"
@@ -116,128 +130,6 @@
                             </div>
                         </div> -->
 
-                        <div class="row">
-                            <!--Dias de crédito-->
-                            <div class="col-md-3">
-
-                                <div :class="{'has-danger': errors.credit_days}"
-                                     class="form-group">
-                                    <label class="control-label">Dias de crédito</label>
-                                    <el-input-number
-                                        v-model="form.credit_days"
-                                        :controls="false"
-                                        :min="0"
-                                        :precision="0"></el-input-number>
-                                    <small v-if="errors.credit_days"
-                                           class="form-control-feedback"
-                                           v-text="errors.credit_days[0]"></small>
-                                </div>
-                            </div>
-                            <!--Codigo interno-->
-                            <div class="col-md-3">
-                                <div :class="{'has-danger': errors.internal_code}"
-                                     class="form-group">
-                                    <label class="control-label">Código interno</label>
-                                    <el-input v-model="form.internal_code"></el-input>
-                                    <small v-if="errors.internal_code"
-                                           class="form-control-feedback"
-                                           v-text="errors.internal_code[0]"></small>
-                                </div>
-                            </div>
-                            <!-- person_types  -->
-                            <div class="col-md-4">
-                                <div :class="{'has-danger': errors.person_type_id}"
-                                     class="form-group">
-                                    <label class="control-label">
-                                        {{ typeDialog }}
-                                    </label>
-                                    <el-select v-model="form.person_type_id"
-                                               clearable
-                                               filterable>
-                                        <el-option v-for="option in person_types"
-                                                   :key="option.id"
-                                                   :label="option.description"
-                                                   :value="option.id"></el-option>
-                                    </el-select>
-                                    <small v-if="errors.person_type_id"
-                                           class="form-control-feedback"
-                                           v-text="errors.person_type_id[0]"></small>
-                                </div>
-                            </div>
-                            <!-- Código de barra -->
-                            <div class="col-md-3">
-                                <div :class="{'has-danger': errors.barcode}"
-                                     class="form-group">
-                                    <label class="control-label">Código de barra</label>
-                                    <el-input v-model="form.barcode"></el-input>
-                                    <small v-if="errors.barcode"
-                                           class="form-control-feedback"
-                                           v-text="errors.barcode[0]"></small>
-                                </div>
-                            </div>
-                            <!-- Estado del Contribuyente -->
-                            <div v-if="form.state"
-                                 class="col-md-6">
-                                <div class="form-group">
-                                    <label class="control-label">Estado del Contribuyente</label>
-                                    <template v-if="form.state == 'ACTIVO'">
-                                        <el-alert :closable="false"
-                                                  :title="`${form.state}`"
-                                                  show-icon
-                                                  type="success"></el-alert>
-                                    </template>
-                                    <template v-else>
-                                        <el-alert :closable="false"
-                                                  :title="`${form.state}`"
-                                                  show-icon
-                                                  type="error"></el-alert>
-                                    </template>
-                                </div>
-
-                            </div>
-                            <!--  Condición del Contribuyente -->
-                            <div v-if="form.condition"
-                                 class="col-md-6">
-                                <div class="form-group">
-                                    <label class="control-label">Condición del Contribuyente</label>
-                                    <template v-if="form.condition == 'HABIDO'">
-                                        <el-alert :closable="false"
-                                                  :title="`${form.condition}`"
-                                                  show-icon
-                                                  type="success"></el-alert>
-                                    </template>
-                                    <template v-else>
-                                        <el-alert :closable="false"
-                                                  :title="`${form.condition}`"
-                                                  show-icon
-                                                  type="error"></el-alert>
-                                    </template>
-                                </div>
-
-                            </div>
-                        </div>
-                        <div v-if="type === 'suppliers'"
-                             class="row mt-2">
-                            <div class="col-md-6 center-el-checkbox">
-                                <div :class="{'has-danger': errors.perception_agent}"
-                                     class="form-group">
-                                    <el-checkbox v-model="form.perception_agent">¿Es agente de percepción?</el-checkbox>
-                                    <br>
-                                    <small v-if="errors.perception_agent"
-                                           class="form-control-feedback"
-                                           v-text="errors.perception_agent[0]"></small>
-                                </div>
-                            </div>
-                            <div v-if="type === 'suppliers'"
-                                 v-show="form.perception_agent"
-                                 class="col-md-6">
-                                <div class="form-group">
-                                    <label class="control-label">Porcentaje de percepción</label>
-
-                                    <el-input v-model="form.percentage_perception"></el-input>
-                                </div>
-                            </div>
-                        </div>
                     </el-tab-pane>
 
                     <el-tab-pane class
@@ -499,63 +391,132 @@
                         </div>
                     </el-tab-pane>
                     <el-tab-pane class
-                                 name="third">
-                        <span slot="label">Otros Datos</span>
-                        <div class="row ">
-                            <div class="col-12">
-                                <h4>Contacto</h4>
-                            </div>
-                            <div class="col-md-6">
-                                <div :class="{'has-danger': errors.contact}"
+                                 name="fourth">
+                        <span slot="label">Avanzado</span>
+                        <div class="row">
+                            <!--Dias de crédito-->
+                            <div class="col-md-3">
+
+                                <div :class="{'has-danger': errors.credit_days}"
                                      class="form-group">
-                                    <label class="control-label">Nombre y Apellido</label>
-                                    <el-input v-model="form.contact.full_name"></el-input>
-                                    <small v-if="errors.contact"
+                                    <label class="control-label">Días de crédito</label>
+                                    <el-input-number
+                                        v-model="form.credit_days"
+                                        :controls="false"
+                                        :min="0"
+                                        :precision="0"></el-input-number>
+                                    <small v-if="errors.credit_days"
                                            class="form-control-feedback"
-                                           v-text="errors.contact[0]"></small>
+                                           v-text="errors.credit_days[0]"></small>
                                 </div>
                             </div>
-                            <div class="col-md-6">
-                                <div :class="{'has-danger': errors.contact}"
+                            <!--Código interno-->
+                            <div class="col-md-3">
+                                <div :class="{'has-danger': errors.internal_code}"
                                      class="form-group">
-                                    <label class="control-label">Teléfono</label>
-                                    <el-input v-model="form.contact.phone"></el-input>
-                                    <small v-if="errors.contact"
+                                    <label class="control-label">Código interno</label>
+                                    <el-input v-model="form.internal_code"></el-input>
+                                    <small v-if="errors.internal_code"
                                            class="form-control-feedback"
-                                           v-text="errors.contact[0]"></small>
+                                           v-text="errors.internal_code[0]"></small>
+                                </div>
+                            </div>
+                            <!--Tipo de cliente-->
+                            <div class="col-md-4">
+                                <div :class="{'has-danger': errors.person_type_id}"
+                                     class="form-group">
+                                    <label class="control-label">
+                                        {{ typeDialog }}
+                                    </label>
+                                    <el-select v-model="form.person_type_id"
+                                               clearable
+                                               filterable>
+                                        <el-option v-for="option in person_types"
+                                                   :key="option.id"
+                                                   :label="option.description"
+                                                   :value="option.id"></el-option>
+                                    </el-select>
+                                    <small v-if="errors.person_type_id"
+                                           class="form-control-feedback"
+                                           v-text="errors.person_type_id[0]"></small>
+                                </div>
+                            </div>
+                            <!-- Código de barra -->
+                            <div class="col-md-3">
+                                <div :class="{'has-danger': errors.barcode}"
+                                     class="form-group">
+                                    <label class="control-label">Código de barra</label>
+                                    <el-input v-model="form.barcode"></el-input>
+                                    <small v-if="errors.barcode"
+                                           class="form-control-feedback"
+                                           v-text="errors.barcode[0]"></small>
                                 </div>
                             </div>
                         </div>
                         <div class="row">
-
-                            <!--SitioWeb -->
-                            <div class="col-md-6">
-                                <div :class="{'has-danger': errors.website }"
-                                     class="form-group">
-                                    <label class="control-label">Sitio Web</label>
-                                    <el-input v-model="form.website"></el-input>
-                                    <small v-if="errors.website"
-                                           class="form-control-feedback"
-                                           v-text="errors.website[0]"></small>
+                            <div v-if="form.state"
+                                 class="col-md-6">
+                                <div class="form-group">
+                                    <label class="control-label">Estado del Contribuyente</label>
+                                    <template v-if="form.state == 'ACTIVO'">
+                                        <el-alert :closable="false"
+                                                  :title="`${form.state}`"
+                                                  show-icon
+                                                  type="success"></el-alert>
+                                    </template>
+                                    <template v-else>
+                                        <el-alert :closable="false"
+                                                  :title="`${form.state}`"
+                                                  show-icon
+                                                  type="error"></el-alert>
+                                    </template>
                                 </div>
-                            </div>
-                            <!--Observaciones -->
-                            <div class="col-md-6">
-                                <div :class="{'has-danger': errors.observation }"
-                                     class="form-group">
-                                    <label class="control-label">Observaciones</label>
-                                    <el-input v-model="form.observation"></el-input>
-                                    <small v-if="errors.observation"
-                                           class="form-control-feedback"
-                                           v-text="errors.observation[0]"></small>
-                                </div>
-                            </div>
-                            <!--ID Días Crédito -->
 
+                            </div>
+                            <div v-if="form.condition"
+                                 class="col-md-6">
+                                <div class="form-group">
+                                    <label class="control-label">Condición del Contribuyente</label>
+                                    <template v-if="form.condition == 'HABIDO'">
+                                        <el-alert :closable="false"
+                                                  :title="`${form.condition}`"
+                                                  show-icon
+                                                  type="success"></el-alert>
+                                    </template>
+                                    <template v-else>
+                                        <el-alert :closable="false"
+                                                  :title="`${form.condition}`"
+                                                  show-icon
+                                                  type="error"></el-alert>
+                                    </template>
+                                </div>
+
+                            </div>
                         </div>
-                        <div class="row">
+                        <div v-if="type === 'suppliers'"
+                             class="row mt-2">
+                            <div class="col-md-6 center-el-checkbox">
+                                <div :class="{'has-danger': errors.perception_agent}"
+                                     class="form-group">
+                                    <el-checkbox v-model="form.perception_agent">¿Es agente de percepción?</el-checkbox>
+                                    <br>
+                                    <small v-if="errors.perception_agent"
+                                           class="form-control-feedback"
+                                           v-text="errors.perception_agent[0]"></small>
+                                </div>
+                            </div>
+                            <div v-if="type === 'suppliers'"
+                                 v-show="form.perception_agent"
+                                 class="col-md-6">
+                                <div class="form-group">
+                                    <label class="control-label">Porcentaje de percepción</label>
+
+                                    <el-input v-model="form.percentage_perception"></el-input>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row mt-2">
                             <div class="col-lg-4 col-md-4">
-
                                 <div :class="{'has-danger': errors.seller_id}"
                                      class="form-group">
                                     <label class="control-label">
@@ -610,21 +571,78 @@
                                            v-text="errors.zone_id[0]"></small>
                                 </div>
                             </div>
-
-
-                            <!--Zona -->
-                            <!--
-                            <div class="col-md-6">
-                                <div :class="{'has-danger': errors.zone }"
-                                     class="form-group">
-                                    <label class="control-label">Zona</label>
-                                    <el-input v-model="form.zone"></el-input>
-                                    <small v-if="errors.zone"
-                                           class="form-control-feedback"
-                                           v-text="errors.zone[0]"></small>
+                        </div>
+                        <div v-if="type === 'customers'" class="row mt-2">
+                            <div class="col-md-4">
+                                <div :class="{'has-danger': errors.password }" class="form-group">
+                                    <label class="control-label">Contraseña</label>
+                                    <el-input v-model="form.password" show-password></el-input>
+                                    <small v-if="errors.password" class="form-control-feedback" v-text="errors.password[0]"></small>
                                 </div>
                             </div>
-                            -->
+                            <div class="col-md-4">
+                                <div :class="{'has-danger': errors.password_confirmation }" class="form-group">
+                                    <label class="control-label">Confirmar contraseña</label>
+                                    <el-input v-model="form.password_confirmation" show-password></el-input>
+                                    <small v-if="errors.password_confirmation" class="form-control-feedback" v-text="errors.password_confirmation[0]"></small>
+                                </div>
+                            </div>
+                        </div>
+                    </el-tab-pane>
+                    <el-tab-pane class
+                                 name="third">
+                        <span slot="label">Contacto</span>
+                        <div class="row ">
+                            <div class="col-12">
+                                <h4>Contacto</h4>
+                            </div>
+                            <div class="col-md-6">
+                                <div :class="{'has-danger': errors.contact}"
+                                     class="form-group">
+                                    <label class="control-label">Nombre y Apellido</label>
+                                    <el-input v-model="form.contact.full_name"></el-input>
+                                    <small v-if="errors.contact"
+                                           class="form-control-feedback"
+                                           v-text="errors.contact[0]"></small>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div :class="{'has-danger': errors.contact}"
+                                     class="form-group">
+                                    <label class="control-label">Teléfono</label>
+                                    <el-input v-model="form.contact.phone"></el-input>
+                                    <small v-if="errors.contact"
+                                           class="form-control-feedback"
+                                           v-text="errors.contact[0]"></small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+
+                            <!--SitioWeb -->
+                            <div class="col-md-6">
+                                <div :class="{'has-danger': errors.website }"
+                                     class="form-group">
+                                    <label class="control-label">Sitio Web</label>
+                                    <el-input v-model="form.website"></el-input>
+                                    <small v-if="errors.website"
+                                           class="form-control-feedback"
+                                           v-text="errors.website[0]"></small>
+                                </div>
+                            </div>
+                            <!--Observaciones -->
+                            <div class="col-md-6">
+                                <div :class="{'has-danger': errors.observation }"
+                                     class="form-group">
+                                    <label class="control-label">Observaciones</label>
+                                    <el-input v-model="form.observation"></el-input>
+                                    <small v-if="errors.observation"
+                                           class="form-control-feedback"
+                                           v-text="errors.observation[0]"></small>
+                                </div>
+                            </div>
+                            <!--ID Días Crédito -->
+
                         </div>
                     </el-tab-pane>
                 </el-tabs>
@@ -744,6 +762,7 @@ export default {
                 name: null,
                 trade_name: null,
                 country_id: 'PE',
+                nationality_id: 'PE',
                 department_id: null,
                 province_id: null,
                 district_id: null,
@@ -755,6 +774,12 @@ export default {
                 perception_agent: false,
                 percentage_perception: 0,
                 person_type_id: null,
+                seller_id: null,
+                zone_id: null,
+                internal_code: null,
+                barcode: null,
+                password: null,
+                password_confirmation: null,
                 comment: null,
                 addresses: [],
                 contact: {
@@ -805,7 +830,7 @@ export default {
             }
             if (this.type === 'customers') {
                 this.titleDialog = (this.recordId) ? 'Editar Cliente' : 'Nuevo Cliente'
-                this.titleTabDialog = 'Datos de Cliente';
+                this.titleTabDialog = 'Datos Básicos';
                 this.typeDialog = 'Tipo de cliente'
             }
             if (this.type === 'suppliers') {
@@ -1062,3 +1087,16 @@ export default {
     }
 }
 </script>
+
+<style scoped>
+.sunat-button {
+    margin: 0 !important;
+    height: 40px !important;
+    border-top-left-radius: 0 !important;
+    border-bottom-left-radius: 0 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    border: none !important;
+}
+</style>

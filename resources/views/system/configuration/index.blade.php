@@ -11,20 +11,18 @@
     </div>
 
     <div class="row">
-        <!--<div class="col-lg-6 col-md-12 pt-2 pt-md-0">
-            <system-companies-form></system-companies-form>
-        </div> -->
         <div class="col-lg-6 col-md-12">
-            <!-- <system-certificate-index></system-certificate-index> -->
             <system-login-settings :configuration='@json($configuration)'></system-login-settings>
-
-            <system-login-other-configuration></system-login-other-configuration>
+            <system-configuration-themes></system-configuration-themes>
+            <system-configuration-visible-columns></system-configuration-visible-columns>
+            <system-login-other-configuration :plans='@json($plans)'></system-login-other-configuration>
             <system-qrapi-configuration :configuration='@json($configuration)'></system-qrapi-configuration>
             <system-google-maps-configuration :configuration='@json($configuration)'></system-google-maps-configuration>
             <system-cron-order-configuration :configuration='@json($configuration)'></system-cron-order-configuration>
         </div>
         <div class="col-lg-6 col-md-12">
             <system-configuration-culqi></system-configuration-culqi>
+            <system-configuration-izipay></system-configuration-izipay>
             <system-configuration-token></system-configuration-token>
             <system-configuration-apk-url></system-configuration-apk-url>
             <system-support-configuration></system-support-configuration>

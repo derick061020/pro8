@@ -53,7 +53,7 @@
                         {{ isVisible ? "Ocultar filtros" : "Mostrar filtros" }}
                     </el-button>
                 </div>
-                <form class="row" @submit.prevent="onFilter" v-if="isVisible">
+                <form class="row mx-0" @submit.prevent="onFilter" v-if="isVisible">
                     <div class="col-6 col-md-4 mb-3">
                         <el-select
                             v-model="filter.person_id"

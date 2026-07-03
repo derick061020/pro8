@@ -1,7 +1,7 @@
 @extends('tenant.layouts.app')
 
 @section('content')
-    <tenant-account-payment-index></tenant-account-payment-index>
+    <tenant-account-payment-index :can-configure="{{ in_array('account_users_settings', $vc_module_levels ?? []) ? 'true' : 'false' }}"></tenant-account-payment-index>
 @endsection
 
 

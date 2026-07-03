@@ -466,30 +466,4 @@ class PersonController extends Controller
                         });
     }
 
-    /**
-     * Actualizar observaciones del cliente
-     *
-     * @param  int  $id
-     * @param  Request  $request
-     * @return \Illuminate\Http\JsonResponse
-     */
-    public function updateObservations($id, Request $request)
-    {
-        try {
-            $person = Person::findOrFail($id);
-            $person->observation = $request->input('observations');
-            $person->save();
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Observaciones actualizadas correctamente'
-            ]);
-        } catch (Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Error al actualizar las observaciones: ' . $e->getMessage()
-            ], 500);
-        }
-    }
-
 }

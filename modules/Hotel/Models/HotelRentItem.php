@@ -15,20 +15,6 @@ class HotelRentItem extends ModelTenant
 		'item',
 		'payment_status',
 		'hotel_rent_order_id',
-		'sale_note_id',
-		'document_id',
-		'invoiced_at',
-		'quantity',
-		'unit_price',
-		'total',
-		'description',
-	];
-
-	protected $casts = [
-		'invoiced_at' => 'datetime',
-		'quantity' => 'decimal:4',
-		'unit_price' => 'decimal:4',
-		'total' => 'decimal:4',
 	];
 
 	public function getItemAttribute($value)

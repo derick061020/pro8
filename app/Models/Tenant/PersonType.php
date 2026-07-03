@@ -16,7 +16,14 @@ class PersonType extends ModelTenant
 {
     protected $fillable = [
         'description',
+        'price_label_id',
+        'enabled_description_person_type',
+        'description_person_type'
 
+    ];
+
+    protected $casts = [
+        'enabled_description_person_type' => 'boolean'
     ];
 
     /**
@@ -43,6 +50,11 @@ class PersonType extends ModelTenant
      */
     public function person(){
         return $this->hasMany(Person::class);
+    }
+
+    public function price_label()
+    {
+        return $this->belongsTo(PriceLabel::class);
     }
 
 }

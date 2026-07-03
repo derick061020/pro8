@@ -224,10 +224,11 @@ class DocumentInput
                         'cod_digemid' => $item->cod_digemid,
                         'date_of_due' => (!empty($item->date_of_due)) ? $item->date_of_due->format('Y-m-d') : null,
                         'has_igv' => $row['item']['has_igv'] ?? true,
-                        'unit_price' => $row['unit_price'] ?? 0,
+                        'unit_price' => $row['item']['unit_price'] ?? 0,
                         'purchase_unit_price' => $item->purchase_unit_price ?? 0,
                         'exchanged_for_points' => $row['item']['exchanged_for_points'] ?? false,
                         'used_points_for_exchange' => $row['item']['used_points_for_exchange'] ?? null,
+                        'currency_type_id' => $row['item']['currency_type_id'] ?? null
                     ],
                     'quantity' => $row['quantity'],
                     'unit_value' => $row['unit_value'],
@@ -434,9 +435,12 @@ class DocumentInput
                     $amount = $row['amount'];
                     $base = $row['base'];
                     $is_amount = $row['is_amount'] ?? null; //registra si el descuento fue por monto o porcentaje
+                    $amount_without_rounded = $row['amount_without_rounded'] ?? null; // monto sin redondear para cálculos posteriores, principalmente para descuentos que afectan base imponible del IGV
 
                     $discounts[] = [
                         'discount_type_id' => $discount_type_id,
+                        'amount_without_rounded'  => $amount_without_rounded,
+                        'from_global_distribution' => $row['from_global_distribution'] ?? null, // para identificar si el descuento viene de una distribución global o es un descuento directo del item
                         'description' => $description,
                         'factor' => $factor,
                         'amount' => $amount,
@@ -553,6 +557,7 @@ class DocumentInput
                 $exchange_rate = $retention['exchange_rate'];
                 $amount_pen = $retention['amount_pen'];
                 $amount_usd = $retention['amount_usd'];
+                $guarantee_fund = isset($retention['guarantee_fund']) ? $retention['guarantee_fund'] : 0;
 
                 return [
                     'code' => $code,
@@ -567,6 +572,7 @@ class DocumentInput
                     'voucher_number' => null,
                     'voucher_amount' => null,
                     'voucher_filename' => null,
+                    'guarantee_fund' => $guarantee_fund
                 ];
             }
         }
@@ -586,6 +592,7 @@ class DocumentInput
                 $amount = $detraction['amount'];
                 $payment_method_id = $detraction['payment_method_id'];
                 $bank_account = $detraction['bank_account'];
+                $guarantee_fund = isset($detraction['guarantee_fund']) ? $detraction['guarantee_fund'] : 0;
 
 
                 //detraction transport
@@ -636,6 +643,7 @@ class DocumentInput
                 return [
                     'detraction_type_id' => $detraction_type_id,
                     'percentage' => $percentage,
+                    'guarantee_fund' => $guarantee_fund,
                     'amount' => $amount,
                     'payment_method_id' => $payment_method_id,
                     'bank_account' => $bank_account,

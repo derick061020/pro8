@@ -88,7 +88,73 @@ class Company extends ModelTenant
 
     public static function active()
     {
-        return Company::first();
+        $company = Company::first();
+
+        // Optimiza logos pesados para que al incrustarlos en el PDF (base64) no inflen el tamaño/memoria.
+        // Se hace de forma "lazy" para que logos antiguos también queden protegidos.
+        if ($company) {
+            self::optimizeLogoFieldIfNeeded($company, 'logo');
+            self::optimizeLogoFieldIfNeeded($company, 'logo_dark');
+            self::optimizeLogoFieldIfNeeded($company, 'app_logo');
+        }
+
+        return $company;
+    }
+
+    protected static function optimizeLogoFieldIfNeeded(Company $company, string $field): void
+    {
+        $filename = $company->$field ?? null;
+        if (!$filename) return;
+
+        $absolutePath = public_path('storage/uploads/logos/' . $filename);
+        if (!is_file($absolutePath)) return;
+
+        $triggerBytes = 1024 * 1024; // ~1MB (cuando el logo ya pesa mucho)
+        $currentSize = @filesize($absolutePath);
+        if ($currentSize === false || $currentSize <= $triggerBytes) return;
+
+        $mime = mime_content_type($absolutePath) ?: '';
+        if (str_contains($mime, 'svg')) {
+            // SVG: no lo convertimos/optimiza aquí para evitar problemas de compatibilidad.
+            return;
+        }
+
+        try {
+            $maxWidth = 300;
+            $targetBytes = 100 * 1024; // ~100KB
+
+            $optimized = UploadFileHelper::optimizeRasterImageToTargetJpg(
+                $absolutePath,
+                $maxWidth,
+                $targetBytes,
+                60,
+                10
+            );
+
+            if (!$optimized || empty($optimized['bytes'])) return;
+
+            $optimizedBytes = (string) $optimized['bytes'];
+
+            // Si el archivo ya es jpg, sobreescribimos; si no, creamos nuevo con extensión .jpg.
+            $pathInfo = pathinfo($absolutePath);
+            $newFilename = $pathInfo['filename'] . '.jpg';
+
+            if (str_ends_with(strtolower($filename), '.jpg') || str_ends_with(strtolower($filename), '.jpeg')) {
+                file_put_contents($absolutePath, $optimizedBytes);
+                return;
+            }
+
+            $newAbsolutePath = $pathInfo['dirname'] . DIRECTORY_SEPARATOR . $newFilename;
+            file_put_contents($newAbsolutePath, $optimizedBytes);
+
+            if (is_file($newAbsolutePath)) {
+                $company->$field = $newFilename;
+                $company->save();
+            }
+        } catch (\Throwable $e) {
+            // No rompemos el flujo si la optimización falla; el PDF igual se generará con el logo original.
+            return;
+        }
     }
 
     /**

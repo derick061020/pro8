@@ -35,11 +35,39 @@ class ConfigurationController extends Controller
         $id = $request->input('id');
         $configuration = ConfigurationEcommerce::find($id);
         $configuration->fill($request->all());
+
+        // Guardar campos de páginas personalizadas si existen en el request
+        if ($request->has('terms_conditions')) {
+            $configuration->terms_conditions = $request->input('terms_conditions');
+        }
+        if ($request->has('privacy_policy')) {
+            $configuration->privacy_policy = $request->input('privacy_policy');
+        }
+        if ($request->has('about_us')) {
+            $configuration->about_us = $request->input('about_us');
+        }
+        if ($request->has('delivery_no_coverage_message')) {
+            $configuration->delivery_no_coverage_message = $request->input('delivery_no_coverage_message');
+        }
+
         $configuration->save();
 
         return [
             'success' => true,
             'message' => 'Configuración actualizada'
+        ];
+    }
+
+    public function store_configuration_delivery(Request $request)
+    {
+        $id = $request->input('id');
+        $configuration = ConfigurationEcommerce::find($id);
+        $configuration->delivery_no_coverage_message = $request->input('delivery_no_coverage_message', '');
+        $configuration->save();
+
+        return [
+            'success' => true,
+            'message' => 'Configuración de delivery actualizada'
         ];
     }
 
@@ -116,8 +144,8 @@ class ConfigurationController extends Controller
             $ext = $file->getClientOriginalExtension();
             $name = $type.'_'.$company->number.'.'.$ext;
 
-            request()->validate(['file' => 'required|image|mimes:jpeg,png,jpg,gif,svg|max:2048']);
-            
+            request()->validate(['file' => 'required|image|mimes:jpeg,png,jpg,gif,svg,webp|max:2048']);
+
             UploadFileHelper::checkIfValidFile($name, $file->getPathName(), true);
 
             $stream = fopen($file->getPathname(), 'r');
@@ -154,14 +182,14 @@ class ConfigurationController extends Controller
         ];
     }
 
-    public function store_configuration_color(Request $request) 
+    public function store_configuration_color(Request $request)
     {
 
         $id = $request->input('id');
         $color = $request->input('color_ecommerce');
         $configuration = ConfigurationEcommerce::find($id);
         $configuration->color_ecommerce = $color;
-        
+
         // Guardar preferencias (el cast a array maneja automáticamente el json_encode)
         $configuration->preferences = [
             'show_description' => (int) $request->input('show_description', 1),
@@ -169,7 +197,7 @@ class ConfigurationController extends Controller
             'only_available_products' => (int) $request->input('only_available_products', 0),
             'full_width_banner' => (int) $request->input('full_width_banner', 0),
         ];
-        
+
         $configuration->save();
 
         return [

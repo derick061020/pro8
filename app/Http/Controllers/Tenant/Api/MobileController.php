@@ -163,7 +163,7 @@ class MobileController extends Controller
         $configuration =  Configuration::first();
         $decimal_units = (int)$configuration->decimal_quantity;
 
-        $items = Item::with(['brand', 'category', 'item_unit_types'])
+        $items = Item::with(['brand', 'category', 'item_unit_types.prices.priceLabel'])
                     ->whereWarehouse()
                     ->whereHasInternalId()
                     // ->whereNotIsSet()
@@ -199,10 +199,7 @@ class MobileController extends Controller
                             'aux_quantity' => 1,
                             'brand' => $row->brand->name,
                             'category' => $row->brand->name,
-                            'item_unit_types' => $row->item_unit_types->transform(function ($row) use ($decimal_units) {
-                                /** @var ItemUnitType $row */
-                                return $row->getCollectionData($decimal_units);
-                            }),
+                            'item_unit_types' => $this->transformMobileItemUnitTypes($row->item_unit_types, $decimal_units),
                             'stock' => $row->getWarehouseCurrentStock($warehouse),
                             // 'stock' => $row->unit_type_id!='ZZ' ? ItemWarehouse::where([['item_id', $row->id],['warehouse_id', $warehouse->id]])->first()->stock : '0',
                             'image' => $row->image != "imagen-no-disponible.jpg" ? url("/storage/uploads/items/" . $row->image) : url("/logo/" . $row->image),
@@ -434,6 +431,34 @@ class MobileController extends Controller
         ];
     }
 
+    protected function transformMobileItemUnitTypes($itemUnitTypes, $decimal_units = 2)
+    {
+        return $itemUnitTypes->transform(function ($itemUnitType) use ($decimal_units) {
+            $pricesByPosition = $itemUnitType->prices
+                ->filter(function ($price) {
+                    return optional($price->priceLabel)->position !== null;
+                })
+                ->keyBy(function ($price) {
+                    return (int) $price->priceLabel->position;
+                });
+
+            $price1 = data_get($pricesByPosition->get(1), 'price', $itemUnitType->price1);
+            $price2 = data_get($pricesByPosition->get(2), 'price', $itemUnitType->price2);
+            $price3 = data_get($pricesByPosition->get(3), 'price', $itemUnitType->price3);
+
+            return [
+                'id' => $itemUnitType->id,
+                'description' => $itemUnitType->description,
+                'unit_type_id' => $itemUnitType->unit_type_id,
+                'quantity_unit' => number_format($itemUnitType->quantity_unit, $decimal_units, '.', ''),
+                'price1' => number_format((float) ($price1 ?? 0), 2, '.', ''),
+                'price2' => number_format((float) ($price2 ?? 0), 2, '.', ''),
+                'price3' => number_format((float) ($price3 ?? 0), 2, '.', ''),
+                'price_default' => $itemUnitType->price_default,
+            ];
+        });
+    }
+
     public function searchItems(Request $request)
     {
         $establishment_id = auth()->user()->establishment_id;
@@ -442,7 +467,7 @@ class MobileController extends Controller
         $category_id = $request->category_id ?? null;
         $limit = $request->limit ?? null;
 
-        $item_query = Item::query();
+        $item_query = Item::with(['brand', 'category', 'item_unit_types.prices.priceLabel']);
 
         if($search_by_barcode)
         {
@@ -502,18 +527,7 @@ class MobileController extends Controller
                                     'warehouse_id' => $row->warehouse_id,
                                 ];
                             }),
-                            'item_unit_types' => $row->item_unit_types->transform(function($row) {
-                                return [
-                                    'id' => $row->id,
-                                    'description' => $row->description,
-                                    'unit_type_id' => $row->unit_type_id,
-                                    'quantity_unit' => $row->quantity_unit,
-                                    'price1' => $row->price1,
-                                    'price2' => $row->price2,
-                                    'price3' => $row->price3,
-                                    'price_default' => $row->price_default,
-                                ];
-                            }),
+                            'item_unit_types' => $this->transformMobileItemUnitTypes($row->item_unit_types),
                             'has_isc' => (bool)$row->has_isc,
                             'system_isc_type_id' => $row->system_isc_type_id,
                             'percentage_isc' => $row->percentage_isc,
@@ -639,7 +653,7 @@ class MobileController extends Controller
     public function upload(Request $request)
     {
 
-        $validate_upload = UploadFileHelper::validateUploadFile($request, 'file', 'jpg,jpeg,png,gif,svg');
+        $validate_upload = UploadFileHelper::validateUploadFile($request, 'file', 'jpg,jpeg,png,gif,svg,webp');
 
         if(!$validate_upload['success']){
             return $validate_upload;
@@ -779,7 +793,20 @@ class MobileController extends Controller
             'data' => $labels->map->getCollectionData(),
             'label_default' => (Configuration::first()->price1_label) ? Configuration::first()->price1_label : 'Precio principal'
         ]);
+    }
 
+    public function destroyItem($id)
+    {
+        $item = \App\Models\Tenant\Item::findOrFail($id);
+
+        \DB::connection('tenant')->statement('SET FOREIGN_KEY_CHECKS=0;');
+        $item->delete();
+        \DB::connection('tenant')->statement('SET FOREIGN_KEY_CHECKS=1;');
+
+        return [
+            'success' => true,
+            'message' => '¡Producto eliminado con éxito.!'
+        ];
     }
 }
 

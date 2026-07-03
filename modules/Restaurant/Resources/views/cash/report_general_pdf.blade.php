@@ -71,7 +71,7 @@ $cash_final_balance = 0;
             <table>
                 <tr>
                     <td class="td-custom">
-                        <p><strong>Empresa: </strong>{{$company->name}}</p>
+                        <p>@include('partials.report_company_header')</p>
                     </td>
                     <td class="td-custom">
                         <p><strong>Fecha reporte: </strong>{{date('Y-m-d')}}</p>

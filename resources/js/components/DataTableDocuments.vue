@@ -2,11 +2,11 @@
     <div>
         <div class="row ">
 
-            <div class="col-md-12 col-lg-12 col-xl-12 py-0 px-3 filter-invoice">
+            <div class="col-md-12 col-lg-12 col-xl-12 py-0 filter-invoice">
 
-                <div class="d-flex col-12 p-0">
+                <div class="d-flex col-12 p-0 px-1">
                     <div class="col-lg-9 col-md-8 col-sm-12 mb-2 p-0">
-                        <div class="form-group filter-content">
+                        <div class="form-group filter-content d-flex align-items-center flex-wrap">
                             <el-button
                                 type="secondary"
                                 class="btn-show-filter btn-show-filter-invoice mb-2 ms-2"
@@ -15,13 +15,14 @@
                             >
                                 {{ see_more ? "Ocultar filtros" : "Mostrar filtros" }}
                             </el-button>
+                            <el-button v-if="hasActiveFilters" class="submit ms-2 mb-2" type="info" @click.prevent="cleanInputs"  icon="el-icon-refresh">Limpiar </el-button>                            
                         </div>
                     </div>
                     <div class="col-lg-2 col-md-3 col-sm-12 text-end">
                         <slot name="showhide"></slot>
                     </div>
                 </div>
-                <div class="row mt-2 content-filter-invoice" v-if="see_more">
+                <div class="row mt-2 content-filter-invoice mx-0" v-if="see_more">
                     <div class="col-lg-4 col-md-4 ">
                         <div class="form-group">
                             <label class="control-label">Tipo comprobante</label>
@@ -158,11 +159,11 @@
                             <el-checkbox v-model="search.pending_payment" >PEND. DE PAGO</el-checkbox>
                         </div>
                     </div>
-                    <div class="col-lg-4 col-md-4 col-md-4 col-sm-12 d-flex" style="margin-top:29px">
+                    <div class="col-md-10 col-sm-12 d-flex mt-2">
                         <el-button class="submit me-2" type="primary" @click.prevent="getRecordsByFilter" :loading="loading_submit" icon="el-icon-search" >Buscar</el-button>
-                        <el-button class="submit" type="info" @click.prevent="cleanInputs"  icon="el-icon-delete" >Limpiar </el-button>
-
+                        <el-checkbox v-model="auto_hide_filters" class="d-flex align-items-center" >Ocultar filtros al buscar</el-checkbox>
                     </div>
+
 
                 </div>
 
@@ -262,12 +263,38 @@ export default {
                 },
                 showLeftShadow: false,
                 showRightShadow: false,
+                auto_hide_filters: localStorage.getItem('dtdocs_auto_hide_filters') === 'true',
             }
         },
         computed: {
             ...mapState([
                 'config',
             ]),
+            hasActiveFilters() {
+                const defaults = {
+                    date_of_issue: null,
+                    document_type_id: null,
+                    customer_id: null,
+                    item_id: null,
+                    category_id: null,
+                    state_type_id: null,
+                    series: null,
+                    number: null,
+                    d_start: null,
+                    d_end: null,
+                    pending_payment: false,
+                    observations: null,
+                    purchase_order: null,
+                    guides: null,
+                    plate_numbers: null,
+                }
+                return Object.keys(defaults).some(key => this.search[key] !== defaults[key])
+            },
+        },
+        watch: {
+            auto_hide_filters(val) {
+                localStorage.setItem('dtdocs_auto_hide_filters', val)
+            },
         },
         created() {
             this.loadConfiguration();
@@ -382,7 +409,10 @@ export default {
                     d_start:null,
                     d_end:null,
                     pending_payment:false,
-                    observations: null
+                    observations: null,
+                    purchase_order: null,
+                    guides: null,
+                    plate_numbers: null,
                 }
             },
             changeDocumentType(){
@@ -402,11 +432,27 @@ export default {
                 await this.getRecords()
                 this.loading_submit = await false
                 this.getTotalRecords()
+                if (this.auto_hide_filters) this.see_more = false
 
             },
             getRecords() {
                 return this.$http.get(`/${this.resource}/records?${this.getQueryParameters()}`).then((response) => {
-                    this.records = response.data.data
+                    this.records = (response.data.data || []).map(row => {
+                        let customFieldsData = {};
+                        if (typeof row.custom_fields_data === 'object' && row.custom_fields_data !== null) {
+                            customFieldsData = row.custom_fields_data;
+                        } else if (typeof row.custom_fields_data === 'string') {
+                            try { 
+                                customFieldsData = JSON.parse(row.custom_fields_data) || {};
+                            } catch (e) {
+                                customFieldsData = {};
+                            }
+                        } 
+                        return {
+                            ...row,
+                            custom_fields_data: customFieldsData
+                        };
+                    });
                     this.pagination = response.data.meta
                     this.pagination.per_page = parseInt(response.data.meta.per_page)
                     this.loading_submit = false

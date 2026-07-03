@@ -21,7 +21,7 @@
 
 @if($company->logo)
     <div class="text-center company_logo_box pt-5">
-        <img src="data:{{mime_content_type(public_path("{$logo}"))}};base64, {{base64_encode(file_get_contents(public_path("{$logo}")))}}" alt="{{$company->name}}" class="company_logo_ticket contain">
+        <img src="data:{{mime_content_type(public_path("{$logo}"))}};base64, {{base64_encode(file_get_contents(public_path("{$logo}")))}}" alt="{{ \App\CoreFacturalo\Helpers\CompanyDocumentDisplay::logoAlt($company) }}" class="company_logo_ticket contain">
     </div>
 {{--@else--}}
     {{--<div class="text-center company_logo_box pt-5">--}}
@@ -30,7 +30,7 @@
 @endif
 <table class="full-width">
     <tr>
-        <td class="text-center"><h5>{{ $company->name }}</h5></td>
+        <td class="text-center">@include('pdf.partials.company_document_header_names', ['tagPrimary' => 'h5', 'tagLegal' => 'h6'])</td>
     </tr>
     <tr>
         <td class="text-center"><h5>{{ 'RUC '.$company->number }}</h5></td>
@@ -263,10 +263,10 @@
                 <td class="text-right font-bold desc">{{ number_format($document->total_taxed, 2) }}</td>
             </tr>
         @endif
-        @if($document->total_discount > 0)
+        @if($document->total_discount_with_igv > 0)
             <tr>
                 <td colspan="5" class="text-right font-bold">DESCUENTO TOTAL: {{ $document->currency_type->symbol }}</td>
-                <td class="text-right font-bold">{{ number_format($document->total_discount, 2) }}</td>
+                <td class="text-right font-bold">{{ number_format($document->total_discount_with_igv, 2) }}</td>
             </tr>
         @endif
         <tr>

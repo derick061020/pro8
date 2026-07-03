@@ -74,12 +74,12 @@
                         <td class="text-end">{{ row.cellphone }}</td>
                         <td class="text-end">{{ row.id }}</td>
                         <td class="text-start">
-                            {{ formatDate(row.date_of_issue) }}
+                            {{ row.date_of_issue | toDate }}
                         </td>
                         <td class="text-center">{{ row.serial_number }}</td>
-                        <td class="text-center">{{ row.cost }}</td>
-                        <td class="text-center">{{ row.total }}</td>
-                        <td class="text-center">{{ row.sum_total }}</td>
+                        <td class="text-center">{{ formatDecimal(row.cost) }}</td>
+                        <td class="text-center">{{ formatDecimal(row.total) }}</td>
+                        <td class="text-center">{{ formatDecimal(row.sum_total) }}</td>
                         <td class="text-center">
                             {{ row.number_document_sale_note }}
                         </td>
@@ -95,7 +95,7 @@
                             </button>
                         </td>
 
-                        <td class="text-center">{{ row.balance }}</td>
+                        <td class="text-center">{{ formatDecimal(row.balance) }}</td>
 
                         <td class="text-center">
                             <button
@@ -108,32 +108,46 @@
                         </td>
 
                         <td class="text-end">
-                            <template v-if="!row.has_document_sale_note">
-                                <button
-                                    type="button"
-                                    class="btn waves-effect waves-light btn-xs btn-info me-2"
-                                    @click.prevent="clickOptions(row.id)"
-                                >
-                                    Generar comprobante
-                                </button>
-                                <button
-                                    type="button"
-                                    class="btn waves-effect waves-light btn-xs btn-info me-2"
-                                    @click.prevent="clickCreate(row.id)"
-                                >
-                                    Editar
-                                </button>
-                            </template>
-
-                            <template v-if="typeUser === 'admin'">
-                                <button
-                                    type="button"
-                                    class="btn waves-effect waves-light btn-xs btn-danger me-2"
-                                    @click.prevent="clickDelete(row.id)"
-                                >
-                                    Eliminar
-                                </button>
-                            </template>
+                            <el-dropdown
+                                trigger="click"
+                                @command="(command) => handleRowAction(command, row)"
+                            >
+                                <el-button class="btn-dropdown">
+                                    <i class="fas fa-ellipsis-v"></i>
+                                    <i class="fas fa-ellipsis-h" style="display: none;"></i>
+                                </el-button>
+                                <el-dropdown-menu slot="dropdown">
+                                    <el-dropdown-item
+                                        v-if="!row.has_document_sale_note"
+                                        command="generate"
+                                    >
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="me-2" width="16" height="16"
+                                          viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                          stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                          <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                                          <path d="M14 3v4a1 1 0 0 0 1 1h4"/>
+                                          <path d="M19 12v7a1.78 1.78 0 0 1 -3.1 1.4a1.65 1.65 0 0 0 -2.6 0a1.65 1.65 0 0 1 -2.6 0a1.65 1.65 0 0 0 -2.6 0a1.78 1.78 0 0 1 -3.1 -1.4v-14a2 2 0 0 1 2 -2h7l5 5v4.25"/>
+                                        </svg>
+                                        Generar comprobante
+                                    </el-dropdown-item>
+                                    <el-dropdown-item
+                                        v-if="!row.has_document_sale_note"
+                                        command="edit"
+                                    >
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-edit me-2"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M7 7h-1a2 2 0 0 0 -2 2v9a2 2 0 0 0 2 2h9a2 2 0 0 0 2 -2v-1" /><path d="M20.385 6.585a2.1 2.1 0 0 0 -2.97 -2.97l-8.415 8.385v3h3l8.385 -8.415" /><path d="M16 5l3 3" /></svg>
+                                        Editar
+                                    </el-dropdown-item>
+                                    <el-dropdown-item v-if="!row.has_document_sale_note || typeUser === 'admin'" divided></el-dropdown-item>
+                                    <el-dropdown-item
+                                        v-if="typeUser === 'admin'"
+                                        command="delete"
+                                        class="text-danger option-delete"
+                                    >
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-trash me-2"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M4 7l16 0" /><path d="M10 11l0 6" /><path d="M14 11l0 6" /><path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2 -2l1 -12" /><path d="M9 7v-3a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v3" /></svg>
+                                        Eliminar
+                                    </el-dropdown-item>
+                                </el-dropdown-menu>
+                            </el-dropdown>
                         </td>
                     </tr>
                 </data-table>
@@ -200,7 +214,8 @@ export default {
             showDialogOptions: false,
             resource: "technical-services",
             recordId: null,
-            showDialogPayments: false
+            showDialogPayments: false,
+            decimal_quantity: 2
         };
     },
     created() {
@@ -209,8 +224,26 @@ export default {
         this.loadCurrencyTypes();
         this.loadExchangeRate();
         this.title = "Servicios de soporte técnico";
+        this.loadDecimalQuantity();
     },
     methods: {
+        loadDecimalQuantity() {
+            // Obtener la configuración general para los decimales
+            this.$http ? this.$http.get('/configurations/record').then(response => {
+                if (response.data && response.data.data && response.data.data.decimal_quantity) {
+                    this.decimal_quantity = response.data.data.decimal_quantity;
+                }
+            }) :
+            (window.axios && window.axios.get('/configurations/record').then(response => {
+                if (response.data && response.data.data && response.data.data.decimal_quantity) {
+                    this.decimal_quantity = response.data.data.decimal_quantity;
+                }
+            }));
+        },
+        formatDecimal(value) {
+            if (value === undefined || value === null || isNaN(value)) return '';
+            return Number(value).toLocaleString('en-US', { minimumFractionDigits: this.decimal_quantity, maximumFractionDigits: this.decimal_quantity });
+        },
         formatDate(date) {
             if (!date) return null;
             return moment(date).format("DD-MM-YYYY");
@@ -239,6 +272,21 @@ export default {
         clickOptions(recordId = null) {
             this.recordId = recordId;
             this.showDialogOptions = true;
+        },
+        handleRowAction(command, row) {
+            if (command === "generate") {
+                this.clickOptions(row.id);
+                return;
+            }
+
+            if (command === "edit") {
+                this.clickCreate(row.id);
+                return;
+            }
+
+            if (command === "delete") {
+                this.clickDelete(row.id);
+            }
         }
     }
 };

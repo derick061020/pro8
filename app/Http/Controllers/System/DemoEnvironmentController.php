@@ -102,8 +102,6 @@ class DemoEnvironmentController extends Controller
             'restore_type_bkdemo' => 'required',
         ]);
 
-        $database = '';
-
         $client = Client::findOrFail($request->client_id);
         $hostname = Hostname::findOrFail($client->hostname_id);
         $website = Website::findOrFail($hostname->website_id);
@@ -112,19 +110,20 @@ class DemoEnvironmentController extends Controller
         $client->restore_type_bkdemo = $request->restore_type_bkdemo;
         $client->save();
 
-        $output = new BufferedOutput();
+        $restore_dbname = $request->restore_dbname_bkdemo;
+        $restore_type = $request->restore_type_bkdemo;
 
-        $status = Artisan::call('demobk:dbrestore', [
-            'database' => $database,
-            'restore_dbname' => $request->restore_dbname_bkdemo,
-            'restore_type' => $request->restore_type_bkdemo,
-        ], $output);
-
-        $message = $output->fetch();
+        dispatch(function() use ($database, $restore_dbname, $restore_type) {
+            \Artisan::call('demobk:dbrestore', [
+                'database' => $database,
+                'restore_dbname' => $restore_dbname,
+                'restore_type' => $restore_type,
+            ]);
+        })->afterResponse();
 
         return response()->json([
-            'success' => $status === 0,
-            'message' => $message,
+            'success' => true,
+            'message' => 'Restauración iniciada...',
         ]);
     }
 

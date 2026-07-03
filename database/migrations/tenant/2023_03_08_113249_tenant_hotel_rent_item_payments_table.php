@@ -18,7 +18,7 @@ class TenantHotelRentItemPaymentsTable extends Migration
             $table->increments('id');
             $table->unsignedInteger('hotel_rent_item_id');
             
-            $table->datetime('date_of_payment')->index();
+            $table->date('date_of_payment')->index();
             $table->char('payment_method_type_id', 2);
             $table->string('reference')->nullable();
             $table->decimal('change', 12, 2)->nullable();

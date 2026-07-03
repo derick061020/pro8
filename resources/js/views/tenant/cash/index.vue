@@ -82,7 +82,11 @@
                     <tr slot-scope="{ index, row }">
                         <!-- <td>{{ index }}</td> -->
                         <td>{{ row.reference_number }}</td>
-                        <td>{{ row.user }}</td>
+                        <td>
+                            {{ row.user }}
+                            <br>
+                            <small class="text-muted">{{ row.user_email }}</small>
+                        </td>
                         <td class="text-start">{{ formatDate(row.opening) }}</td>
                         <td class="text-start">{{ formatDate(row.closed) }}</td>
                         <td class="text-end">{{ row.beginning_balance }}</td>

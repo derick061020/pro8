@@ -99,7 +99,7 @@
                 <cbc:Name><![CDATA[{{ $company->trade_name }}]]></cbc:Name>
             </cac:PartyName>
             <cac:PartyLegalEntity>
-                <cbc:RegistrationName><![CDATA[{{ $company->name }}]]></cbc:RegistrationName>
+                <cbc:RegistrationName><![CDATA[{{ $document_xml_service->getTextWithoutEspecialCharacter($company->name) }}]]></cbc:RegistrationName>
                 <cac:RegistrationAddress>
                     <cbc:ID>{{ $establishment->district_id }}</cbc:ID>
                     <cbc:AddressTypeCode>{{ $establishment->code }}</cbc:AddressTypeCode>
@@ -137,7 +137,7 @@
                 <cbc:ID schemeID="{{ $customer->identity_document_type_id }}">{{ $customer->number }}</cbc:ID>
             </cac:PartyIdentification>
             <cac:PartyLegalEntity>
-                <cbc:RegistrationName><![CDATA[{{ $customer->name }}]]></cbc:RegistrationName>
+                <cbc:RegistrationName><![CDATA[{{ $document_xml_service->getTextWithoutEspecialCharacter($customer->name) }}]]></cbc:RegistrationName>
                 @if($customer->address && $customer->address !== '-')
                 <cac:RegistrationAddress>
                     @if($customer->district_id)

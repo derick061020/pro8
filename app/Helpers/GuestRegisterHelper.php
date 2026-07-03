@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Contracts\Encryption\DecryptException;
 use Exception;
+use Throwable;
 
 class GuestRegisterHelper
 {
@@ -23,15 +24,16 @@ class GuestRegisterHelper
      * @param  string $client_id
      * @return array
      */
-    public function sendEmail($id, $email, $client_id)
+    public function sendEmail($id, $email, $client_id, $payment_uuid = null)
     {
         try {
             if (empty($email) || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
                 throw new Exception("Email inválido o vacío: " . var_export($email, true));
             }
             $signed_url = $this->generateSignedUrl($id, $email, $client_id);
-            
-            $class = new VerifyGuestRegisterMail($signed_url);
+            $payment_url = $payment_uuid ? route('payment.public.show', ['uuid' => $payment_uuid]) : null;
+
+            $class = new VerifyGuestRegisterMail($signed_url, $payment_url);
 
             $config = Configuration::first();
             
@@ -41,7 +43,9 @@ class GuestRegisterHelper
             Config::set('mail.password', $config->mail_password);
             Config::set('mail.encryption', $config->mail_encryption);
 
-            $class->setUsernmae($config->mail_username);
+            if (is_string($config->mail_username) && $config->mail_username !== '') {
+                $class->setUsernmae($config->mail_username);
+            }
 
             Mail::to($email)->send($class);
 
@@ -49,7 +53,7 @@ class GuestRegisterHelper
                 'success' => true,
                 'message' => 'Correo reenviado correctamente.'
             ];
-        } catch(Exception $e) {
+        } catch(Throwable $e) {
             $this->writeErrorLog($e, 'Ocurrió un error al enviar el email de verificación (creación de cuenta invitado)');
             
             return [

@@ -136,7 +136,7 @@ class LockedEmissionProvider extends ServiceProvider
 
         User::creating(function ($document) {
             
-            (new UserControlHelper)->checkLimitUsers();
+            // (new UserControlHelper)->checkLimitUsers();
 
             /*
             $configuration = Configuration::first();

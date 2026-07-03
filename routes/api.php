@@ -1,7 +1,11 @@
 <?php
+use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Tenant\ConfigurationImageController;
 
 Route::get('generate_token', 'Tenant\Api\MobileController@getSeries');
+Route::post('consultas/search', 'System\PublicDocumentSearchController@searchApi')
+    ->middleware('throttle:30,1')
+    ->name('api.public_search.search');
 
 $hostname = app(Hyn\Tenancy\Contracts\CurrentHostname::class);
 if ($hostname) {
@@ -23,6 +27,7 @@ if ($hostname) {
             Route::get('sale-note/lists', 'Tenant\Api\SaleNoteController@lists');
             Route::post('item', 'Tenant\Api\MobileController@item');
             Route::post('items/{id}/update', 'Tenant\Api\MobileController@updateItem');
+            Route::get('item/destroy/{item}', 'Tenant\Api\MobileController@destroyItem');
             Route::get('configuration-web', 'Tenant\Api\MobileController@configWeb');
             Route::post('item/upload', 'Tenant\Api\MobileController@upload');
             Route::post('person', 'Tenant\Api\MobileController@person');
@@ -105,7 +110,6 @@ if ($hostname) {
         });
         Route::get('documents/search/customers', 'Tenant\DocumentController@searchCustomers');
 
-        // Route::post('services/consult_status', 'Tenant\Api\ServiceController@consultStatus');
         Route::post('documents/status', 'Tenant\Api\ServiceController@documentStatus');
 
         Route::get('sendserver/{document_id}/{query?}', 'Tenant\DocumentController@sendServer');
@@ -119,14 +123,18 @@ if ($hostname) {
 } else {
     Route::domain(env('APP_URL_BASE'))->group(function () {
 
+        Route::post('login', 'System\Api\AuthController@login');
 
         Route::middleware(['auth:system_api'])->group(function () {
 
-            //reseller
+            //Resellers
             Route::post('reseller/detail', 'System\Api\ResellerController@resellerDetail');
             Route::post('reseller/lockedAdmin', 'System\Api\ResellerController@lockedAdmin');
             Route::post('reseller/lockedTenant', 'System\Api\ResellerController@lockedTenant');
             Route::get('reseller/detailsLimitReseller', 'System\Api\ResellerController@detailsLimitReseller');
+
+            //Tenants
+            Route::post('/tenants', 'System\Api\TenantController@store');
 
             Route::get('restaurant/partner/list', 'System\Api\RestaurantPartnerController@list');
             Route::post('restaurant/partner/store', 'System\Api\RestaurantPartnerController@store');

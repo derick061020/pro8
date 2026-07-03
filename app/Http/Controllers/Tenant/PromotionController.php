@@ -1,9 +1,11 @@
 <?php
+
 namespace App\Http\Controllers\Tenant;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\DB;
 use App\Http\Requests\Tenant\PromotionRequest;
 use App\Http\Resources\Tenant\PromotionCollection;
 use App\Http\Resources\Tenant\PromotionResource;
@@ -32,7 +34,7 @@ class PromotionController extends Controller
 
     public function tables()
     {
-       
+
         $items = Item::where('apply_store', 1)->get();
         return compact('items');
     }
@@ -47,21 +49,21 @@ class PromotionController extends Controller
                     ->orWhereNull('type');
             })
             ->orderBy('description');
-        
+
         return new PromotionCollection($records->paginate(config('tenant.items_per_page')));
     }
 
     public function recordsPromotionList(Request $request)
     {
-        $records = Promotion::where('apply_restaurant', 0)->where('type','promotions')->orderBy('description');
-        
+        $records = Promotion::where('apply_restaurant', 0)->where('type', 'promotions')->orderBy('description');
+
         return new PromotionCollection($records->paginate(config('tenant.items_per_page')));
     }
 
     public function recordsSpotList(Request $request)
     {
-        $records = Promotion::where('apply_restaurant', 0)->where('type','spots')->orderBy('description');
-        
+        $records = Promotion::where('apply_restaurant', 0)->where('type', 'spots')->orderBy('description');
+
         return new PromotionCollection($records->paginate(config('tenant.items_per_page')));
     }
 
@@ -77,21 +79,20 @@ class PromotionController extends Controller
         return $record;
     }
 
-    public function store(PromotionRequest $request) {
+    public function store(PromotionRequest $request)
+    {
 
 
         $id = $request->input('id');
 
-        if(!$id)
-        {
+        if (!$id) {
             $count = Promotion::where('apply_restaurant', 0)
                 ->where(function ($query) {
-                    $query->where('type','=', 'banners') // Verificar que tiene los banners
-                    ->orWhereNull('type');
+                    $query->where('type', '=', 'banners') // Verificar que tiene los banners
+                        ->orWhereNull('type');
                 })
                 ->count();
-            if($count > 2)
-            {
+            if ($count > 2) {
                 return [
                     'success' => false,
                     'message' => 'Solo esta permitido 3 Banners',
@@ -103,20 +104,19 @@ class PromotionController extends Controller
         $item->fill($request->all());
 
         $temp_path = $request->input('temp_path');
-        if($temp_path) {
+        if ($temp_path) {
 
             UploadFileHelper::checkIfValidFile($request->input('image'), $temp_path, true);
 
-            $directory = 'public'.DIRECTORY_SEPARATOR.'uploads'.DIRECTORY_SEPARATOR.'promotions'.DIRECTORY_SEPARATOR;
+            $directory = 'public' . DIRECTORY_SEPARATOR . 'uploads' . DIRECTORY_SEPARATOR . 'promotions' . DIRECTORY_SEPARATOR;
             $file_name_old = $request->input('image');
             $file_name_old_array = explode('.', $file_name_old);
             $file_content = file_get_contents($temp_path);
             $datenow = date('YmdHis');
-            $file_name = Str::slug($item->description).'-'.$datenow.'.'.$file_name_old_array[1];
-            Storage::put($directory.$file_name, $file_content);
+            $file_name = Str::slug($item->description) . '-' . $datenow . '.' . $file_name_old_array[1];
+            Storage::put($directory . $file_name, $file_content);
             $item->image = $file_name;
-
-        }else if(!$request->input('image') && !$request->input('temp_path') && !$request->input('image_url')){
+        } else if (!$request->input('image') && !$request->input('temp_path') && !$request->input('image_url')) {
             $item->image = 'imagen-no-disponible.jpg';
         }
 
@@ -124,21 +124,20 @@ class PromotionController extends Controller
 
         return [
             'success' => true,
-            'message' => ($id)?'Banner editado con éxito':'Banner registrado con éxito',
+            'message' => ($id) ? 'Banner editado con éxito' : 'Banner registrado con éxito',
             'id' => $item->id
         ];
     }
 
-    public function storePromotionList(PromotionRequest $request) {
+    public function storePromotionList(PromotionRequest $request)
+    {
 
 
         $id = $request->input('id');
 
-        if(!$id)
-        {
-            $count = Promotion::where('apply_restaurant', 0)->where('type','promotions')->count();
-            if($count > 2)
-            {
+        if (!$id) {
+            $count = Promotion::where('apply_restaurant', 0)->where('type', 'promotions')->count();
+            if ($count > 2) {
                 return [
                     'success' => false,
                     'message' => 'Solo esta permitido 3 Promociones',
@@ -150,20 +149,19 @@ class PromotionController extends Controller
         $item->fill($request->all());
 
         $temp_path = $request->input('temp_path');
-        if($temp_path) {
+        if ($temp_path) {
 
             UploadFileHelper::checkIfValidFile($request->input('image'), $temp_path, true);
 
-            $directory = 'public'.DIRECTORY_SEPARATOR.'uploads'.DIRECTORY_SEPARATOR.'promotions'.DIRECTORY_SEPARATOR;
+            $directory = 'public' . DIRECTORY_SEPARATOR . 'uploads' . DIRECTORY_SEPARATOR . 'promotions' . DIRECTORY_SEPARATOR;
             $file_name_old = $request->input('image');
             $file_name_old_array = explode('.', $file_name_old);
             $file_content = file_get_contents($temp_path);
             $datenow = date('YmdHis');
-            $file_name = Str::slug($item->description).'-'.$datenow.'.'.$file_name_old_array[1];
-            Storage::put($directory.$file_name, $file_content);
+            $file_name = Str::slug($item->description) . '-' . $datenow . '.' . $file_name_old_array[1];
+            Storage::put($directory . $file_name, $file_content);
             $item->image = $file_name;
-
-        }else if(!$request->input('image') && !$request->input('temp_path') && !$request->input('image_url')){
+        } else if (!$request->input('image') && !$request->input('temp_path') && !$request->input('image_url')) {
             $item->image = 'imagen-no-disponible.jpg';
         }
 
@@ -171,12 +169,13 @@ class PromotionController extends Controller
 
         return [
             'success' => true,
-            'message' => ($id)?'Promocion editada con éxito':'Promocion registrada con éxito',
+            'message' => ($id) ? 'Promocion editada con éxito' : 'Promocion registrada con éxito',
             'id' => $item->id
         ];
     }
 
-    public function storeSpotList(Request $request) {
+    public function storeSpotList(Request $request)
+    {
         $id = $request->input('id');
 
         // Validar la URL solo si se proporciona
@@ -187,18 +186,16 @@ class PromotionController extends Controller
         ]);
 
         // Validar que tenga imagen al crear (temp_path o image_url)
-        if(!$id && !$request->input('temp_path') && !$request->input('image_url')) {
+        if (!$id && !$request->input('temp_path') && !$request->input('image_url')) {
             return [
                 'success' => false,
                 'message' => 'La imagen es requerida',
             ];
         }
 
-        if(!$id)
-        {
-            $count = Promotion::where('apply_restaurant', 0)->where('type','spots')->count();
-            if($count > 3)
-            {
+        if (!$id) {
+            $count = Promotion::where('apply_restaurant', 0)->where('type', 'spots')->count();
+            if ($count > 3) {
                 return [
                     'success' => false,
                     'message' => 'Solo está permitido 4 Anuncios publicitarios',
@@ -215,20 +212,19 @@ class PromotionController extends Controller
         $item->item_id = null; // Los spots no requieren item_id
 
         $temp_path = $request->input('temp_path');
-        if($temp_path) {
+        if ($temp_path) {
 
             UploadFileHelper::checkIfValidFile($request->input('image'), $temp_path, true);
 
-            $directory = 'public'.DIRECTORY_SEPARATOR.'uploads'.DIRECTORY_SEPARATOR.'promotions'.DIRECTORY_SEPARATOR;
+            $directory = 'public' . DIRECTORY_SEPARATOR . 'uploads' . DIRECTORY_SEPARATOR . 'promotions' . DIRECTORY_SEPARATOR;
             $file_name_old = $request->input('image');
             $file_name_old_array = explode('.', $file_name_old);
             $file_content = file_get_contents($temp_path);
             $datenow = date('YmdHis');
-            $file_name = 'spot-'.$datenow.'.'.$file_name_old_array[1];
-            Storage::put($directory.$file_name, $file_content);
+            $file_name = 'spot-' . $datenow . '.' . $file_name_old_array[1];
+            Storage::put($directory . $file_name, $file_content);
             $item->image = $file_name;
-
-        }else if(!$request->input('image') && !$request->input('temp_path') && !$request->input('image_url')){
+        } else if (!$request->input('image') && !$request->input('temp_path') && !$request->input('image_url')) {
             $item->image = 'imagen-no-disponible.jpg';
         }
 
@@ -236,17 +232,35 @@ class PromotionController extends Controller
 
         return [
             'success' => true,
-            'message' => ($id)?'Anuncio editado con éxito':'Anuncio registrado con éxito',
+            'message' => ($id) ? 'Anuncio editado con éxito' : 'Anuncio registrado con éxito',
             'id' => $item->id
         ];
     }
-    
+
     public function destroy($id)
     {
-        //return 'sd';
-        $item = Promotion::findOrFail($id);
-        $item->status = 0;
-        $item->save();
+        DB::connection('tenant')->transaction(function () use ($id) {
+            $item = Promotion::findOrFail($id);
+            $image = $item->image;
+
+            $item->status = 0;
+            $item->save();
+
+            // Eliminar archivo solo si ya no existe otro banner activo usando la misma imagen.
+            if ($image && $image !== 'imagen-no-disponible.jpg') {
+                $inUse = Promotion::where('status', 1)
+                    ->where('apply_restaurant', $item->apply_restaurant)
+                    ->where('image', $image)
+                    ->exists();
+
+                if (!$inUse) {
+                    $path = 'public' . DIRECTORY_SEPARATOR . 'uploads' . DIRECTORY_SEPARATOR . 'promotions' . DIRECTORY_SEPARATOR . $image;
+                    if (Storage::exists($path)) {
+                        Storage::delete($path);
+                    }
+                }
+            }
+        });
 
         return [
             'success' => true,
@@ -257,10 +271,10 @@ class PromotionController extends Controller
 
     public function upload(Request $request)
     {
-        
-        $validate_upload = UploadFileHelper::validateUploadFile($request, 'file', 'jpg,jpeg,png,gif,svg');
-        
-        if(!$validate_upload['success']){
+
+        $validate_upload = UploadFileHelper::validateUploadFile($request, 'file', 'jpg,jpeg,png,gif,svg,webp');
+
+        if (!$validate_upload['success']) {
             return $validate_upload;
         }
 

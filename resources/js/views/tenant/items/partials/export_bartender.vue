@@ -24,15 +24,15 @@
                             ref="labelingLogos"
                             @scroll.passive="onLabelingLogosScroll"
                         >
-                            <img src="/public/images/labeling_machines_img/Bartender.svg" alt="bartender">
-                            <img src="/public/images/labeling_machines_img/Cybra.png" alt="cybra">
-                            <img src="/public/images/labeling_machines_img/golabel.png" alt="golabel">
-                            <img src="/public/images/labeling_machines_img/Honeywell.svg" alt="honeywell">
-                            <img src="/public/images/labeling_machines_img/Labeljoy.svg" alt="labeljoy">
-                            <img src="/public/images/labeling_machines_img/Nicelabel.svg" alt="nicelabel">
-                            <img src="/public/images/labeling_machines_img/Teklynx.svg" alt="teklynx">
-                            <img src="/public/images/labeling_machines_img/Tlashford.png" alt="tlashford">
-                            <img src="/public/images/labeling_machines_img/Zebra.svg" alt="zebra">
+                            <img :src="'/images/labeling_machines_img/Bartender.svg'" alt="bartender">
+                            <img :src="'/images/labeling_machines_img/Cybra.png'" alt="cybra">
+                            <img :src="'/images/labeling_machines_img/golabel.png'" alt="golabel">
+                            <img :src="'/images/labeling_machines_img/Honeywell.svg'" alt="honeywell">
+                            <img :src="'/images/labeling_machines_img/Labeljoy.svg'" alt="labeljoy">
+                            <img :src="'/images/labeling_machines_img/Nicelabel.svg'" alt="nicelabel">
+                            <img :src="'/images/labeling_machines_img/Teklynx.svg'" alt="teklynx">
+                            <img :src="'/images/labeling_machines_img/Tlashford.png'" alt="tlashford">
+                            <img :src="'/images/labeling_machines_img/Zebra.svg'" alt="zebra">
                         </div>
                     </div>                    
                 </div>

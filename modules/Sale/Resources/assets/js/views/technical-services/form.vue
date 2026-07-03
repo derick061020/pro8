@@ -110,9 +110,7 @@
                 </div>
                 <el-tabs v-model="activeName" class="mt-2">
                     <el-tab-pane class="mb-3" name="first">
-                        <span slot="label"
-                            ><h3 class="m-0 mt-2">General</h3></span
-                        >
+                        <span slot="label">General</span>
                         <div class="row">
                             <div class="col-sm-6">
                                 <div
@@ -312,9 +310,7 @@
                         </div>
                     </el-tab-pane>
                     <el-tab-pane class="mb-3" name="second">
-                        <span slot="label"
-                            ><h3 class="m-0 mt-2">Notas</h3></span
-                        >
+                        <span slot="label">Notas</span>
                         <div class="row">
                             <div class="col-md-12">
                                 <div class="form-group">
@@ -359,9 +355,7 @@
                     </el-tab-pane>
 
                     <el-tab-pane class="mb-3" name="third">
-                        <span slot="label"
-                            ><h3 class="m-0 mt-2">Productos</h3></span
-                        >
+                        <span slot="label">Productos</span>
                         <div class="row">
                             <div class="col-12 row ">
                                 <!--

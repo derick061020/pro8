@@ -17,7 +17,8 @@ class UnitTypeCollection extends ResourceCollection
         return $this->collection->transform(function($row, $key) {
             return [
                 'id' => $row->id,
-                'active' => ($row->active)?'Si':'No',
+                'active' => (bool) $row->active,
+                'active_label' => $row->active ? 'Si' : 'No',
                 'active_value' => (bool) $row->active,
                 'symbol' => $row->symbol,
                 'description' => $row->description,

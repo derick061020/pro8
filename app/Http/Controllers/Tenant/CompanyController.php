@@ -2,6 +2,7 @@
 namespace App\Http\Controllers\Tenant;
 
 use App\Models\Tenant\Company;
+use App\Models\Tenant\Configuration;
 use App\Models\Tenant\SoapType;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Tenant\CompanyRequest;
@@ -89,8 +90,29 @@ class CompanyController extends Controller
     {
         $id = $request->input('id');
         $company = Company::find($id);
-        $company->fill($request->all());
+        $company->fill($request->except([
+            'smtp_host',
+            'smtp_port',
+            'smtp_user',
+            'smtp_password',
+            'smtp_encryption',
+        ]));
         $company->save();
+
+        $smtpData = $request->only([
+            'smtp_host',
+            'smtp_port',
+            'smtp_user',
+            'smtp_password',
+            'smtp_encryption',
+        ]);
+
+        $configuration = Configuration::first();
+        if (!$configuration) {
+            $configuration = new Configuration();
+        }
+        $configuration->fill($smtpData);
+        $configuration->save();
 
         return [
             'success' => true,
@@ -120,21 +142,88 @@ class CompanyController extends Controller
 
 
             if (($type === 'logo')) {
-                $v = request()->validate(['file' => 'required|mimes:jpeg,png,jpg,gif,svg|max:2048']);
+                $v = request()->validate(['file' => 'required|mimes:jpeg,png,jpg,gif,svg,webp|max:2048']);
 
                 UploadFileHelper::checkIfValidFile($name, $file->getPathName(), true);
 
-                $stream = fopen($file->getPathname(), 'r');
-                Storage::put('public/uploads/logos/'.$name, $stream);
-                if (is_resource($stream)) fclose($stream);
+                $absolutePath = $file->getPathname();
+                $mime = mime_content_type($absolutePath) ?: '';
+                $isSvg = str_contains($mime, 'svg') || strtolower($ext) === 'svg';
+
+                if ($isSvg) {
+                    // SVG: se guarda tal cual (sin compresión).
+                    $stream = fopen($file->getPathname(), 'r');
+                    Storage::put('public/uploads/logos/' . $name, $stream);
+                    if (is_resource($stream)) fclose($stream);
+                } else {
+                    // Optimizar raster para que el base64 del PDF no infle el documento.
+                    $maxWidth = 300;
+                    $targetBytes = 100 * 1024; // ~100KB
+
+                    $optimized = UploadFileHelper::optimizeRasterImageToTargetJpg(
+                        $absolutePath,
+                        $maxWidth,
+                        $targetBytes,
+                        60,
+                        10
+                    );
+
+                    if (!$optimized) {
+                        // Fallback: compresión más agresiva si el optimizador falla.
+                        $image = \Intervention\Image\ImageManagerStatic::make($absolutePath);
+                        $image->resize($maxWidth, null, function ($constraint) {
+                            $constraint->aspectRatio();
+                            $constraint->upsize();
+                        });
+                        $quality = 25;
+                        $optimizedBytes = (string) $image->encode('jpg', $quality);
+                    } else {
+                        $optimizedBytes = (string) $optimized['bytes'];
+                    }
+
+                    $name = $type . '_' . $company->number . '.jpg';
+                    Storage::put('public/uploads/logos/' . $name, $optimizedBytes);
+                }
             }
 
             if (($type === 'logo_dark')) {
-                $v = request()->validate(['file' => 'required|mimes:jpeg,png,jpg,gif,svg|max:2048']);
+                $v = request()->validate(['file' => 'required|mimes:jpeg,png,jpg,gif,svg,webp|max:2048']);
                 UploadFileHelper::checkIfValidFile($name, $file->getPathName(), true);
-                $stream = fopen($file->getPathname(), 'r');
-                Storage::put('public/uploads/logos/'.$name, $stream);
-                if (is_resource($stream)) fclose($stream);
+                $absolutePath = $file->getPathname();
+                $mime = mime_content_type($absolutePath) ?: '';
+                $isSvg = str_contains($mime, 'svg') || strtolower($ext) === 'svg';
+
+                if ($isSvg) {
+                    $stream = fopen($file->getPathname(), 'r');
+                    Storage::put('public/uploads/logos/' . $name, $stream);
+                    if (is_resource($stream)) fclose($stream);
+                } else {
+                    $maxWidth = 300;
+                    $targetBytes = 100 * 1024; // ~100KB
+
+                    $optimized = UploadFileHelper::optimizeRasterImageToTargetJpg(
+                        $absolutePath,
+                        $maxWidth,
+                        $targetBytes,
+                        60,
+                        10
+                    );
+
+                    if (!$optimized) {
+                        $image = \Intervention\Image\ImageManagerStatic::make($absolutePath);
+                        $image->resize($maxWidth, null, function ($constraint) {
+                            $constraint->aspectRatio();
+                            $constraint->upsize();
+                        });
+                        $quality = 25;
+                        $optimizedBytes = (string) $image->encode('jpg', $quality);
+                    } else {
+                        $optimizedBytes = (string) $optimized['bytes'];
+                    }
+
+                    $name = $type . '_' . $company->number . '.jpg';
+                    Storage::put('public/uploads/logos/' . $name, $optimizedBytes);
+                }
             }
 
             // if (($type === 'logo_store')) {
@@ -143,11 +232,11 @@ class CompanyController extends Controller
             // }
 
             if (($type === 'favicon')) {
-                request()->validate(['file' => 'required|image|mimes:png|max:1024']);
+                request()->validate(['file' => 'required|image|mimes:png,webp|max:1024']);
                 $filename = time() . '.' . $ext;
                 $name = 'storage/uploads/favicons/' . $filename;
 
-                UploadFileHelper::checkIfValidFile($name, $file->getPathName(), true, 'png', ['image/png']);
+                UploadFileHelper::checkIfValidFile($name, $file->getPathName(), true, 'png,webp', ['image/png', 'image/webp']);
 
                 $stream = fopen($file->getPathname(), 'r');
                 Storage::put('public/uploads/favicons/'.$filename, $stream);
@@ -155,7 +244,7 @@ class CompanyController extends Controller
             }
 
             if (($type === 'app_logo')) {
-                request()->validate(['file' => 'required|mimes:jpeg,png,jpg,gif,svg|max:2048']);
+                request()->validate(['file' => 'required|mimes:jpeg,png,jpg,gif,svg,webp|max:2048']);
                 UploadFileHelper::checkIfValidFile($name, $file->getPathName(), true);
                 $stream = fopen($file->getPathname(), 'r');
                 Storage::put('public/uploads/logos/'.$name, $stream);
@@ -164,7 +253,7 @@ class CompanyController extends Controller
 
 
             if (($type === 'img_firm')) {
-                request()->validate(['file' => 'required|image|mimes:jpeg,png,jpg,gif,svg|max:2048']);
+                request()->validate(['file' => 'required|image|mimes:jpeg,png,jpg,gif,svg,webp|max:2048']);
                 UploadFileHelper::checkIfValidFile($name, $file->getPathName(), true);
                 $stream = fopen($file->getPathname(), 'r');
                 Storage::put('public/uploads/firms/'.$name, $stream);
@@ -176,6 +265,32 @@ class CompanyController extends Controller
             $company->$type = $name;
 
             $company->save();
+
+            if ($type === 'logo') {
+                $establishment = \App\Models\Tenant\Establishment::withOut(['country', 'department', 'province', 'district'])
+                    ->where('code', '0000')
+                    ->first();
+
+                if ($establishment) {
+                    $logoActual = $establishment->getRawOriginal('logo');
+
+                    $esCopiaPropia = $logoActual && str_contains(basename($logoActual), 'establishment_0000_');
+
+                    if (!$esCopiaPropia) {
+                        $sourcePath = 'public/uploads/logos/' . $name;
+
+                        if (Storage::exists($sourcePath)) {
+                            $newName = 'establishment_0000_' . time() . '_' . $name;
+
+                            Storage::copy($sourcePath, 'public/uploads/logos/' . $newName);
+
+                            $establishment->logo = 'storage/uploads/logos/' . $newName;
+                            $establishment->save();
+                        }
+                    }
+              
+                }
+            }
 
             return [
                 'success' => true,

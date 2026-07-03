@@ -4,6 +4,7 @@ namespace Modules\Ecommerce\Http\Resources;
 
 use Illuminate\Http\Resources\Json\ResourceCollection;
 use App\Http\Controllers\Tenant\Api\ServiceController;
+use Illuminate\Support\Str;
 
 class ItemBarCollection extends ResourceCollection
 {
@@ -37,6 +38,7 @@ class ItemBarCollection extends ResourceCollection
 
             return [
                 'id' => $row->id,
+                'slug' => $row->id . '-' . Str::slug($row->description),
                 'unit_type_id' => $row->unit_type_id,
                 'description' => $row->description,
                 'name' => $row->name,

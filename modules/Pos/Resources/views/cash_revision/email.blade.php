@@ -14,9 +14,12 @@
     </style>
 </head>
 <body>
+@php
+    use App\CoreFacturalo\Helpers\CompanyDocumentDisplay as EmailCashRevCo;
+@endphp
 <p>Estimad@: 
 
-    {{ $company->name }}
+    {{ EmailCashRevCo::commercialLine($company) }}
   
     , informamos que su reporte de caja ha sido generado exitosamente.</p>
 

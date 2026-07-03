@@ -410,17 +410,17 @@ export default {
             this.$refs.selectSearchNormal.blur()
         },
         validateAddItem() {
-            if (parseFloat(this.form_add.stock) < 1) {
+            if (parseFloat(this.form_add.stock) < 0) {
                 return {
                     success: false,
-                    message: 'El stock debe ser mayor o igual a 1.'
+                    message: 'El stock debe ser mayor a 0.'
                 }
             }
 
-            if (this.form_add.quantity < 1) {
+            if (this.form_add.quantity < 0) {
                 return {
                     success: false,
-                    message: 'La cantidad debe ser mayor o igual a 1.'
+                    message: 'La cantidad debe ser mayor a 0.'
                 }
             }
 
@@ -482,13 +482,18 @@ export default {
             /* if (!this.form_add.item_id) {
               return;
             }*/
+           console.log(this.form_add);
+           console.log(Number(this.form_add.stock));
+           console.log(Number(this.form_add.quantity));
+           
+           
 
-            if (parseFloat(this.form_add.stock) < 1) {
-                return this.$message.error("El stock debe ser mayor o igual a 1");
+            if (Number(this.form_add.stock) == 0) {
+                return this.$message.error("El stock debe ser mayor a 0");
             }
 
-            if (this.form_add.quantity < 1) {
-                return this.$message.error("La cantidad debe ser mayor o igual a 1");
+            if (Number(this.form_add.quantity) == 0) {
+                return this.$message.error("La cantidad debe ser mayor a 0");
             }
 
             if (parseFloat(this.form_add.stock) < this.form_add.quantity) {
@@ -609,7 +614,6 @@ export default {
                     })
                     .finally(() => {
                         this.loading_search = false
-
                     })
             } else {
                 await this.filterItems()

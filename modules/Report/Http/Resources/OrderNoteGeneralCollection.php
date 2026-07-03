@@ -26,7 +26,7 @@ class OrderNoteGeneralCollection extends ResourceCollection
                 'customer_name' => $row->customer->name,  
                 'customer_number' => $row->customer->number,  
                 'total' => $row->total,  
-                'state_description' => ($row->documents->count() > 0) ? 'PROCESADO' : 'PENDIENTE',  
+                'state_description' => strtoupper(optional($row->state_type)->description ?? 'PENDIENTE'),  
             ];
         });
     }

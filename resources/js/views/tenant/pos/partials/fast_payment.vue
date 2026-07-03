@@ -248,9 +248,11 @@ import CardBrandsForm from '../../card_brands/form.vue'
 import SaleNotesOptions from '../../sale_notes/partials/options.vue'
 import OptionsForm from './options.vue'
 import MultiplePaymentForm from './multiple_payment.vue'
+import { buhoprinter } from '@mixins/buhoprinter'
 
 export default {
     components: {OptionsForm, CardBrandsForm, SaleNotesOptions, MultiplePaymentForm, Keypress},
+    mixins: [buhoprinter],
 
     props: ['form', 'customer', 'configuration','currencyTypeActive', 'exchangeRateSale', 'is_payment', 'soapCompany', 'businessTurns', 'isPrint', 'rowsItems'],
     data() {
@@ -263,6 +265,7 @@ export default {
             showDialogSaleNote: false,
             showDialogNewCardBrand: false,
             documentNewId: null,
+            printTicketUrl: null,
             saleNotesNewId: null,
             resource_options: null,
             has_card: false,
@@ -308,9 +311,11 @@ export default {
 
         await this.getFormPosLocalStorage()
         // console.log(this.form.payments, this.payments)
-        if (!qz.websocket.isActive() && this.isPrint) {
-            startConnection();
-        }
+        // La conexión directa con BuhoPrinter ya no es necesaria desde el frontend.
+        // La impresión se centraliza vía PrintOrder → Redis → BuhoPrinter agent.
+        // if (!this.isBuhoActive && this.isPrint) {
+        //     this.startConnectionBuho();
+        // }
     },
     mounted() {
         // console.log(this.currencyTypeActive)
@@ -801,10 +806,10 @@ export default {
                     } else {
 
                         if (this.configuration.send_auto && this.form.document_type_id === '01') {
-                            response_sent = await this.sendDocument(response.data.data.id); 
+                            response_sent = await this.sendDocument(response.data.data.id);
                             this.statusDocument = response_sent.data.response
                         } else if (this.configuration.ticket_single_shipment && this.form.document_type_id === '03') {
-                            response_sent = await this.sendDocument(response.data.data.id); 
+                            response_sent = await this.sendDocument(response.data.data.id);
                             this.statusDocument = response_sent.data.response
                         }
 
@@ -814,7 +819,8 @@ export default {
 
                     }
 
-                    this.documentNewId = response.data.data.id;
+                    this.documentNewId   = response.data.data.id;
+                    this.printTicketUrl  = response.data?.links?.print_ticket ?? null;
                     this.showDialogOptions = true;
 
                     // this.savePaymentMethod();
@@ -870,17 +876,13 @@ export default {
         async printticket(){
             //getUpdatedConfig();
             await this.sleep(400);
-            var configg = getUpdatedConfig();
-            var opts = getUpdatedConfig();
-            var printData = [
-                {
-                    type: 'html',
-                    format: 'plain',
-                    data: this.form.datahtml,
-                    options: opts
-                }
-            ];
-            qz.print(configg, printData).catch(displayError);
+            const url = this.printTicketUrl;
+            if (url) {
+                // Centraliza la impresión vía backend → Redis → BuhoPrinter agent
+                await this.printDocument(url, this.configuration?.printer_name_documents);
+            } else {
+                console.warn('[BuhoPrinter] print_ticket URL no disponible.');
+            }
         },
         saveCashDocument() {
             this.$http.post(`/cash/cash_document`, this.form_cash_document)

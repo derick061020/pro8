@@ -191,7 +191,7 @@ $cash_final_balance = $final_balance + $cash->beginning_balance;
         </div>
         <div style="margin-top:5px; margin-bottom:10px;">
 
-            <p><strong>Empresa: </strong>{{$company->name}}</p>
+            <p>@include('partials.report_company_header')</p>
             <p><strong>Fecha reporte: </strong>{{date('Y-m-d')}}</p>
             <p><strong>Ruc: </strong>{{$company->number}}</p>
             <p><strong>Establecimiento: </strong>{{$establishment->address}} - {{$establishment->department->description}} - {{$establishment->district->description}}</p>

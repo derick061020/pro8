@@ -56,7 +56,7 @@
     ">
         <img 
             src="data:{{ mime_content_type(public_path("{$logo}")) }};base64,{{ base64_encode(file_get_contents(public_path("{$logo}"))) }}" 
-            alt="{{ $company->name }}" 
+            alt="{{ \App\CoreFacturalo\Helpers\CompanyDocumentDisplay::logoAlt($company) }}" 
             style="width: 100%; height: auto; object-fit: contain; opacity: 0.1;"
         >
     </div>
@@ -82,12 +82,12 @@
                 <div class="company_logo_box">
                     <img
                         src="data:{{mime_content_type(public_path("storage/uploads/logos/{$company->logo}"))}};base64, {{base64_encode(file_get_contents(public_path("storage/uploads/logos/{$company->logo}")))}}"
-                        alt="{{$company->name}}" class="company_logo" style="max-width: 150px;">
+                        alt="{{ \App\CoreFacturalo\Helpers\CompanyDocumentDisplay::logoAlt($company) }}" class="company_logo" style="max-width: 150px;">
                 </div>
             </td>
             <td width="50%" class="text-center">
                 <div class="text-left">
-                    <h4 class="">{{ $company->name }}</h4>
+                    @include('pdf.partials.company_document_header_names')
                     <h5>{{ 'RUC '.$company->number }}</h5>
                     <h6 style="text-transform: uppercase;">
                         {{ ($establishment->address !== '-')? $establishment->address : '' }}
@@ -121,7 +121,7 @@
         @else
             <td width="50%" class="pl-1">
                 <div class="text-left">
-                    <h4 class="">{{ $company->name }}</h4>
+                    @include('pdf.partials.company_document_header_names')
                     <h5>{{ 'RUC '.$company->number }}</h5>
                     <h6 style="text-transform: uppercase;">
                         {{ ($establishment->address !== '-')? $establishment->address : '' }}
@@ -780,18 +780,18 @@ foreach ($document->items as $row) {
         </tr>
     @endif
 
-    @if($document->total_discount > 0 && $document->subtotal > 0)
+    @if($document->total_discount_with_igv > 0 && $document->subtotal > 0)
         <tr>
             <td class="p-1 text-right align-top desc cell-solid font-bold" colspan="{{ $colspan_total }}">SUBTOTAL: {{ $document->currency_type->symbol }}</td>
             <td class="p-1 text-right align-top desc cell-solid font-bold">{{ number_format($document->subtotal, 2) }}</td>
         </tr>
     @endif
 
-    @if($document->total_discount > 0)
+    @if($document->total_discount_with_igv > 0)
         <tr>
             <td class="p-1 text-right align-top desc cell-solid font-bold" colspan="{{ $colspan_total }}" >{{(($document->total_prepayment > 0) ? 'ANTICIPO':'DESCUENTO TOTAL')}}
                 : {{ $document->currency_type->symbol }}</td>
-            <td class="p-1 text-right align-top desc cell-solid font-bold">{{ number_format($document->total_discount, 2) }}</td>
+            <td class="p-1 text-right align-top desc cell-solid font-bold">{{ number_format($document->total_discount_with_igv, 2) }}</td>
         </tr>
     @endif
 

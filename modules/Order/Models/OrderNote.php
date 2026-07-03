@@ -519,6 +519,153 @@
         }
 
         /**
+         * Scope para filtrar pedidos por entregar (state_type_id = 01)
+         *
+         * @param Builder $query
+         * @param         $params
+         *
+         * @return Builder
+         */
+        public function scopeWhereToDeliverState(Builder $query, $params)
+        {
+            $query
+                ->where('state_type_id', '01')
+                ->whereBetween($params['date_range_type_id'], [$params['date_start'], $params['date_end']]);
+            if ($params['person_id']) {
+                $query->where('customer_id', $params['person_id']);
+            } else {
+                $query->where('user_id', $params['seller_id']);
+            }
+            return $query;
+        }
+
+        /**
+         * Scope para filtrar pedidos entregados (state_type_id = 05)
+         *
+         * @param Builder $query
+         * @param         $params
+         *
+         * @return Builder
+         */
+        public function scopeWhereDeliveredState(Builder $query, $params)
+        {
+            $query
+                ->where('state_type_id', '05')
+                ->whereBetween($params['date_range_type_id'], [$params['date_start'], $params['date_end']]);
+            if ($params['person_id']) {
+                $query->where('customer_id', $params['person_id']);
+            } else {
+                $query->where('user_id', $params['seller_id']);
+            }
+            return $query;
+        }
+
+        /**
+         * Scope para filtrar pedidos anulados (state_type_id = 11)
+         *
+         * @param Builder $query
+         * @param         $params
+         *
+         * @return Builder
+         */
+        public function scopeWhereVoidedState(Builder $query, $params)
+        {
+            $query
+                ->where('state_type_id', '11')
+                ->whereBetween($params['date_range_type_id'], [$params['date_start'], $params['date_end']]);
+            if ($params['person_id']) {
+                $query->where('customer_id', $params['person_id']);
+            } else {
+                $query->where('user_id', $params['seller_id']);
+            }
+            return $query;
+        }
+
+        /**
+         * Scope para filtrar pedidos rechazados (state_type_id = 09)
+         *
+         * @param Builder $query
+         * @param         $params
+         *
+         * @return Builder
+         */
+        public function scopeWhereRejectedState(Builder $query, $params)
+        {
+            $query
+                ->where('state_type_id', '09')
+                ->whereBetween($params['date_range_type_id'], [$params['date_start'], $params['date_end']]);
+            if ($params['person_id']) {
+                $query->where('customer_id', $params['person_id']);
+            } else {
+                $query->where('user_id', $params['seller_id']);
+            }
+            return $query;
+        }
+
+        /**
+         * Scope para filtrar pedidos observados (state_type_id = 07)
+         *
+         * @param Builder $query
+         * @param         $params
+         *
+         * @return Builder
+         */
+        public function scopeWhereEnviadoState(Builder $query, $params)
+        {
+            $query
+                ->where('state_type_id', '03')
+                ->whereBetween($params['date_range_type_id'], [$params['date_start'], $params['date_end']]);
+            if ($params['person_id']) {
+                $query->where('customer_id', $params['person_id']);
+            } else {
+                $query->where('user_id', $params['seller_id']);
+            }
+            return $query;
+        }
+
+        /**
+         * Scope para filtrar pedidos enviados (state_type_id = 03)
+         *
+         * @param Builder $query
+         * @param         $params
+         *
+         * @return Builder
+         */
+        public function scopeWhereObservadoState(Builder $query, $params)
+        {
+            $query
+                ->where('state_type_id', '07')
+                ->whereBetween($params['date_range_type_id'], [$params['date_start'], $params['date_end']]);
+            if ($params['person_id']) {
+                $query->where('customer_id', $params['person_id']);
+            } else {
+                $query->where('user_id', $params['seller_id']);
+            }
+            return $query;
+        }
+
+        /**
+         * Scope para filtrar pedidos por anular (state_type_id = 13)
+         *
+         * @param Builder $query
+         * @param         $params
+         *
+         * @return Builder
+         */
+        public function scopeWherePorAnularState(Builder $query, $params)
+        {
+            $query
+                ->where('state_type_id', '13')
+                ->whereBetween($params['date_range_type_id'], [$params['date_start'], $params['date_end']]);
+            if ($params['person_id']) {
+                $query->where('customer_id', $params['person_id']);
+            } else {
+                $query->where('user_id', $params['seller_id']);
+            }
+            return $query;
+        }
+
+        /**
          * Establece el status anulado (11) para el pedido
          * Recorre los items, si estos tienen lotes serán habilitados nuevamente
          *
@@ -636,6 +783,7 @@
                 'customer_number' => $this->customer->number,
                 'customer_telephone' => optional($this->customer)->telephone,
                 'customer_email' => optional($this->customer)->email,
+                'custom_fields_data' => $this->custom_fields_data,
                 'currency_type_id' => $this->currency_type_id,
                 'total_exportation' => number_format($this->total_exportation, 2),
                 // 'total_free' => number_format($this->total_free,2),

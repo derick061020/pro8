@@ -80,7 +80,7 @@ class PaymentOrderCommand extends Command
         $today_notification = Carbon::createFromDate($ending_service->year, $ending_service->month, $day_notification);
         $hour_notification = Carbon::today()->setTimeFromTimeString($config->hour_generate_payment_order);
         if ( ($today_notification->isSameDay($now) && Carbon::now()->isSameHour($hour_notification) )&& !$order_payment) {
-            $id = $client->createPayemtnOrder(); // Crear orden de pago
+            $id = $client->createPayemtnOrder()->id; // Crear orden de pago
                 if ($config->send_notification_cron) {
                     app(PaymentOrderController::class)->notify($id);
                 }

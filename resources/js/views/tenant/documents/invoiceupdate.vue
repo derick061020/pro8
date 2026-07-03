@@ -194,6 +194,7 @@
                                        @click.prevent="showDialogNewPerson = true">[+ Nuevo]</a>
                                 </label>
                                 <el-select v-model="form.customer_id"
+                                           ref="select_customer"
                                            :loading="loading_search"
                                            :remote-method="searchRemoteCustomers"
                                            class="border-left rounded-left border-info"
@@ -2025,7 +2026,8 @@ export default {
 
             this.customer_addresses = [];
             let customer = await _.find(this.customers, {'id': this.form.customer_id})
-            this.customer_addresses = customer.addresses
+            if (!customer) return;
+            this.customer_addresses = customer.addresses || []
 
             this.form.customer_address_id = this.form.customer ? this.form.customer.address_id : null
 
@@ -3567,6 +3569,21 @@ export default {
             await this.$http.get(`/${this.resource}/search/customer/${customer_id}`).then((response) => {
                 this.customers = response.data.customers
                 this.form.customer_id = customer_id
+            })
+            // Fallback: si la búsqueda no devolvió el cliente, construir la opción desde el cliente del documento
+            // (data.customer) para que el el-select siempre tenga la opción y muestre el nombre, no el id.
+            if (!_.find(this.customers, {'id': customer_id}) && this.form.customer) {
+                const c = this.form.customer
+                this.customers.push({
+                    ...c,
+                    id: c.id,
+                    description: c.description || `${c.number} - ${c.name}`,
+                })
+            }
+            // el-select en modo remote no re-resuelve el label cuando la opción llega despues de fijar el value,
+            // forzamos la re-selección una vez que las opciones estan montadas.
+            this.$nextTick(() => {
+                if (this.$refs.select_customer) this.$refs.select_customer.setSelected()
             })
         },
         changeCustomer() {

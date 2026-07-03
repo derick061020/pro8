@@ -386,6 +386,23 @@ class Facturalo
         return $qr;
     }
 
+    private function renderMpdfSafely(callable $callback)
+    {
+        $previous = set_error_handler(function ($severity, $message, $file = '', $line = 0) use (&$previous) {
+            if ($severity === E_WARNING && strpos($message, 'Trying to access array offset on') !== false) {
+                return true;
+            }
+
+            return $previous ? ($previous)($severity, $message, $file, $line) : false;
+        });
+
+        try {
+            return $callback();
+        } finally {
+            restore_error_handler();
+        }
+    }
+
     public function createPdf($document = null, $type = null, $format = null, $output = 'pdf') {
         ini_set("pcre.backtrack_limit", "5000000");
         $template = new Template();
@@ -396,6 +413,11 @@ class Facturalo
         $this->document = ($document != null) ? $document : $this->document;
         $format_pdf = ($format != null) ? $format : $format_pdf;
         $this->type = ($type != null) ? $type : $this->type;
+
+        // Usa el logo del establecimiento cuando no esté configurado el logo de la empresa, para que los PDFs de las facturas siempre muestren el logo de la sucursal.
+        if (empty($this->company->logo) && $this->document && $this->document->establishment && !empty($this->document->establishment->logo)) {
+            $this->company->logo = $this->document->establishment->logo;
+        }
 
         $height_logo = HelperFacturalo::logo_heigth($this->document->establishment_id, $this->company);
         $heightQr = 95;
@@ -453,7 +475,7 @@ class Facturalo
         {
             $base_pdf_template = Establishment::find($this->document->establishment_id)->template_ticket_pdf;
 
-            $width = ($format_pdf === 'ticket_58') ? 56 : 78 ;
+            $width = ($format_pdf === 'ticket_58') ? 56 : 72 ;
             if(config('tenant.enabled_template_ticket_80')) $width = 76;
             if(config('tenant.enabled_template_ticket_70')) $width = 70;
             if($format_pdf === 'ticket_50') $width = 45;
@@ -825,12 +847,16 @@ class Facturalo
                                              DIRECTORY_SEPARATOR.'ticket_html.css');
             $ticket_html = file_get_contents($path_html);
             $pdf->WriteHTML($ticket_html, HTMLParserMode::HEADER_CSS);
-            $pdf->WriteHTML($html, HTMLParserMode::HTML_BODY);
+            $this->renderMpdfSafely(function () use ($pdf, $html) {
+                return $pdf->WriteHTML($html, HTMLParserMode::HTML_BODY);
+            });
             return "<style>".$ticket_html.$stylesheet."</style>".$html;
         }
         else {
             $pdf->WriteHTML($stylesheet, HTMLParserMode::HEADER_CSS);
-            $pdf->WriteHTML($html, HTMLParserMode::HTML_BODY);
+            $this->renderMpdfSafely(function () use ($pdf, $html) {
+                return $pdf->WriteHTML($html, HTMLParserMode::HTML_BODY);
+            });
 
             $helper_facturalo = new HelperFacturalo();
 
@@ -840,7 +866,7 @@ class Facturalo
                     $template,
                     $base_pdf_template,
                     $width,
-                    ($quantity_rows * 8) + $extra_by_item_description +200
+                    ($quantity_rows * 8) + $extra_by_item_description +200,
                 ], true);
             }
 
@@ -858,7 +884,9 @@ class Facturalo
         }
 
         // echo $html_header.$html.$html_footer; exit();
-        $this->uploadFile($pdf->output('', 'S'), 'pdf');
+        $this->uploadFile($this->renderMpdfSafely(function () use ($pdf) {
+            return $pdf->output('', 'S');
+        }), 'pdf');
         return $this;
     }
 
@@ -992,8 +1020,13 @@ class Facturalo
             $service = new GiorService();
         }
         if($service_pse_code != null) {
+
+            $this->document->update([
+                'send_to_pse' => true
+            ]);
+
             $response = $service->sendXmlSigned($this->document->filename, $this->xmlSigned);
-            // dd($response);
+
             if($response['success']) {
                 if($response['cdr'] != null) {
                     $this->uploadFile($response['cdr'], 'cdr_b64');
@@ -1525,7 +1558,7 @@ class Facturalo
             if (!isset($company->certificate)) {
                 return true;
             }  else {
-                return !(Storage::exists('certificates'.DIRECTORY_SEPARATOR.$company->certificate));
+                return !Storage::exists('certificates'.DIRECTORY_SEPARATOR.$company->certificate);
             }
 
         }
@@ -2199,12 +2232,16 @@ class Facturalo
                                              DIRECTORY_SEPARATOR.'ticket_html.css');
             $ticket_html = file_get_contents($path_html);
             $pdf->WriteHTML($ticket_html, HTMLParserMode::HEADER_CSS);
-            $pdf->WriteHTML($html, HTMLParserMode::HTML_BODY);
+            $this->renderMpdfSafely(function () use ($pdf, $html) {
+                return $pdf->WriteHTML($html, HTMLParserMode::HTML_BODY);
+            });
             return "<style>".$ticket_html.$stylesheet."</style>".$html;
         }
         else {
             $pdf->WriteHTML($stylesheet, HTMLParserMode::HEADER_CSS);
-            $pdf->WriteHTML($html, HTMLParserMode::HTML_BODY);
+            $this->renderMpdfSafely(function () use ($pdf, $html) {
+                return $pdf->WriteHTML($html, HTMLParserMode::HTML_BODY);
+            });
 
             $helper_facturalo = new HelperFacturalo();
 
@@ -2222,7 +2259,9 @@ class Facturalo
         // echo $html_header.$html.$html_footer; exit();
         // $this->uploadFile($pdf->output('', 'S'), 'pdf');
         // return $this;
-        $pdf->output('test_'.now()->format('Y_m_d').'.pdf', 'I');
+        $this->renderMpdfSafely(function () use ($pdf) {
+            return $pdf->output('test_'.now()->format('Y_m_d').'.pdf', 'I');
+        });
     }
 
     public function setPaymentsPreview($document, $payments)

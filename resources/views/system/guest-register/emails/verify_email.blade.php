@@ -15,14 +15,23 @@
             
             <div class="content" style="padding: 30px;">
                 <h2 style="color: #2d3748; margin-top: 0; font-size: 20px; font-weight: 600;">¡Bienvenido/a a nuestra plataforma!</h2>
-                <p style="color: #718096; margin-bottom: 20px; font-size: 15px;">Estás a un paso de completar tu registro. Por favor confirma tu dirección de correo electrónico para activar tu cuenta.</p>
-                
-                <div class="btn-container" style="text-align: center; margin: 25px 0;">
+                <p style="color: #718096; margin-bottom: 20px; font-size: 15px;">Estás a un paso de completar tu registro. Para activar tu cuenta necesitas <strong>realizar el pago</strong> del plan seleccionado y <strong>confirmar tu correo</strong>.</p>
+
+                @if(!empty($payment_url))
+                    <h3 style="color: #2d3748; font-size: 16px; font-weight: 600; margin: 25px 0 10px 0;">1. Realiza el pago de tu plan</h3>
+                    <div class="btn-container" style="text-align: center; margin: 15px 0;">
+                        <a href="{{ $payment_url }}" style="display: inline-block; padding: 12px 28px; background: linear-gradient(135deg, #16a34a, #15803d); color: white !important; text-decoration: none; border-radius: 6px; font-weight: 500; transition: all 0.3s ease; box-shadow: 0 3px 10px rgba(22, 163, 74, 0.3);">Pagar ahora</a>
+                    </div>
+                    <p style="color: #718096; margin-bottom: 5px; font-size: 13px;">O copia este enlace en tu navegador:</p>
+                    <a href="{{ $payment_url }}" style="color: #16a34a; text-decoration: none; word-break: break-all; display: inline-block; font-size: 12px;">{{ $payment_url }}</a>
+                @endif
+
+                <h3 style="color: #2d3748; font-size: 16px; font-weight: 600; margin: 30px 0 10px 0;">{{ !empty($payment_url) ? '2.' : '1.' }} Confirma tu correo electrónico</h3>
+                <div class="btn-container" style="text-align: center; margin: 15px 0;">
                     <a href="{{ $signed_url }}" style="display: inline-block; padding: 12px 28px; background: linear-gradient(135deg, #6c63ff, #564fd8); color: white !important; text-decoration: none; border-radius: 6px; font-weight: 500; transition: all 0.3s ease; box-shadow: 0 3px 10px rgba(108, 99, 255, 0.3);">Confirmar mi correo</a>
                 </div>
-                
-                <p style="color: #718096; margin-bottom: 20px; font-size: 15px;">Si el botón no funciona, copia y pega este enlace en tu navegador:</p>
-                <a href="{{ $signed_url }}" style="color: #6c63ff; text-decoration: none; word-break: break-all; display: inline-block; margin-top: 10px;">{{ $signed_url }}</a>
+                <p style="color: #718096; margin-bottom: 5px; font-size: 13px;">Si el botón no funciona, copia y pega este enlace en tu navegador:</p>
+                <a href="{{ $signed_url }}" style="color: #6c63ff; text-decoration: none; word-break: break-all; display: inline-block; font-size: 12px;">{{ $signed_url }}</a>
                 
                 <div class="notice" style="font-size: 14px; color: #718096; padding: 15px; background-color: #f8f9fa; border-radius: 6px; margin-top: 20px;">
                     <p style="margin: 0; color: #718096;">Si no has solicitado crear una cuenta con nosotros, por favor ignora este mensaje.</p>

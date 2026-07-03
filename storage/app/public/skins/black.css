@@ -27,7 +27,7 @@
     --success: #5ea500;
     --warning: #f54900;
     --primary: #155dfb;
-    --info: #1dadff; 
+    --info: #1dadff;
 }
 /* Admin Reseller*/
 
@@ -47,7 +47,7 @@ html.sidebar-left-big-icons .sidebar-left a {
     color: #2f2f31;
 }
 html.fixed.sidebar-white:not(.dark) .sidebar-left,
-html.fixed.sidebar-white:not(.dark) .sidebar-header, 
+html.fixed.sidebar-white:not(.dark) .sidebar-header,
 html.fixed.sidebar-white:not(.dark) .sidebar-left .nano {
   background-color: #ffffff !important;
 }
@@ -418,7 +418,7 @@ ul.nav-main li .nav-children li a:after {
 .product-model .tooltips-container button:last-of-type {
     border-radius: 0px 8px 8px 0px;
 } */
-.el-input-group__append, 
+.el-input-group__append,
 .el-input-group__prepend,
 .el-input-group--prepend .el-select .el-input.is-focus .el-input__inner{
     border: 1px solid var(--black-highlight);
@@ -509,8 +509,6 @@ label.control-label {
     font-weight: 500;
     color: var(--black-dark);
 }
-
-.text-info,
 .el-radio-button__inner:hover {
     color: var(--black-dark) !important;
 }
@@ -780,6 +778,7 @@ ul.nav-main li.nav-description {
 .table td {
     border-top: unset;
     line-height: 1;
+    vertical-align: middle;
 }
 html.sidebar-light ul.nav-main > li > a {
     margin: 0 8px;
@@ -1256,7 +1255,7 @@ html.sidebar-white ul.nav-main li.nav-active:not(.nav-parent)>a {
     background-color: transparent !important;
 }
 .invoice table.table {
-    table-layout: auto;    
+    table-layout: auto;
 }
 .header .separator {
     margin: 0 8px 0;
@@ -1266,10 +1265,13 @@ html.sidebar-white ul.nav-main li.nav-active:not(.nav-parent)>a {
 .text-danger, .el-dropdown-menu__item.text-danger {
     color: var(--danger) !important;
 }
-
+.text-info {
+    color: var(--info) !important;
+}
 .table th,
 .table td {
     padding: 0.5rem;
+    vertical-align: middle;
 }
 .btn.barcode{
     margin: 0;
@@ -1386,34 +1388,40 @@ html body .text-primary {
     padding: 0.3rem 1.5rem;
 }
 .bg-secondary {
-    background-color: hsl(0, 0%, 93%) !important;
-    color: var(--black-dark) !important;
-    border: 1px solid hsl(0, 0%, 83%) !important;
+    --_h: 220; --_s: 9%;
+    background-color: hsl(var(--_h), var(--_s), 95%) !important;
+    border: 1px solid hsl(var(--_h), var(--_s), calc(95% - 12%)) !important;
+    color: hsl(var(--_h), var(--_s), calc(95% - 70%)) !important;
     border-radius: 8px !important;
 }
-.bg-success{
-    background-color: hsl(167, 82%, 96%) !important;
-    border: 1px solid hsl(168, 88%, 77%) !important;
-    color: hsl(175, 61%, 19%) !important;
+.bg-success {
+    --_h: 142; --_s: 72%;
+    background-color: hsl(var(--_h), var(--_s), 95%) !important;
+    border: 1px solid hsl(var(--_h), var(--_s), calc(95% - 17%)) !important;
+    color: hsl(var(--_h), var(--_s), calc(95% - 74%)) !important;
 }
-.bg-warning{
-    background-color: hsl(358, 100%, 95%) !important;
-    border: 1px solid hsl(357, 81%, 89%) !important;
-    color: hsl(358, 100%, 45%) !important;
+.bg-warning {
+    --_h: 38; --_s: 95%;
+    background-color: hsl(var(--_h), var(--_s), 95%) !important;
+    border: 1px solid hsl(var(--_h), var(--_s), calc(95% - 18%)) !important;
+    color: hsl(var(--_h), var(--_s), calc(95% - 67%)) !important;
 }
-.bg-info{
-    background-color: hsl(200, 86%, 95%) !important;
-    border: 1px solid hsl(198, 100%, 73%) !important;
-    color: hsl(201, 95%, 23%) !important;
+.bg-info {
+    --_h: 199; --_s: 89%;
+    background-color: hsl(var(--_h), var(--_s), 95%) !important;
+    border: 1px solid hsl(var(--_h), var(--_s), calc(95% - 20%)) !important;
+    color: hsl(var(--_h), var(--_s), calc(95% - 73%)) !important;
 }
 .bg-danger {
-    background-color: hsl(0, 100%, 95%) !important;
-    border: 1px solid hsl(0, 80%, 85%) !important;
-    color: hsl(0, 80%, 40%) !important;
+    --_h: 0; --_s: 86%;
+    background-color: hsl(var(--_h), var(--_s), 95%) !important;
+    border: 1px solid hsl(var(--_h), var(--_s), calc(95% - 13%)) !important;
+    color: hsl(var(--_h), var(--_s), calc(95% - 57%)) !important;
 }
 .bg-dark {
-    background-color: hsl(240, 4%, 40%) !important;
-    border: 1px solid hsl(240, 4%, 35%) !important;
+    --_h: 240; --_s: 5%;
+    background-color: hsl(var(--_h), var(--_s), 22%) !important;
+    border: 1px solid hsl(var(--_h), var(--_s), calc(22% - 5%)) !important;
     color: hsl(0, 0%, 100%) !important;
 }
 .el-collapse a {
@@ -1438,7 +1446,9 @@ html body .text-primary {
     border-top: 1px solid var(--black-highlight);
     border-radius: 10px;
 }
-
+.coupon-list .card-body {
+    background: #fff;;
+}
 html.sidebar-light:not(.dark) .page-header .breadcrumbs a,
 html.sidebar-light:not(.dark) .page-header .breadcrumbs span,
 .card-report-links a,
@@ -1644,7 +1654,7 @@ a.ws-flotante {
     0 0 #0000,                 /* --tw-ring-offset-shadow */
     0 0 #0000,                 /* --tw-ring-shadow */
     0 1px 3px 0 rgba(0, 0, 0, 0.1),
-    0 1px 2px -1px rgba(0, 0, 0, 0.1) !important; 
+    0 1px 2px -1px rgba(0, 0, 0, 0.1) !important;
 }
 .sidebar-margin-selector .sidebar-example{
     display: flex;
@@ -1685,12 +1695,12 @@ a.ws-flotante {
     border-radius: 50%;
     background-color: var(--black-primary);
     top: -10px;
-    right: -10px;   
+    right: -10px;
 }
 /* sidebar dark styles */
 @media only screen and (min-width: 768px) {
     html.fixed.sidebarMode-dark:not(.dark) .sidebar-left,
-    html.fixed.sidebarMode-dark:not(.dark) .sidebar-header, 
+    html.fixed.sidebarMode-dark:not(.dark) .sidebar-header,
     html.fixed.sidebarMode-dark:not(.dark) .sidebar-left .nano {
         background-color: var(--black-bg-dark) !important;
         border-color: var(--black-border-dark) !important;
@@ -1701,7 +1711,7 @@ a.ws-flotante {
         color: var(--black-light) !important;
     }
     html.sidebarMode-dark ul.nav-main li.nav-active:not(.nav-parent)>a,
-    html.sidebarMode-dark .contain-icon-establishment:hover, 
+    html.sidebarMode-dark .contain-icon-establishment:hover,
     html.sidebarMode-dark .contain-icon-establishment.active {
         background: var(--black-content-dark) !important;
     }
@@ -1734,10 +1744,16 @@ a.ws-flotante {
         border: 1px solid #ffffff !important;
         color: var(--black-dark) !important;
     }
-    html.sidebarMode-dark .logo-light {
+    html.sidebarMode-dark:not(.dark) .logo-light {
+    display: block;
+    }
+    html.sidebarMode-dark:not(.dark) .logo-dark {
+        display: none;
+    }
+    html.sidebarMode-dark.dark .logo-light {
         display: var(--show-light-logo, none);
     }
-    html.sidebarMode-dark .logo-dark {
+    html.sidebarMode-dark.dark .logo-dark {
         display: var(--show-dark-logo, block);
     }
     html.sidebarMode-dark .establishment-selector-container{
@@ -1763,7 +1779,7 @@ hr {
     height: 1px;
     background-image: -webkit-gradient( linear, right top, left top, from(rgba(0, 0, 0, 0)), color-stop(rgba(0, 0, 0, 0.2)), to(rgba(0, 0, 0, 0)) );
     background-image: linear-gradient(to left, rgba(0, 0, 0, 0), var(--black-accent), rgba(0, 0, 0, 0));
-    margin: 22px 0 22px 0;
+    margin: 22px 0 22px 0 !important;
 }
 /* --------------------------- tema noche --------------------------- */
 html.dark .header .logo-container .topbar-links {
@@ -1936,7 +1952,7 @@ html.fixed .sidebar-left a svg {
     0 0 #0000,                 /* --tw-ring-offset-shadow */
     0 0 #0000,                 /* --tw-ring-shadow */
     0 1px 3px 0 rgba(0, 0, 0, 0.1),
-    0 1px 2px -1px rgba(0, 0, 0, 0.1) !important; 
+    0 1px 2px -1px rgba(0, 0, 0, 0.1) !important;
 }
 /* **************** sidebar fixed styles ******************* */
 @media only screen and (min-width: 768px) {
@@ -2187,7 +2203,7 @@ ul.nav.list-config li:hover {
 .input-search-pos {
     margin-top: 10px !important;
 }
-.table-default, 
+.table-default,
 .table-default table.table-default thead tr, .table-default table.table-default tbody tr {
     border: none;
 }
@@ -2342,6 +2358,9 @@ html.sidebar-light:not(.dark) .style-switcher:before{
 .btn-add-new-invoice{
     top: 34px;
     right: 14px;
+}
+.btn-edit-person {
+    right: 40px;
 }
 .btn-add-new:hover{
     opacity: 1;
@@ -2633,6 +2652,211 @@ div.welcome-card .welcome-subtitle{
     margin-left: 0 !important;
     margin-right: 0 !important;
 }
+.btn-shad {
+    height: 32px;
+    width: 32px;
+    border-radius: 8px !important;
+    color: var(--black-dark) !important;
+    background-color: color-mix(in srgb, var(--black-dark) 5%, #00000000) !important;
+    border: 1px solid transparent !important;
+    padding: 0px !important;
+}
+.btn-shad:hover {
+    background-color: color-mix(in srgb, var(--black-dark) 12%, #00000000) !important;
+    color: var(--black-dark) !important;
+    border: 1px solid transparent !important;
+}
+.btn-shad:focus{
+    background-color: color-mix(in srgb, var(--black-dark) 5%, #00000000) !important;
+    border-color: color-mix(in srgb, var(--black-dark) 30%, #ffffff00) !important;
+    color: var(--black-dark) !important;
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--black-dark) 15%, #ffffff00) !important;
+}
+.btn-shad.btn-danger{
+    background-color: color-mix(in srgb, var(--danger) 5%, #00000000) !important;
+    border-color: transparent !important;
+    color: var(--danger) !important;
+}
+.btn-shad.btn-danger:hover{
+    background-color: color-mix(in srgb, var(--danger) 12%, #00000000) !important;
+    border-color: transparent !important;
+    color: var(--danger) !important;
+}
+.btn-shad.btn-danger:focus{
+    background-color: color-mix(in srgb, var(--danger) 5%, #00000000) !important;
+    border-color: color-mix(in srgb, var(--danger) 30%, #ffffff00) !important;
+    color: var(--danger) !important;
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--danger) 15%, #ffffff00) !important;
+}
+/* .btn-shad.btn-info{
+    background-color: color-mix(in srgb, var(--info) 5%, #00000000) !important;
+    border-color: transparent !important;
+    color: var(--info) !important;
+}
+.btn-shad.btn-info:hover{
+    background-color: color-mix(in srgb, var(--info) 12%, #00000000) !important;
+    border-color: transparent !important;
+    color: var(--info) !important;
+}
+.btn-shad.btn-info:focus{
+    background-color: color-mix(in srgb, var(--info) 5%, #00000000) !important;
+    border-color: color-mix(in srgb, var(--info) 30%, #ffffff00) !important;
+    color: var(--info) !important;
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--info) 15%, #ffffff00) !important;
+} */
+.btn-tooltips-products{
+    height: 30px !important;
+}
+.btn-tooltips-products button {
+    height: 100%;
+}
+.ck-rounded-corners .ck.ck-toolbar{
+    border-radius: 8px 8px 0 0 !important;
+}
+.ck.ck-editor__main>.ck-editor__editable:not(.ck-focused){
+    border-radius: 0 0 8px 8px !important;
+}
+.image-container-fluid{
+    border-radius: 8px;
+    border-color: color-mix(in srgb, var(--black-accent) 25%, #ffffff 75%);
+}
+.img-thumbnail{
+    border-radius: 8px;
+}
+.image-container-fluid:hover{
+    border-color: color-mix(in srgb, var(--black-accent) 70%, #ffffff 75%);
+}
+.item-actions-tooltip {
+    right: 6px !important;
+}
+.item-actions-tooltip button{
+    height: 31px !important;
+    width: 47px !important;
+}
+.item-actions-tooltip button:first-child{
+    border-radius: 0 !important;
+}
+.item-actions-tooltip button:last-child{
+    border-radius: 0 8px 8px 0 !important;
+}
+.btn-outline-success{
+    border-color: var(--success) !important;
+    color: var(--success) !important;
+    background-color: transparent !important;
+}
+.btn-outline-success:hover{
+    border-color: var(--success) !important;
+    background-color: var(--success) !important;
+    color: #fff !important;
+}
+.btn-outline-info{
+    border-color: var(--info) !important;
+    color: var(--info) !important;
+    background-color: transparent !important;
+}
+.btn-outline-info:hover{
+    border-color: var(--info) !important;
+    background-color: var(--info) !important;
+    color: #fff !important;
+}
+.template-skin-item {
+    border-radius: 8px;
+}
+.el-tabs--border-card>.el-tabs__header .el-tabs__item {
+    border: none;
+    color: color-mix(in srgb, var(--black-dark) 70%, #ffffff);
+}
+.coverage-config-message {
+    border-radius: 8px !important;
+}
+.advanced-settings {
+    background-color: transparent;
+    box-shadow: none;
+    border: none;
+}
+.advanced-settings .el-tabs__nav {
+    background-color: #fff;
+    padding: 5px 5px 5px 6px;
+}
+.advanced-settings.el-tabs--border-card>.el-tabs__header .el-tabs__item:hover {
+    background-color: color-mix(in srgb, var(--black-primary) 5%, #ffffff00);
+    border-radius: 8px;
+}
+.advanced-settings.el-tabs--border-card>.el-tabs__header .el-tabs__item.is-active {
+    color: var(--black-primary) !important;
+    background-color: color-mix(in srgb, var(--black-primary) 15%, #ffffff00);
+    border: none;
+}
+.advanced-settings .dot {
+    display: block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--black-primary);
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--black-primary) 20%, #ffffff00);
+}
+.advanced-settings .card-body {
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+}
+.advanced-settings .options-count{
+    background-color: color-mix(in srgb, var(--black-primary) 15%, #ffffff00);
+    color: color-mix(in srgb, var(--black-dark) 70%, #ffffff) !important;
+    border-radius: 8px;
+}
+.advanced-settings .card-body .header-card{
+    border-bottom: 1px solid color-mix(in srgb, var(--black-accent) 40%, #ffffff);
+}
+.adv-conf-container div.col-12{
+    display: flex;
+    flex-direction: row-reverse;
+    justify-content: start;
+    align-items: center;
+    padding:  10px 0;
+}
+.adv-conf-container div.inputs-column {
+    padding:  10px 0;
+}
+.adv-conf-container div.col-12 label {
+    margin-top: 0px;
+    margin-left: 5px;
+}
+.adv-conf-container div.inputs-column label {
+    margin-top: 0px;
+}
+.advanced-settings .el-tabs__content {
+    padding-right: .25rem;
+    padding-left: .25rem;
+}
+.tag-icon {
+    width: 54px;
+    height: 54px;
+    border-radius: 8px;
+    flex: 0 0 auto;
+    background-color: var(--black-primary);
+    color: #fff;
+    display: grid;
+    place-items: center;
+    box-shadow: 0 8px 20px -6px color-mix(in srgb, var(--black-primary) 20%, #ffffff00);
+}
+.route-path-reports {
+    background-color: color-mix(in srgb, var(--black-accent) 25%, #ffffff00);
+    padding: 4px 8px;
+    border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: color-mix(in srgb, var(--black-dark) 70%, #ffffff);
+}
+.route-path-reports a {
+    color: color-mix(in srgb, var(--black-dark) 70%, #ffffff) !important;
+}
+.buhoprinter-config .info-text{
+    padding: 10px;
+    border: 1px solid color-mix(in srgb, var(--black-highlight) 96%, #000000);
+    border-radius: 8px;
+}
 /* ############################ ESTILOS MODO OSCURO ########################### */
 html.dark, html.dark body {
     background-color: var(--black-bg-dark) !important;
@@ -2653,7 +2877,7 @@ html.dark .page-header,
 html.header-dark .page-header {
     border: 1px solid var(--black-border-dark);
     background: var(--black-bg-dark);
-    box-shadow: 
+    box-shadow:
         0 4px 6px -1px rgba(0, 0, 0, 0.3),
         0 2px 4px -2px rgba(0, 0, 0, 0.2) !important;
 }
@@ -2733,9 +2957,9 @@ html.dark label.control-label,
 html.dark .form-group label,
 html.dark .el-checkbox,
 html.dark .el-dropdown-menu__item,
-html.dark .el-dropdown-menu__item:not(.is-disabled):hover, 
-html.dark .el-dropdown-menu__item:focus, 
-html.dark .dropdown-item:hover, 
+html.dark .el-dropdown-menu__item:not(.is-disabled):hover,
+html.dark .el-dropdown-menu__item:focus,
+html.dark .dropdown-item:hover,
 html.dark .dropdown-item:focus{
     color: var(--black-light) !important;
 }
@@ -2743,8 +2967,8 @@ html.dark .table > thead > tr > th, html.dark .table > tbody > tr > th, html.dar
     color: var(--black-light);
     background-color: var(--black-bg-dark);
 }
-html.dark tbody tr:hover:not(:last-child), 
-html.dark tbody tr:hover, 
+html.dark tbody tr:hover:not(:last-child),
+html.dark tbody tr:hover,
 html.dark tfoot tr:hover {
     background: var(--black-input-dark);
 }
@@ -2886,7 +3110,7 @@ html.dark .el-dropdown-menu{
     background-color: var(--black-input-dark);
     border-color: var(--black-border-dark);
 }
-html.dark .el-dropdown-menu__item:not(.is-disabled):hover, 
+html.dark .el-dropdown-menu__item:not(.is-disabled):hover,
 html.dark .el-dropdown-menu__item:focus {
     background-color: var(--black-content-dark);
 }
@@ -2950,20 +3174,20 @@ html.dark .btn-primary:focus {
 html.dark .invoice table.table > thead:first-child > tr > th{
     background-color: var(--black-content-dark);
 }
-html.dark .el-input-number__increase, 
+html.dark .el-input-number__increase,
 html.dark .el-input-number__decrease{
     background-color: var(--black-content-dark);
     color: var(--black-accent);
     border-color: var(--black-border-dark);
 }
-html.dark .fas.fa-exclamation-circle.text-secondary, 
-html.dark .fas.fa-exclamation-triangle.text-secondary, 
-html.dark .fas.fa-bell.text-secondary, 
-html.dark .el-input-number__increase:hover, 
+html.dark .fas.fa-exclamation-circle.text-secondary,
+html.dark .fas.fa-exclamation-triangle.text-secondary,
+html.dark .fas.fa-bell.text-secondary,
+html.dark .el-input-number__increase:hover,
 html.dark .el-input-number__decrease:hover,
-html.dark .text-info, 
+html.dark .text-info,
 html.dark .el-radio-button__inner:hover
-html.dark .el-dialog__headerbtn:focus .el-dialog__close, 
+html.dark .el-dialog__headerbtn:focus .el-dialog__close,
 html.dark .el-dialog__headerbtn:hover .el-dialog__close{
     color: var(--black-light) !important;
 }
@@ -2975,12 +3199,12 @@ html.dark .el-picker-panel {
     border: 1px solid var(--black-border-dark);
     background: var(--black-input-dark);
 }
-html.dark .el-input-group__append, 
+html.dark .el-input-group__append,
 html.dark .el-input-group__prepend{
     border-color: var(--black-border-dark);
     background-color: transparent;
 }
-html.dark .el-upload-list__item.is-success .el-upload-list__item-name:hover, 
+html.dark .el-upload-list__item.is-success .el-upload-list__item-name:hover,
 html.dark .el-upload-list__item.is-success .el-upload-list__item-name:focus,
 html.dark .el-picker-panel__icon-btn:hover{
     color: var(--black-light);
@@ -3053,7 +3277,7 @@ html.dark .bg-light{
 }
 html.dark .card-body.bg-light{
     border: 1px solid var(--black-border-dark) !important;
-} 
+}
 html.dark .text-dark{
     color: var(--black-light) !important;
 }
@@ -3111,9 +3335,9 @@ html.dark .el-tabs__nav {
 html.dark .el-tabs__item.is-active h3,
 html.dark .dropdown-menu .dropdown-item,
 html.dark .dropdown-menu .dropdown-item:hover,
-html.dark .page-header .breadcrumbs a, 
+html.dark .page-header .breadcrumbs a,
 html.dark .page-header .breadcrumbs span,
-html.dark .el-tabs__item.is-active, 
+html.dark .el-tabs__item.is-active,
 html.dark form.style-switcher-wrap h3,
 html.dark .el-pager li.active{
     color: var(--black-light);
@@ -3143,9 +3367,9 @@ html.dark .el-popper[x-placement^="bottom"] {
     background-color: var(--black-input-dark);
     border-color: var(--black-border-dark) !important;
 }
-html.dark .el-dropdown-menu__item:not(.is-disabled):hover, 
-html.dark .el-dropdown-menu__item:focus, 
-html.dark .dropdown-item:hover, 
+html.dark .el-dropdown-menu__item:not(.is-disabled):hover,
+html.dark .el-dropdown-menu__item:focus,
+html.dark .dropdown-item:hover,
 html.dark .dropdown-item:focus{
     background-color: var(--black-content-dark) !important;
 }
@@ -3163,27 +3387,27 @@ html.dark .el-table th,
 html.dark .el-table tr{
     background-color: var(--black-bg-dark);
 }
-html.dark .el-table th.is-leaf, 
+html.dark .el-table th.is-leaf,
 html.dark .el-table td{
     border-color: transparent;
 }
-html.dark .table-responsive .table thead tr:hover, 
+html.dark .table-responsive .table thead tr:hover,
 html.dark .table-responsive .table tbody tr:hover,
 html.dark .table-responsive .table tfoot tr:hover,
 html.dark .el-table--enable-row-hover .el-table__body tr:hover > td{
     background: var(--black-input-dark);
 }
 html.dark .el-message-box__title,
-html.dark .el-select-dropdown__item, 
-html.dark .el-cascader-menu:last-child .el-cascader-node, 
+html.dark .el-select-dropdown__item,
+html.dark .el-cascader-menu:last-child .el-cascader-node,
 html.dark .el-cascader-node:not(.is-disabled),
 html.dark .el-tabs--border-card>.el-tabs__header .el-tabs__item:not(.is-disabled):hover{
     color: var(--black-light) !important;
 }
-html.dark tbody tr:hover:not(:last-child), 
-html.dark tbody tr:hover, 
-html.dark tfoot tr:hover, 
-html.dark .el-cascader-node:not(.is-disabled):hover, 
+html.dark tbody tr:hover:not(:last-child),
+html.dark tbody tr:hover,
+html.dark tfoot tr:hover,
+html.dark .el-cascader-node:not(.is-disabled):hover,
 html.dark .el-cascader-node:not(.is-disabled):focus {
     background: var(--black-input-dark);
 }
@@ -3366,7 +3590,7 @@ html.dark .img-fluid-light{
 html.dark .sidebar-example.sidebar-example-selected > div::after,
 html.dark .black-theme-selected::after {
     background-color: var(--black-highlight);
-    
+
 }
 html.dark .sidebar-margin-selector .sidebar-example div,
 html.dark .establishment-selector-container{
@@ -3397,7 +3621,8 @@ html.dark .add-row-table:hover{
     color: var(--black-light);
 }
 html.dark .border-bottom-dashed,
-html.dark .border-top-dashed{
+html.dark .border-top-dashed,
+html.dark .cem-section{
     border-color: var(--black-border-dark);
 }
 html.dark .establishment-dropdown,
@@ -3406,10 +3631,57 @@ html.dark .establishment-dropdown-header {
     border-color: var(--black-border-dark) !important;
     color: var(--black-light) !important;
 }
-html.dark .contain-icon-establishment {
+html.dark .contain-icon-establishment,
+html.dark .cbm-stat__value,
+html.dark .cbm-card__value,
+html.dark .cem-section-title,
+html.dark .cem-url-text,
+html.dark .cd-section-title,
+html.dark .cd-field>span,
+html.dark .cd-text-block {
     color: var(--black-light) !important;
 }
-html.dark .contain-icon-establishment:hover, 
+html.dark .contain-icon-establishment:hover,
 html.dark .contain-icon-establishment.active {
     background: var(--black-content-dark) !important;
+}
+html.dark .ck.ck-editor__main>.ck-editor__editable,
+html.dark .cd-text-block{
+    background-color: var(--black-input-dark);
+}
+html.dark .pos-list-items>:not(caption)>*>*{
+    color: var(--black-light) !important;
+    background-color: transparent;
+}
+html.dark .image-container-fluid,
+html.dark .sc-panel-actions,
+html.dark .el-table td.el-table__cell, html.dark .el-table th.el-table__cell.is-leaf,
+html.dark .cem-option-row,
+html.dark .cd-section,
+html.dark .cd-section-title {
+    border-color: var(--black-border-dark);
+}
+html.dark .image-container-fluid:hover{
+    border-color: color-mix(in srgb, var(--black-border-dark) 90%, #ffffff);
+}
+html.dark .cbm-card__label,
+html.dark .cbm-stat__label,
+html.dark .cbm-stat__icon,
+html.dark .cem-option-label {
+    color: var(--black-accent);
+}
+html.dark .cbm-card,
+html.dark .cbm-stat,
+html.dark .cbm-secondary-grid {
+    background-color: var(--black-bg-dark);
+    border-color: var(--black-border-dark);
+}
+html.dark .sc-action-item,
+html.dark .cem-section-header {
+    background-color: var(--black-input-dark);
+    border-color: var(--black-border-dark);
+}
+html.dark .el-divider,
+html.dark .el-table--border:after, html.dark .el-table--group:after, html.dark .el-table:before {
+    background-color: var(--black-border-dark);
 }

@@ -71,6 +71,7 @@ use Illuminate\Support\Facades\Cache;
 use Modules\Item\Http\Controllers\EditorTagController;
 use Modules\Item\Models\TagTemplate;
 use App\Models\Tenant\ItemUnitTypePrice;
+use App\Models\Tenant\PriceLabel;
 
 class ItemController extends Controller
 {
@@ -473,7 +474,7 @@ class ItemController extends Controller
             $file_name_old_array = explode('.', $file_name_old);
             $file_content = file_get_contents($temp_path);
             $datenow = date('YmdHis');
-            $file_name = $prefix_name.'-'.$datenow.'.'.$file_name_old_array[1];
+            $file_name = $prefix_name.'-'.$datenow.'.'. end($file_name_old_array);
 
             UploadFileHelper::checkIfValidFile($file_name, $temp_path, true);
 
@@ -731,6 +732,9 @@ class ItemController extends Controller
                     'item_id' => $item->id
                 ]);
                 */
+            } else {
+                // Si se desactiva el manejo de lotes, eliminar lotes de cabecera no usados por el item.
+                ItemLotsGroup::where('item_id', $item->id)->delete();
             }
         }
 
@@ -930,6 +934,8 @@ class ItemController extends Controller
         try {
 
             $item = Item::findOrFail($id);
+            // Evita violaciones de FK en items cuando quedan lotes de cabecera huérfanos.
+            ItemLotsGroup::where('item_id', $item->id)->delete();
             $this->deleteRecordInitialKardex($item);
             $this->deleteRecordInitialWeightedCosts($item);
             $item->delete();
@@ -1082,7 +1088,7 @@ class ItemController extends Controller
     public function upload(Request $request)
     {
 
-        $validate_upload = UploadFileHelper::validateUploadFile($request, 'file', 'jpg,jpeg,png,gif,svg');
+        $validate_upload = UploadFileHelper::validateUploadFile($request, 'file', 'jpg,jpeg,png,gif,svg,webp');
 
         if(!$validate_upload['success']){
             return $validate_upload;
@@ -1354,10 +1360,13 @@ class ItemController extends Controller
             $items->whereBetween('items.created_at', [$d_start, $d_end]);
         }
 
-        $records =  $items->get();
+        $records = $items->with('item_unit_types.prices')->get();
+        $price_labels = PriceLabel::active()->ordered()->get();
+        
         return (new ItemExport())
             ->setExtraData($extradata)
             ->records($records)
+            ->priceLabels($price_labels)
             ->download('Reporte_Items_'.Carbon::now().'.xlsx');
 
     }
@@ -1750,6 +1759,7 @@ class ItemController extends Controller
             $CatItemMoldProperty = CatItemMoldProperty::all();
             $CatItemProductFamily= CatItemProductFamily::all();
         }
+        $price_labels = PriceLabel::select('position','label')->active()->get();
 
 
         /** Informacion adicional */
@@ -1773,6 +1783,7 @@ class ItemController extends Controller
             'CatItemStatus',
             'CatItemPackageMeasurement',
             'CatItemProductFamily',
+            'price_labels',
             'CatItemUnitsPerPackage');
     }
 

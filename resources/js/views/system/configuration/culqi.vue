@@ -9,6 +9,25 @@
           <div class="form-body">
             <div class="row">
               <div class="col-md-12">
+
+                <div>
+                    <div :class="{'has-danger': errors.enabled_culqi}"
+                                    class="form-group">
+                      <label>
+                        Habilitar
+                        </label>
+                        <div>
+                                <el-switch v-model="form.enabled_culqi"
+                                            active-text="Si"
+                                            inactive-text="No"></el-switch>
+                                <small v-if="errors.enabled_culqi"
+                                        class="form-control-feedback"
+                                        v-text="errors.enabled_culqi[0]"></small>
+
+                        </div>
+                    </div>
+
+                </div>
                 <div class="form-group" :class="{'has-danger': errors.token_public_culqui}">
                   <label class="control-label">
                     Token Público
@@ -75,6 +94,7 @@ export default {
     await this.initForm();
 
     await this.$http.get(`/${this.resource}/record`).then(response => {
+        this.form.enabled_culqi = response.data.enabled_culqi;
         this.form.token_public_culqui = response.data.token_public_culqui;
         this.form.token_private_culqui = response.data.token_private_culqui;
     });
@@ -86,6 +106,7 @@ export default {
     initForm() {
       this.errors = {};
       this.form = {
+        enabled_culqi: false,
         token_public_culqui: null,
         token_private_culqui: null
       };

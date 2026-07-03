@@ -73,7 +73,7 @@ $cash_documents_credit = $cash->cash_documents_credit;
             <table> 
                 <tr>
                     <td class="td-custom width-custom">
-                        <p><strong>Empresa: </strong>{{$company->name}}</p>
+                        <p>@include('partials.report_company_header')</p>
                     </td>
                     <td class="td-custom">
                         <p><strong>Fecha reporte: </strong>{{date('Y-m-d')}}</p>

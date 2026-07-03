@@ -113,17 +113,17 @@
                 <div class="card-body text-center">
                     <h3 class="font-weight-semibold mt-3 text-center">Produccion</h3>
                     <p class="text-center">Gestiona Ingreso de insumos, produccion de productos... </p>
-
+                    <!--
                     <span class="badge badge-{{in_array('production_app', $vc_modules) ? 'success' : 'default'}}">
                     {{in_array('production_app', $vc_modules) ? 'Activo' : 'Inactivo'}}
-                </span>
+                    </span>
+                    -->
                     <br>
                     @if(!in_array('production_app', $vc_modules))
                         <small class="text-muted">Debe consultar con su administrador para poder habilitarlo</small>
                     @else
                         <a href="{!! \Config('extra.wiki_production') !!}" target="_blank">Wiki</a></small>
                         @endif
-                </span>
                     <br>
                 </div>
             </section>

@@ -138,6 +138,7 @@ return [
             'password' => env('REDIS_PASSWORD', null),
             'port' => env('REDIS_PORT', 6379),
             'database' => env('REDIS_DB', 0),
+            'username' => 'default',
         ],
 
         'cache' => [
@@ -145,6 +146,17 @@ return [
             'password' => env('REDIS_PASSWORD', null),
             'port' => env('REDIS_PORT', 6379),
             'database' => env('REDIS_CACHE_DB', 1),
+            'username' => 'default',
+        ],
+
+        // Conexión dedicada a Pub/Sub — sin prefijo para que los canales
+        // sean legibles directamente por BuhoPrinter.
+        'pubsub' => [
+            'host'     => env('REDIS_HOST', '127.0.0.1'),
+            'password' => env('REDIS_PASSWORD', null),
+            'port'     => env('REDIS_PORT', 6379),
+            'database' => 0,
+            'prefix'   => '',
         ],
 
     ],

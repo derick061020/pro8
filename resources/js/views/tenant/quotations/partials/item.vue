@@ -20,7 +20,8 @@
                         </el-checkbox>
                     </div>
                     <div
-                        class="col-md-7 col-lg-7 col-xl-7 product-model position-relative"
+                        class="product-model position-relative"
+                        :class="{'col-md-7 col-lg-7 col-xl-7': affectation_igv_types.length > 1, 'col-12': affectation_igv_types.length <= 1}"
                     >
                         <template v-if="various_item">
                             <div class="form-group">
@@ -36,7 +37,7 @@
                             </div>
                         </template>
                         <template v-else>
-                            <div class="tooltips-container" style="top: 46px;" v-show="hasSelectedItem">
+                            <div class="tooltips-container item-actions-tooltip" style="top: 46px;" v-show="hasSelectedItem">
                                 <el-tooltip
                                     slot="append"
                                     :disabled="isEditItemNote || isUpdateItem"
@@ -234,7 +235,7 @@
                             </div>
                         </template>
                     </div>
-                    <div class="col-md-5">
+                    <div class="col-md-5" v-if="affectation_igv_types.length > 1">
                         <div
                             :class="{
                                 'has-danger': errors.affectation_igv_type_id
@@ -542,10 +543,8 @@
                                                         v-show="p.is_active"
                                                         :key="p.id"
                                                         size="small"
-                                                        @click.prevent="selectedPrice({
-                                                            unit_price: form.unit_price,
-                                                            ...row
-                                                        }, p.price)"
+                                                        :type="isSelectedUnitPrice(row, p) ? 'primary' : 'default'"
+                                                        @click.prevent="selectedPrice(row, p)"
                                                     >{{ p.label }} - {{ p.price }}</el-button>
                                                 </div>
                                                 <div v-else class="text-muted">
@@ -963,6 +962,7 @@ export default {
     mixins: [checkPermissionEditPrices],
     data() {
         return {
+            selected_price_id: null,
             showDiscounts: true,
             extra_temp: undefined,
             operationTypeId: null,
@@ -1579,9 +1579,37 @@ export default {
             this.form.item_unit_types = _.find(this.items, {
                 id: this.form.item_id
             }).item_unit_types;
+
             this.form.unit_price = this.form.item.sale_unit_price;
             this.form.unit_price_value = this.form.item.sale_unit_price;
-            // this.lots = this.form.item.lots
+
+            // aplicar precio según tipo de cliente
+            if (this.selectedOptionPrice !== 1 && this.form.item_unit_types.length) {
+                let price_label_id = null;
+                if (typeof this.selectedOptionPrice === "string") {
+                    if (this.selectedOptionPrice.startsWith("price_label_")) {
+                        price_label_id = parseInt(
+                            this.selectedOptionPrice.replace("price_label_", "")
+                        );
+                    } else if (this.selectedOptionPrice.startsWith("price")) {
+                        price_label_id = parseInt(
+                            this.selectedOptionPrice.replace("price", "")
+                        );
+                    }
+                }
+
+                if (price_label_id) {
+                    let first_list = this.form.item_unit_types[0];
+                    if (first_list.prices && Array.isArray(first_list.prices)) {
+                        const priceObj = first_list.prices.find(
+                            p => p.price_label_id === price_label_id
+                        );
+                        if (priceObj && Number(priceObj.price) > 0) {
+                            this.selectedPrice(first_list, priceObj);
+                        }
+                    }
+                }
+            }
 
             this.form.has_igv = this.form.item.has_igv;
             this.form.has_plastic_bag_taxes = this.form.item.has_plastic_bag_taxes;
@@ -1593,6 +1621,7 @@ export default {
             this.cleanTotalItem();
             this.showListStock = true;
 
+            this.form.attributes = [];
             if (this.hasAttributes()) {
                 const contex = this;
                 this.form.item.attributes.forEach(row => {
@@ -1606,7 +1635,9 @@ export default {
                     });
                 });
             }
+
             this.form.lots_group = this.form.item.lots_group;
+
             if (
                 this.form.item.name_product_pdf &&
                 this.config.item_name_pdf_description
@@ -1615,7 +1646,6 @@ export default {
             }
 
             this.addDescriptionToDocumentItem();
-
             this.getLastPriceItem();
             this.readonly_total = this.form.unit_price_value;
         },
@@ -1829,17 +1859,20 @@ export default {
             this.form.unit_price_value = price;
             this.form.item.unit_type_id = this.item_unit_type.unit_type_id;
         },
-        selectedPrice(row, amount = false) {
-            if (this.isSelectedPrice(row) && !amount) {
+        selectedPrice(row, price = null) {
+            if (this.isSelectedPrice(row) && !price) {
                 this.form.item_unit_type_id = null;
                 this.item_unit_type = {};
                 this.form.unit_price = this.form.item.sale_unit_price;
                 this.form.unit_price_value = this.form.item.sale_unit_price;
                 this.form.item.unit_type_id = this.form.item.original_unit_type_id;
+                this.selected_price_id = null;
             } else {
                 let value = null;
-                if (amount) {
-                    value = Number(amount) > 0 ? Number(amount) : Number(row.unit_price);
+
+                if (price) {
+                    value = Number(price.price) > 0 ? Number(price.price) : Number(row.unit_price);
+                    this.selected_price_id = price.id;
                 } else {
                     switch (row.price_default) {
                         case 1:
@@ -1852,6 +1885,7 @@ export default {
                             value = row.price3;
                             break;
                     }
+                    this.selected_price_id = null;
                 }
 
                 this.form.item_unit_type_id = row.id;
@@ -1863,6 +1897,10 @@ export default {
             if (!this.calculateQuantity()) {
                 this.calculateTotal();
             }
+        },
+        isSelectedUnitPrice(row, price) {
+            return String(this.form.item_unit_type_id) === String(row.id) &&
+                String(this.selected_price_id) === String(price.id);
         },
         addRowLotGroup(id) {
             this.form.IdLoteSelected = id;

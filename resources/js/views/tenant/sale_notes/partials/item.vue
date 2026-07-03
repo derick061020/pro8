@@ -21,7 +21,8 @@
                         </el-checkbox>
                     </div>
                     <div
-                        class="col-md-7 col-lg-7 col-xl-7 product-model position-relative"
+                        class="product-model position-relative "
+                        :class="{'col-md-7 col-lg-7 col-xl-7': affectation_igv_types.length > 1, 'col-12': affectation_igv_types.length <= 1}"
                     >
                         <template v-if="various_item">
                             <div class="form-group">
@@ -37,7 +38,7 @@
                             </div>
                         </template>
                         <template v-else>
-                            <div class="tooltips-container" style="top: 46px;" v-show="hasSelectedItem">
+                            <div class="tooltips-container item-actions-tooltip" style="top: 46px;" v-show="hasSelectedItem">
                                 <el-tooltip
                                     slot="append"
                                     :disabled="isUpdateItem"
@@ -235,7 +236,7 @@
                             </div>
                         </template>
                     </div>
-                    <div class="col-md-5">
+                    <div class="col-md-5" v-if="affectation_igv_types.length > 1">
                         <div
                             :class="{
                                 'has-danger': errors.affectation_igv_type_id
@@ -485,10 +486,8 @@
                                                 v-show="p.is_active"
                                                 :key="p.id"
                                                 size="small"
-                                                @click.prevent="selectedPrice({
-                                                    unit_price: form.unit_price_value,
-                                                    ...row
-                                                }, p.price)"
+                                                @click.prevent="selectedPrice(row, p)"
+                                                :type="isSelectedUnitPrice(row, p) ? 'primary' : 'default'"
                                             >
                                                 {{ p.label }} - {{ p.price }}
                                             </el-button>
@@ -501,7 +500,7 @@
                             </div>
                         </div>
 
-                        <div class="col-md-12 mt-2" v-if="!isUpdateItem">
+                        <div class="col-md-12 mt-2" v-if="!isUpdateItem && config.show_item_discounts_charges_attributes !== false">
                             <el-collapse v-model="activePanel">
                                 <el-collapse-item
                                     :disabled="isUpdateItem"
@@ -932,7 +931,8 @@ export default {
             various_item_barcode: "VARIOUS_ITEM",
             itemSearchTerm: '',
             showDialogHistorySales: false,
-            history_item_id: null
+            history_item_id: null,
+            selected_price_id: null,
             //item_unit_type: {}
 
         };
@@ -1583,7 +1583,7 @@ export default {
                     if(priceLabelId && first_list.prices && first_list.prices.length > 0) {
                         const priceObj = first_list.prices.find(p => p.price_label_id === priceLabelId);
                         if(priceObj && priceObj.price > 0) {
-                            this.form.unit_price_value = parseFloat(priceObj.price);
+                            this.selectedPrice(first_list, priceObj);
                         }
                     }
                 } else {
@@ -1866,23 +1866,47 @@ export default {
             this.form.unit_price_value = price;
             this.form.item.unit_type_id = this.item_unit_type.unit_type_id;
         },
-        selectedPrice(row, price) {
-            if (this.isSelectedPrice(row)) {
+        selectedPrice(row, price = null) {
+            if (this.isSelectedPrice(row) && !price) {
                 this.form.item_unit_type_id = null;
                 this.item_unit_type = {};
                 this.form.unit_price = this.form.item.sale_unit_price;
                 this.form.unit_price_value = this.form.item.sale_unit_price;
                 this.form.item.unit_type_id = this.form.item.original_unit_type_id;
+                this.selected_price_id = null;
             } else {
-                let valor = Number(price) > 0 ?  Number(price) : row.unit_price;
+                let value = 0;
+
+                if (price) {
+                    value = price.price;
+                    this.selected_price_id = price.id;
+                } else {
+                    switch (row.price_default) {
+                        case 1:
+                            value = row.price1;
+                            break;
+                        case 2:
+                            value = row.price2;
+                            break;
+                        case 3:
+                            value = row.price3;
+                            break;
+                    }
+                    this.selected_price_id = null;
+                }
+
                 this.form.item_unit_type_id = row.id;
                 this.item_unit_type = row;
-                this.form.unit_price = valor;
-                this.form.unit_price_value = valor;
+                this.form.unit_price = value;
+                this.form.unit_price_value = value;
                 this.form.item.unit_type_id = row.unit_type_id;
             }
+
             this.calculateQuantity();
-            this.getTables();
+        },
+        isSelectedUnitPrice(row, price) {
+            return String(this.form.item_unit_type_id) === String(row.id) &&
+                String(this.selected_price_id) === String(price.id);
         },
         addRowLotGroup(id) {
             this.form.IdLoteSelected = id;

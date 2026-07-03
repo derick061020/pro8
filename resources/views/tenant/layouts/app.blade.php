@@ -35,7 +35,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>{{ $vc_company->title_web }}</title>
+    <title>{{ $vc_company->title_web ?: $vc_company->trade_name }}</title>
     <meta name="googlebot" content="noindex">
     <meta name="robots" content="noindex">
 
@@ -142,20 +142,6 @@
         html.dark .logo-dark {
             display: var(--show-dark-logo, block);
         }
-        
-        @if(request()->has('is_reservation') && request('is_reservation') == 'true')
-        .inner-wrapper {
-            margin-left: 0 !important;
-        }
-        .content-body {
-            margin-left: 0 !important;
-            padding: 20px !important;
-            max-width: 100% !important;
-        }
-        body {
-            background: #f8f9fa !important;
-        }
-        @endif
     </style>
 
     @if ($vc_company->favicon)
@@ -167,21 +153,17 @@
 
 <body class="pr-0"
     data-tenant="true"
-    data-company-title="{{ $vc_company->title_web }}">
+    data-company-title="{{ $vc_company->title_web ?: $vc_company->trade_name }}">
     <section class="body">
         <!-- start: header -->
         {{-- @include('tenant.layouts.partials.header') --}}
         <!-- end: header -->
         <div class="inner-wrapper">
             <!-- start: sidebar -->
-            @if(!request()->has('is_reservation') || request('is_reservation') != 'true')
-                @include('tenant.layouts.partials.sidebar')
-            @endif
+            @include('tenant.layouts.partials.sidebar')
             <!-- end: sidebar -->
             <section role="main" class="content-body" id="main-wrapper">
-                @if(!request()->has('is_reservation') || request('is_reservation') != 'true')
-                    @include('tenant.layouts.partials.header')
-                @endif
+                @include('tenant.layouts.partials.header')
                 @yield('content')
                 @include('tenant.layouts.partials.sidebar_styles')
                 {{-- @include('tenant.layouts.partials.sidebar_establishment') --}}
@@ -260,7 +242,6 @@
     <script src="{{ asset('js/sign-message.js') }}"></script>
     <script src="{{ asset('js/sha-256.min.js') }}"></script>
     <script src="{{ asset('js/rsvp-3.1.0.min.js') }}"></script>
-    <script src="{{ asset('js/qz-tray.js') }}"></script>
     {{-- <script src="{{ asset('js/vendor.js') }}"></script> --}}
     <!-- Theme Base, Components and Settings -->
     <script src="{{asset('porto-light/js/theme.js')}}"></script>
@@ -293,6 +274,20 @@
 
     </script>
     <!-- <script src="//code.tidio.co/1vliqewz9v7tfosw5wxiktpkgblrws5w.js"></script> -->
+     @if(session('toast_warning'))
+    <div id="app-toast" style="position:fixed;top:20px;left:50%;transform:translateX(-50%);z-index:99999;
+        background:#fff8e1;border:1px solid #ffe082;color:#8a6d00;padding:12px 18px;border-radius:8px;
+        box-shadow:0 4px 16px rgba(0,0,0,.15);font-family:-apple-system,'Segoe UI',Roboto,sans-serif;
+        font-size:14px;max-width:90%;text-align:center;">
+        {{ session('toast_warning') }}
+    </div>
+    <script>
+        setTimeout(function () {
+            var t = document.getElementById('app-toast');
+            if (t) { t.style.transition = 'opacity .4s'; t.style.opacity = '0'; setTimeout(function(){ t.remove(); }, 400); }
+        }, 6000);
+    </script>
+    @endif
 </body>
 
 </html>

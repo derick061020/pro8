@@ -141,12 +141,35 @@ class PurchaseQuotationController extends Controller
 
         $this->company = Company::active();
 
+        $suppliers = collect($inputs->input('suppliers', []))
+            ->map(function ($supplier) {
+                $supplier_id = data_get($supplier, 'supplier_id');
+
+                if (!$supplier_id) {
+                    return null;
+                }
+
+                $person = Person::find($supplier_id);
+
+                return [
+                    'supplier_id' => $supplier_id,
+                    'name' => optional($person)->name,
+                    'number' => optional($person)->number,
+                    'email' => data_get($supplier, 'email') ?: optional($person)->email,
+                    'description' => optional($person)->number.' - '.optional($person)->name,
+                ];
+            })
+            ->filter()
+            ->values()
+            ->toArray();
+
         $values = [
             'user_id' => auth()->id(),
             'external_id' => Str::uuid()->toString(),
             'establishment' => EstablishmentInput::set($inputs['establishment_id']),
             'soap_type_id' => $this->company->soap_type_id,
-            'state_type_id' => '01'
+            'state_type_id' => '01',
+            'suppliers' => $suppliers,
         ];
 
         $inputs->merge($values);

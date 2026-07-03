@@ -1,7 +1,7 @@
 <template>
     <div class="card">
-        <div class="card-header bg-info">
-            <h3 class="my-0">Clientes - Cuentas bloquedas</h3>
+        <div class="card-header bg-info bg-info-customer-admin">
+            <h3 class="my-0">Clientes - Cuentas Bloqueadas</h3>
         </div>
         <div class="card-body">  
             <div class="table-responsive">

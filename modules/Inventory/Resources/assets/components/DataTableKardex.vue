@@ -1,7 +1,7 @@
 <template>
     <div class="row">
         <div class="col-md-12 col-lg-12 col-xl-12 ">
-            <div class="row mt-2">
+            <div class="row mt-2 mx-1">
 
 
                 <template v-if="isEnabledAdvancedRecordsSearch">

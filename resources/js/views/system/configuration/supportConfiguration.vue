@@ -47,7 +47,7 @@
                         <div class="col-12">
                             <div class="form-group" :class="{'has-danger': errors.introduction}">
                                 <label class="control-label d-block">Mensaje de introducción</label>
-                                <ckeditor
+                                <vue-ckeditor
                                     :editors="editors"
                                     type="classic"
                                     v-model="form.introduction"
@@ -68,13 +68,13 @@
 </template>
 
 <script>
-import CKEditor from 'vue-ckeditor5'
-import ClassicEditor from '@ckeditor/ckeditor5-build-classic'
+import 'ckeditor5/ckeditor5.css';
+import ClassicEditor from '@ckeditor/ckeditor5-build-classic';
+import CKEditor from 'vue-ckeditor5';
 
 export default {
     components: {
-        // registra el componente como <ckeditor />
-        ckeditor: CKEditor.component
+        'vue-ckeditor': CKEditor.component
     },
     data() {
         return {
@@ -85,6 +85,7 @@ export default {
                 classic: ClassicEditor
             },
             editorConfig: {
+                licenseKey: 'GPL',
                 toolbar: [
                     'heading',
                     '|',
@@ -92,7 +93,9 @@ export default {
                     'bulletedList', 'numberedList',
                     '|',
                     'blockQuote',
-                    'undo', 'redo'
+                    'undo', 'redo',
+                    '|',
+                    'sourceEditing'
                 ]
             },
             form: {

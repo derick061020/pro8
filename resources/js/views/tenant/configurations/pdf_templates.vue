@@ -17,7 +17,7 @@
         <div class="card tab-content-default row-new">
             <div class="card-body pb-5">
                 <h5> <i class="fa fa-info-circle"></i>  Seleccione un sucursal para ver su plantilla</h5>
-                <div class="row">
+                <div class="row mx-0">
                     <div class="col-3 form-modern">
                         <label class="control-label">Sucursal</label>
                         <el-select v-model="form.establishment_id"
@@ -144,17 +144,16 @@
                         
                         <div class="column-item">
                             <el-checkbox v-model="columns.modelo">Modelo</el-checkbox>
-                        </div>                                                
-                    </div>
-                    <div class="col-12 col-md-6 mb-2">
+                        </div> 
+                        
                         <div class="column-item">
                             <el-checkbox v-model="columns.marca">Marca</el-checkbox>
                         </div>
-                        
                         <div class="column-item">
                             <el-checkbox v-model="columns.lote">Lote</el-checkbox>
                         </div>
-                        
+                    </div>
+                    <div class="col-12 col-md-6 mb-2">
                         <div class="column-item">
                             <el-checkbox v-model="columns.fecha_vencimiento">Fecha de venc.</el-checkbox>
                         </div>
@@ -169,6 +168,18 @@
                         
                         <div class="column-item">
                             <el-checkbox v-model="columns.total">Total</el-checkbox>
+                        </div>
+                        <div class="column-item">
+                            <el-checkbox v-model="columns.tipo_persona">Tipo de persona</el-checkbox>
+                        </div>
+                        <div class="column-item">
+                            <el-checkbox v-model="columns.peso_total">Peso total</el-checkbox>
+                        </div>
+                        <div class="column-item">
+                            <el-checkbox v-model="columns.peso_total">Peso total</el-checkbox>
+                        </div>
+                        <div class="column-item">
+                            <el-checkbox v-model="columns.nro_producto">N° de productos</el-checkbox>
                         </div>
                     </div>
                 </div>
@@ -342,7 +353,10 @@ export default {
                 fecha_vencimiento: false,
                 precio_unitario: true,
                 descuento: true,
-                total: true
+                total: true,
+                tipo_persona: false,
+                peso_total: false,
+                nro_producto: true,
             }
         }
     },

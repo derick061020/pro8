@@ -16,16 +16,30 @@ class PaymentConfiguration extends ModelTenant
         'enabled_mp',
         'access_token_mp',
         'public_key_mp',
+        'enabled_culqi',
+        'publickey_culqi',
+        'privatekey_culqi',
+        'idrsa_culqi',
+        'rsa_culqi',
+        'enabled_izipay',
+        'username_izipay',
+        'password_izipay',
+        'publickey_izipay',
+        'sha256key_izipay',
     ];
 
     protected $hidden = [
-        'access_token_mp'
+        'access_token_mp',
+        'privatekey_culqi',
+        'sha256key_izipay',
     ];
 
 
     protected $casts = [
         'enabled_yape' => 'bool',
         'enabled_mp' => 'bool',
+        'enabled_culqi' => 'bool',
+        'enabled_izipay' => 'bool',
     ];
 
 
@@ -45,6 +59,16 @@ class PaymentConfiguration extends ModelTenant
             'image_url_yape' => $this->image_url_yape,
             'enabled_mp' => $this->enabled_mp,
             'public_key_mp' => $this->public_key_mp,
+            'enabled_culqi' => $this->enabled_culqi,
+            'publickey_culqi' => $this->publickey_culqi,
+            'privatekey_culqi' => $this->privatekey_culqi,
+            'idrsa_culqi' => $this->idrsa_culqi,
+            'rsa_culqi' => $this->rsa_culqi,
+            'enabled_izipay' => $this->enabled_izipay,
+            'username_izipay' => $this->username_izipay,
+            'password_izipay' => $this->password_izipay,
+            'publickey_izipay' => $this->publickey_izipay,
+            'sha256key_izipay' => $this->sha256key_izipay
         ];
     }
 
@@ -96,6 +120,38 @@ class PaymentConfiguration extends ModelTenant
     public static function getAccessTokenMp()
     {
         return PaymentConfiguration::select('access_token_mp')->firstOrFail()->access_token_mp;
+    }
+
+    public function scopeAccessIzipay($query)
+    {
+        return $query->where('enabled_izipay', true)
+            ->select('username_izipay', 'password_izipay', 'publickey_izipay', 'sha256key_izipay')->first()->toArray();
+    }
+
+    public function scopeEnabledCheckout($query)
+    {
+        $record = $query->where('enabled_izipay', true)->first();
+
+        if ($record) {
+            return 'izipay';
+        }
+
+        return 'culqi';
+    }
+
+    public function scopeGetPublicKey($query)
+    {
+        $record = $query->where('enabled_mp', true)
+            ->orWhere('enabled_culqi', true)
+            ->orWhere('enabled_izipay', true)
+            ->first();
+
+        if (!$record) return null;
+
+        if ($record->enabled_mp) return $record->public_key_mp;
+        if ($record->enabled_culqi) return $record->publickey_culqi;
+        if ($record->enabled_izipay) return $record->publickey_izipay;
+
     }
 
 }

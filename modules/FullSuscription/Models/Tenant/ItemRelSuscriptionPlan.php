@@ -87,7 +87,8 @@
             'total_charge' => 'float',
             'total_discount' => 'float',
             'total' => 'float',
-            'warehouse_id' => 'int'
+            'warehouse_id' => 'int',
+            'apply_in_period' => 'string'
         ];
 
         protected $fillable = [
@@ -119,7 +120,8 @@
             'charges',
             'additional_information',
             'warehouse_id',
-            'name_product_pdf'
+            'name_product_pdf',
+            'apply_in_period'
         ];
 
         /**

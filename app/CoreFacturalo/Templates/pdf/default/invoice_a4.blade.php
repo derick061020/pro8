@@ -11,7 +11,8 @@ $itinerant = $document->itinerant;
 //$path_style = app_path('CoreFacturalo'.DIRECTORY_SEPARATOR.'Templates'.DIRECTORY_SEPARATOR.'pdf'.DIRECTORY_SEPARATOR.'style.css');
 $document_number = $document->series.'-'.str_pad($document->number, 8, '0', STR_PAD_LEFT);
 // $accounts = \App\Models\Tenant\BankAccount::where('show_in_documents', true)->get();
-$accounts = (new TemplatePdf)->getBankAccountsForPdf($document->establishment_id);
+$templatePdf = (new TemplatePdf);
+$accounts = $templatePdf->getBankAccountsForPdf($document->establishment_id);
 
 if($document_base) {
 
@@ -37,7 +38,9 @@ $logo = "{$establishment->logo}";
 
 $configuration_decimal_quantity= App\CoreFacturalo\Helpers\Template\TemplateHelper::getConfigurationDecimalQuantity();
 $configurationInPdf= App\CoreFacturalo\Helpers\Template\TemplateHelper::getConfigurationInPdf();
+$configurationEnableGuaranteeFund = App\CoreFacturalo\Helpers\Template\TemplateHelper::getConfigurationShowGuaranteeFund();
 $type = App\CoreFacturalo\Helpers\Template\TemplateHelper::getTypeSoap();
+$total_pending_payment = $document->total_pending_payment;
 
 @endphp
 <html>
@@ -85,12 +88,12 @@ $type = App\CoreFacturalo\Helpers\Template\TemplateHelper::getTypeSoap();
                     <div class="company_logo_box">
                         <img
                             src="data:{{ mime_content_type(public_path($logo)) }};base64, {{ base64_encode(file_get_contents(public_path($logo))) }}"
-                            alt="{{ $company->name }}" class="company_logo" style="max-width: 150px;">
+                            alt="{{ \App\CoreFacturalo\Helpers\CompanyDocumentDisplay::logoAlt($company) }}" class="company_logo" style="max-width: 150px;">
                     </div>
                 </td>
                 <td width="50%" class="pl-3 text-center">
                     <div>
-                        <h4>{{ $company->name }}</h4>
+                        @include('pdf.partials.company_document_header_names')
                         <h5>{{ 'RUC '.$company->number }}</h5>
                         <h6 style="text-transform: uppercase;">
                             {{ ($establishment->address !== '-') ? $establishment->address : '' }}
@@ -119,7 +122,7 @@ $type = App\CoreFacturalo\Helpers\Template\TemplateHelper::getTypeSoap();
             @else
                 <td colspan="2" width="70%" class="pl-1 text-left">
                     <div>
-                        <h4>{{ $company->name }}</h4>
+                        @include('pdf.partials.company_document_header_names')
                         <h5>{{ 'RUCs '.$company->number }}</h5>
                         <h6 style="text-transform: uppercase;">
                             {{ ($establishment->address !== '-') ? $establishment->address : '' }}
@@ -644,6 +647,7 @@ $type = App\CoreFacturalo\Helpers\Template\TemplateHelper::getTypeSoap();
                 @php
                     $showSerieColumn = false;
                     $showLoteColumn = false;
+                    $showDiscountItem = false;
                     foreach ($document->items as $row) {
                         if ($row->item->lots) {
                             $showSerieColumn = true;
@@ -652,11 +656,24 @@ $type = App\CoreFacturalo\Helpers\Template\TemplateHelper::getTypeSoap();
                     }
 
                     foreach ($document->items as $row) {
+                        $dis = optional($row->discounts)->{0};
+                        if (is_null($dis)) continue;
+
+                        if (count((array)$dis) > 0) {
+                            $showDiscountItem = true;
+                            break;
+                        }
+
+                    }
+
+                    foreach ($document->items as $row) {
                         if (isset($row->item->IdLoteSelected)) {
                             $showLoteColumn = true;
                             break;
                         }
                     }
+
+
                 @endphp
                 @empty($showSerieColumn) @else <th class="border-top-bottom text-left py-2 px-1">SERIE</th> @endempty
                 @if($showModelColumn)
@@ -670,6 +687,9 @@ $type = App\CoreFacturalo\Helpers\Template\TemplateHelper::getTypeSoap();
                 </th> @endif
                 @if($showLoteColumn) <th class="border-top-bottom text-center py-2 px-1"> F. VENC. </th> @endif
                 <th class="border-top-bottom text-right py-2 col-total">P.UNIT</th>
+                @if ($showDiscountItem)
+                    <th class="border-top-bottom text-right pl-4 col-total">P.TOTAL</th>
+                @endif
                 <th class="border-top-bottom text-right py-2 pr-2" width="8%">DTO.</th>
                 <th class="border-top-bottom text-right py-2 col-total">TOTAL</th>
             </tr>
@@ -682,6 +702,7 @@ $type = App\CoreFacturalo\Helpers\Template\TemplateHelper::getTypeSoap();
                 if($showSerieColumn) $colspan_total++;
                 if($showModelColumn) $colspan_total++;
                 if($showBrandColumn) $colspan_total++;
+                if ($showDiscountItem) $colspan_total++;
                 if($showLoteColumn) {
                     $colspan_total++;
                     $colspan_total++;
@@ -804,10 +825,21 @@ $type = App\CoreFacturalo\Helpers\Template\TemplateHelper::getTypeSoap();
                         {{ $cleanedDate }}
                     </td>
                 @endif
+                @php
+                    $unit_price_item = $row->getUnitPrice(($configuration['is_preview']) , $document);
+                    $price_total_item = $unit_price_item * $row->quantity;
+                @endphp
                 @if ($configuration_decimal_quantity->change_decimal_quantity_unit_price_pdf)
-                <td class="text-right align-top">{{ $row->generalApplyNumberFormat($row->unit_price, $configuration_decimal_quantity->decimal_quantity_unit_price_pdf) }}</td>
+                
+                <td class="text-right align-top">{{ $row->generalApplyNumberFormat( $unit_price_item, $configuration_decimal_quantity->decimal_quantity_unit_price_pdf) }}</td>
                 @else
-                <td class="text-right align-top">{{ number_format($row->unit_price, 2) }}</td>
+                <td class="text-right align-top">{{ number_format($unit_price_item, 2) }}</td>
+                @endif
+
+                @if ($showDiscountItem)
+                    {{-- <td class="text-right align-top pr-2">{{ number_format($row->total_real, 2) }}</td> --}}
+                    <td class="text-right align-top pr-2">{{ number_format( $price_total_item , 2) }}</td>
+
                 @endif
 
                 <td class="text-right align-top pr-2">
@@ -815,7 +847,9 @@ $type = App\CoreFacturalo\Helpers\Template\TemplateHelper::getTypeSoap();
                     @php
                     $total_discount_line = 0;
                     foreach ($row->discounts as $disto) {
-                    $total_discount_line = $total_discount_line + $disto->amount;
+                        if ($disto->from_global_distribution) continue;
+                        $amount = $disto->discount_type_id == "00" ? $disto->amount_without_rounded * 1.18 : $disto->amount;
+                        $total_discount_line = $total_discount_line + $amount;
                     }
                     @endphp
                     {{ number_format($total_discount_line, 2) }}
@@ -906,19 +940,19 @@ $type = App\CoreFacturalo\Helpers\Template\TemplateHelper::getTypeSoap();
             </tr>
             @endif
 
-            @if($document->total_discount > 0 && $document->subtotal > 0)
+            @if($document->total_discount_with_igv > 0 && $document->subtotal > 0)
             <tr>
                 <td colspan="{{ $colspan_total }}" class="text-right font-bold pr-2">SUBTOTAL: {{ $document->currency_type->symbol }}</td>
                 <td class="text-right font-bold">{{ number_format($document->subtotal, 2) }}</td>
             </tr>
             @endif
 
-            @if($document->total_discount > 0)
+            @if($document->total_discount_with_igv > 0)
             <tr>
                 <td colspan="{{ $colspan_total }}"
                     class="text-right font-bold pr-2">{{(($document->total_prepayment > 0) ? 'ANTICIPO':'DESCUENTO TOTAL')}}
                     : {{ $document->currency_type->symbol }}</td>
-                <td class="text-right font-bold">{{ number_format($document->total_discount, 2) }}</td>
+                <td class="text-right font-bold">{{ number_format($document->total_discount_with_igv, 2) }}</td>
             </tr>
             @endif
 
@@ -953,7 +987,8 @@ $type = App\CoreFacturalo\Helpers\Template\TemplateHelper::getTypeSoap();
                 <td class="text-right font-bold">{{ number_format($document->perception->amount, 2) }}</td>
             </tr>
             <tr>
-                <td colspan="{{ $colspan_total }}" class="text-right font-bold pr-2">TOTAL A PAGAR: {{ $document->currency_type->symbol }}</td>
+                <td colspan="{{ ceil(($colspan_total + 1) / 2) }}" class="text-left font-bold" style="white-space: nowrap;">Productos: {{ rtrim(rtrim(number_format(collect($document->items)->sum(function ($item) { return (float) data_get($item, 'quantity', 0); }), 2, '.', ''), '0'), '.') }}</td>
+                <td colspan="{{ floor(($colspan_total + 1) / 2) - 1 }}" class="text-right font-bold pr-2">TOTAL A PAGAR: {{ $document->currency_type->symbol }}</td>
                 <td class="text-right font-bold">{{ number_format(($document->total + $document->perception->amount), 2) }}</td>
             </tr>
             @elseif($document->retention)
@@ -973,16 +1008,28 @@ $type = App\CoreFacturalo\Helpers\Template\TemplateHelper::getTypeSoap();
             </tr>
             @else
             <tr>
-                <td colspan="{{ $colspan_total }}" class="text-right font-bold pr-2">TOTAL A PAGAR: {{ $document->currency_type->symbol }}</td>
+                <td colspan="{{ ceil(($colspan_total + 1) / 2) }}" class="text-left font-bold" style="white-space: nowrap;">Productos: {{ rtrim(rtrim(number_format(collect($document->items)->sum(function ($item) { return (float) data_get($item, 'quantity', 0); }), 2, '.', ''), '0'), '.') }}</td>
+                <td colspan="{{ floor(($colspan_total + 1) / 2) - 1 }}" class="text-right font-bold pr-2">TOTAL A PAGAR: {{ $document->currency_type->symbol }}</td>
                 <td class="text-right font-bold">{{ number_format($document->total, 2) }}</td>
             </tr>
             @endif
 
             @if(($document->retention || $document->detraction) && $document->total_pending_payment > 0)
+            @php
+                $value_ob = $document->detraction ? $document->detraction : $document->retention;
+                $total_pending_payment = $document->total_pending_payment - $value_ob->guarantee_fund;
+            @endphp
+
             <tr>
                 <td colspan="{{ $colspan_total }}" class="text-right font-bold pr-2">M. PENDIENTE: {{ $document->currency_type->symbol }}</td>
                 <td class="text-right font-bold">{{ number_format($document->total_pending_payment, 2) }}</td>
             </tr>
+                @if ($configurationEnableGuaranteeFund->enabled_guarantee_fund)
+                    <tr>
+                        <td colspan="{{ $colspan_total }}" class="text-right font-bold pr-2">FONDO DE GARANTIA: {{ $document->currency_type->symbol }}</td>
+                        <td class="text-right font-bold">{{ number_format($value_ob->guarantee_fund, 2) }}</td>
+                    </tr>
+                @endif
             @endif
 
             @if($balance < 0)
@@ -995,6 +1042,19 @@ $type = App\CoreFacturalo\Helpers\Template\TemplateHelper::getTypeSoap();
         </tbody>
     </table>
     <table class="full-width">
+        @php
+            $personType = $document->person->person_type;
+        @endphp
+        <tr width="65%">
+            <td colspan="{{ $colspan_total }}" class="text-left py-1"><strong>N° DE PRODUCTOS</strong>: {{ $document->items->count() }}</td>
+        </tr>
+        @if ( $personType && $personType->enabled_description_person_type)
+            <tr width="65%" >
+                <td>
+                    <strong>{{ $personType->description }}</strong> : {{ $personType->description_person_type }}
+                </td>
+            </tr>
+        @endif
         <tr>
             <td width="65%" style="text-align: top; vertical-align: top;">
                 @foreach(array_reverse( (array) $document->legends) as $row)

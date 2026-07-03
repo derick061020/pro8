@@ -15,7 +15,7 @@
             <div class="card-body invoice p-3">
                 <form autocomplete="off" @submit.prevent="submit">
                     <div class="form-body">
-                        <div class="row">
+                        <div class="row mx-0">
                             <div class="col-lg-2">
                                 <div class="form-group" :class="{'has-danger': errors.establishment_id}">
                                     <label class="control-label font-weight-bold">Sucursal<span class="text-danger"> *</span></label>
@@ -78,7 +78,7 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="row">
+                        <div class="row mx-0">
                             <div class="col-lg-2">
                                 <div class="form-group" :class="{'has-danger': errors.unit_type_id}">
                                     <label class="control-label font-weight-bold">Unidad de medida<span class="text-danger"> *</span></label>
@@ -110,14 +110,10 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="row">
-                        </div>
-                        <div class="row">
-                        </div>
                         <hr>
                         <h4>Datos envío</h4>
-                        <h6>Dirección partida</h6>
-                        <div class="row">
+                        <h5>Dirección partida</h5>
+                        <div class="row mx-0">
                             <div class="col-lg-2">
                                 <div class="form-group" :class="{'has-danger': errors.origin}">
                                     <label class="control-label font-weight-bold">País<span class="text-danger"> *</span></label>
@@ -143,8 +139,8 @@
                                 </div>
                             </div>
                         </div>
-                        <h6>Dirección llegada</h6>
-                        <div class="row">
+                        <h5>Dirección llegada</h5>
+                        <div class="row mx-0">
                             <div class="col-lg-2">
                                 <div class="form-group" :class="{'has-danger': errors.delivery}">
                                     <label class="control-label font-weight-bold">País<span class="text-danger"> *</span></label>
@@ -172,8 +168,7 @@
                         </div>
                         <hr>
                         <h4></h4>
-                        <div class="row">
-    
+                        <div class="row mx-0">
                             <div class="col-lg-6">
                                 <div class="form-group" :class="{'has-danger': errors.dispatcher_id}">
                                     <label class="control-label font-weight-bold">
@@ -202,7 +197,7 @@
                             </div>
                         </div>
                         <h4></h4>
-                        <div class="row">
+                        <div class="row mx-0">
                             <div class="col-lg-3">
     
                                 <div class="form-group" :class="{'has-danger': errors['license_plates.license_plate_1']}">
@@ -254,9 +249,13 @@
                                         <td>{{row.description ? row.description : row.item.description}}</td>
                                         <td class="text-end">{{row.quantity}}</td>
                                         <td class="text-end">
-                                            <button type="button" class="btn waves-effect waves-light btn-xs btn-danger" @click.prevent="clickRemoveItem(index)">x</button>
-                                            <button data-toggle="tooltip" data-placement="top" title="Editar" type="button" class="btn waves-effect waves-light btn-xs btn-primary"
-                                                @click.prevent="clickEditItem(row)"><i class="fas fa-file-signature"></i></button>
+                                            <button type="button" class="btn waves-effect waves-light btn-xs btn-danger" @click.prevent="clickRemoveItem(index)">
+                                                <svg data-v-28ad76d4="" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-edit"><path data-v-28ad76d4="" stroke="none" d="M0 0h24v24H0z" fill="none"></path><path data-v-28ad76d4="" d="M7 7h-1a2 2 0 0 0 -2 2v9a2 2 0 0 0 2 2h9a2 2 0 0 0 2 -2v-1"></path><path data-v-28ad76d4="" d="M20.385 6.585a2.1 2.1 0 0 0 -2.97 -2.97l-8.415 8.385v3h3l8.385 -8.415"></path><path data-v-28ad76d4="" d="M16 5l3 3"></path></svg>
+                                            </button>
+                                            <button data-toggle="tooltip" data-placement="top" title="Editar" type="button" class="btn waves-effect waves-light btn-xs btn-info ms-1"
+                                                @click.prevent="clickEditItem(row)">
+                                                <svg data-v-28ad76d4="" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-trash"><path data-v-28ad76d4="" stroke="none" d="M0 0h24v24H0z" fill="none"></path><path data-v-28ad76d4="" d="M4 7l16 0"></path><path data-v-28ad76d4="" d="M10 11l0 6"></path><path data-v-28ad76d4="" d="M14 11l0 6"></path><path data-v-28ad76d4="" d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2 -2l1 -12"></path><path data-v-28ad76d4="" d="M9 7v-3a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v3"></path></svg>
+                                            </button>
     
                                         </td>
                                     </tr>

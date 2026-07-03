@@ -14,9 +14,17 @@
     </style>
 </head>
 <body>
+@php
+    use App\CoreFacturalo\Helpers\CompanyDocumentDisplay as MobileAppRepCo;
+@endphp
 <ul>
     <li>RUC/DNI: {{ $company->number}}</li>
-    <li>Razon social: {{ $company->name }}</li>
+    @if(MobileAppRepCo::namesAreSame($company))
+    <li>Razón social: {{ MobileAppRepCo::commercialLine($company) }}</li>
+    @else
+    <li>Nombre comercial: {{ MobileAppRepCo::commercialLine($company) }}</li>
+    <li>Razón social: {{ $company->name }}</li>
+    @endif
     <li>Teléfono: {{ $establishment->telephone }}</li>
     <li>Fecha : {{ Carbon\Carbon::now()->format('d/m/Y') }}</li>
 </ul>

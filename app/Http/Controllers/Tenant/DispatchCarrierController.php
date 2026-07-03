@@ -523,6 +523,11 @@ class DispatchCarrierController extends Controller
         switch ($type) {
             case 'pdf':
                 $folder = 'pdf';
+                // Validar existencia física del PDF de la Guía Transportista.
+                // Si no existe, invocar al orquestador para forzar su regeneración antes de la descarga.
+                if (!$this->existFileInStorage($retention->filename, $folder)) {
+                    (new \App\CoreFacturalo\Facturalo)->createPdf($retention, 'dispatch_carrier', 'a4');
+                }
                 break;
             case 'xml':
                 $folder = 'signed';

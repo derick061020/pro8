@@ -4,15 +4,16 @@
 
 use App\Models\System\Configuration as SystemConfiguration;
 use App\Models\Tenant\Catalogs\CurrencyType;
-    use Auth;
-    use Carbon\Carbon;
-    use Illuminate\Config\Repository;
-    use Illuminate\Database\Eloquent\Builder;
-    use Illuminate\Foundation\Application;
-    use Illuminate\Support\Facades\Config;
-    use Modules\Inventory\Models\Warehouse;
-    use Modules\LevelAccess\Models\ModuleLevel;
-    use App\Models\Tenant\Skin;
+use App\Models\Tenant\Catalogs\ChargeDiscountType;
+use Auth;
+use Carbon\Carbon;
+use Illuminate\Config\Repository;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Foundation\Application;
+use Illuminate\Support\Facades\Config;
+use Modules\Inventory\Models\Warehouse;
+use Modules\LevelAccess\Models\ModuleLevel;
+use App\Models\Tenant\Skin;
 use Illuminate\Support\Facades\Log;
 
     /**
@@ -49,6 +50,7 @@ use Illuminate\Support\Facades\Log;
      * @property bool        $restrict_receipt_date
      * @property string      $affectation_igv_type_id
      * @property bool|null   $include_igv
+     * @property bool        $global_igv_handling
      * @property float|null  $percentage_allowance_charge
      * @property float       $igv_retention_percentage
      * @property bool|null   $active_allowance_charge
@@ -148,6 +150,7 @@ use Illuminate\Support\Facades\Log;
      * @property string|null $qrchat_auth_key
      * @property bool $enable_list_product
      * @property bool $available_cash_report_seller
+     * @property bool $enabled_guarantee_fund
      */
     class Configuration extends ModelTenant
     {
@@ -167,6 +170,8 @@ use Illuminate\Support\Facades\Log;
             'cotizaction_finance',
             'cron',
             'currency_type_id',
+            'date_format',
+            'time_format',
             'date_time_start',
             'decimal_quantity',
             'default_document_type_03',
@@ -182,6 +187,7 @@ use Illuminate\Support\Facades\Log;
             'header_image',
             'igv_retention_percentage',
             'include_igv',
+            'global_igv_handling',
             'is_pharmacy',
             'item_name_pdf_description',
             'legend_footer',
@@ -243,6 +249,8 @@ use Illuminate\Support\Facades\Log;
             'show_logo_by_establishment',
             'global_discount_type_id',
             'shipping_time_days',
+            'public_search_bg_color',
+            'public_search_bg_image_path',
             'url_apiruc',
             'new_validator_pagination',
             'token_apiruc',
@@ -297,6 +305,7 @@ use Illuminate\Support\Facades\Log;
             'enabled_dispatch_ticket_pdf',
             'register_series_invoice_xml',
             'enable_discount_by_customer',
+            'show_item_discounts_charges_attributes',
             'show_price_barcode_ticket',
             'price_selected_add_product',
             'locked_create_establishments',
@@ -314,6 +323,7 @@ use Illuminate\Support\Facades\Log;
             'add_description_to_document_item',
             'show_item_description_pack',
             'show_weighted_cost_purchase',
+            'show_unify_amount_items',
             'enabled_dispatch_ticket_pdf_individual',
             'condition_sale_purchase_price_to_item',
             'qrchat_url',
@@ -337,7 +347,12 @@ use Illuminate\Support\Facades\Log;
             'enable_consigned',
             'price1_label',
             'price2_label',
-            'price3_label'
+            'price3_label',
+            'enable_weight_in_dispatches',
+            'auto_send_pdf_email',
+            'before_day_creation_suscription_order',
+            'printer_name_documents',
+            'enabled_guarantee_fund',
         ];
 
         protected $casts = [
@@ -385,6 +400,7 @@ use Illuminate\Support\Facades\Log;
             'edit_name_product' => 'bool',
             'restrict_receipt_date' => 'bool',
             'include_igv' => 'bool',
+            'global_igv_handling' => 'bool',
             'percentage_allowance_charge' => 'float',
             'igv_retention_percentage' => 'float',
             'active_allowance_charge' => 'bool',
@@ -456,6 +472,7 @@ use Illuminate\Support\Facades\Log;
             'enabled_dispatch_ticket_pdf'=>'bool',
             'register_series_invoice_xml'=>'bool',
             'enable_discount_by_customer' => 'boolean',
+            'show_item_discounts_charges_attributes' => 'boolean',
             'show_price_barcode_ticket' => 'boolean',
             'price_selected_add_product'=>'bool',
             'locked_create_establishments' => 'boolean',
@@ -472,6 +489,7 @@ use Illuminate\Support\Facades\Log;
             'add_description_to_document_item'=>'bool',
             'show_item_description_pack'=>'bool',
             'show_weighted_cost_purchase'=>'bool',
+            'show_unify_amount_items' => 'bool',
             'enabled_dispatch_ticket_pdf_individual' => 'bool',
             'condition_sale_purchase_price_to_item' => 'bool',
             'qrchat_enable' => 'bool',
@@ -485,13 +503,26 @@ use Illuminate\Support\Facades\Log;
             'available_cash_report_seller' => 'bool',
             'from_guest_register' => 'bool',
             'was_verified_guest_user' => 'bool',
-            'enable_consigned' => 'bool'
+            'enable_consigned' => 'bool',
+            'enable_weight_in_dispatches' => 'bool',
+            'enabled_guarantee_fund' => 'bool',
+            'auto_send_pdf_email' => 'bool',
         ];
+
+        // printer_name_documents es string nullable — no requiere cast adicional
 
         protected $hidden = [
             'smtp_password',
 
         ];
+
+        /**
+         * Relation to the catalog of charge/discount types for the global discount.
+         */
+        public function globalDiscountType()
+        {
+            return $this->belongsTo(ChargeDiscountType::class, 'global_discount_type_id', 'id');
+        }
 
         public static function boot()
         {
@@ -595,7 +626,12 @@ use Illuminate\Support\Facades\Log;
                 $warehouse = new Warehouse();
             }
             $currency = CurrencyType::all();
-            $skins = Skin::all();
+            $hiddenFilenames = collect();
+            try {
+                $hiddenSystem = \App\Models\System\Skin::where('is_visible_to_clients', false)->get();
+                $hiddenFilenames = $hiddenSystem->flatMap(fn($s) => array_filter([$s->filename, $s->custom_filename]))->unique();
+            } catch (\Throwable $e) {}
+            $skins = Skin::all()->filter(fn($s) => !$hiddenFilenames->contains($s->filename))->values();
             return [
                 'id' => $this->id,
                 'company' => $company,
@@ -610,6 +646,8 @@ use Illuminate\Support\Facades\Log;
                 'compact_sidebar' => (bool)$this->compact_sidebar,
                 'subtotal_account' => $this->subtotal_account,
                 'decimal_quantity' => $this->decimal_quantity,
+                'date_format' => $this->date_format ?: 'DD-MM-YYYY',
+                'time_format' => $this->time_format ?: 'HH:mm:ss',
                 'amount_plastic_bag_taxes' => $this->amount_plastic_bag_taxes,
                 'colums_grid_item' => $this->colums_grid_item,
                 'options_pos' => (bool)$this->options_pos,
@@ -625,6 +663,7 @@ use Illuminate\Support\Facades\Log;
                 'legend_footer_sale' => $this->legend_footer_sale,
                 'cotizaction_finance' => (bool)$this->cotizaction_finance,
                 'include_igv' => (bool)$this->include_igv,
+                'global_igv_handling' => (bool)$this->global_igv_handling,
                 'product_only_location' => (bool)$this->product_only_location,
                 'legend_footer' => (bool)$this->legend_footer,
                 'default_document_type_03' => (bool)$this->default_document_type_03,
@@ -740,6 +779,7 @@ use Illuminate\Support\Facades\Log;
                 'enabled_dispatch_ticket_pdf' => $this->enabled_dispatch_ticket_pdf,
                 'register_series_invoice_xml' => $this->register_series_invoice_xml,
                 'enable_discount_by_customer' => $this->enable_discount_by_customer,
+                'show_item_discounts_charges_attributes' => (bool)($this->show_item_discounts_charges_attributes ?? true),
                 'show_price_barcode_ticket' => $this->show_price_barcode_ticket,
                 'price_selected_add_product' => $this->price_selected_add_product,
                 'restrict_sale_items_cpe' => $this->restrict_sale_items_cpe,
@@ -753,6 +793,7 @@ use Illuminate\Support\Facades\Log;
                 'add_description_to_document_item' => $this->add_description_to_document_item,
                 'show_item_description_pack' => $this->show_item_description_pack,
                 'show_weighted_cost_purchase' => $this->show_weighted_cost_purchase,
+                'show_unify_amount_items' => $this->show_unify_amount_items,
                 'condition_sale_purchase_price_to_item' => $this->condition_sale_purchase_price_to_item,
                 'qrchat_url' => $this->qrchat_url,
                 'qrchat_app_key' => $this->qrchat_app_key,
@@ -771,7 +812,16 @@ use Illuminate\Support\Facades\Log;
                 'enable_consigned' => $this->enable_consigned,
                 'price1_label' => $this->price1_label ?? 'Precio 1',
                 'price2_label' => $this->price2_label ?? 'Precio 2',
-                'price3_label' => $this->price3_label ?? 'Precio 3'
+                'price3_label' => $this->price3_label ?? 'Precio 3',
+                'enable_weight_in_dispatches' => $this->enable_weight_in_dispatches,
+                'auto_send_pdf_email' => (bool)$this->auto_send_pdf_email,
+                'printer_name_documents' => $this->printer_name_documents,
+                'smtp_host' => $this->smtp_host,
+                'smtp_port' => $this->smtp_port,
+                'smtp_user' => $this->smtp_user,
+                'smtp_password' => $this->smtp_password,
+                'smtp_encryption' => $this->smtp_encryption,
+                'enabled_guarantee_fund' => $this->enabled_guarantee_fund,
             ];
         }
 
@@ -2615,7 +2665,12 @@ use Illuminate\Support\Facades\Log;
         {
             return $query->select('available_cash_report_seller')->first();
         }
-        
+
+        public function scopeGetConfigurationShowGuaranteeFund($query)
+        {
+            return $query->select('enabled_guarantee_fund')->first();
+        }
+
         /**
          * @return Configuration
          */

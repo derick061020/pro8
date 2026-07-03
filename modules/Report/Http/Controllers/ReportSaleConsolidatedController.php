@@ -17,11 +17,14 @@ use App\Models\Tenant\DocumentItem;
 use Illuminate\Support\Facades\DB;
 use Modules\Report\Exports\SaleConsolidatedExport;
 use Modules\Report\Exports\SaleConsolidatedTotalExport;
+use Modules\Report\Jobs\ProcessReportSalesConsolidated;
+use App\Traits\JobReportTrait;
 
 
 class ReportSaleConsolidatedController extends Controller
 {
     use ReportTrait;
+    use JobReportTrait; 
 
     public function filter()
     {
@@ -201,17 +204,46 @@ class ReportSaleConsolidatedController extends Controller
     }
 
 
-    public function pdf(Request $request) {
+    public function pdf(Request $request)
+    {
+        $UMBRAL = 500;
 
+        // count() es barato — NO carga la data, solo decide la ruta
+        $total = $this->getRecordsSalesConsolidated($request->all())->count();
+
+        if ($total > $UMBRAL) {
+            // PESADO → bandeja de descargas (async)
+            $user_id = auth()->id();
+            $tray = $this->createDownloadTray($user_id, 'Reporte', 'pdf', 'Consolidado de items de ventas');
+
+            // Resolver website_id (mismo bloque que ReportGeneralItemController)
+            $host = $request->getHost();
+            $hostname = \Hyn\Tenancy\Models\Hostname::where('fqdn', $host)->first();
+            if (empty($hostname)) {
+                $company    = Company::active();
+                $client     = \App\Models\System\Client::where('number', $company->number)->first();
+                $website_id = $client->hostname->website_id;
+            } else {
+                $website_id = $hostname->website_id;
+            }
+
+            ProcessReportSalesConsolidated::dispatch($tray->id, $website_id, $request->all(), $user_id);
+
+            return [
+                'success' => true,
+                'message' => 'El reporte se esta procesando; puede ver el proceso en bandeja de descargas.'
+            ];
+        }
+
+        // LIVIANO → inline como ahora
         $company = Company::first();
-        $establishment = ($request->establishment_id) ? Establishment::findOrFail($request->establishment_id) : auth()->user()->establishment;
+        $establishment = ($request->establishment_id)
+            ? Establishment::findOrFail($request->establishment_id)
+            : auth()->user()->establishment;
         $records = $this->getRecordsSalesConsolidated($request->all())->get();
-        $params = $request->all();
+        $params  = $request->all();
 
-         // return View('report::sales_consolidated.report_pdf', compact("records", "company", "establishment", "params"));;
-        /** @var \Barryvdh\DomPDF\PDF $pdf */
-        $pdf = PDF::loadView('report::sales_consolidated.report_pdf', compact("records", "company", "establishment", "params"));
-
+        $pdf = PDF::loadView('report::sales_consolidated.report_pdf', compact('records', 'company', 'establishment', 'params'));
         $filename = 'Reporte_Consolidado_Items_Ventas_'.date('YmdHis');
 
         return $pdf->stream($filename.'.pdf');

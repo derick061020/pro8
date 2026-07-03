@@ -5,300 +5,183 @@
   <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <title>@yield('title')</title>
+  <title>Recuperar contraseña</title>
   <style type="text/css">
-    #outlook a {
-      padding: 0;
-    }
-
     body {
-      font-family: 'Arial', 'Helvetica', sans-serif;
-      background: white;
+      margin: 0;
+      padding: 0;
       width: 100% !important;
+      background: #f3f5f7;
+      color: #1f2937;
+      font-family: Arial, Helvetica, sans-serif;
       -webkit-text-size-adjust: 100%;
       -ms-text-size-adjust: 100%;
-      margin-top: 0px;
-      margin-right: 0px;
-      margin-bottom: 0px;
-      margin-left: 0px;
-      padding-top: 0px;
-      padding-right: 0px;
-      padding-bottom: 0px;
-      padding-left: 0px;
-    }
-
-    .ExternalClass {
-      width: 100%;
-    }
-
-    .ExternalClass * {
-      line-height: 100%;
-    }
-
-    .ExternalClass,
-    .ExternalClass p,
-    .ExternalClass span,
-    .ExternalClass font,
-    .ExternalClass td,
-    .ExternalClass div {
-      line-height: 100%;
     }
 
     img {
+      border: 0;
       outline: none;
       text-decoration: none;
-      -ms-interpolation-mode: bicubic;
-    }
-
-    a img {
-      border: none;
-    }
-
-    .image-fix {
       display: block;
     }
 
-    .unsub-text {
-      mso-line-height-rule: exactly;
-      font-family: 'Arial', 'Helvetica', sans-serif;
+    a {
+      color: #1d4ed8;
+    }
+
+    .wrapper {
+      width: 100%;
+      background: #f3f5f7;
+      padding: 40px 16px;
+    }
+
+    .card {
+      width: 100%;
+      max-width: 640px;
+      margin: 0 auto;
+      background: #ffffff;
+      border-radius: 18px;
+      overflow: hidden;
+      box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
+      border: 1px solid #e5e7eb;
+    }
+
+    .card-header {
+      padding: 32px 40px 20px;
+      text-align: center;
+      background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
+      border-bottom: 1px solid #eef2f7;
+    }
+
+    .logo {
+      max-width: 220px;
+      max-height: 72px;
+      margin: 0 auto;
+    }
+
+    .card-body {
+      padding: 32px 40px 40px;
+    }
+
+    .eyebrow {
+      margin: 0 0 10px;
+      font-size: 12px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #64748b;
+    }
+
+    h1 {
+      margin: 0 0 14px;
+      font-size: 28px;
+      line-height: 1.2;
+      color: #0f172a;
+      font-weight: 700;
+    }
+
+    p {
+      margin: 0 0 16px;
       font-size: 15px;
-      line-height: 15px;
-      font-weight: normal;
-      text-decoration: none;
-      color: #cbd0d6;
+      line-height: 1.7;
+      color: #334155;
     }
 
-    .unsub-text a {
-      text-decoration: none;
-      color: #cbd0d6;
+    .button-row {
+      text-align: center;
+      margin: 28px 0 30px;
     }
 
-    .address-text {
-      mso-line-height-rule: exactly;
-      font-family: 'Arial', 'Helvetica', sans-serif;
+    .button {
+      display: inline-block;
+      padding: 14px 28px;
+      border-radius: 10px;
+      background: #1d4ed8;
+      color: #ffffff !important;
+      text-decoration: none;
       font-size: 15px;
-      line-height: 15px;
-      font-weight: normal;
-      text-decoration: none;
-      color: #cbd0d6;
+      font-weight: 700;
+      letter-spacing: 0.01em;
+      box-shadow: 0 8px 18px rgba(29, 78, 216, 0.22);
     }
 
-    .address-text a {
-      text-decoration: none;
-      color: #cbd0d6;
+    .muted-box {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 16px 18px;
+      color: #475569;
+      font-size: 13px;
+      line-height: 1.6;
+      word-break: break-word;
     }
 
-    @media only screen and (max-width: 480px) {
+    .footer {
+      padding: 0 40px 34px;
+      text-align: center;
+      color: #64748b;
+      font-size: 13px;
+      line-height: 1.6;
+    }
 
-      /*video blocks*/
-      table[class="content-table"] {
-        width: 320px !important;
+    @media only screen and (max-width: 600px) {
+      .wrapper {
+        padding: 20px 10px;
       }
 
-      table[class="mobile-frame"] {
-        width: 280px !important;
-        background-color: #f4f4f4 !important;
+      .card-header,
+      .card-body,
+      .footer {
+        padding-left: 22px !important;
+        padding-right: 22px !important;
       }
 
-      table[class="video-table"] {
-        width: 240px !important;
-        background-color: #f4f4f4 !important;
-      }
-
-      table[class="cc"] {
-        background-color: white !important;
-      }
-
-      td[class="mobile-side-spacing"] {
-        padding-top: 0px !important;
-        padding-right: 20px !important;
-        padding-bottom: 0px !important;
-        padding-left: 20px !important;
-      }
-
-      td[class="video-subject"] {
-        padding-top: 35px !important;
-        padding-right: 30px !important;
-        padding-bottom: 0px !important;
-        padding-left: 30px !important;
-        font-size: 20px !important;
-        line-height: 23px !important;
-      }
-
-      td[class="video-description"] {
-        padding-top: 15px !important;
-        padding-right: 20px !important;
-        padding-bottom: 0px !important;
-        padding-left: 20px !important;
-      }
-
-      td[class="video-image"] {
-        padding-top: 20px !important;
-        padding-right: 0px !important;
-        padding-bottom: 0px !important;
-        padding-left: 0px !important;
-      }
-
-      td[class="video-image"] img {
-        width: 240px !important;
-      }
-
-      td[class="video-cta"] {
-        padding-top: 10px !important;
-        padding-right: 0px !important;
-        padding-bottom: 10px !important;
-        padding-left: 0px !important;
-        display: inline-block !important;
-        text-align: center !important;
-      }
-
-      td[class="social-block"] {
-        padding-top: 10px !important;
-        padding-right: 0px !important;
-        padding-bottom: 20px !important;
-        padding-left: 0px !important;
-        display: block !important;
-      }
-
-      td[class="social-spacer"] {
-        padding-top: 0px !important;
-        padding-right: 0px !important;
-        padding-bottom: 0px !important;
-        padding-left: 0px !important;
-      }
-
-      td[class="button-wrapper"] {
-        width: 240px !important;
-      }
-
-      td[class="footer-block-l"] {
-        display: block !important;
-        width: 320px !important;
-      }
-
-      td[class="footer-block-r"] {
-        padding-top: 30px !important;
-        padding-right: 0px !important;
-        padding-bottom: 0px !important;
-        padding-left: 0px !important;
-        display: block !important;
-        width: 320px !important;
-      }
-
-      td[class="company-name"] {
-        text-align: center !important;
-      }
-
-      td[class="address"] {
-        text-align: center !important;
-      }
-
-      td[class="edit"] {
-        text-align: center !important;
-      }
-
-      td[class="unsub"] {
-        text-align: center !important;
-      }
-
-      *[class="is-mobile"] {
-        display: block !important;
-        max-height: none !important;
-      }
-
-      *[class="is-desktop"] {
-        display: none;
-        max-height: 0px;
-        overflow: hidden;
+      h1 {
+        font-size: 24px;
       }
     }
   </style>
 </head>
 
-<body
-  style="-ms-text-size-adjust: 100%; -webkit-text-size-adjust: 100%; background: white; font-family: 'Arial', 'Helvetica', sans-serif; margin-bottom: 0px; margin-left: 0px; margin-right: 0px; margin-top: 0px; padding-bottom: 0px; padding-left: 0px; padding-right: 0px; padding-top: 0px; width: 100%;">
-  <table bgcolor="#ffffff" width="100%" cellspacing="0" cellpadding="0" border="0" class="table-body"
-    style="line-height: 100%; margin: 0; padding: 0; width: 100%;">
+<body>
+  <table role="presentation" class="wrapper" width="100%" cellspacing="0" cellpadding="0" border="0">
     <tr>
-      <td align="center" style="border-collapse: collapse;">
-        <table width="600" cellspacing="0" cellpadding="0" border="0" align="center" class="content-table">
+      <td align="center">
+        <table role="presentation" class="card" width="100%" cellspacing="0" cellpadding="0" border="0">
           <tr>
-            <td height="10" class="page-break" bgcolor="#ffffff"
-              style="border-collapse: collapse; line-height: 10px; mso-line-height-rule: exactly;">
-              <br style="visibility: hidden;">
+            <td class="card-header">
+              @php
+                $logoImage = !empty($logoPath) && isset($message) ? $message->embed($logoPath) : $logoSrc;
+              @endphp
+
+              @if(!empty($logoImage))
+                <img src="{{ $logoImage }}" alt="{{ $company->trade_name ?? 'Logo' }}" class="logo">
+              @endif
             </td>
           </tr>
           <tr>
-            <td style="border-collapse: collapse;">
-              <table width="100%" border="0" cellspacing="0" cellpadding="0">
-                <tr>
-                  <td class="mobile-side-spacing" style="border-collapse: collapse;">
-                    <table width="100%" border="0" cellspacing="0" cellpadding="0">
-                      <tr height="100">
-                        <td valign="top" align="center" class="intro-text"
-                          style="border-collapse: collapse;">
-                          <br>
-                            @if($company->logo)
-                                <img src="{{ asset('storage/uploads/logos/' . $company->logo) }}" alt="Logo" width="220" />
-                            @else
-                                <img src="{{asset('logo/logo.png')}}" alt="Logo" width="220" />
-                            @endif
-                        </td>
-                      </tr>
-                    </table>
-                  </td>
-                </tr>
-                <tr>
-                  <td class="mobile-side-spacing" style="border-collapse: collapse;">
-                    <br><br>
-                    <h1 style="font-size: 18px;">¡Hola!</h1>
-                    <p style="line-height: 1.4;">Recibió este correo electrónico porque recibimos una solicitud de restablecimiento de contraseña para su cuenta.</p>
-                    <br>
-                    <center>
-                        <a style="background-color: #080301; padding: 10px 24px; color: #FFFFFF; text-decoration: none;" href="{{ $url }}">Restablecer contraseña</a>
-                    </center>
-                    <br>
-                    <br>
-                    <br>
-                    <p style="font-size: 14px;">Este enlace de restablecimiento de contraseña caducará en 60 minutos.</p>
-                    <br>
-                    <br>
-                    <p style="font-size: 14px;">Si no solicitó un restablecimiento de contraseña, no se requiere ninguna otra acción.</p>
-                    <br>
-                    <br>
-                    <br>
-                    <p style="color: #363945; font-size: 12px; line-height: 1.3;">Si tiene problemas para hacer clic en el botón "Restablecer contraseña", copie y pegue la siguiente URL en su navegador web: {{ $url }}</p>
-                  </td>
-                </tr>
-              </table>
-              <table width="100%" border="0" cellspacing="0" cellpadding="0">
-                <tr>
-                  <td class="mobile-side-spacing" style="border-collapse: collapse;">
-                    <table width="100%" border="0" cellspacing="0" cellpadding="0">
-                      <tr>
-                        <td valign="top" align="left" class="conclusion"
-                          style="border-collapse: collapse; color: #363945; font-family: 'Arial', 'Helvetica', sans-serif; font-size: 16px; font-weight: normal; line-height: 21px; mso-line-height-rule: exactly; text-decoration: none;">
-                          <br><br>
-                          Saludos,<br><br>{{ $company->trade_name }}<br><br>
-                        </td>
-                      </tr>
-                    </table>
-                  </td>
-                </tr>
-              </table>
+            <td class="card-body">
+              <p class="eyebrow">Restablecimiento de contraseña</p>
+              <h1>Solicitud de acceso</h1>
+              <p>Hemos recibido una solicitud para restablecer la contraseña de su cuenta en {{ $company->trade_name ?? config('app.name') }}.</p>
+              <p>Si usted realizó esta solicitud, haga clic en el siguiente botón para crear una nueva contraseña. El enlace expirará en 60 minutos.</p>
+
+              <div class="button-row">
+                <a class="button" href="{{ $url }}">Restablecer contraseña</a>
+              </div>
             </td>
           </tr>
           <tr>
-            <td height="10" class="page-break" bgcolor="#ffffff"
-              style="border-collapse: collapse; line-height: 10px; mso-line-height-rule: exactly;">
-              <br style="visibility: hidden;">
+            <td class="footer">
+              Si usted no solicitó este cambio, puede ignorar este correo.
+              <br><br>
+              Saludos,<br>
+              {{ $company->trade_name ?? config('app.name') }}
             </td>
           </tr>
         </table>
       </td>
     </tr>
   </table>
-
 </body>
 
 </html>

@@ -160,7 +160,7 @@ class CategoryController extends Controller
     public function upload(Request $request)
     {
         
-        $validate_upload = UploadFileHelper::validateUploadFile($request, 'file', 'jpg,jpeg,png,gif,svg');
+        $validate_upload = UploadFileHelper::validateUploadFile($request, 'file', 'jpg,jpeg,png,gif,svg,webp');
         
         if(!$validate_upload['success']){
             return $validate_upload;

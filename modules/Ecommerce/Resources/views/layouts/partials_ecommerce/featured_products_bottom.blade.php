@@ -1,7 +1,7 @@
 @php
 
 $path = explode('/', request()->path());
-$item_id = (isset($path[2])) ? $path[2] : 0;
+$item_id = (int) ($path[2] ?? 0);
 
 @endphp
 <div class="container">
@@ -15,7 +15,7 @@ $item_id = (isset($path[2])) ? $path[2] : 0;
                 @if( $intersectTag->intersect($item->tags, $item_id) )
                     <div class="product">
                         <figure class="product-image-container">
-                            <a href="/ecommerce/item/{{ $item->id }}" class="product-image">
+                            <a href="/ecommerce/item/{{ $item->id }}-{{ \Illuminate\Support\Str::slug($item->description) }}" class="product-image">
                                 <img src="{{ asset('storage/uploads/items/'.$item->image) }}" alt="product">
                             </a>
                             <a href="{{route('item_partial', ['id' => $item->id])}}" class="btn-quickview">Vista Rápida</a>
@@ -27,7 +27,7 @@ $item_id = (isset($path[2])) ? $path[2] : 0;
                                 </div><!-- End .product-ratings -->
                             </div><!-- End .product-container -->
                             <h2 class="product-title">
-                                <a href="/ecommerce/item/{{ $item->id }}">{{$item->description}}</a>
+                                <a href="/ecommerce/item/{{ $item->id }}-{{ \Illuminate\Support\Str::slug($item->description) }}">{{$item->description}}</a>
                             </h2>
                             <div class="price-box">
                                 <span class="product-price">{{ $item->currency_type_symbol }} {{ number_format($item->sale_unit, 2) }}</span>

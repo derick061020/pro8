@@ -83,25 +83,54 @@
         </div><!-- End .col-lg-7 -->
 
         <div class="col-lg-5 col-md-6">
-            <div class="product-single-details">
-                <h1 class="product-title">{{$record->description}}</h1>
+            <div id="product-detail-vue" class="product-single-details">
+                <h1 class="product-title mb-0">{{$record->description}}</h1>
 
+                @php
+                    // Genera rating random entre 4.1 y 4.9
+                    $rating = ($record->id % 9 + 41) / 10;
+                
+                    // Convierte a porcentaje para pintar estrellas
+                    $percentage = ($rating / 5) * 100;
+                @endphp
 
+                <div class="ratings-container d-flex align-items-center gap-2">
 
-                <div class="ratings-container">
-                    <div class="product-ratings">
-                        <span class="ratings" style="width:60%"></span><!-- End .ratings -->
-                    </div><!-- End .product-ratings -->
+                    <!-- Estrellas -->
+                    <div class="product-ratings position-relative" style="display:inline-block; line-height:1;">
 
-                    <a href="#" class="rating-link">( 6 vistas )</a>
-                </div><!-- End .product-container -->
+                        <!-- Fondo gris -->
+                        <div style="color:#ddd; font-size:22px;">
+                            ★★★★★
+                        </div>
+
+                        <!-- Relleno amarillo -->
+                        <div style="
+                            position:absolute;
+                            top:0;
+                            left:0;
+                            width:{{ $percentage }}%;
+                            overflow:hidden;
+                            white-space:nowrap;
+                            color:#f4b400;
+                            font-size:22px;">
+                            ★★★★★
+                        </div>
+                    </div>
+
+                    <!-- Puntaje -->
+                    <span style="font-size:16px; font-weight:500;" class="mt-1 ml-3">
+                        {{ number_format($rating, 1) }}/5
+                    </span>
+
+                </div>
 
                 <div class="price-box">
                     <span class="old-price">{{ $record->currency_type['symbol'] }} {{ number_format( ($record->sale_unit_price * 1.2 ) , 2 ) }}</span>
                     <span class="product-price">{{ $record->currency_type['symbol'] }} {{ number_format($record->sale_unit_price, 2) }}</span>
                 </div><!-- End .price-box -->
 
-                <div class="product-desc">
+                <div class="product-desc pb-0">
                     @if ($record->category && $record->category->name)
                         <p class="product-category">Categoría: <span> {{$record->category->name}} </span></p>
                     @endif
@@ -118,8 +147,18 @@
                 <?php
                 }
                 ?>
-                </p>
-                    <p>{{ $record->name }}</p>
+                <div class="product-description-wrapper">
+                    <div id="productShortDescription" class="product-description-clamp">
+                        {!! $record->name !!}
+                    </div>
+
+                    <a href="javascript:void(0);" 
+                       id="toggleProductDescription" 
+                       class="product-description-toggle"
+                       style="display:none;">
+                        Ver todo
+                    </a>
+                </div>
                 </div><!-- End .product-desc -->
 
                 <div>
@@ -128,20 +167,33 @@
                 @endforeach
                 </div>
 
-                <div class="product-filters-container">
-
-                </div><!-- End .product-filters-container -->
-
                 <div class="product-action product-all-icons">
-                    <!--<div class="product-single-qty">
-                        <input class="horizontal-quantity form-control" type="text">
-                    </div>-->
-                    <!-- End .product-single-qty -->
-
-                    <a href="#" class="paction add-cart" data-product="{{ json_encode( $record ) }}"
-                        title="Add to Cart">
-                        <span>Agregar a Carrito</span>
-                    </a>
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="quantity-container d-flex align-items-center mb-1">
+                            <button v-if="quantity <= 1 && getCartQuantity(product.id)" @click.stop.prevent="removeFromCart(product)" title="Quitar del carrito">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-trash"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M4 7l16 0" /><path d="M10 11l0 6" /><path d="M14 11l0 6" /><path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2 -2l1 -12" /><path d="M9 7v-3a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v3" /></svg>
+                            </button>
+                            <button 
+                                @click.stop.prevent="decrementQuantity(product)" 
+                                v-if="!getCartQuantity(product.id) || quantity > 1"
+                                title="Disminuir cantidad">
+                                
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-minus">
+                                    <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                                    <path d="M5 12l14 0" />
+                                </svg>
+                            </button>
+                            <input type="number" class="input-quantity mx-2" v-model.number="quantity" min="1" style="width: 50px; text-align: center;" @change="onQuantityInput">
+                            <button @click.stop.prevent="incrementQuantity(product)">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-plus"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 5l0 14" /><path d="M5 12l14 0" /></svg>
+                            </button>
+                        </div>
+                        <button class="paction add-cart mb-1 mr-0 ml-2" @click.stop.prevent="addOrUpdateCart(product)">
+                            <span v-if="getCartQuantity(product.id)">Actualizar cantidad</span>
+                            <span v-else>Agregar a Carrito</span>
+                        </button>
+                    </div>
+                    
 
                     @php
                         $showWhatsapp = ($configurationModel->enable_whatsapp ?? false) && !empty($phoneWhatsapp);
@@ -154,7 +206,7 @@
                             $waLink = "https://wa.me/{$waPhone}?text={$waText}";
                         @endphp
                         <a href="{{ $waLink }}" class="btn-whatsapp" target="_blank" rel="noopener" title="Consultar por WhatsApp">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-brand-whatsapp" style="margin-top: -3px"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M3 21l1.65 -3.8a9 9 0 1 1 3.4 2.9l-5.05 .9" /><path d="M9 10a.5 .5 0 0 0 1 0v-1a.5 .5 0 0 0 -1 0v1a5 5 0 0 0 5 5h1a.5 .5 0 0 0 0 -1h-1a.5 .5 0 0 0 0 1" /></svg>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-brand-whatsapp" style="margin-top: -3px"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M3 21l1.65 -3.8a9 9 0 1 1 3.4 2.9l-5.05 .9" /><path d="M9 10a.5 .5 0 0 0 1 0v-1a.5 .5 0 0 0 -1 0v1a5 5 0 0 0 5 5h1a.5 .5 0 0 0 0 -1h-1a.5 .5 0 0 0 0 1" /></svg>
                             <span>Consultar por WhatsApp</span>
                         </a>
                     @endif
@@ -196,7 +248,7 @@
             aria-labelledby="product-tab-desc">
             <div class="product-desc-content">
                 <p> {{ $record->description}} </p>
-                <p> {{ $record->name}} </p>
+                <p> {!! $record->name !!} </p>
             </div><!-- End .product-desc-content -->
         </div><!-- End .tab-pane -->
 
@@ -269,3 +321,114 @@
 </div>
 
 @endsection
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    if (document.getElementById('product-detail-vue')) {
+        new Vue({
+            el: '#product-detail-vue',
+            data: {
+                product: {
+                    id: {{ $record->id }},
+                    description: @json($record->description),
+                    sale_unit_price: {{ $record->sale_unit_price }},
+                    sale_unit_price_display: @json($record->sale_unit_price),
+                    image_small: @json($record->image ?? 'imagen-no-disponible.jpg'),
+                    image: @json($record->image ?? 'imagen-no-disponible.jpg'),
+                    sale_affectation_igv_type_id: @json($record->sale_affectation_igv_type_id ?? '10'),
+                    currency_type_id: @json($record->currency_type_id ?? 'PEN'),
+                    currency_type_symbol: @json($record->currency_type['symbol'] ?? 'S/'),
+                    unit_type_id: @json($record->unit_type_id ?? 'NIU'),
+                    internal_id: @json($record->internal_id ?? ''),
+                },
+                cartQuantities: {},
+                quantity: 1,
+            },
+            created() {
+                this.loadCartQuantities();
+                window.addEventListener('productAddedToCart', this.loadCartQuantities);
+            },
+            watch: {
+                cartQuantities: {
+                    handler(val) {
+                        if (this.getCartQuantity(this.product.id)) {
+                            this.quantity = this.getCartQuantity(this.product.id);
+                        } else {
+                            this.quantity = 1;
+                        }
+                    },
+                    deep: true
+                }
+            },
+            methods: {
+                addOrUpdateCart(item) {
+                    let array = localStorage.getItem('products_cart');
+                    array = array ? JSON.parse(array) : [];
+                    let found = array.find(x => x.id == item.id);
+                    if (found) {
+                        found.quantity = this.quantity;
+                    } else {
+                        array.push({
+                            ...item,
+                            quantity: this.quantity
+                        });
+                    }
+                    localStorage.setItem('products_cart', JSON.stringify(array));
+                    this.cartQuantities = Object.assign({}, this.cartQuantities, { [item.id]: this.quantity });
+                    window.dispatchEvent(new Event('productAddedToCart'));
+                },
+                getCartQuantity(id) {
+                    return this.cartQuantities[id] || 0;
+                },
+                onQuantityInput() {
+                    if (this.quantity < 1) this.quantity = 1;
+                },
+                loadCartQuantities() {
+                    let array = localStorage.getItem('products_cart');
+                    array = array ? JSON.parse(array) : [];
+                    let obj = {};
+                    array.forEach(function(item) {
+                        obj[item.id] = item.quantity || 1;
+                    });
+                    this.cartQuantities = obj;
+                },
+                incrementQuantity(item) {
+                    this.quantity++;
+                },
+                decrementQuantity(item) {
+                    if (this.quantity > 1) this.quantity--;
+                },
+                removeFromCart(item) {
+                    let array = localStorage.getItem('products_cart');
+                    array = array ? JSON.parse(array) : [];
+                    array = array.filter(x => x.id != item.id);
+                    localStorage.setItem('products_cart', JSON.stringify(array));
+                    this.$set(this.cartQuantities, item.id, 0);
+                    window.dispatchEvent(new Event('productAddedToCart'));
+                }
+            }
+        });
+    }
+
+    const description = document.getElementById('productShortDescription');
+    const toggleBtn = document.getElementById('toggleProductDescription');
+
+    if (description && toggleBtn) {
+        const isOverflowing = description.scrollHeight > description.clientHeight + 2;
+
+        if (isOverflowing) {
+            toggleBtn.style.display = 'inline-block';
+        }
+
+        toggleBtn.addEventListener('click', function() {
+            description.classList.toggle('expanded');
+
+            if (description.classList.contains('expanded')) {
+                toggleBtn.textContent = 'Ver menos';
+            } else {
+                toggleBtn.textContent = 'Ver todo';
+            }
+        });
+    }
+});
+</script>

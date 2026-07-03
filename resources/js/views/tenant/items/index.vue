@@ -200,19 +200,8 @@
                         ></i>
                     </el-button>
                     <el-dropdown-menu slot="dropdown">
-                        <el-dropdown-item
-                            v-for="(column, index) in columnsComputed"
-                            :key="index"
-                        >
-                            <el-checkbox
-                                v-if="
-                                    column.title !== undefined &&
-                                        column.visible !== undefined
-                                "
-                                v-model="column.visible"
-                                @change="saveColumnVisibility"
-                                >{{ column.title }}
-                            </el-checkbox>
+                        <el-dropdown-item v-for="col in orderedColumns" :key="col.key">
+                            <el-checkbox v-model="columns[col.key].visible" @change="saveColumnVisibility">{{ col.title }}</el-checkbox>
                         </el-dropdown-item>
                     </el-dropdown-menu>
                 </el-dropdown>
@@ -221,86 +210,35 @@
                 <data-table ref="DataTable" :productType="type" :resource="resource" :sort-field="sortField" :sort-direction="sortDirection" :showProductFilter="type !== 'ZZ'" @sort-change="handleSortChange" @records-changed="handleRecordsChanged">
                     <tr slot="heading" width="100%" slot-scope="{ sort }">
                         <th class="text-center" style="width: 34px;">
-                            <el-checkbox
-                                :value="allSelectedInView"
-                                @change="toggleSelectAll"
-                            ></el-checkbox>
+                            <el-checkbox :value="allSelectedInView" @change="toggleSelectAll"></el-checkbox>
                         </th>
-                        <th class="text-end" style="max-width: 83px;">ID</th>
-                        <th class="text-end">Cód. Interno</th>
-                        <th>Unidad</th>
-                        <th>Imagen</th>
-                        <th>
-                            <a href="#" @click.prevent="sort('description')" style="color: inherit; text-decoration: none;">
-                                Nombre
-                                <i class="fas" :class="{
-                                    'fa-sort-up': sortField === 'description' && sortDirection === 'asc',
-                                    'fa-sort-down': sortField === 'description' && sortDirection === 'desc',
-                                    'fa-sort': sortField !== 'description' ||
-                                              (sortField === 'description' && sortDirection === 'default')
-                                }"></i>
-                            </a>
-                        </th>
-                        <th v-if="columns.description.visible">Descripción</th>
-                        <th v-if="columns.model.visible">Modelo</th>
-                        <th v-if="columns.brand.visible">Marca</th>
-                        <th class="text-end" v-if="columns.item_code.visible">
-                            Cód. SUNAT
-                        </th>
-                        <th
-                            class="text-end"
-                            v-if="
-                                columns.sanitary !== undefined &&
-                                    columns.sanitary.visible === true
-                            "
-                        >
-                            R.S.
-                        </th>
-                        <th
-                            v-if="
-                                columns.cod_digemid !== undefined &&
-                                    columns.cod_digemid.visible === true
-                            "
-                        >
-                            DIGEMID
-                        </th>
-                        <template v-if="typeUser == 'admin'">
-                            <th class="text-center">Historial</th>
+                        <template v-for="col in orderedColumns">
+                            <th v-if="col.visible && col.key === 'id'" :key="col.key" class="text-end" style="max-width: 83px;">ID</th>
+                            <th v-if="col.visible && col.key === 'internal_id'" :key="col.key" class="text-end">Cód. Interno</th>
+                            <th v-if="col.visible && col.key === 'unit_type'" :key="col.key">Unidad</th>
+                            <th v-if="col.visible && col.key === 'image'" :key="col.key">Imagen</th>
+                            <th v-if="col.visible && col.key === 'name'" :key="col.key">
+                                <a href="#" @click.prevent="sort('description')" style="color: inherit; text-decoration: none;">
+                                    Nombre
+                                    <i class="fas" :class="{ 'fa-sort-up': sortField === 'description' && sortDirection === 'asc', 'fa-sort-down': sortField === 'description' && sortDirection === 'desc', 'fa-sort': sortField !== 'description' || (sortField === 'description' && sortDirection === 'default') }"></i>
+                                </a>
+                            </th>
+                            <th v-if="col.visible && col.key === 'description'" :key="col.key">Descripción</th>
+                            <th v-if="col.visible && col.key === 'model'" :key="col.key">Modelo</th>
+                            <th v-if="col.visible && col.key === 'brand'" :key="col.key">Marca</th>
+                            <th v-if="col.visible && col.key === 'item_code'" :key="col.key" class="text-end">Cód. SUNAT</th>
+                            <th v-if="col.visible && col.key === 'sanitary'" :key="col.key" class="text-end">R.S.</th>
+                            <th v-if="col.visible && col.key === 'cod_digemid'" :key="col.key">DIGEMID</th>
+                            <th v-if="col.visible && col.key === 'history' && typeUser == 'admin'" :key="col.key" class="text-center">Historial</th>
+                            <th v-if="col.visible && col.key === 'stock'" :key="col.key" class="text-start">Stock</th>
+                            <th v-if="col.visible && col.key === 'extra_data'" :key="col.key" class="text-center">Stock por datos extra</th>
+                            <th v-if="col.visible && col.key === 'sale_unit_price'" :key="col.key" class="text-end">P.Unitario (Venta)</th>
+                            <th v-if="col.visible && col.key === 'purchase_unit_price' && typeUser != 'seller'" :key="col.key" class="text-end">P.Unitario (Compra)</th>
+                            <th v-if="col.visible && col.key === 'real_unit_price'" :key="col.key" class="text-end">P. venta</th>
+                            <th v-if="col.visible && col.key === 'has_igv'" :key="col.key" class="text-start">Tiene Igv (Venta)</th>
+                            <th v-if="col.visible && col.key === 'purchase_has_igv_description'" :key="col.key" class="text-start">Tiene Igv (Compra)</th>
+                            <th v-if="col.visible && col.key === 'actions'" :key="col.key" class="text-end"></th>
                         </template>
-                        <th class="text-start">Stock</th>
-                        <th
-                            v-if="
-                                columns.extra_data !== undefined &&
-                                    columns.extra_data.visible === true
-                            "
-                            class="text-center"
-                        >
-                            Stock por datos extra
-                        </th>
-                        <th class="text-end">P.Unitario (Venta)</th>
-                        <th
-                            v-if="
-                                typeUser != 'seller' &&
-                                    columns.purchase_unit_price.visible
-                            "
-                            class="text-end"
-                        >
-                            P.Unitario (Compra)
-                        </th>
-                        <th
-                            v-if="columns.real_unit_price.visible"
-                            class="text-end"
-                        >
-                            P. venta
-                        </th>
-                        <th class="text-start">Tiene Igv (Venta)</th>
-                        <th
-                            v-if="columns.purchase_has_igv_description.visible"
-                            class="text-start"
-                        >
-                            Tiene Igv (Compra)
-                        </th>
-                        <th class="text-end"></th>
                     </tr>
 
                     <tr></tr>
@@ -309,179 +247,49 @@
                         :class="{ disable_color: !row.active }"
                     >
                         <td>
-                          <el-checkbox
-                            :value="selected.includes(row.id)"
-                            @change="handleSelectionChange(row)"
-                          ></el-checkbox>
+                            <el-checkbox :value="selected.includes(row.id)" @change="handleSelectionChange(row)"></el-checkbox>
                         </td>
-                        <td class="text-end">{{ row.id }}</td>
-                        <td class="text-end">{{ row.internal_id }}</td>
-                        <td>{{ row.unit_type_id }}</td>
-                        <td>
-                            <img
-                                :src="row.image_url_small"
-                                style="object-fit: contain;"
-                                alt
-                                width="32px"
-                                height="32px"
-                            />
-                        </td>
-                        <td>{{ row.description }}</td>
-                        <td v-if="columns.description.visible">
-                            {{ row.name }}
-                        </td>
-                        <td v-if="columns.model.visible">{{ row.model }}</td>
-                        <td v-if="columns.brand.visible">{{ row.brand }}</td>
-                        <td class="text-end" v-if="columns.item_code.visible">
-                            {{ row.item_code }}
-                        </td>
-                        <td
-                            v-if="
-                                columns.sanitary !== undefined &&
-                                    columns.sanitary.visible === true
-                            "
-                        >
-                            {{ row.sanitary }}
-                        </td>
-                        <td
-                            class="text-end"
-                            v-if="
-                                columns.cod_digemid !== undefined &&
-                                    columns.cod_digemid.visible === true
-                            "
-                        >
-                            {{ row.cod_digemid }}
-                        </td>
-
-                        <template v-if="typeUser == 'admin'">
-                            <td class="text-center">
-                                <button
-                                    class="btn waves-effect waves-light btn-xs btn-primary"
-                                    type="button"
-                                    @click.prevent="clickHistory(row.id)"
-                                >
-                                    <i class="fa fa-history"></i>
-                                </button>
+                        <template v-for="col in orderedColumns">
+                            <td v-if="col.visible && col.key === 'id'" :key="col.key" class="text-end">{{ row.id }}</td>
+                            <td v-if="col.visible && col.key === 'internal_id'" :key="col.key" class="text-end">{{ row.internal_id }}</td>
+                            <td v-if="col.visible && col.key === 'unit_type'" :key="col.key">{{ row.unit_type_id }}</td>
+                            <td v-if="col.visible && col.key === 'image'" :key="col.key"><img :src="row.image_url_small" style="object-fit: contain;" alt width="32px" height="32px" /></td>
+                            <td v-if="col.visible && col.key === 'name'" :key="col.key">{{ row.description }}</td>
+                            <td v-if="col.visible && col.key === 'description'" :key="col.key"><div class="limit-4-lines">{{ stripHtml(row.name) }}</div></td>
+                            <td v-if="col.visible && col.key === 'model'" :key="col.key">{{ row.model }}</td>
+                            <td v-if="col.visible && col.key === 'brand'" :key="col.key">{{ row.brand }}</td>
+                            <td v-if="col.visible && col.key === 'item_code'" :key="col.key" class="text-end">{{ row.item_code }}</td>
+                            <td v-if="col.visible && col.key === 'sanitary'" :key="col.key">{{ row.sanitary }}</td>
+                            <td v-if="col.visible && col.key === 'cod_digemid'" :key="col.key" class="text-end">{{ row.cod_digemid }}</td>
+                            <td v-if="col.visible && col.key === 'history' && typeUser == 'admin'" :key="col.key" class="text-center">
+                                <button class="btn waves-effect waves-light btn-xs btn-primary" type="button" @click.prevent="clickHistory(row.id)"><i class="fa fa-history"></i></button>
                             </td>
-                        </template>
-
-                        <td>
-                            <div
-                                v-if="config.product_only_location == true"
-                                :class="{
-                                    'text-danger': row.stock < row.stock_min
-                                }"
-                            >
-                                {{ row.stock }}
-                            </div>
-                            <div v-else>
-                                <template
-                                    v-if="
-                                        typeUser == 'seller' &&
-                                            row.unit_type_id != 'ZZ'
-                                    "
-                                    ><span
-                                        :class="{
-                                            'text-danger':
-                                                row.stock < row.stock_min
-                                        }"
-                                        >{{ row.stock }}</span
-                                    >
+                            <td v-if="col.visible && col.key === 'stock'" :key="col.key">
+                                <div v-if="config.product_only_location == true" :class="{ 'text-danger': row.stock < row.stock_min }">
+                                    {{ formatStock(row.stock, row.unit_type_id) }} <!-- <small class="text-muted ms-1">{{ unitSymbol(row.unit_type_id) }}</small> -->
+                                </div>
+                                <div v-else>
+                                    <template v-if="typeUser == 'seller' && row.unit_type_id != 'ZZ'">
+                                        <span :class="{ 'text-danger': row.stock < row.stock_min }">
+                                            {{ formatStock(row.stock, row.unit_type_id) }}<!-- <small class="text-muted ms-1">{{ unitSymbol(row.unit_type_id) }}</small> -->
+                                        </span>
+                                    </template>
+                                    <template v-else-if="typeUser != 'seller' && row.unit_type_id != 'ZZ'">
+                                        <button class="btn waves-effect waves-light btn-xs btn-info" type="button" @click.prevent="clickWarehouseDetail(row.warehouses, row.item_unit_types)"><i class="fa fa-search"></i></button>
+                                    </template>
+                                </div>
+                            </td>
+                            <td v-if="col.visible && col.key === 'extra_data'" :key="col.key" class="text-center">
+                                <template v-if="config.show_extra_info_to_item && (row.stock_by_extra.total !== null || row.stock_by_extra.colors !== null || row.stock_by_extra.CatItemSize !== null || row.stock_by_extra.CatItemStatus !== null || row.stock_by_extra.CatItemUnitBusiness !== null || row.stock_by_extra.CatItemMoldCavity !== null || row.stock_by_extra.CatItemPackageMeasurement !== null || row.stock_by_extra.CatItemUnitsPerPackage !== null || row.stock_by_extra.CatItemMoldProperty !== null || row.stock_by_extra.CatItemProductFamily !== null)">
+                                    <button class="btn waves-effect waves-light btn-xs btn-primary" type="button" @click.prevent="clickStockItems(row)"><i class="fa fa-database"></i></button>
                                 </template>
-                                <template
-                                    v-else-if="
-                                        typeUser != 'seller' &&
-                                            row.unit_type_id != 'ZZ'
-                                    "
-                                >
-                                    <button
-                                        class="btn waves-effect waves-light btn-xs btn-info"
-                                        type="button"
-                                        @click.prevent="
-                                            clickWarehouseDetail(
-                                                row.warehouses,
-                                                row.item_unit_types
-                                            )
-                                        "
-                                    >
-                                        <i class="fa fa-search"></i>
-                                    </button>
-                                </template>
-                            </div>
-                            <!-- <template v-for="item in row.warehouses">
-                                <template>{{item.stock}} - {{item.warehouse_description}}</template><br>
-                            </template> -->
-
-                            <!-- <br/>Mín:{{ row.stock_min }} -->
-                        </td>
-                        <td
-                            v-if="
-                                columns.extra_data !== undefined &&
-                                    columns.extra_data.visible === true
-                            "
-                            class="text-center"
-                        >
-                            <template
-                                v-if="
-                                    config.show_extra_info_to_item &&
-                                        (row.stock_by_extra.total !== null ||
-                                            row.stock_by_extra.colors !==
-                                                null ||
-                                            row.stock_by_extra.CatItemSize !==
-                                                null ||
-                                            row.stock_by_extra.CatItemStatus !==
-                                                null ||
-                                            row.stock_by_extra
-                                                .CatItemUnitBusiness !== null ||
-                                            row.stock_by_extra
-                                                .CatItemMoldCavity !== null ||
-                                            row.stock_by_extra
-                                                .CatItemPackageMeasurement !==
-                                                null ||
-                                            row.stock_by_extra
-                                                .CatItemUnitsPerPackage !==
-                                                null ||
-                                            row.stock_by_extra
-                                                .CatItemMoldProperty !== null ||
-                                            row.stock_by_extra
-                                                .CatItemProductFamily !== null)
-                                "
-                            >
-                                <button
-                                    class="btn waves-effect waves-light btn-xs btn-primary"
-                                    type="button"
-                                    @click.prevent="clickStockItems(row)"
-                                >
-                                    <i class="fa fa-database"></i>
-                                </button>
-                            </template>
-                        </td>
-                        <td class="text-end">{{ row.sale_unit_price }}</td>
-                        <td
-                            v-if="
-                                typeUser != 'seller' &&
-                                    columns.purchase_unit_price.visible
-                            "
-                            class="text-end"
-                        >
-                            {{ row.purchase_unit_price }}
-                        </td>
-                        <td
-                            v-if="columns.real_unit_price.visible"
-                            class="text-end"
-                        >
-                            {{ row.sale_unit_price_with_igv }}
-                        </td>
-                        <td class="text-start">
-                            {{ row.has_igv_description }}
-                        </td>
-                        <td
-                            v-if="columns.purchase_has_igv_description.visible"
-                            class="text-start"
-                        >
-                            {{ row.purchase_has_igv_description }}
-                        </td>
-                        <td class="text-end">
+                            </td>
+                            <td v-if="col.visible && col.key === 'sale_unit_price'" :key="col.key" class="text-end">{{ row.sale_unit_price }}</td>
+                            <td v-if="col.visible && col.key === 'purchase_unit_price' && typeUser != 'seller'" :key="col.key" class="text-end">{{ row.purchase_unit_price }}</td>
+                            <td v-if="col.visible && col.key === 'real_unit_price'" :key="col.key" class="text-end">{{ row.sale_unit_price_with_igv }}</td>
+                            <td v-if="col.visible && col.key === 'has_igv'" :key="col.key" class="text-start">{{ row.has_igv_description }}</td>
+                            <td v-if="col.visible && col.key === 'purchase_has_igv_description'" :key="col.key" class="text-start">{{ row.purchase_has_igv_description }}</td>
+                            <td v-if="col.visible && col.key === 'actions'" :key="col.key" class="text-end">
                             <el-dropdown trigger="click">
                                 <button
                                     id="dropdownMenuButton"
@@ -573,6 +381,7 @@
                                 </el-dropdown-menu>
                             </el-dropdown>
                         </td>
+                        </template>
                     </tr>
                 </data-table>
             </div>
@@ -598,6 +407,7 @@
             ></items-export-extra>
             <warehouses-detail
                 :item_unit_types="item_unit_types"
+                :price_labels="price_labels"
                 :config="config"
                 :showDialog.sync="showWarehousesDetail"
                 :warehouses="warehousesDetail"
@@ -710,48 +520,28 @@ export default {
             recordId: null,
             recordItem: {},
             warehousesDetail: [],
+            price_labels: {},
             columns: {
-                description: {
-                    title: "Descripción",
-                    visible: false
-                },
-                item_code: {
-                    title: "Cód. SUNAT",
-                    visible: false
-                },
-                purchase_unit_price: {
-                    title: "P.Unitario (Compra)",
-                    visible: false
-                },
-                purchase_has_igv_description: {
-                    title: "Tiene Igv (Compra)",
-                    visible: false
-                },
-                model: {
-                    title: "Modelo",
-                    visible: false
-                },
-                brand: {
-                    title: "Marca",
-                    visible: false
-                },
-                sanitary: {
-                    title: "N° Sanitario",
-                    visible: false
-                },
-                cod_digemid: {
-                    title: "DIGEMID",
-                    visible: false
-                },
-                real_unit_price: {
-                    title:
-                        "Mostrar el precio de venta total (con el cálculo IGV)",
-                    visible: false
-                },
-                extra_data: {
-                    title: "Stock Por datos extra",
-                    visible: false
-                }
+                id:                          { title: "ID",                                                   visible: true,  order: 0  },
+                internal_id:                 { title: "Cód. Interno",                                        visible: true,  order: 1  },
+                unit_type:                   { title: "Unidad",                                              visible: true,  order: 2  },
+                image:                       { title: "Imagen",                                              visible: true,  order: 3  },
+                name:                        { title: "Nombre",                                              visible: true,  order: 4  },
+                description:                 { title: "Descripción",                                         visible: false, order: 5  },
+                model:                       { title: "Modelo",                                              visible: false, order: 6  },
+                brand:                       { title: "Marca",                                               visible: false, order: 7  },
+                item_code:                   { title: "Cód. SUNAT",                                          visible: false, order: 8  },
+                sanitary:                    { title: "N° Sanitario",                                        visible: false, order: 9  },
+                cod_digemid:                 { title: "DIGEMID",                                             visible: false, order: 10 },
+                extra_data:                  { title: "Stock Por datos extra",                               visible: false, order: 11 },
+                history:                     { title: "Historial",                                           visible: true,  order: 12 },
+                stock:                       { title: "Stock",                                               visible: true,  order: 13 },
+                sale_unit_price:             { title: "P.Unitario (Venta)",                                  visible: true,  order: 14 },
+                purchase_unit_price:         { title: "P.Unitario (Compra)",                                 visible: false, order: 15 },
+                real_unit_price:             { title: "Mostrar el precio de venta total (con el cálculo IGV)", visible: false, order: 16 },
+                has_igv:                     { title: "Tiene Igv (Venta)",                                   visible: true,  order: 17 },
+                purchase_has_igv_description:{ title: "Tiene Igv (Compra)",                                  visible: false, order: 18 },
+                actions:                     { title: "Acciones",                                            visible: true,  order: 19 },
             },
             item_unit_types: [],
             titleTopBar: "",
@@ -766,7 +556,6 @@ export default {
         this.loadColumnVisibility();
         this.$store.commit("setConfiguration", this.configuration);
         this.loadConfiguration();
-        console.log(this.config);
 
         if (this.config.is_pharmacy !== true) {
             delete this.columns.sanitary;
@@ -790,6 +579,38 @@ export default {
         this.getItems();
 
         this.filterDisabled = localStorage.getItem('filterDisabled') || 'all'
+
+        this.$eventHub.$on("establishmentChanged", () => {
+            this.loadColumnVisibility();
+            this.$store.commit("setConfiguration", this.configuration);
+            this.loadConfiguration();
+
+            if (this.config.is_pharmacy !== true) {
+                delete this.columns.sanitary;
+                delete this.columns.cod_digemid;
+            }
+            if (this.config.show_extra_info_to_item !== true) {
+                delete this.columns.extra_data;
+            }
+            if (this.type === "ZZ") {
+                this.titleTopBar = "Servicios";
+                this.title = "Listado de servicios";
+            } else {
+                this.titleTopBar = "Productos";
+                this.title = "Listado de productos";
+            }
+            this.$http.get(`/configurations/record`).then(response => {
+                this.$store.commit("setConfiguration", response.data.data);
+                //this.config = response.data.data;
+            });
+            this.canCreateProduct();
+            this.getItems();
+            this.reloadTable();
+
+            
+            this.filterDisabled = localStorage.getItem('filterDisabled') || 'all'
+        });
+
     },
     computed: {
         ...mapState([
@@ -806,6 +627,11 @@ export default {
         ]),
         columnsComputed: function() {
             return this.columns;
+        },
+        orderedColumns() {
+            return Object.entries(this.columns)
+                .map(([key, col]) => ({ key, ...col }))
+                .sort((a, b) => a.order - b.order);
         },
         itemUrl() {
             return this.type === "ZZ" ? "/services" : "/items";
@@ -851,6 +677,42 @@ export default {
     methods: {
         handleRecordsChanged(records) {
             this.visibleRows = Array.isArray(records) ? records : [];
+        },
+        stripHtml(html) {
+            if (!html) return html
+            return html.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()
+        },
+        isDecimalUnit(unitTypeId) {
+            // Unidades de peso, volumen, longitud, área, tiempo: admiten decimales
+            const decimals = ['KGM','GRM','MGM','TNE','LBR','LTR','MLT','GLL','MTR','CMT','KMT','MTK','MTQ','HUR','DAY','MIN'];
+            return decimals.includes(unitTypeId);
+        },
+        unitSymbol(unitTypeId) {
+            const map = {
+                NIU: 'und', BX: 'caja', BO: 'bot', BG: 'bls', DZN: 'doc',
+                PK: 'paq', SET: 'jgo', PR: 'par', '4B': 'rollo', CEN: 'cien', MLR: 'mll',
+                KGM: 'kg', GRM: 'g', MGM: 'mg', TNE: 't', LBR: 'lb',
+                LTR: 'L', MLT: 'mL', GLL: 'gal',
+                MTR: 'm', CMT: 'cm', KMT: 'km', MTK: 'm²', MTQ: 'm³',
+                HUR: 'h', DAY: 'día', MIN: 'min',
+                ZZ: '',
+            };
+            return map[unitTypeId] !== undefined ? map[unitTypeId] : (unitTypeId || '').toLowerCase();
+        },
+        formatStock(stock, unitTypeId) {
+            const value = Number(stock) || 0;
+            let str;
+            if (this.isDecimalUnit(unitTypeId)) {
+                // Hasta 3 decimales, recortando ceros a la derecha
+                str = value.toFixed(3).replace(/\.?0+$/, '');
+            } else {
+                // Unidad discreta: entero
+                str = Math.round(value).toString();
+            }
+            // Separador de miles con coma (estándar Perú/SUNAT)
+            const parts = str.split('.');
+            parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+            return parts.join('.');
         },
         toggleSelectAll(checked) {
             if (!this.visibleRows.length) return;
@@ -997,16 +859,26 @@ export default {
             localStorage.setItem('itemSortDirection', this.sortDirection);
         },
         saveColumnVisibility() {
-            localStorage.setItem(
-                "columnVisibilityItems",
-                JSON.stringify(this.columns)
-            );
+            const columns = {};
+            Object.keys(this.columns).forEach(key => {
+                columns[key] = { title: this.columns[key].title, visible: this.columns[key].visible, order: this.columns[key].order };
+            });
+            this.$http.post('/column-visibility/items_index', { columns }).catch(() => {});
         },
         loadColumnVisibility() {
-            const savedColumns = localStorage.getItem("columnVisibilityItems");
-            if (savedColumns) {
-                this.columns = JSON.parse(savedColumns);
-            }
+            this.$http.get('/column-visibility/items_index').then(response => {
+                if (response.data.success && response.data.data) {
+                    const data = response.data.data;
+                    Object.keys(data).forEach(key => {
+                        if (this.columns[key] !== undefined) {
+                            this.columns[key].visible = data[key].visible;
+                            if (data[key].order !== undefined) {
+                                this.columns[key].order = data[key].order;
+                            }
+                        }
+                    });
+                }
+            }).catch(() => {});
         },
         ...mapActions(["loadConfiguration"]),
         clickHistory(recordId) {
@@ -1131,6 +1003,9 @@ export default {
         getItems() {
             this.$http.get(`/${this.resource}/item/tables`).then(response => {
                 let data = response.data;
+                
+                this.price_labels = data.price_labels;
+
                 if (this.config.show_extra_info_to_item) {
                     this.$store.commit("setColors", data.colors);
                     this.$store.commit("setCatItemSize", data.CatItemSize);

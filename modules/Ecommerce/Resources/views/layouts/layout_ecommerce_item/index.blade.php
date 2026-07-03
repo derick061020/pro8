@@ -14,7 +14,7 @@
     <meta name="author" content="SW-THEMES">
 
     <!-- Favicon -->
-    <link rel="icon" type="image/x-icon" href="{{ asset('porto-ecommerce/assets/images/icons/favicon.ico') }}">
+    <link rel="icon" type="image/x-icon" href="{{ asset('porto-ecommerce/assets/images/icons/favicon.svg') }}">
 
     <!-- Plugins CSS File -->
     <link rel="stylesheet" href="{{ asset('porto-ecommerce/assets/css/bootstrap.min.css') }}">
@@ -30,6 +30,7 @@
 
 </head>
 <body>
+    @include('ecommerce::layouts.partials_ecommerce.announcement_bar')
     <div class="page-wrapper">
 
         @include('ecommerce::layouts.partials_ecommerce.header')

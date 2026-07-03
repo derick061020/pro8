@@ -9,7 +9,7 @@
 <body>
 <table class="full-width">
     <tr>
-        <td class="text-center">{{ $company->name }}</td>
+        <td class="text-center">@include('partials.report_company_header_plain')</td>
     </tr>
     <tr>
         <td class="text-center">{{ 'RUC '.$company->number }}</td>

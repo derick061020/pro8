@@ -349,6 +349,7 @@ class CashController extends Controller
                         }
                     } else {
                         $usado .= '<br> state_type_id: '.$document->state_type_id.'<br>';
+                            // dump($methods_payment, $record);
                         foreach ($methods_payment as $record) {
                             $record_total = $pays
                                 ->where('payment_method_type_id', $record->id)
@@ -383,8 +384,13 @@ class CashController extends Controller
                             }
                         }
                         foreach ($methods_payment as $record) {
-                            if ($record->is_credit) {
-                                $record->sum += $document->total - $pagado;
+
+                            $total = $document->fee->where('payment_method_type_id', $record->id)->sum('amount');
+
+                            if ($total > 0) {
+                                if ($record->is_credit) {
+                                    $record->sum += $document->total - $pagado;
+                                }
                             }
                         }
                     }
@@ -728,54 +734,48 @@ class CashController extends Controller
 
             $data['cash_documents_total'] = (int)$incomes->count();
             foreach ($incomes as $income) {
-                
-                $usado = '';                
-                if( $income->payments[0]['payment_method_type']['id'] == "01"){
-                    if (in_array($income->state_type_id, $status_type_id)){
-                        $payments=$income->payments;
-                            $record_total = 0;
-        
-                            $total = self::CalculeTotalOfCurency(
-                                $income->total,
-                                $income->currency_type_id,
-                                $income->exchange_rate_sale
-                            );
-        
-                            $cash_income += $total;
-                            $final_balance += $total;
 
-                            if (count($income->payments) > 0) 
-                            {
-                                $pays = $income->payments;
-                                foreach ($methods_payment as $record) {
-                                    $record_total = $pays->where('payment_method_type_id', $record->id)->sum('payment');
-                                    $record->sum = ($record->sum + $record_total);
-                                }
-                                $data['total_cash_income_pmt_01'] += $this->getIncomeEgressCashDestination($income->payments);
-                            }
+                $usado = '';
+                $temp = [];   //inicializando aquí
 
-                            $temp = [
-                                'type_transaction'          => 'Ingresos (finanzas)',
-                                'type_transaction_prefix' => 'income',
-                                'document_type_description' => $income->income_type->description,
-                                'number'                    => $income->number,
-                                'date_of_issue'             => $income->date_of_issue->format('Y-m-d'),
-                                'date_sort'                 => $income->date_of_issue,
-                                'customer_name'             => $income->customer,
-                                'customer_number'           => '-',
-                                'total'                     => ((!in_array($income->state_type_id, $status_type_id)) ? 0 : $income->total),
-                                'currency_type_id'          => $income->currency_type_id,
-                                'usado'                     => $usado." ".__LINE__,
-                                'tipo'                      => 'finance',
-                                'total_payments'            => (!in_array($income->state_type_id, $status_type_id)) ? 0 : $income->payments->sum('payment'),
-                            ];
+                if (in_array($income->state_type_id, $status_type_id)) {
+                    $record_total = 0;
+
+                    $total = self::CalculeTotalOfCurency(
+                        $income->total,
+                        $income->currency_type_id,
+                        $income->exchange_rate_sale
+                    );
+
+                    $cash_income   += $total;
+                    $final_balance += $total;
+
+                    if (count($income->payments) > 0) {
+                        $pays = $income->payments;
+                        foreach ($methods_payment as $record) {
+                            $record_total = $pays->where('payment_method_type_id', $record->id)->sum('payment');
+                            $record->sum = ($record->sum + $record_total);
+                        }
+                        $data['total_cash_income_pmt_01'] += $this->getIncomeEgressCashDestination($income->payments);
                     }
-                } else {
-                    // $temp = [];
+
+                    $temp = [
+                        'type_transaction'          => 'Ingresos (finanzas)',
+                        'type_transaction_prefix'   => 'income',
+                        'document_type_description' => $income->income_type->description,
+                        'number'                    => $income->number,
+                        'date_of_issue'             => $income->date_of_issue->format('Y-m-d'),
+                        'date_sort'                 => $income->date_of_issue,
+                        'customer_name'             => $income->customer,
+                        'customer_number'           => '-',
+                        'total'                     => $income->total,
+                        'currency_type_id'          => $income->currency_type_id,
+                        'usado'                     => $usado." ".__LINE__,
+                        'tipo'                      => 'finance',
+                        'total_payments'            => $income->payments->sum('payment'),
+                    ];
                 }
-            
-                /* dd((!in_array($income->state_type_id, $status_type_id)) ? 0 : $income->payments->sum('payment')); */                
-                
+
                 if (!empty($temp)) {
                     $temp['usado'] = isset($temp['usado']) ? $temp['usado'] : '--';
                     $temp['total_string'] = self::FormatNumber($temp['total']);

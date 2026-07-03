@@ -365,6 +365,8 @@ class DispatchInput
                     $row['IdLoteSelected'] = isset($itemDispatch['item'])?isset($itemDispatch['item']['IdLoteSelected'])?$itemDispatch['item']['IdLoteSelected']:null:null;
                 }
 
+                $item_inner =  isset($row['item']) ? $row['item']['item'] : null;
+
                 $temp = [
                     'item_id' => $item->id,
                     'item' => [
@@ -375,11 +377,12 @@ class DispatchInput
                         'item_code' => $item->item_code,
                         'item_code_gs1' => $item->item_code_gs1,
                         'unit_type_id' => ($row['unit_type_id'])??$item->unit_type_id,
-                        'IdLoteSelected' => $row['IdLoteSelected'] ?? null,
+                        'IdLoteSelected' => is_null($item_inner) ? null : Functions::valueKeyInArray($item_inner, 'IdLoteSelected', null),
                         'lot_group' => $row['lot_group'] ?? null,
-                        'lots' => $row['lots'] ?? null,
+                        'lots' =>  is_null($item_inner) ? ($row['lots'] ?? null) : Functions::valueKeyInArray($item_inner, 'lots', $row['lots'] ?? []),
                         'unit_price' =>isset($row['unit_price'])?$row['unit_price']:null,
                         'total' =>isset($row['total'])?$row['total']:null,
+                        'weight' => isset($row['weight'])?$row['weight']:null,
                     ],
                     'quantity' => $row['quantity'],
                     'name_product_pdf' => Functions::valueKeyInArray($row, 'name_product_pdf'),

@@ -9,7 +9,8 @@ use App\Models\Tenant\Company;
 use App\Models\Tenant\Configuration;
 use App\Models\Tenant\AccountPayment;
 use App\Models\System\ClientPayment;
-use App\Http\Resources\Tenant\AccountPaymentCollection;
+use App\Models\System\PaymentOrder;
+use App\Models\System\PaymentOrderState;
 use Culqi\Culqi;
 use Culqi\CulqiException;
 use Illuminate\Support\Facades\Mail;
@@ -49,9 +50,159 @@ class AccountController extends Controller
 
     public function paymentRecords()
     {
-        $records = AccountPayment::all();
-        return new AccountPaymentCollection($records);
+        $client = $this->getCurrentSystemClient();
 
+        $newOrders = $client
+            ? PaymentOrder::where('client_id', $client->id)
+                ->get()
+                ->map(function ($order) {
+                    $data = $order->getCollectionData();
+                    $data['payment_url'] = $this->publicPaymentUrl($order->uuid);
+                    return $data;
+                })
+            : collect();
+
+        $legacyOrders = AccountPayment::all()->map(function ($row) {
+            return $this->mapLegacyToOrderShape($row);
+        });
+
+        $records = $newOrders
+            ->concat($legacyOrders)
+            ->sortByDesc('due_date')
+            ->values();
+
+        $config = ConfigurationAdmin::select('enabled_culqi', 'enabled_izipay')->first();
+        $gateway_enabled = (bool) ($config && ($config->enabled_culqi || $config->enabled_izipay));
+
+        return [
+            'data' => $records,
+            'pays' => $this->buildStateTotals($records),
+            'gateway_enabled' => $gateway_enabled,
+        ];
+    }
+
+    private function getCurrentSystemClient()
+    {
+        $company = Company::active();
+        if (!$company) {
+            return null;
+        }
+
+        return Client::where('number', $company->number)->first();
+    }
+
+    private function publicPaymentUrl(string $uuid): string
+    {
+        $prefix = env('PREFIX_URL');
+        $prefix = !empty($prefix) ? $prefix . '.' : '';
+        $host = $prefix . env('APP_URL_BASE');
+        $scheme = request()->isSecure() ? 'https' : 'http';
+
+        return sprintf('%s://%s/pago/%s', $scheme, $host, $uuid);
+    }
+
+    private function mapLegacyToOrderShape(AccountPayment $row)
+    {
+        $today = date('Y-m-d');
+        $dueDate = $row->date_of_payment ? $row->date_of_payment->format('Y-m-d') : null;
+
+        if ($row->state) {
+            $stateId = 2;
+            $stateName = 'Pagado';
+        } elseif ($dueDate && $dueDate < $today) {
+            $stateId = 3;
+            $stateName = 'Vencido';
+        } else {
+            $stateId = 1;
+            $stateName = 'Pendiente';
+        }
+
+        return [
+            'id' => 'legacy-' . $row->id,
+            'order' => 'L-' . str_pad($row->id, 4, '0', STR_PAD_LEFT),
+            'due_date' => $dueDate,
+            'notifications' => 0,
+            'amount' => $row->payment,
+            'order_state_id' => $stateId,
+            'order_state' => $stateName,
+            'date_of_payment' => $row->date_of_payment_real ? $row->date_of_payment_real->format('Y-m-d') : null,
+            'diff_notification' => 'Sin notificar',
+            'created_by' => 'Histórico',
+            'description' => $row->reference ?: 'Pago registrado',
+            'payment_url' => null,
+        ];
+    }
+
+    private function buildStateTotals($records)
+    {
+        return PaymentOrderState::all()->map(function ($state) use ($records) {
+            return (object) [
+                'id' => $state->id,
+                'name' => strtoupper($state->name),
+                'total' => $records->where('order_state_id', $state->id)->sum('amount'),
+            ];
+        });
+    }
+
+    public function planChangeTables()
+    {
+        $client = $this->getCurrentSystemClient();
+        $plans = Plan::orderBy('pricing')->get();
+
+        return [
+            'plans' => $plans,
+            'current_plan_id' => $client ? $client->plan_id : null,
+        ];
+    }
+
+    public function createPlanChangeOrder(Request $request)
+    {
+        $request->validate([
+            'plan_id' => 'required|integer|exists:plans,id',
+        ]);
+
+        $client = $this->getCurrentSystemClient();
+        if (!$client) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No se encontró el cliente asociado a esta empresa.',
+            ], 422);
+        }
+
+        $targetPlan = Plan::find($request->plan_id);
+        if ((int) $client->plan_id === (int) $targetPlan->id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Ya cuenta con este plan activo.',
+            ], 422);
+        }
+
+        $currentPlan = $client->plan;
+        if ($currentPlan && (float) $targetPlan->pricing < (float) $currentPlan->pricing) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No es posible bajar de plan desde aquí. Contacta a soporte para gestionar el cambio.',
+            ], 422);
+        }
+
+        $previousPlanName = optional($currentPlan)->name ?? 'Sin plan';
+
+        $order = PaymentOrder::create([
+            'order' => str_pad((PaymentOrder::count() + 1), 6, '0', STR_PAD_LEFT),
+            'date_of_due' => now()->toDateString(),
+            'amount' => $targetPlan->pricing,
+            'order_state_id' => 1,
+            'client_id' => $client->id,
+            'plan_id' => $targetPlan->id,
+            'description' => "Cambio de plan: {$previousPlanName} → {$targetPlan->name}",
+            'created_by' => 'Cambio de plan',
+        ]);
+
+        return [
+            'success' => true,
+            'order_uuid' => $order->uuid,
+            'payment_url' => $this->publicPaymentUrl($order->uuid),
+        ];
     }
 
     public function updatePlan(Request $request)

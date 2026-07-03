@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\Storage;
     <meta name="robots" content="noindex">
 
     {{--    <title>{{ config('app.name', 'Facturación Electrónica') }}</title>--}}
-    <title>{{ $vc_company->title_web }}</title>
+    <title>{{ data_get($vc_company ?? null, 'title_web') ?: data_get($vc_company ?? null, 'trade_name') }}</title>
 
     <link href="https://fonts.googleapis.com/css?family=Open+Sans:300,400,600,700,800|Shadows+Into+Light" rel="stylesheet" type="text/css">
     <link rel="preconnect" href="https://fonts.gstatic.com">

@@ -116,15 +116,18 @@ function calculateRowItem(row_old, currency_type_id_new, exchange_rate_sale, pig
         row.discounts.forEach((discount, index) => {
 
             let affectation_igv_type_exonerated = ['20', '21', '30', '31', '32', '33', '34', '35', '36', '37']
+            console.log("discount calcualte total");
+            console.log(discount);
+            
+            
 
             if (discount.is_amount)
             {
-                if (discount.discount_type.base)
+                if (discount.discount_type && discount.discount_type.base || discount.discount_type_id === '00')
                 {
                     discount.base = _.round(total_value_partial, 2)
                     //amount and percentage are equals in input
                     // discount.amount = _.round(discount.percentage, 2)
-                    discount.amount = getAmountFromInputDiscount(discount)
 
                     discount.percentage = _.round(100 * (parseFloat(discount.amount) / parseFloat(discount.base)), 5)
                     // discount.percentage =  _.round(100 * (parseFloat(discount.amount) / parseFloat(discount.base)),2)
@@ -132,7 +135,14 @@ function calculateRowItem(row_old, currency_type_id_new, exchange_rate_sale, pig
                     discount.factor = _.round(discount.percentage / 100, 5)
                     // discount.factor = _.round(discount.percentage / 100, 2)
 
-                    discount_base += discount.amount_exact !== 0 ? discount.amount_exact : discount.amount
+                    if (discount.amount_without_rounded) {
+                        discount.amount = discount.amount
+                        discount_base += discount.amount_without_rounded
+                    } else {
+                        discount.amount = getAmountFromInputDiscount(discount)
+                        discount_base += discount.amount_exact !== 0 ? discount.amount_exact : discount.amount
+                    }
+
                 } else {
 
                     let aux_total_line = row.unit_price * row.quantity
@@ -147,6 +157,7 @@ function calculateRowItem(row_old, currency_type_id_new, exchange_rate_sale, pig
                     //amount and percentage are equals in input
                     // discount.amount = _.round(discount.percentage, 2)
                     discount.amount = getAmountFromInputDiscount(discount)
+                    // discount.amount = discount.amount
 
                     discount.percentage = _.round(100 * (parseFloat(discount.amount) / parseFloat(discount.base)), 2)
                     discount.factor = _.round(discount.percentage / 100, 5)
@@ -156,14 +167,19 @@ function calculateRowItem(row_old, currency_type_id_new, exchange_rate_sale, pig
 
             } else {
 
-                if (discount.discount_type.base) {
+                if (discount.discount_type &&  discount.discount_type.base || discount.discount_type_id === '00') {
 
                     discount.percentage = parseFloat(discount.percentage)
                     discount.factor = discount.percentage / 100
                     discount.base = _.round(total_value_partial, 2)
-                    discount.amount = _.round(discount.base * discount.factor, 2)
                     // if (discount.discount_type.base) {
-                    discount_base += discount.amount
+                    if (discount.amount_without_rounded) {
+                        discount.amount = discount.amount
+                        discount_base += discount.amount_without_rounded
+                    } else {
+                        discount.amount = _.round(discount.base * discount.factor, 2)
+                        discount_base += discount.amount_exact !== 0 ? discount.amount_exact : discount.amount
+                    }
                     // } else {
                     //     discount_no_base += discount.amount
                     // }
@@ -173,6 +189,7 @@ function calculateRowItem(row_old, currency_type_id_new, exchange_rate_sale, pig
 
                     let aux_total_line = row.unit_price * row.quantity
                     discount.factor = _.round(discount.percentage / 100, 5)
+                    // discount.amount = discount.amount
                     discount.amount = _.round(aux_total_line * discount.factor, 2)
 
                     // if (!affectation_igv_type_exonerated.includes(row.affectation_igv_type_id)) {
@@ -255,37 +272,37 @@ function calculateRowItem(row_old, currency_type_id_new, exchange_rate_sale, pig
 
     let total = total_value + total_taxes
 
-    row.total_charge = _.round(total_charge, 2)
-    row.total_discount = _.round(total_discount, 2)
-    row.total_charge = _.round(total_charge, 2)
-    row.total_value = _.round(total_value, 2)
-    row.total_base_igv = _.round(total_base_igv, 2)
-    row.total_igv = _.round(total_igv, 2)
-    row.total_taxes = _.round(total_taxes, 2)
-    row.total = _.round(total, 2)
+    row.total_charge = _.round(total_charge, 6)
+    row.total_discount = _.round(total_discount, 6)
+    row.total_charge = _.round(total_charge, 6)
+    row.total_value = _.round(total_value, 6)
+    row.total_base_igv = _.round(total_base_igv, 6)
+    row.total_igv = _.round(total_igv, 6)
+    row.total_taxes = _.round(total_taxes, 6)
+    row.total = _.round(total, 6)
 
 
     //procedimiento para agregar isc
     if (has_isc) {
 
-        row.total_base_isc = _.round(total_value, 2) //total valor antes de aplicar isc
-        row.total_isc = _.round(total_value * (row.percentage_isc / 100), 2)
+        row.total_base_isc = _.round(total_value, 6) //total valor antes de aplicar isc
+        row.total_isc = _.round(total_value * (row.percentage_isc / 100), 6)
         // row.total_isc = _.round(row.total_base_isc * (row.percentage_isc / 100), 2)
 
         //calcular nueva base incrementando el valor actual + isc
         total_base_igv += row.total_isc
-        row.total_base_igv = _.round(total_base_igv, 2)
+        row.total_base_igv = _.round(total_base_igv, 6)
 
         total_igv = total_base_igv * (percentage_igv / 100)
-        row.total_igv = _.round(total_igv, 2)
+        row.total_igv = _.round(total_igv, 6)
 
         //asignar nuevo total impuestos, si tiene descuentos se usa total_taxes para calcular el precio unitario
         total_taxes = total_igv + row.total_isc + total_plastic_bag_taxes
         // total_taxes = total_igv + row.total_isc
-        row.total_taxes = _.round(total_taxes, 2)
+        row.total_taxes = _.round(total_taxes, 6)
 
         total = total_value + total_taxes
-        row.total = _.round(total, 2)
+        row.total = _.round(total, 6)
 
         //calcular nuevo precio unitario
         row.unit_price = _.round(total / row.quantity, 6)
@@ -340,7 +357,6 @@ function calculateRowItem(row_old, currency_type_id_new, exchange_rate_sale, pig
         row.total_discount = _.round(total_discounts, 2)
     }
     // descuentos
-
 
     //valores sin redondeo, se usa en los calculos para mayor precision (método calculateTotal - Invoice)
     row.total_value_without_rounding = total_value

@@ -318,7 +318,7 @@ class PaymentLinkController extends Controller
     public function uploadedFile(Request $request)
     {
 
-        $validate_upload = UploadFileHelper::validateUploadFile($request, 'file', 'jpg,jpeg,png,svg');
+        $validate_upload = UploadFileHelper::validateUploadFile($request, 'file', 'jpg,jpeg,png,svg,webp');
         if(!$validate_upload['success']) return $validate_upload;
 
         if ($request->hasFile('file'))

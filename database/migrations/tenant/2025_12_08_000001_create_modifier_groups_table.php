@@ -14,7 +14,7 @@ class CreateModifierGroupsTable extends Migration
     public function up()
     {
         Schema::create('modifier_groups', function (Blueprint $table) {
-            $table->bigIncrements('id');
+            $table->increments('id');
             $table->string('name');
             $table->string('selection_type')->default('single'); // single|multiple
             $table->json('items')->nullable(); // JSON array of options

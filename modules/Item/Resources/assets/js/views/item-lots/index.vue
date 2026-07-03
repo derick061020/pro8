@@ -15,7 +15,7 @@
             <div class="card-body">
              
                 <div v-loading="loading_submit">
-                    <div class="row mx-0">   
+                    <div class="row">   
                         <div class="col-md-12 col-lg-12 col-xl-12 filter-container">
                             <div class="btn-filter-content">
                                 <el-button
@@ -27,7 +27,7 @@
                                     {{ isVisible ? "Ocultar filtros" : "Mostrar filtros" }}
                                 </el-button>
                             </div>
-                            <div class="row" v-if="isVisible">
+                            <div class="row mx-0" v-if="isVisible">
                                 <div class="col-lg-4 col-md-4 col-sm-12 pb-2">
                                     <div class="d-flex">
                                         <div class="d-flex align-items-center" style="width:100px">
@@ -86,7 +86,9 @@
                                             <td>{{ row.state }}</td>
                                             <td>{{ row.status }}</td>
                                             <td class="text-end">
-                                                <button type="button" class="btn waves-effect waves-light btn-xs btn-info" @click.prevent="clickCreate(row.id)" v-if="!row.has_sale">Editar</button>
+                                                <button type="button" class="btn btn-xs btn-info btn-shad" title="Editar" @click.prevent="clickCreate(row.id)" v-if="!row.has_sale">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-edit"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M7 7h-1a2 2 0 0 0 -2 2v9a2 2 0 0 0 2 2h9a2 2 0 0 0 2 -2v-1" /><path d="M20.385 6.585a2.1 2.1 0 0 0 -2.97 -2.97l-8.415 8.385v3h3l8.385 -8.415" /><path d="M16 5l3 3" /></svg>
+                                                </button>
                                             </td>
                                         </tr>
                                         

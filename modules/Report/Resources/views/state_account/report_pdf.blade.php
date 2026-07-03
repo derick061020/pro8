@@ -62,7 +62,7 @@
             <table>
                 <tr>
                     <td>
-                        <p><strong>Empresa: </strong>{{$company->name}}</p>
+                        <p>@include('partials.report_company_header')</p>
                     </td>
                     <td>
                         <p><strong>Fecha: </strong>{{date('Y-m-d')}}</p>
