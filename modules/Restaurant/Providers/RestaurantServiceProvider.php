@@ -3,6 +3,8 @@
 namespace Modules\Restaurant\Providers;
 
 use Illuminate\Support\ServiceProvider;
+use Modules\Restaurant\Models\PrintOrder;
+use Modules\Restaurant\Observers\PrintOrderObserver;
 // use Illuminate\Database\Eloquent\Factory;
 
 class RestaurantServiceProvider extends ServiceProvider
@@ -19,6 +21,8 @@ class RestaurantServiceProvider extends ServiceProvider
         $this->registerViews();
     // $this->registerFactories();
         $this->loadMigrationsFrom(__DIR__ . '/../Database/Migrations');
+
+        PrintOrder::observe(PrintOrderObserver::class);
     }
 
     /**

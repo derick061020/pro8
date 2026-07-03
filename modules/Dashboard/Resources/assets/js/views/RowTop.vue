@@ -18,7 +18,7 @@
     <div class="col">
       <div class="card card-dashboard">
         <i class="fas fa-folder-open"></i>
-        <div class="card-body">
+        <div class="card-body card-kpi">
           <el-tooltip
             class="item"
             effect="dark"
@@ -34,7 +34,7 @@
     <div class="col">
       <div class="card card-dashboard">
         <i class="fas fa-copy"></i>
-        <div class="card-body">
+        <div class="card-body card-kpi">
           <el-tooltip
             class="item"
             effect="dark"
@@ -50,7 +50,7 @@
     <div class="col">
       <div class="card card-dashboard">
         <i class="fas fa-file-alt"></i>
-        <div class="card-body">
+        <div class="card-body card-kpi">
           <el-tooltip
             class="item"
             effect="dark"
@@ -66,7 +66,7 @@
     <div class="col">
       <div class="card card-dashboard">
         <i class="fas fa-chart-bar"></i>
-        <div class="card-body">
+        <div class="card-body card-kpi">
           <el-tooltip
             class="item"
             effect="dark"
@@ -82,7 +82,7 @@
     <div class="col" v-if="utilities.totals">
       <div class="card card-dashboard">
         <i class="fas fa-money-bill"></i>
-        <div class="card-body">
+        <div class="card-body card-kpi">
           <el-tooltip
             class="item"
             effect="dark"

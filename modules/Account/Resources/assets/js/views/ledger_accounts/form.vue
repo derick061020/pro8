@@ -14,7 +14,7 @@
             </div> -->
             <div class="card-body">
                 <div class="form-body">
-                    <div class="row">
+                    <div class="row mx-0">
                         <div class="col-12 col-xs-12 col-md-6 col-lg-4 col-xl-3">
                             <div :class="{'has-danger': errors.currency_type_id}"
                                  class="form-group">

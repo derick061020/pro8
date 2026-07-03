@@ -491,6 +491,7 @@ class ServiceDispatchController extends Controller
                 'name' => $it->item->description,
                 'unit_type_id' => $it->item->unit_type_id,
                 'quantity' => $it->quantity,
+                'weight' => $it->item->weight ?? null,
             ];
         }
         return [

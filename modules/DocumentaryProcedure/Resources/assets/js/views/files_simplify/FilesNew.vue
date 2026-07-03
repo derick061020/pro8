@@ -336,32 +336,22 @@
                             </label>
                         </div>
                     </div>
-                    <!--
-                    <div v-if="haveObservation(file)">
-                        <table-observation></table-observation>
-                    </div>
-                    -->
-
-
-                    <div class="col-6">
-                        &nbsp;
-                    </div>
-                    <div class="row text-center col-6 p-t-20">
+                    <div class="row mx-0 text-center col-12 p-t-20">
 
                         <div class="col-6">
                             <el-button
-                                class="btn-block second-buton"
+                                class="btn-block btn- second-buton second-buton-default"
                                 @click="onClose">
                                 Cancelar
                             </el-button>
                         </div>
                         <div v-if="form.guides.length > 0"
-                             class="col-6">
+                             class="col-6 form-actions text-end">
                             <el-button
                                 :disabled="canSubmit"
                                 v-if="!form.is_completed"
                                 :loading="loading"
-                                class="btn-block"
+                                class="btn-block btn-submit-default"
                                 native-type="submit"
                                 type="primary"
                                 @click.prevent="onSubmit"

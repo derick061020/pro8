@@ -132,6 +132,7 @@
             <cac:TaxSubtotal>
                 <cbc:TaxAmount currencyID="{{ $doc->currency_type_id }}">{{ $doc->total_igv }}</cbc:TaxAmount>
                 <cac:TaxCategory>
+                    <cbc:Percent>{{ number_format(optional($doc->items->first())->percentage_igv ?? 0, 2, '.', '') }}</cbc:Percent>
                     <cac:TaxScheme>
                         <cbc:ID>1000</cbc:ID>
                         <cbc:Name>IGV</cbc:Name>

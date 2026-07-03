@@ -27,6 +27,8 @@ class OrderCollection extends ResourceCollection
                 'customer_direccion' => $row->customer->direccion,
                 'items' => $row->items,
                 'total' => $row->total,
+                'total_discount' => $row->total_discount,
+                'discount_coupont' => $row->discount_coupon ,
                 'reference_payment' => strtoupper($row->reference_payment),
                 'document_external_id' => $row->document_external_id,
                 'created_at' => $row->created_at->format('Y-m-d H:i:s'),

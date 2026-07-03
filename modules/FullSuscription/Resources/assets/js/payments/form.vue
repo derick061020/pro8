@@ -1,166 +1,196 @@
 <template>
-    <el-dialog
-        :title="titleDialog"
-        :visible="showDialog"
-        @close="close"
-        @open="create">
-        <form
-            autocomplete="off"
-            @submit.prevent="submit">
+    <el-dialog :title="titleDialog" :visible="showDialog" @close="close" @open="create" width="70%">
+        <form autocomplete="off" @submit.prevent="submit">
             <el-tabs v-model="tabActive">
-
-                <el-tab-pane class
-                             name="first">
+                <el-tab-pane class name="first">
                     <span slot="label">
                         Datos de la suscripcion
                     </span>
                     <div class="form-body">
-
                         <div class="row">
-                            <!-- Cliente -->
-
-                            <div :class="{'has-danger': errors.parent_customer_id}"
-                                 class="form-group col-6 ">
+                            <div :class="{ 'has-danger': errors.parent_customer_id }" class="form-group col-6 ">
                                 <label class="control-label">
                                     Cliente
-                                    <!--
-                                    <a href="#"
-                                       @click.prevent="showDialogNewPerson = true">
-                                       [+ Nuevo]
-                                       </a>
-                                    -->
                                 </label>
-                                <el-select v-model="form.parent_customer_id"
-                                           :disabled='!is_editable'
-                                           :loading="loading_search"
-                                           :remote-method="searchRemoteParent"
-                                           class="border-left rounded-left border-info"
-                                           dusk="parent_customer_id"
-                                           filterable
-                                           placeholder="Escriba el nombre o número de documento del padre"
-                                           popper-class="el-select-parent"
-                                           remote
-                                           @change="changeCustomer"
-                                           @keyup.enter.native="keyupCustomer">
+                                <el-select v-model="form.parent_customer_id" :disabled='!is_editable'
+                                    :loading="loading_search" :remote-method="searchRemoteParent"
+                                    class="border-left rounded-left border-info" dusk="parent_customer_id" filterable
+                                    placeholder="Escriba el nombre o número de documento del padre"
+                                    popper-class="el-select-parent" remote @change="changeCustomer"
+                                    @keyup.enter.native="keyupCustomer">
 
-                                    <el-option v-for="option in customers"
-                                               :key="option.id"
-                                               :label="option.description"
-                                               :value="option.id"></el-option>
+                                    <el-option v-for="option in customers" :key="option.id" :label="option.description"
+                                        :value="option.id"></el-option>
 
                                 </el-select>
-                                <small v-if="errors.parent_customer_id"
-                                       class="form-control-feedback"
-                                       v-text="errors.parent_customer_id[0]"></small>
-
+                                <small v-if="errors.parent_customer_id" class="form-control-feedback"
+                                    v-text="errors.parent_customer_id[0]"></small>
                             </div>
-
-                            <!-- Plan -->
-                            <div :class="{'has-danger': errors.suscription_plan_id}"
-                                 class="form-group col-12 ">
+                            <div :class="{ 'has-danger': errors.suscription_plan_id }" class="form-group col-6 ">
                                 <label class="control-label">
                                     Seleccione el plan
                                 </label>
-                                <el-select v-model="form.suscription_plan_id"
-                                           :clearable="false"
-                                           :disabled='!is_editable'
-                                           class="border-left rounded-left border-info"
-                                           dusk="suscription_plan_id"
-                                           filterable
-                                           placeholder="Escriba el nombre del plan"
-                                           popper-class="el-select-customers"
-                                           remote
-                                           @change="changePlan"
-                                >
+                                <el-select v-model="form.suscription_plan_id" :clearable="false"
+                                    :disabled='!is_editable' class="border-left rounded-left border-info"
+                                    dusk="suscription_plan_id" filterable placeholder="Escriba el nombre del plan"
+                                    popper-class="el-select-customers" remote @change="changePlan">
 
-                                    <el-option v-for="option in plans"
-                                               :key="option.id"
-                                               :label="option.name + ' - ' +option.description"
-                                               :value="option.id"></el-option>
+                                    <el-option v-for="option in plans" :key="option.id"
+                                        :label="setNameToPlan(option)" :value="option.id"></el-option>
 
                                 </el-select>
-                                <small v-if="errors.suscription_plan_id"
-                                       class="form-control-feedback"
-                                       v-text="errors.suscription_plan_id[0]"></small>
+                                <small v-if="errors.suscription_plan_id" class="form-control-feedback"
+                                    v-text="errors.suscription_plan_id[0]"></small>
 
                             </div>
-                            <!--                            Fecha de inicio-->
-                            <div class="col-md-3 form-modern">
-                                <label class="control-label" style="font-size: .9em;">
-                                    Fecha de primer pago
-                                </label>
-                                <el-date-picker v-model="form.start_date"
+                            <!-- Caja período de prueba: visible solo cuando el plan tiene trial_days -->
+                            <div v-if="hasTrial" class="col-4 px-1">
+                                <el-card :body-style="{ padding: '10px' }" class="form-modern border-info">
+                                    <div class="small fw-bold text-info mb-0">
+                                        <i class="el-icon-time"></i> PERÍODO DE PRUEBA
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-7 px-1">
+                                            <label class="control-label mt-0" style="font-size:.82em;">Inicio de prueba</label>
+                                            <el-date-picker
+                                                v-model="form.trial_start_date"
                                                 :clearable="false"
-                                                :disabled='!is_editable'
+                                                :disabled="!is_editable"
                                                 format="dd/MM/yyyy"
                                                 type="date"
                                                 value-format="yyyy-MM-dd"
                                                 @change="changeStartDate"
-                                                placeholder="00/00/0000"
-                                ></el-date-picker>
+                                                class="w-100">
+                                            </el-date-picker>
+                                        </div>
+                                        <div class="col-5 px-1">
+                                            <label class="control-label mt-0" style="font-size:.82em;">Nº días</label>
+                                            <el-input-number
+                                                v-model="form.trial_days"
+                                                :min="1"
+                                                :controls="false"
+                                                :disabled="!is_editable"
+                                                @change="changeStartDate"
+                                                class="w-100">
+                                            </el-input-number>
+                                        </div>
+                                    </div>
+                                </el-card>
                             </div>
 
-                            <!--                            Fecha de fin-->
-                            <div class="col-md-3 form-modern">
-                                <label class="control-label" style="font-size: .9em;">
-                                    Fecha de último pago
-                                </label>
-                                <el-date-picker v-model="end_date"
-                                                :disabled="true"
-                                                format="dd/MM/yyyy"
-                                                type="date"
-                                                value-format="yyyy-MM-dd"
-                                                placeholder="00/00/0000"
-                                ></el-date-picker>
+                            <!-- Caja primer cobro -->
+                            <div :class="hasTrial ? 'col-4' : 'col-6'">
+                                <el-card :body-style="{ padding: '10px' }" class="form-modern border-primary">
+                                    <div class="small fw-bold text-primary mb-1">
+                                        <i class="el-icon-date"></i> PRIMER COBRO
+                                    </div>
+                                    <template v-if="hasTrial">
+                                        <div class="h5 mb-1 text-primary">{{ formatDisplayDate(form.start_date) }}</div>
+                                    </template>
+                                    <template v-else>
+                                        <el-date-picker
+                                            v-model="form.start_date"
+                                            :clearable="false"
+                                            :disabled="!is_editable"
+                                            format="dd/MM/yyyy"
+                                            type="date"
+                                            value-format="yyyy-MM-dd"
+                                            @change="changeStartDate"
+                                            placeholder="00/00/0000"
+                                            class="w-100">
+                                        </el-date-picker>
+                                    </template>
+                                    <div class="small mt-1">
+                                        Frecuencia: <strong v-if="selectedPlan">{{ planFrequency }}</strong>
+                                    </div>
+                                </el-card>
                             </div>
 
-                            <!--
-                            Lista de items
-                            -->
+                            <!-- Caja último cobro -->
+                            <div :class="hasTrial ? 'col-4 px-1' : 'col-6'">
+                                <el-card :body-style="{ padding: '10px' }" class="form-modern border-success">
+                                    <div class="text-success small fw-bold mb-1">
+                                        <i class="el-icon-circle-check"></i> ÚLTIMO COBRO
+                                    </div>
+                                    <template v-if="selectedPlan && selectedPlan.unlimited">
+                                        <div class="h5 text-success mb-1">Ilimitado</div>
+                                        <div class="small">El cliente cancela cuando lo desee</div>
+                                    </template>
+                                    <template v-else>
+                                        <div class="h5 text-success mb-1">{{ formatDisplayDate(end_date) }}</div>
+                                        <div v-if="selectedPlan" class="small">Duración total: <strong>{{ planDurationText }}</strong></div>
+                                    </template>
+                                </el-card>
+                            </div>
 
-                            <div v-if="form.items !== undefined && form.items.length > 0"
-                                 class="col-12">
+                            <div v-if="form.items !== undefined && form.items.length > 0" class="col-12">
                                 <div class="col-md-12">
                                     <div class="table-responsive">
                                         <table class="table">
                                             <thead>
-                                            <tr>
-                                                <th class="font-weight-bold">Descripción</th>
-                                                <th class="text-end font-weight-bold">Valor Unitario</th>
-                                                <th class="text-end font-weight-bold">Precio Unitario</th>
-                                                <th class="text-end font-weight-bold">Subtotal</th>
-                                                <!--<th class="text-right font-weight-bold">Cargo</th>-->
-                                                <th class="text-end font-weight-bold">Total</th>
-                                            </tr>
+                                                <tr>
+                                                    <th class="font-weight-bold">Descripción</th>
+                                                    <th class="text-end font-weight-bold">Valor Unitario</th>
+                                                    <th class="text-end font-weight-bold">Precio Unitario</th>
+                                                    <th class="text-end font-weight-bold">Subtotal</th>
+                                                    <th class="text-end font-weight-bold">Total</th>
+                                                </tr>
                                             </thead>
                                             <tbody>
-                                            <tr v-for="(row, index) in form.items"
-                                                :key="index">
-                                                <td>
-                                                    {{ setDescriptionOfItem(row.item) }}
-                                                    {{
-                                                        row.item.presentation.hasOwnProperty('description') ? row.item.presentation.description : ''
-                                                    }}<br/><small>{{ row.affectation_igv_type.description }}</small>
-                                                </td>
-                                                <td class="text-end">{{ getSymbol(currency_type) }}
-                                                                       {{ getFormatUnitPriceRow(row.unit_value) }}
-                                                </td>
-                                                <td class="text-end">{{ getSymbol(currency_type) }}
-                                                                       {{ getFormatUnitPriceRow(row.unit_price) }}
-                                                </td>
+                                                <tr v-for="(row, index) in form.items" :key="index">
+                                                    <td>
+                                                        {{ setDescriptionOfItem(row.item) }}
+                                                        {{
+                                                            row.item.presentation.hasOwnProperty('description') ?
+                                                                row.item.presentation.description : ''
+                                                        }}<br /><small>{{ row.affectation_igv_type.description
+                                                            }}</small>
+                                                    </td>
+                                                    <td class="text-end">{{ getSymbol(currency_type) }}
+                                                        {{ getFormatUnitPriceRow(row.unit_value) }}
+                                                    </td>
+                                                    <td class="text-end">{{ getSymbol(currency_type) }}
+                                                        {{ getFormatUnitPriceRow(row.unit_price) }}
+                                                    </td>
 
-                                                <td class="text-end">{{ getSymbol(currency_type) }}
-                                                                       {{ row.total_value }}
-                                                </td>
-                                                <!--<td class="text-right">{{  getSymbol(currency_type) }} {{ row.total_charge }}</td>-->
-                                                <td class="text-end">{{ getSymbol(currency_type) }} {{
+                                                    <td class="text-end">{{ getSymbol(currency_type) }}
+                                                        {{ row.total_value }}
+                                                    </td>
+                                                    <td class="text-end">{{ getSymbol(currency_type) }} {{
                                                         row.total
-                                                                       }}
-                                                </td>
-                                            </tr>
-                                            <tr>
-                                                <td colspan="9"></td>
-                                            </tr>
+                                                    }}
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+
+                                <!-- Resumen de totales del plan -->
+                                <div v-if="form.total > 0" class="row justify-content-end mt-1">
+                                    <div class="col-md-5">
+                                        <table class="table table-sm table-borderless mb-0">
+                                            <tbody>
+                                                <tr v-if="form.total_taxed > 0">
+                                                    <td class="text-muted py-1">OP. GRAVADA</td>
+                                                    <td class="text-end py-1">{{ getSymbol(currency_type) }} {{ form.total_taxed }}</td>
+                                                </tr>
+                                                <tr v-if="form.total_exonerated > 0">
+                                                    <td class="text-muted py-1">OP. EXONERADA</td>
+                                                    <td class="text-end py-1">{{ getSymbol(currency_type) }} {{ form.total_exonerated }}</td>
+                                                </tr>
+                                                <tr v-if="form.total_unaffected > 0">
+                                                    <td class="text-muted py-1">OP. INAFECTA</td>
+                                                    <td class="text-end py-1">{{ getSymbol(currency_type) }} {{ form.total_unaffected }}</td>
+                                                </tr>
+                                                <tr v-if="form.total_igv > 0">
+                                                    <td class="text-muted py-1">IGV<template v-if="percentage_igv"> ({{ percentage_igv }}%)</template></td>
+                                                    <td class="text-end py-1">{{ getSymbol(currency_type) }} {{ form.total_igv }}</td>
+                                                </tr>
+                                                <tr class="border-top">
+                                                    <td class="py-1"><strong>TOTAL DEL PLAN</strong></td>
+                                                    <td class="text-end py-1"><strong class="text-primary">{{ getSymbol(currency_type) }} {{ form.total }}</strong></td>
+                                                </tr>
                                             </tbody>
                                         </table>
                                     </div>
@@ -170,118 +200,73 @@
 
                         </div>
                     </div>
-
                 </el-tab-pane>
-
-
-                <el-tab-pane v-if="hasNv"
-                             class
-                             name="payments">
+                <el-tab-pane v-if="hasNv" class name="payments">
                     <span slot="label">
                         Ver Recibos de pago
                     </span>
                     <div class="form-body">
-
                         <div class="table-responsive">
                             <table class="table table-responsive-xl ">
                                 <thead class="">
-                                <th>#</th>
-                                <th class="text-center">Fecha Emisión</th>
-                                <!--                                <th>Cliente</th>-->
-                                <!--                                <th>Hijo</th>-->
-                                <!--                                <th>Grado</th>-->
-                                <!--                                <th>Sección</th>-->
-                                <th>Recibo de pago</th>
-                                <th>Estado</th>
-                                <th class="text-center">Moneda</th>
-                                <th
-                                    class="text-end">F. Vencimiento
-                                </th>
-                                <th class="text-end">Total</th>
+                                    <th>#</th>
+                                    <th class="text-center">Fecha Emisión</th>
+                                    <!--                                <th>Cliente</th>-->
+                                    <!--                                <th>Hijo</th>-->
+                                    <!--                                <th>Grado</th>-->
+                                    <!--                                <th>Sección</th>-->
+                                    <th>Recibo de pago</th>
+                                    <th>Estado</th>
+                                    <th class="text-center">Moneda</th>
+                                    <th class="text-end">F. Vencimiento
+                                    </th>
+                                    <th class="text-end">Total</th>
 
 
-                                <th class="text-center">Comprobantes</th>
-                                <th class="text-center">Estado pago</th>
-                                <!--                                <th class="text-center">Pagos</th>-->
-                                <th class="text-center">Descarga</th>
+                                    <th class="text-center">Comprobantes</th>
+                                    <th class="text-center">Estado pago</th>
+                                    <!--                                <th class="text-center">Pagos</th>-->
+                                    <th class="text-center">Descarga</th>
                                 </thead>
 
                                 <tbody>
-                                <tr
+                                    <tr v-for="(row, index) in form.sales_note" :key="index">
+                                        <td>{{ index + 1 }}</td>
+                                        <td class="text-center">{{ row.date_of_issue }}</td>
+                                        <td>{{ row.full_number }}</td>
+                                        <td>{{ row.state_type_description }}</td>
+                                        <td class="text-center">{{ row.currency_type_id }}</td>
+                                        <td class="text-end">{{ row.due_date }}
+                                        </td>
+                                        <td class="text-end">{{ row.total }}</td>
 
-                                    v-for="(row, index) in form.sales_note"
-                                    :key="index"
-
-                                >
-                                    <!-- # -->
-                                    <td>{{ index + 1}}</td>
-                                    <!-- Fecha Emisión -->
-                                    <td class="text-center">{{ row.date_of_issue }}</td>
-                                    <!-- Cliente -->
-                                    <!--                                <td>{{ row.customer_name }}<br/>
-                                                                        <small v-text="row.customer_number">
-                                                                        </small>
-                                                                    </td>-->
-                                    <!-- Recibo de pago -->
-                                    <td>{{ row.full_number }}</td>
-                                    <!-- Estado  -->
-                                    <td>{{ row.state_type_description }}</td>
-                                    <!--Moneda -->
-                                    <td class="text-center">{{ row.currency_type_id }}</td>
-
-                                    <!-- F. Vencimiento -->
-                                    <td
-                                        class="text-end">{{ row.due_date }}
-                                    </td>
-                                    <!-- Total -->
-                                    <td class="text-end">{{ row.total }}</td>
-
-                                    <!--Comprobantes -->
-                                    <td>
-                                        <template v-for="(document,i) in row.documents">
-                                            <label :key="i"
-                                                   class="d-block"
-                                                   v-text="document.number_full">
-                                            </label>
-                                        </template>
-                                    </td>
-                                    <!-- Estado pago -->
-                                    <td class="text-center">
-                            <span
-                                :class="{'bg-success': (row.total_canceled), 'bg-warning': (!row.total_canceled)}"
-                                class="badge text-white">{{ row.total_canceled ? 'Pagado' : 'Pendiente' }}
-                            </span>
-                                    </td>
-
-                                    <!-- Pagos -->
-                                    <!--                                <td class="text-center">
-                                                                        <button class="btn waves-effect waves-light btn-xs btn-primary"
-                                                                                style="min-width: 41px"
-                                                                                type="button"
-                                                                                @click.prevent="clickPayment(row.id)">
-                                                                            <i class="fas fa-money-bill-alt">
-                                                                            </i>
-                                                                        </button>
-                                                                    </td>-->
-
-                                    <!-- Descarga -->
-                                    <td class="text-end">
-                                        <button class="btn waves-effect waves-light btn-xs btn-info"
-                                                type="button"
+                                        <td>
+                                            <template v-for="(document, i) in row.documents">
+                                                <label :key="i" class="d-block" v-text="document.number_full">
+                                                </label>
+                                            </template>
+                                        </td>
+                                        <td class="text-center">
+                                            <span
+                                                :class="{ 'bg-success': (row.total_canceled), 'bg-warning': (!row.total_canceled) }"
+                                                class="badge text-white">{{
+                                                row.total_canceled ? 'Pagado' : 'Pendiente' }}
+                                            </span>
+                                        </td>
+                                        <td class="text-end">
+                                            <button class="btn waves-effect waves-light btn-xs btn-info" type="button"
                                                 @click.prevent="clickDownload(row.external_id)">
-                                            <i class="fas fa-file-pdf">
-                                            </i>
-                                        </button>
-                                    </td>
-                                </tr>
+                                                <i class="fas fa-file-pdf">
+                                                </i>
+                                            </button>
+                                        </td>
+                                    </tr>
                                 </tbody>
                             </table>
                         </div>
                     </div>
                 </el-tab-pane>
-                <el-tab-pane v-if="hasFac"
-                             class
-                             name="invoices">
+                <el-tab-pane v-if="hasFac" class name="invoices">
                     <span slot="label">
                         Ver Facturas
                     </span>
@@ -289,161 +274,101 @@
                         <table class="table table-responsive-xl ">
                             <thead class="">
 
-                            <th>#</th>
-                            <!-- date_of_issue -->
-                            <th class="text-center"
-                                style="min-width: 95px;">Emisión
-                            </th>
-                            <th>Cliente</th>
-                            <th>Número</th>
-                            <th>Estado</th>
-                            <th class="text-center">Moneda</th>
-                            <th class="text-end">T.Igv</th>
-                            <th class="text-end">Total</th>
-                            <th class="text-center">Saldo</th>
-                            <th class="text-center"></th>
+                                <th>#</th>
+                                <!-- date_of_issue -->
+                                <th class="text-center" style="min-width: 95px;">Emisión
+                                </th>
+                                <th>Cliente</th>
+                                <th>Número</th>
+                                <th>Estado</th>
+                                <th class="text-center">Moneda</th>
+                                <th class="text-end">T.Igv</th>
+                                <th class="text-end">Total</th>
+                                <th class="text-center">Saldo</th>
+                                <th class="text-center"></th>
                             </thead>
 
                             <tbody>
-                            <tr
-
-                                v-for="(row, index) in form.invoices"
-                                :key="index"
-
-                                :class="{'text-danger': (row.state_type_id === '11'),
-                            'text-warning': (row.state_type_id === '13'),
-                            'border-light': (row.state_type_id === '01'),
-                            'border-left border-info': (row.state_type_id === '03'),
-                            'border-left border-success': (row.state_type_id === '05'),
-                            'border-left border-secondary': (row.state_type_id === '07'),
-                            'border-left border-dark': (row.state_type_id === '09'),
-                            'border-left border-danger': (row.state_type_id === '11'),
-                            'border-left border-warning': (row.state_type_id === '13')}"
-
-                            >
-                                <td>{{ index }}</td>
-                                <!-- date_of_issue -->
-                                <td class="text-center">{{ row.date_of_issue }}</td>
-                                <td>{{ row.customer_name }}<br/><small v-text="row.customer_number"></small></td>
-                                <td>{{ row.number }}<br/>
-                                    <small v-text="row.document_type_description"></small><br/>
-                                    <small v-if="row.affected_document"
-                                           v-text="row.affected_document"></small>
-                                </td>
-                                <td>
-                                    <el-tooltip v-if="tooltip(row, false)"
-                                                class="item"
-                                                effect="dark"
-                                                placement="bottom">
-                                        <div slot="content">{{ tooltip(row) }}</div>
-                                        <span :class="{'bg-danger': (row.state_type_id === '11'), 'bg-warning': (row.state_type_id === '13'), 'bg-secondary': (row.state_type_id === '01'), 'bg-info': (row.state_type_id === '03'), 'bg-success': (row.state_type_id === '05'), 'bg-secondary': (row.state_type_id === '07'), 'bg-dark': (row.state_type_id === '09')}"
-                                              class="badge bg-secondary text-white">
-                                    {{ row.state_type_description }}
-                                </span>
-                                    </el-tooltip>
-                                    <span v-else
-                                          :class="{'bg-danger': (row.state_type_id === '11'), 'bg-warning': (row.state_type_id === '13'), 'bg-secondary': (row.state_type_id === '01'), 'bg-info': (row.state_type_id === '03'), 'bg-success': (row.state_type_id === '05'), 'bg-secondary': (row.state_type_id === '07'), 'bg-dark': (row.state_type_id === '09')}"
-                                          class="badge bg-secondary text-white">
-                                {{ row.state_type_description }}
-                            </span>
-                                    <template v-if="row.regularize_shipping && row.state_type_id === '01'">
-                                        <el-tooltip :content="row.message_regularize_shipping"
-                                                    class="item"
-                                                    effect="dark"
-                                                    placement="top-start">
-                                            <i class="fas fa-exclamation-triangle fa-lg"
-                                               style="color: #D2322D !important"></i>
+                                <tr v-for="(row, index) in form.invoices" :key="index" :class="{
+                                    'text-danger': (row.state_type_id === '11'),
+                                    'text-warning': (row.state_type_id === '13'),
+                                    'border-light': (row.state_type_id === '01'),
+                                    'border-left border-info': (row.state_type_id === '03'),
+                                    'border-left border-success': (row.state_type_id === '05'),
+                                    'border-left border-secondary': (row.state_type_id === '07'),
+                                    'border-left border-dark': (row.state_type_id === '09'),
+                                    'border-left border-danger': (row.state_type_id === '11'),
+                                    'border-left border-warning': (row.state_type_id === '13')
+                                }">
+                                    <td>{{ index }}</td>
+                                    <!-- date_of_issue -->
+                                    <td class="text-center">{{ row.date_of_issue }}</td>
+                                    <td>{{ row.customer_name }}<br /><small v-text="row.customer_number"></small></td>
+                                    <td>{{ row.number }}<br />
+                                        <small v-text="row.document_type_description"></small><br />
+                                        <small v-if="row.affected_document" v-text="row.affected_document"></small>
+                                    </td>
+                                    <td>
+                                        <el-tooltip v-if="tooltip(row, false)" class="item" effect="dark"
+                                            placement="bottom">
+                                            <div slot="content">{{ tooltip(row) }}</div>
+                                            <span
+                                                :class="{ 'bg-danger': (row.state_type_id === '11'), 'bg-warning': (row.state_type_id === '13'), 'bg-secondary': (row.state_type_id === '01'), 'bg-info': (row.state_type_id === '03'), 'bg-success': (row.state_type_id === '05'), 'bg-secondary': (row.state_type_id === '07'), 'bg-dark': (row.state_type_id === '09') }"
+                                                class="badge bg-secondary text-white">
+                                                {{ row.state_type_description }}
+                                            </span>
                                         </el-tooltip>
-                                    </template>
-                                </td>
-                                <td class="text-center">{{ row.currency_type_id }}</td>
-                                <td class="text-end">{{ row.total_igv }}</td>
-                                <td class="text-end">{{ row.total }}</td>
-                                <td class="text-end">{{ row.balance }}</td>
-                                <td class="text-center">
-                                    <button type="button"
-                                            style="min-width: 41px"
+                                        <span v-else
+                                            :class="{ 'bg-danger': (row.state_type_id === '11'), 'bg-warning': (row.state_type_id === '13'), 'bg-secondary': (row.state_type_id === '01'), 'bg-info': (row.state_type_id === '03'), 'bg-success': (row.state_type_id === '05'), 'bg-secondary': (row.state_type_id === '07'), 'bg-dark': (row.state_type_id === '09') }"
+                                            class="badge bg-secondary text-white">
+                                            {{ row.state_type_description }}
+                                        </span>
+                                        <template v-if="row.regularize_shipping && row.state_type_id === '01'">
+                                            <el-tooltip :content="row.message_regularize_shipping" class="item"
+                                                effect="dark" placement="top-start">
+                                                <i class="fas fa-exclamation-triangle fa-lg"
+                                                    style="color: #D2322D !important"></i>
+                                            </el-tooltip>
+                                        </template>
+                                    </td>
+                                    <td class="text-center">{{ row.currency_type_id }}</td>
+                                    <td class="text-end">{{ row.total_igv }}</td>
+                                    <td class="text-end">{{ row.total }}</td>
+                                    <td class="text-end">{{ row.balance }}</td>
+                                    <td class="text-center">
+                                        <button type="button" style="min-width: 41px"
                                             class="btn waves-effect waves-light btn-xs btn-info m-1__2"
-                                            @click.prevent="clickDownloadExtra(row.download_pdf)"
-                                            v-if="row.has_pdf">PDF
-                                    </button>
-                                </td>
-                            </tr>
+                                            @click.prevent="clickDownloadExtra(row.download_pdf)" v-if="row.has_pdf">PDF
+                                        </button>
+                                    </td>
+                                </tr>
                             </tbody>
                         </table>
                     </div>
                 </el-tab-pane>
-                <!--
-                <el-tab-pane class
-                             name="second">
-                    <span slot="label">
-                        Servicios en el plan
-                    </span>
-                    <div class="form-body">
-
-                        <div class="row">
-
-
-
-                        </div>
-
-                    </div>
-
-                </el-tab-pane>
-                -->
-
             </el-tabs>
-            <div class="form-actions text-end mt-4">
-                <el-button
-                    class="second-buton me-2"
-                    @click.prevent="close()">
+            <div class="form-actions text-end mt-2">
+                <el-button class="second-buton me-2" @click.prevent="close()">
                     Cancelar
                 </el-button>
-                <el-button
-                    :loading="loading_submit"
-                    native-type="submit"
-                    type="primary">
+                <el-button :loading="loading_submit" native-type="submit" type="primary">
                     Guardar
                 </el-button>
             </div>
         </form>
-
-
-        <tenant-quotations-item-form
-            :configuration="config"
-            :currency-type-id-active="config.currency_type_id"
-            :displayDiscount="false"
-            :exchange-rate-sale="exchange_rate"
-            :recordItem="recordItem"
-            :showDialog.sync="showDialogAddItem"
-            :typeUser="config.typeUser"
-            @add="addRow"
-        >
+        <tenant-quotations-item-form :configuration="config" :currency-type-id-active="config.currency_type_id"
+            :displayDiscount="false" :exchange-rate-sale="exchange_rate" :recordItem="recordItem"
+            :showDialog.sync="showDialogAddItem" :typeUser="config.typeUser" @add="addRow">
 
         </tenant-quotations-item-form>
-
-        <!--
-
-        <tenant-documents-items-list
-            :currency_types=currency_types
-            :document_type_id='"01"'
-            :exchange-rate-sale="exchange_rate"
-            :external="true"
-            :showDialog.sync="showDialogNewPerson"
-            :operationTypeId="'0101'"
-
-            type="customers"
-        ></tenant-documents-items-list>
-        -->
     </el-dialog>
-
 </template>
 
 <script>
 
-import {mapActions, mapState} from "vuex/dist/vuex.mjs";
+import { mapActions, mapState } from "vuex/dist/vuex.mjs";
 
-import {serviceNumber, functions} from '../../../../../../resources/js/mixins/functions'
+import { serviceNumber, functions } from '../../../../../../resources/js/mixins/functions'
 import {
     calculateRowItem,
     FormatUnitPriceRow,
@@ -505,6 +430,8 @@ export default {
                 payments: [],
                 document_type_id: "01",
                 parent_customer_id: null,
+                trial_start_date: null,
+                trial_days: null,
             },
             input_person: {},
 
@@ -546,6 +473,31 @@ export default {
             'parent_customer',
             'plans',
         ]),
+        // Plan seleccionado actualmente en el formulario
+        selectedPlan() {
+            return _.find(this.plans, { 'id': this.form.suscription_plan_id }) || null;
+        },
+        // Indica si el plan tiene período de prueba
+        hasTrial() {
+            return !!(this.selectedPlan && this.selectedPlan.trial_days > 0);
+        },
+        // Nombre del período de frecuencia del plan
+        planFrequency() {
+            return this.selectedPlan ? (this.selectedPlan.period || '') : '';
+        },
+        // Texto de duración total del plan (ej: "12 meses", "Ilimitado")
+        planDurationText() {
+            if (!this.selectedPlan) return '';
+            if (this.selectedPlan.unlimited) return 'Ilimitado';
+            const qty = this.selectedPlan.quantity_period;
+            if (!qty) return '';
+            const singular = { 'M': 'mes', 'Y': 'año', 'D': 'día', 'W': 'semana', 'Q': 'quincena', 'B': 'bimestre', 'T': 'trimestre', 'S': 'semestre' };
+            const plural   = { 'M': 'meses', 'Y': 'años', 'D': 'días', 'W': 'semanas', 'Q': 'quincenas', 'B': 'bimestres', 'T': 'trimestres', 'S': 'semestres' };
+            const unit = parseInt(qty) === 1
+                ? (singular[this.selectedPlan.periods] || this.selectedPlan.period)
+                : (plural[this.selectedPlan.periods]   || this.selectedPlan.period);
+            return qty + ' ' + unit;
+        },
     },
     methods: {
         ...mapActions([
@@ -592,6 +544,8 @@ export default {
                 payments: [],
                 document_type_id: "01",
                 parent_customer_id: null,
+                trial_start_date: null,
+                trial_days: null,
             }
             this.form.start_date = this.defaultStartDate
             this.changeStartDate()
@@ -610,15 +564,13 @@ export default {
         create() {
             this.tabActive = 'first';
             /*
-                    tabActive
-                    first
-                    payments
-                    invoices
-
-
-                    hasNv
-        hasFac
-                    */
+                tabActive
+                first
+                payments
+                invoices
+                hasNv
+                hasFac
+            */
             this.hasNv = false;
             this.hasFac = false;
             this.getCommonData()
@@ -642,7 +594,7 @@ export default {
                         let parent = this.form.parent_customer;
                         let customers = undefined;
                         if (parent !== undefined) {
-                            customers = _.find(cs, {'id': parent.id});
+                            customers = _.find(cs, { 'id': parent.id });
                             if (customers === undefined) {
                                 cs.push(parent)
                             }
@@ -693,10 +645,10 @@ export default {
 
         submit() {
             this.loading_submit = true
-            let plan = _.find(this.plans, {'id': this.form.suscription_plan_id});
+            let plan = _.find(this.plans, { 'id': this.form.suscription_plan_id });
             // Preparar datos para enviar
             const parentCustomerData = this.parent_customer ? JSON.parse(JSON.stringify(this.parent_customer)) : null
-            
+
             const dataToSend = {
                 ...this.form,
                 parent_customer: parentCustomerData,
@@ -725,9 +677,9 @@ export default {
                     this.$eventHub.$emit('reloadData')
                     this.close()
                     // Dar tiempo para que la tabla recargue los datos antes de cerrar
-                    setTimeout(() => {
-                        window.location.href = '/full_suscription/payment_receipt'
-                    }, 500)
+                    // setTimeout(() => {
+                    //     window.location.href = '/full_suscription/payment_receipt'
+                    // }, 500)
                 })
                 .catch(error => {
                     if (error.response.status === 422) {
@@ -796,7 +748,7 @@ export default {
                 currencyT = this.config.currency_type_id;
                 this.form.currency_type_id = this.config.currency_type_id;
             }
-            this.currency_type = _.find(this.currency_types, {'id': currencyT})
+            this.currency_type = _.find(this.currency_types, { 'id': currencyT })
             let items = []
 
             if (this.form !== undefined &&
@@ -909,7 +861,7 @@ export default {
                     .post(`/full_suscription/${this.resource}/search/customers`, parameters)
                     .then(response => {
                         // this.$store.commit('setCustomers', response.data.customers)
-                            this.customers = response.data.customers
+                        this.customers = response.data.customers
 
                         this.loading_search = false
                         this.input_person.number = null
@@ -958,7 +910,7 @@ export default {
             if (this.form.operation_type_id !== undefined && ['0101', '1001', '1004'].includes(this.form.operation_type_id)) {
 
                 if (this.form.document_type_id === '01') {
-                    customers = _.filter(this.all_customers, {'identity_document_type_id': '6'})
+                    customers = _.filter(this.all_customers, { 'identity_document_type_id': '6' })
                 } else {
                     if (this.document_type_03_filter) {
                         customers = _.filter(this.all_customers, (c) => {
@@ -985,7 +937,7 @@ export default {
             this.customer = {};
 
             let customers = this.customers;
-            let customer = _.find(customers, {'id': this.form.parent_customer_id});
+            let customer = _.find(customers, { 'id': this.form.parent_customer_id });
             if (customer !== undefined) {
                 customer.parent_id = parseInt(customer.parent_id);
                 if (isNaN(customer.parent_id)) customer.parent_id = 0;
@@ -999,7 +951,10 @@ export default {
 
             // this.form.start_date = moment().format('YYYY-MM-DD');
             this.form.start_date = this.defaultStartDate
-            let plan = _.find(this.plans, {'id': this.form.suscription_plan_id});
+            let plan = _.find(this.plans, { 'id': this.form.suscription_plan_id });
+            // Cargar campos de trial desde el plan seleccionado
+            this.form.trial_start_date = moment().format('YYYY-MM-DD');
+            this.form.trial_days = plan !== undefined ? (plan.trial_days || null) : null;
             this.form.items = [];
             this.form.total_charge = 0;
             this.form.total_discount = 0;
@@ -1050,23 +1005,45 @@ export default {
             return '*'
         },
         changeStartDate() {
-            let plan = _.find(this.plans, {'id': this.form.suscription_plan_id});
-            let date = this.form.start_date, period = 'M', qty = 1;
+            let plan = _.find(this.plans, { 'id': this.form.suscription_plan_id });
             if (plan === undefined) {
-                plan = this.plans[0]
+                plan = this.plans[0];
             }
 
+            // Si el plan tiene período de prueba, el primer cobro = inicio de prueba + días de prueba
+            if (plan && plan.trial_days > 0 && this.form.trial_start_date) {
+                const trialDays = parseInt(this.form.trial_days) || parseInt(plan.trial_days) || 0;
+                this.form.start_date = moment(this.form.trial_start_date, 'YYYY-MM-DD')
+                    .add(trialDays, 'days')
+                    .format('YYYY-MM-DD');
+            }
+
+            // Calcular la fecha de último cobro
+            let date = this.form.start_date, period = 'M', qty = 1;
             if (plan !== undefined) {
-                if (plan.quantity_period !== undefined)
-                    qty = parseInt(plan.quantity_period)
-                if(qty > 0){
+                // Plan ilimitado: sin fecha final
+                if (plan.unlimited) {
+                    this.end_date = null;
+                    return;
+                }
+                if (plan.quantity_period !== undefined && plan.quantity_period !== null) {
+                    qty = parseInt(plan.quantity_period);
+                }
+                if (isNaN(qty)) qty = 1;
+                if (qty > 0) {
                     qty = qty - 1;
                 }
-                if (plan.periods !== undefined)
-                    period = plan.periods
+                if (plan.periods !== undefined) {
+                    period = plan.periods;
+                }
             }
             this.end_date = moment(date, 'YYYY-MM-DD').add(qty, period).format('YYYY-MM-DD');
 
+        },
+        // Formatea una fecha YYYY-MM-DD a DD/MM/YYYY para mostrar
+        formatDisplayDate(date) {
+            if (!date) return '—';
+            return moment(date, 'YYYY-MM-DD').format('DD/MM/YYYY');
         },
         clickDownload(external_id) {
             window.open(`/sale-notes/downloadExternal/${external_id}`, '_blank');
@@ -1088,6 +1065,11 @@ export default {
         clickDownloadExtra(download) {
             window.open(download, '_blank');
         },
+        setNameToPlan(plan) {
+            let trial = plan.trial_days ? plan.trial_days + ' días de prueba' : 'Sin días de prueba';
+            let quantity = plan.quantity_period ? plan.quantity_period + ' cobros' : 'Sin vencimiento';
+            return plan.name + ' - ' + plan.period + ' - ' + quantity + ' - ' + trial
+        }
     }
 }
 </script>

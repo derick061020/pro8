@@ -64,14 +64,14 @@
                 <div class="text-center company_logo_box">
                     <img
                         src="data:{{mime_content_type(public_path("{$logo}"))}};base64, {{base64_encode(file_get_contents(public_path("{$logo}")))}}"
-                        alt="{{$company->name}}" class="company_logo" style="max-width: 60%; margin-left: 20%;">
+                        alt="{{ \App\CoreFacturalo\Helpers\CompanyDocumentDisplay::logoAlt($company) }}" class="company_logo" style="max-width: 60%; margin-left: 20%;">
                 </div>
             @endif
         </td>
     </tr>
     <tr>
         <td class="text-center text-uppercase">
-            {{ $company->name }}<br>
+            @include('pdf.partials.company_document_header_names_plain')<br>
             {{ 'RUC '.$company->number }}
         </td>
     </tr>
@@ -432,7 +432,7 @@
                 </small>
             </td>
             <td class="text-right desc align-top"
-                style="padding-right:5px;">{{ number_format($row->unit_price, 2) }}</td>
+                style="padding-right:5px;">{{ number_format(optional($row->item)->unit_price ? $row->item->unit_price : $row->unit_price, 2) }}</td>
             <td class="text-right desc align-top">{{ number_format($row->total, 2) }}</td>
         </tr>
         <tr>
@@ -502,7 +502,7 @@
         </tr>
     @endif
 
-    @if($document->total_discount > 0 && $document->subtotal > 0)
+    @if($document->total_discount_with_igv > 0 && $document->subtotal > 0)
         <tr>
             <td colspan="3" class="desc-ticket text-uppercase">SUBTOTAL:
                 {{ $document->currency_type->symbol }}</td>
@@ -511,14 +511,14 @@
         </tr>
     @endif
 
-    @if($document->total_discount > 0)
+    @if($document->total_discount_with_igv > 0)
         <tr>
             <td colspan="3"
                 class="desc-ticket text-uppercase">{{(($document->total_prepayment > 0) ? 'ANTICIPO':'DESCUENTO TOTAL')}}
                 :
                 {{ $document->currency_type->symbol }}</td>
             <td colspan="2"
-                class="text-right desc-ticket text-uppercase">{{ number_format($document->total_discount, 2) }}</td>
+                class="text-right desc-ticket text-uppercase">{{ number_format($document->total_discount_with_igv, 2) }}</td>
         </tr>
     @endif
 
@@ -547,7 +547,8 @@
     @endif
 
     <tr>
-        <td colspan="3" class="desc-ticket text-uppercase">TOTAL A PAGAR:
+        <td class="desc-ticket text-uppercase text-left" style="white-space: nowrap;">Productos: {{ rtrim(rtrim(number_format(collect($document->items)->sum(function ($item) { return (float) data_get($item, 'quantity', 0); }), 2, '.', ''), '0'), '.') }}</td>
+        <td colspan="2" class="desc-ticket text-uppercase">TOTAL A PAGAR:
             {{ $document->currency_type->symbol }}</td>
         <td colspan="2" class="text-right desc-ticket text-uppercase">{{ number_format($document->total, 2) }}</td>
     </tr>

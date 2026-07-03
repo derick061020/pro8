@@ -27,6 +27,50 @@
                                v-text="errors.enable_guest_register[0]"></small>
                     </div>
                 </div>
+                <!-- URL de registro simplificada (visible solo cuando está habilitado) -->
+                <div class="col-md-6" v-if="form.enable_guest_register">
+                    <label class="control-label">
+                        URL de registro
+                        <el-tooltip class="item"
+                                    content="Enlace simplificado para compartir con potenciales clientes. Redirige al formulario de registro."
+                                    effect="dark"
+                                    placement="top-start">
+                            <i class="fa fa-info-circle"></i>
+                        </el-tooltip>
+                    </label>
+                    <div class="form-group">
+                        <el-input v-model="registerUrl" readonly>
+                            <el-button slot="append" @click="copyUrl" icon="el-icon-document-copy">Copiar</el-button>
+                        </el-input>
+                        <small class="text-success" v-if="urlCopied">¡URL copiada al portapapeles!</small>
+                    </div>
+                </div>
+
+                <!-- Selector de plan para nuevos registrados -->
+                <div class="col-md-6" v-if="form.enable_guest_register">
+                    <label class="control-label">
+                        Plan por defecto para nuevos registrados
+                        <el-tooltip class="item"
+                                    content="Selecciona qué plan se asignará automáticamente a los nuevos usuarios que se registren."
+                                    effect="dark"
+                                    placement="top-start">
+                            <i class="fa fa-info-circle"></i>
+                        </el-tooltip>
+                    </label>
+                    <div :class="{'has-danger': errors.guest_register_plan_id}" class="form-group">
+                        <el-select v-model="form.guest_register_plan_id" @change="submit" style="width: 100%;" placeholder="Seleccione un plan">
+                            <el-option
+                                v-for="plan in allPlans"
+                                :key="plan.id"
+                                :label="plan.name + ' - S/' + plan.pricing + ' (' + plan.limit_documents + ' docs / ' + plan.limit_users + ' users)'"
+                                :value="plan.id">
+                            </el-option>
+                        </el-select>
+                        <small v-if="errors.guest_register_plan_id"
+                               class="form-control-feedback"
+                               v-text="errors.guest_register_plan_id[0]"></small>
+                    </div>
+                </div>
                 <div class="col-md-6">
                     
                     <label class="control-label">
@@ -105,26 +149,121 @@
 
 <script>
 export default {
+    props: {
+        plans: {
+            type: Array,
+            default: () => []
+        }
+    },
     data() {
         return {
             headers: headers_token,
             loading_submit: false,
             resource: 'configurations',
             errors: {},
-            form: {},
+            urlCopied: false,
+            loadedPlans: [],
+            form: {
+                enable_guest_register: true,
+                regex_password_client: false,
+                tenant_show_ads: false,
+                tenant_image_ads: null,
+                guest_register_plan_id: null,
+            }
+        }
+    },
+    computed: {
+        registerUrl() {
+            return window.location.origin + '/register';
+        },
+        allPlans() {
+            // Usar planes pasados desde PHP (prop) o los cargados desde API
+            return this.plans.length > 0 ? this.plans : this.loadedPlans;
         }
     },
     async created() {
-        await this.initForm()
-        await this.getData()
+        this.initForm()
+        this.loadPlans()
+        this.loadConfiguration()
     },
     methods: {
-        async getData()
-        {
-            await this.$http.get(`/${this.resource}/get-other-configuration`)
+        copyUrl() {
+            const urlToCopy = this.registerUrl;
+            
+            // Intentar copiar usando navigator.clipboard
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(urlToCopy)
+                    .then(() => {
+                        this.handleCopySuccess();
+                    })
+                    .catch((err) => {
+                        console.error('Error al copiar:', err);
+                        this.fallbackCopy(urlToCopy);
+                    });
+            } else {
+                // Fallback para navegadores sin soporte o contexto no seguro
+                this.fallbackCopy(urlToCopy);
+            }
+        },
+        
+        fallbackCopy(text) {
+            // Crear un textarea temporal
+            const textArea = document.createElement('textarea');
+            textArea.value = text;
+            textArea.style.position = 'fixed';
+            textArea.style.left = '-9999px';
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            
+            try {
+                const successful = document.execCommand('copy');
+                if (successful) {
+                    this.handleCopySuccess();
+                } else {
+                    this.$message.error('No se pudo copiar la URL');
+                }
+            } catch (err) {
+                console.error('Error en fallback copy:', err);
+                this.$message.error('Error al copiar al portapapeles');
+            }
+            
+            document.body.removeChild(textArea);
+        },
+        
+        handleCopySuccess() {
+            this.urlCopied = true;
+            this.$message.success('¡URL copiada al portapapeles!');
+            setTimeout(() => {
+                this.urlCopied = false;
+            }, 3000);
+        },
+        loadPlans() {
+            // Solo cargar desde API si no se recibieron planes desde PHP
+            if (this.plans.length === 0) {
+                this.$http.get('/plans/records')
+                    .then(response => {
+                        this.loadedPlans = response.data.data || [];
+                    })
+                    .catch(error => {
+                        console.error('Error loading plans:', error);
+                        this.loadedPlans = [];
+                    });
+            }
+        },
+        loadConfiguration() {
+            this.$http.get(`/${this.resource}/get-other-configuration`)
                 .then(response => {
-                    this.form = Object.assign({}, this.form, response.data)
+                    const data = response.data;
+                    this.form.enable_guest_register = data.enable_guest_register;
+                    this.form.regex_password_client = data.regex_password_client;
+                    this.form.tenant_show_ads = data.tenant_show_ads;
+                    this.form.tenant_image_ads = data.tenant_image_ads;
+                    this.form.guest_register_plan_id = data.guest_register_plan_id;
                 })
+                .catch(error => {
+                    console.error('Error loading configuration:', error);
+                });
         },
         successUpload(response, file, fileList) 
         { 
@@ -146,6 +285,7 @@ export default {
                 regex_password_client: false,
                 tenant_show_ads: false,
                 tenant_image_ads: null,
+                guest_register_plan_id: null,
             }
         },
         submit() {

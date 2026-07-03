@@ -1081,4 +1081,34 @@
             return $this;
         }
 
+        public function getCurrentDateOfDue()
+    {
+        $lastOrder = $this->affiliation_order()->latest('date_of_due')->first();
+
+
+        if ($lastOrder) {
+            // dump("lastorder",$lastOrder->date_of_due);
+            return $lastOrder->date_of_due;
+        }
+        // dump("lastorder",$this->start_date);
+
+        return $this->start_date;
+    }
+
+    public function orderCreationDate(): Carbon
+    {
+        $date = $this->getCurrentDateOfDue();
+        return match ($this->cat_period_id) {
+            1 => Carbon::parse($date)->addMonth(),
+            2 => Carbon::parse($date)->addYear(),
+            3 => Carbon::parse($date)->addDay(),
+            4 => Carbon::parse($date)->addWeek(),
+            5 => Carbon::parse($date)->addDays(15),
+            6 => Carbon::parse($date)->addMonths(2),
+            7 => Carbon::parse($date)->addMonths(3),
+            8 => Carbon::parse($date)->addMonths(6),
+        };
+    }
+
+
     }

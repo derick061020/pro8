@@ -106,6 +106,23 @@ class InventoryController extends Controller
             $query->where('warehouse_id', $request->warehouse_id);
         }
 
+        // Filtrar por Stock
+        if ($request->has('stock_filter') && $request->stock_filter !== 'all') {
+            $sf = $request->stock_filter;
+            if ($sf === 'positive') $query->where('stock', '>', 0);
+            elseif ($sf === 'negative') $query->where('stock', '<', 0);
+            elseif ($sf === 'zero') $query->where('stock', 0);
+            elseif ($sf === 'min_alert') {
+                // 0 < Stock <= Stock mínimo
+                $query->where('stock', '>', 0);
+                $query->whereRaw('stock <= (SELECT stock_min FROM items WHERE items.id = item_warehouse.item_id)');
+            }
+            elseif ($sf === 'safe') {
+                 // Stock > Stock mínimo
+                 $query->whereRaw('stock > (SELECT stock_min FROM items WHERE items.id = item_warehouse.item_id)');
+            }
+        }
+
         return $query->orderBy('item_id');
     }
 

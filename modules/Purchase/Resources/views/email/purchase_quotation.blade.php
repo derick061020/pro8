@@ -14,9 +14,12 @@
     </style>
 </head>
 <body>
+@php
+    use App\CoreFacturalo\Helpers\CompanyDocumentDisplay as EmailPurQuotCo;
+@endphp
 <p>Estimado(a): 
 
-    {{ $company->name }}
+    {{ EmailPurQuotCo::commercialLine($company) }}
   
     , tenemos el agrado de comunicarnos, para solicitarle una cotización o proforma de los productos remitidos en el documento.</p>
 

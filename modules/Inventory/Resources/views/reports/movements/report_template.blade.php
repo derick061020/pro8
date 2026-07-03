@@ -64,7 +64,7 @@
                 <p><strong>Empresa: </strong></p>
             </td>
             <td>
-                <p>{{$company->name}}</p>
+                <p>@include('partials.report_company_header', ['showEmpresaLabel' => false])</p>
             </td>
             <td>
                 <p><strong>Fecha: </strong></p>

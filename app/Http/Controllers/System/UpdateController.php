@@ -10,9 +10,14 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\File;
 use GrahamCampbell\Markdown\Facades\Markdown;
 use Illuminate\Support\Facades\Artisan;
+use App\Services\System\GitVersionService;
 
 class UpdateController extends Controller
 {
+    public function __construct(private GitVersionService $gitVersion)
+    {
+    }
+
     public function index()
     {
         return view('system.update.index');
@@ -20,13 +25,7 @@ class UpdateController extends Controller
 
     public function version()
     {
-        $id = new Process(['git', 'describe',  '--tags']);
-        $id->run();
-        $res_id = $id->getOutput();
-        // $tag = new Process('git tag | sort -V | tail -1');
-        // $tag->run();
-        // $res_tag = $tag->getOutput();
-        return json_encode($res_id);
+        return response()->json($this->gitVersion->resolve());
     }
 
     public function branch()

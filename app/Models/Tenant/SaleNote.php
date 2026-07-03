@@ -17,7 +17,8 @@
     use Modules\Sale\Models\TechnicalService;
     use Modules\Pos\Models\Tip;
     use App\Models\Tenant\DispatchSaleNote;
-    use Modules\Sale\Models\Agent;
+use Modules\Finance\Traits\FinanceTrait;
+use Modules\Sale\Models\Agent;
 
     /**
      * Class SaleNote
@@ -137,6 +138,7 @@
     {
         use UsesTenantConnection;
         use SellerIdTrait;
+        use FinanceTrait;
 
         protected $with = [
             'user',
@@ -291,6 +293,21 @@
             parent::boot();
             static::creating(function (self $model) {
                 self::adjustSellerIdField($model);
+            });
+
+
+            static::created(function (self $model) {
+                $cash = Cash::where([
+                    ['user_id', auth()->id()],
+                    ['state', true],
+                ])->firstOrFail();
+
+                $cash_document = CashDocument::where('cash_id', $cash->id)
+                    ->where('sale_note_id', $model->id)->first();
+
+                if (!$cash_document) {
+                    $model->finance_cash_document(new SaleNote() , $model->id);
+                }
             });
 
         }
@@ -800,7 +817,7 @@
                 $child_number= $child->number;
             }
             $person = $this->person;
-            $mails = $person->getCollectionData();
+            $mails = $person ? $person->getCollectionData() : ['optional_email_send' => null];
             $customer_email=  $mails['optional_email_send'];
 
             /*
@@ -918,7 +935,7 @@
                 'agent_name' => optional($this->agent)->search_description,
                 'reference_data' => $this->reference_data,
                 'payments' => $this->payments,
-
+                'custom_fields_data' => $this->custom_fields_data,
                 'total_discount' => $this->generalApplyNumberFormat($this->total_discount),
                 'items_for_report' => $this->getItemsforReport(),
 

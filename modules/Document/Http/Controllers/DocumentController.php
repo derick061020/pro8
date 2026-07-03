@@ -120,7 +120,7 @@ class DocumentController extends Controller
     public function upload(Request $request)
     {
 
-        $validate_upload = UploadFileHelper::validateUploadFile($request, 'file', 'jpg,jpeg,png,gif,svg');
+        $validate_upload = UploadFileHelper::validateUploadFile($request, 'file', 'jpg,jpeg,png,gif,svg,webp');
 
         if (!$validate_upload['success']) {
             return $validate_upload;
@@ -449,5 +449,10 @@ class DocumentController extends Controller
             'message' => 'Se habilitó el comprobante para enviarlo por resumen'
         ];
     }
-
+    public function pointCountNotSent()
+    {
+        return [
+            'total' => Document::whereNotSent()->count()
+        ];
+    }
 }

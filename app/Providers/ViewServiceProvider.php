@@ -116,7 +116,7 @@ class ViewServiceProvider extends ServiceProvider
             'Modules\Restaurant\Http\ViewComposers\PromotionsViewComposer'
         );
         view()->composer(
-            ['restaurant::layouts.partials.mobile_menu','restaurant::layouts.partials.header', 'restaurant::layouts.partials.footer','ecommerce::layouts.partials_ecommerce.footer', 'ecommerce::layouts.partials_ecommerce.header', 'ecommerce::cart.detail', 'ecommerce::layouts.partials_ecommerce.sidebar_product_right', 'ecommerce::layouts.partials_ecommerce.mobile_menu', 'restaurant::cart.detail', 'restaurant::lista', 'restaurant::layouts.list.lista_master',  'restaurant::layouts.lista'],
+            ['restaurant::layouts.master', 'restaurant::layouts.item.record', 'restaurant::layouts.cart.index', 'restaurant::layouts.partials.mobile_menu','restaurant::layouts.partials.header', 'restaurant::layouts.partials.footer','ecommerce::layouts.master', 'ecommerce::layouts.layout_ecommerce_cart.index', 'ecommerce::layouts.layout_ecommerce_item.record', 'ecommerce::layouts.partials_ecommerce.footer', 'ecommerce::layouts.partials_ecommerce.header', 'ecommerce::cart.detail', 'ecommerce::layouts.partials_ecommerce.sidebar_product_right', 'ecommerce::layouts.partials_ecommerce.mobile_menu', 'restaurant::cart.detail', 'restaurant::lista', 'restaurant::layouts.list.lista_master',  'restaurant::layouts.lista'],
             'Modules\Ecommerce\Http\ViewComposers\InformationContactViewComposer'
         );
         view()->composer(
@@ -132,6 +132,11 @@ class ViewServiceProvider extends ServiceProvider
 
         view()->composer(
             'tenant.layouts.partials.header',
+            'Modules\LevelAccess\Http\ViewComposers\ModuleLevelViewComposer'
+        );
+
+        view()->composer(
+            'tenant.account.payment_index',
             'Modules\LevelAccess\Http\ViewComposers\ModuleLevelViewComposer'
         );
 

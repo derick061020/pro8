@@ -33,6 +33,8 @@ class StoreController extends Controller
     {
         $record = Quotation::query()->with('person')->find($table_id);
         $person = $record->person;
+        $customer = Person::find($record->customer_id)->getCollectionData();
+
 
         $rec = $record->toArray();
         $document_type_id = $person->identity_document_type_id === '6' ? '01' : '03';
@@ -67,6 +69,8 @@ class StoreController extends Controller
         $rec['was_deducted_prepayment'] = 0;
         $rec['quotation_id'] = $table_id;
         $rec['quotation_id'] = $table_id;
+        $rec['customer'] = $customer;
+        $rec['customer_id'] = $record->customer_id;
         $rec['additional_information'] = $rec['description'];
 
         $this->setPaymentsFromQuotation($rec, $record);

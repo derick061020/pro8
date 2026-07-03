@@ -1,14 +1,14 @@
 <template>
     <div class="item-prices-table my-0">
-        <div class="price-labels-container">
+        <div class="price-labels-container" :style="{ gridTemplateColumns: gridColumns }">
             <div v-for="(price, index) in localPrices" :key="index" class="mb-3">
                 <div class="form-group">
-                    <label class="control-label">{{ price.label }}</label>
+                    <label class="control-label prices">{{ price.label }}</label>
                     <el-input
                         class="mt-1"
                         type="number"
                         size="small"
-                        v-model.number="price.price"
+                        v-model="price.price"
                         step="0.01"
                         :min="0"
                         @input="emitChanges"
@@ -21,8 +21,16 @@
 <style>
 .price-labels-container{
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
     gap: 1rem;
+}
+.price-labels-container > div {
+    min-width: 0;
+}
+.price-labels-container .control-label.prices {
+    display: block;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 </style>
 <script>
@@ -62,6 +70,13 @@ export default {
                     this.syncPricesWithLabels();
                 }
             }
+        }
+    },
+    computed: {
+        gridColumns() {
+            const n = this.localPrices.length;
+            if (n <= 8) return `repeat(${n || 1}, 1fr)`;
+            return `repeat(${Math.ceil(n / 2)}, 1fr)`;
         }
     },
     methods: {

@@ -59,7 +59,7 @@
                     <div class="col-md-8">
                         <div class="form-group" :class="{'has-danger': errors.warehouse_id}">
                             <label class="control-label">Almacén</label>
-                            <el-select v-model="form.warehouse_id" filterable @change="changeItem">
+                            <el-select v-model="form.warehouse_id" filterable>
                                 <el-option v-for="option in warehouses" :key="option.id" :value="option.id"
                                            :label="option.description"></el-option>
                             </el-select>
@@ -197,26 +197,24 @@ export default {
         },
         async changeItem() {
             if (this.items.length > 0) {
-                // Buscar el producto seleccionado
                 let item = await _.find(this.items, { id: this.form.item_id });
                 console.log('Producto seleccionado:', item);
 
                 if (item) {
-                    // Configurar las propiedades del formulario según el producto seleccionado
                     this.form.lots_enabled = item.lots_enabled;
                     this.form.series_enabled = item.series_enabled;
 
-                    // Si el producto tiene lotes, seleccionar el almacén del primer lote
-                    if (item.lots && item.lots.length > 0) {
-                        this.form.warehouse_id = item.lots[0].warehouse_id; // Autocompletar el almacén
-                        console.log('Almacén seleccionado:', this.form.warehouse_id);
-                    } else {
-                        // Si no hay lotes, asignar un valor predeterminado al almacén
-                        this.form.warehouse_id = this.warehouses.length > 0 ? this.warehouses[0].id : null;
-                        console.log('No hay lotes, asignando almacén predeterminado:', this.form.warehouse_id);
+                    // Solo autocompletar almacén si todavía no hay uno seleccionado
+                    if (!this.form.warehouse_id) {
+                        if (item.lots && item.lots.length > 0) {
+                            this.form.warehouse_id = item.lots[0].warehouse_id;
+                            console.log('Almacén autocompletado:', this.form.warehouse_id);
+                        } else {
+                            this.form.warehouse_id = this.warehouses.length > 0 ? this.warehouses[0].id : null;
+                            console.log('No hay lotes, asignando almacén predeterminado:', this.form.warehouse_id);
+                        }
                     }
 
-                    // Si el tipo es "output", filtrar los lotes por almacén
                     if (this.type === 'output') {
                         this.form.lots = [];
                         let lots = await _.filter(item.lots, { warehouse_id: this.form.warehouse_id });
@@ -224,7 +222,6 @@ export default {
                     }
                 }
 
-                // Ajustar la precisión según las propiedades del producto
                 this.ChangePrecision();
             }
         },

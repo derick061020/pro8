@@ -79,7 +79,7 @@ class PosCollection extends ResourceCollection
                 'item_unit_types' => collect($row->item_unit_types)->transform(function($row) use($configuration, $allPricesLabel){
                     $row->load('prices');
                     $labels_id = $row->prices->pluck('price_label_id')->toArray();
-                    $prices = $row->prices->map(function($price)  use($row) {
+                    $prices = $row->prices->map(function($price)  use($row, $configuration) {
                             $price_label = $price->priceLabel;
                                 return [
                                     'id'             => $price->id,
@@ -87,6 +87,7 @@ class PosCollection extends ResourceCollection
                                     'position'       => $price_label->position,
                                     'description'    => $row->description,  
                                     'unit_type_id'   => $row->unit_type_id,
+                                    'quantity_unit' => (float)number_format($row->quantity_unit, $configuration->decimal_quantity, ".",""),
                                     'label'          => $price_label->label,
                                     'price'          => $price ? number_format($price->price, 2, '.', '') : 0,
                                     'is_active'      => $price ? (bool) $price->is_active : false,
@@ -111,7 +112,7 @@ class PosCollection extends ResourceCollection
                         'description' => "{$row->description}",
                         'item_id' => $row->item_id,
                         'unit_type_id' => $row->unit_type_id,
-                        'quantity_unit' => number_format($row->quantity_unit, $configuration->decimal_quantity, ".",""),
+                        'quantity_unit' => (float)number_format($row->quantity_unit, $configuration->decimal_quantity, ".",""),
                         'price_default' => $row->price_default,
                         'barcode' => $row->barcode ?? '',
                         'prices' => $prices->toArray(),

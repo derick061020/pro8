@@ -4,6 +4,7 @@
      * @var $company Modules\Facturalo\Entities\Company\CompanyEntity
      * @var $establishment Modules\Facturalo\Entities\Company\EstablishmentEntity
      */
+    use App\CoreFacturalo\Helpers\CompanyDocumentDisplay as TemplateCompanyHdr;
     $company = $document->company;
     $establishment = $document->establishment;
     $establishment_main = property_exists($document, 'establishment_main')?$document->establishment_main:null;
@@ -11,10 +12,10 @@
 <table>
     <tr>
         <td style="vertical-align: top">
-            @if($company->trade_name)
-                <div class="t-row header-font-12pt t-text-left">{{ $company->trade_name }}</div>
+            <div class="t-row header-font-12pt t-text-left">{{ TemplateCompanyHdr::commercialLine($company) }}</div>
+            @if($legal = TemplateCompanyHdr::legalLine($company))
+                <div class="t-row header-font-11pt t-text-left" style="font-weight:400;">{{ $legal }}</div>
             @endif
-                <div class="t-row header-font-12pt t-text-left">{{ $company->name }}</div>
                 <div class="t-row header-font-10pt t-text-left">RUC {{ $company->number }}</div>
             @if($establishment->print_header_text)
                 <div class="t-row header-font-7pt t-text-left">{!! $establishment->print_header_text !!}</div>

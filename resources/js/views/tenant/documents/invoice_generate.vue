@@ -62,6 +62,7 @@
                                             :picker-options="datEmision"
                                             :readonly="readonly_date_of_due"
                                             type="date"
+                                            :format="dpDateFormat"
                                             value-format="yyyy-MM-dd"
                                             @change="changeDateOfIssue"
                                         ></el-date-picker>
@@ -87,6 +88,7 @@
                                             :clearable="false"
                                             :readonly="readonly_date_of_due"
                                             type="date"
+                                            :format="dpDateFormat"
                                             value-format="yyyy-MM-dd"
                                         ></el-date-picker>
                                         <small
@@ -98,10 +100,10 @@
                                 </div>
                             </div>
                         </div>
-                    </header>                    
+                    </header>
                     <div class="card-body card-body-invoice no-gutters border-0 shadow-none p-0 py-1 py-md-2 px-md-2">
                         <div class="row inputs-container mx-1">
-                            <div class="col-md-5 col-lg-4 align-self-end invoice-type">
+                            <div class="col-md-5 col-lg-4 align-self-end invoice-type" :class="{'col-lg-4': currency_types.length > 1, 'col-lg-5': currency_types.length <= 1}">
                                 <div
                                     :class="{
                                         'has-danger': errors.document_type_id
@@ -162,7 +164,7 @@
                                     ></small>
                                 </div>
                             </div>
-                            <div class="col-md-2 align-self-end serie-input">
+                            <div class="align-self-end serie-input" :class="{'col-md-2': currency_types.length > 1, 'col-md-3': currency_types.length <= 1}">
                                 <div
                                     :class="{ 'has-danger': errors.series_id }"
                                     class="form-group"
@@ -187,7 +189,7 @@
                                     ></small>
                                 </div>
                             </div>
-                            <div class="col-md-5 col-lg-2 align-self-end operation-type">
+                            <div class="col-md-5 align-self-end operation-type" :class="{'col-lg-2': currency_types.length > 1, 'col-lg-4': currency_types.length <= 1}">
                                 <div
                                     :class="{
                                         'has-danger': errors.operation_type_id
@@ -234,7 +236,7 @@
                                     ></small>
                                 </div>
                             </div>
-                            <div class="col-md-6 col-lg-2 align-self-end money-input">
+                            <div v-if="currency_types.length > 1" class="col-md-6 col-lg-2 align-self-end money-input">
                                 <div
                                     :class="{
                                         'has-danger': errors.currency_type_id
@@ -260,7 +262,7 @@
                                     ></small>
                                 </div>
                             </div>
-                            <div class="col-md-6 col-lg-2 align-self-end change-type">
+                            <div v-if="currency_types.length > 1" class="col-md-6 col-lg-2 align-self-end change-type">
                                 <div
                                     :class="{
                                         'has-danger': errors.exchange_rate_sale
@@ -300,7 +302,11 @@
                                 <label
                                     class="control-label font-weight-bold"
                                 >
-                                    Cliente
+                                    <el-badge type="success" :value="getCustomer.person_type" class="item">
+                                        <span>
+                                            Cliente
+                                        </span>
+                                    </el-badge>
                                     <!-- <a
                                         href="#"
                                         @click.prevent="
@@ -313,7 +319,7 @@
                                     v-model="form.customer_id"
                                     :loading="loading_search"
                                     :remote-method="searchRemoteCustomers"
-                                    class="border-left rounded-left border-info"
+                                    class="border-left rounded-left border-info customer-select-clearable"
                                     dusk="customer_id"
                                     filterable
                                     @focus="focus_on_client = true"
@@ -349,9 +355,16 @@
                                         </div>
                                     </template>
                                 </el-select>
-                                <span class="btn-add-new btn-add-new-invoice" @click.prevent="showDialogNewPerson = true" title="Agregar nuevo cliente">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-user-plus"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0" /><path d="M16 19h6" /><path d="M19 16v6" /><path d="M6 21v-2a4 4 0 0 1 4 -4h4" /></svg>
-                                </span>
+                                <template v-if="form.customer_id">
+                                    <span class="btn-add-new btn-edit-person btn-add-new-invoice" @click.prevent="showDialogNewPerson = true; editPerson = true" title="Editar cliente">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-user-edit"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0" /><path d="M6 21v-2a4 4 0 0 1 4 -4h3.5" /><path d="M18.42 15.61a2.1 2.1 0 0 1 2.97 2.97l-3.39 3.42h-3v-3l3.42 -3.39" /></svg>
+                                    </span>
+                                </template>
+                                <template>
+                                    <span class="btn-add-new btn-add-new-invoice" @click.prevent="showDialogNewPerson = true; editPerson = false" title="Agregar nuevo cliente">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-user-plus"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0" /><path d="M16 19h6" /><path d="M19 16v6" /><path d="M6 21v-2a4 4 0 0 1 4 -4h4" /></svg>
+                                    </span>
+                                </template>
                                 <small
                                     v-if="errors.customer_id"
                                     class="form-control-feedback"
@@ -851,6 +864,11 @@
                                                             "
                                                         ></el-switch>
                                                     </div>
+                                                    <div class="form-group ps-2 col-md-8" v-if="config.enabled_guarantee_fund && form.has_retention">
+                                                        <label class="control-label">Fondo de garantía
+                                                        </label>
+                                                        <el-input v-model="form.retention.guarantee_fund"></el-input>
+                                                    </div>
                                                 </div>
                                             </div>
 
@@ -1225,14 +1243,17 @@
                                             width="8%">
                                             Cantidad
                                         </th>
-                                        <th class="text-end font-weight-bold">
+                                        <!-- <th class="text-end font-weight-bold">
                                             Valor Unitario
-                                        </th>
+                                        </th> -->
                                         <th class="text-end font-weight-bold">
                                             Precio Unitario
                                         </th>
-                                        <th class="text-end font-weight-bold">
+                                        <!-- <th class="text-end font-weight-bold">
                                             Subtotal
+                                        </th> -->
+                                        <th class="text-end font-weight-bold">
+                                            Descuento
                                         </th>
                                         <!--<th class="text-end font-weight-bold">Cargo</th>-->
                                         <th class="text-end font-weight-bold">
@@ -1464,7 +1485,7 @@
                                             </template>
                                         </td>
 
-                                        <td class="text-end">
+                                        <!-- <td class="text-end">
                                             <div
                                                 v-if="showEditableItems"
                                                 class="input-with-currency"
@@ -1513,7 +1534,7 @@
                                                     )
                                                 }}
                                             </template>
-                                        </td>
+                                        </td> -->
 
                                         <td class="text-end">
                                             <div
@@ -1560,13 +1581,14 @@
                                                 {{ currency_type.symbol }}
                                                 {{
                                                     getFormatUnitPriceRow(
-                                                        row.unit_price
+                                                        row.item.unit_price,
+                                                        row
                                                     )
                                                 }}
                                             </template>
                                         </td>
 
-                                        <td class="text-end">
+                                        <!-- <td class="text-end">
                                             <div
                                                 v-if="showEditableItems"
                                                 class="input-with-currency"
@@ -1613,8 +1635,12 @@
                                                 {{ currency_type.symbol }}
                                                 {{ row.total_value }}
                                             </template>
-                                        </td>
+                                        </td> -->
 
+                                        <td class="text-end">
+                                            {{ currency_type.symbol }}
+                                            {{ setTextDiscountItem(row) }}
+                                        </td>
                                         <td class="text-end">
                                             <div
                                                 v-if="showEditableItems"
@@ -1841,6 +1867,12 @@
                                                             <!-- <td>{{ currency_type.symbol }} {{ form.detraction.amount }}</td> -->
                                                         </tr>
                                                     </template>
+                                                    <template v-if=" config.enabled_guarantee_fund && (form.detraction || form.retention)">
+                                                        <tr v-if="form.detraction.guarantee_fund > 0 || form.retention.guarantee_fund > 0">
+                                                            <td width="60%">FONDO DE GARANTIA:</td>
+                                                            <td>{{ currency_type.symbol }} {{ guarantee_fund }}</td>
+                                                        </tr>
+                                                    </template>
 
                                                     <!--                                                <template v-if="form.retention">-->
                                                     <!--                                                    <tr v-if="form.retention.amount > 0">-->
@@ -2004,10 +2036,7 @@
                                                     </tr>
 
                                                     <tr
-                                                        v-if="
-                                                            form.total_discount >
-                                                                0
-                                                        "
+                                                        v-if="totalDiscount > 0"
                                                     >
                                                         <td>
                                                             DESCUENTOS TOTALES:
@@ -2017,7 +2046,7 @@
                                                                 currency_type.symbol
                                                             }}
                                                             {{
-                                                                form.total_discount
+                                                                totalDiscount
                                                             }}
                                                         </td>
                                                     </tr>
@@ -2056,7 +2085,7 @@
 
                                                     <template
                                                         v-if="
-                                                            form.has_retention
+                                                            form.has_retention && amountRetentionValidate
                                                         "
                                                     >
                                                         <tr
@@ -2127,9 +2156,7 @@
                                                         </tr>
                                                     </template>
                                                     <template
-                                                        v-if="
-                                                            !form.has_retention
-                                                        "
+                                                        v-else
                                                     >
                                                         <tr
                                                             v-if="
@@ -2286,7 +2313,7 @@
                                                                                     :clearable="
                                                                                         false
                                                                                     "
-                                                                                    format="dd/MM/yyyy"
+                                                                                    :format="dpDateFormat"
                                                                                     type="date"
                                                                                     @change="
                                                                                         changeCreditFeeDate(
@@ -2443,7 +2470,7 @@
                                                                                     :clearable="
                                                                                         false
                                                                                     "
-                                                                                    format="dd/MM/yyyy"
+                                                                                    :format="dpDateFormat"
                                                                                     type="date"
                                                                                     value-format="yyyy-MM-dd"
                                                                                     :readonly="
@@ -2861,6 +2888,12 @@
                                             </td>
                                         </tr>
                                     </template>
+                                    <template v-if="config.enabled_guarantee_fund && (form.detraction || form.retention)">
+                                            <tr v-if="form.detraction.guarantee_fund > 0 || form.retention.guarantee_fund > 0">
+                                                <td width="60%">FONDO DE GARANTIA:</td>
+                                                <td>{{ currency_type.symbol }} {{ guarantee_fund }}</td>
+                                            </tr>
+                                    </template>
 
                                     <template v-if="form.retention">
                                         <tr v-if="form.retention.amount > 0">
@@ -2954,11 +2987,11 @@
                                         </td>
                                     </tr>
 
-                                    <tr v-if="form.total_discount > 0">
+                                    <tr v-if="totalDiscount > 0">
                                         <td>DESCUENTOS TOTALES:</td>
                                         <td>
                                             {{ currency_type.symbol }}
-                                            {{ form.total_discount }}
+                                            {{ totalDiscount }}
                                         </td>
                                     </tr>
 
@@ -3102,7 +3135,7 @@
                                                                     :clearable="
                                                                         false
                                                                     "
-                                                                    format="dd/MM/yyyy"
+                                                                    :format="dpDateFormat"
                                                                     type="date"
                                                                     @change="
                                                                         changeCreditFeeDate(
@@ -3235,7 +3268,7 @@
                                                                     :clearable="
                                                                         false
                                                                     "
-                                                                    format="dd/MM/yyyy"
+                                                                    :format="dpDateFormat"
                                                                     type="date"
                                                                     value-format="yyyy-MM-dd"
                                                                 >
@@ -3656,8 +3689,9 @@
             :percentage-igv="percentage_igv"
             :isUpdateDocument="isUpdateDocument"
             :permissionEditItemPrices="authUser.permission_edit_item_prices"
+            :displayDiscount="config.show_item_discounts_charges_attributes"
             ref="form_add_item"
-            :selectedOptionPrice="selected_option_price"
+            :selectedOptionPrice.sync="selected_option_price"
             @add="addRow"
         ></document-form-item>
 
@@ -3665,6 +3699,7 @@
             :document_type_id="form.document_type_id"
             :external="true"
             :input_person="personFormInput"
+            :recordId="editPerson ? form.customer_id : null"
             :showDialog.sync="showDialogNewPerson"
             type="customers"
         ></person-form>
@@ -3676,6 +3711,8 @@
             :recordId="documentNewId"
             :table="table"
             :showClose="false"
+            :failsInSend="failSendDocument"
+            :failsMessage='failsMessage'
             :showDialog.sync="showDialogOptions"
         ></document-options>
 
@@ -3859,6 +3896,9 @@
 .input-custom.el-input-number{
     padding: 0px;
 }
+.customer-select-clearable >>> .el-input__suffix {
+    right: 33px;
+}
 @media only screen and (min-width: 992px) {
     .table-responsive {
         overflow-x: visible !important;
@@ -3938,6 +3978,7 @@ import SetTip from "@components/SetTip.vue";
 
 import LotsForm from "./partials/lots.vue";
 import { editableRowItems } from "@mixins/editable-row-items";
+import { buhoprinter } from "@mixins/buhoprinter";
 import ItemSearchQuickSale from "@components/items/ItemSearchQuickSale.vue";
 import PackItemDescription from "@components/items/PackItemDescription.vue";
 // import ItemDetailForm from '@views/items/form.vue'
@@ -3982,7 +4023,8 @@ export default {
         pointSystemFunctions,
         fnRestrictSaleItemsCpe,
         editableRowItems,
-        fnItemSearchQuickSale
+        fnItemSearchQuickSale,
+        buhoprinter,
     ],
     data() {
         return {
@@ -4020,7 +4062,10 @@ export default {
             resource: "documents",
             showDialogAddItem: false,
             showDialogNewPerson: false,
+            editPerson: false,
             showDialogOptions: false,
+            failSendDocument: false,
+            failsMessage: '',
             loading_submit: false,
             loading_form: false,
             errors: {},
@@ -4046,6 +4091,8 @@ export default {
             prepayment_documents: [],
             currency_type: {},
             documentNewId: null,
+            customerCurrent: null,
+            printTicketUrl: null,
             prepayment_deduction: false,
             activePanel: 0,
             total_global_discount: 0,
@@ -4212,80 +4259,57 @@ export default {
 
             return term
         },
+        amountRetentionValidate() {
+            let amount = 700;
+            if (this.form.currency_type_id === "USD") {
+                amount = 700 / this.form.exchange_rate_sale;
+            }
+            return this.form.total > amount;
+        },
+        getCustomer(){
+            const customer = this.customers.find(
+                c => String(c.id) === String(this.form.customer_id)
+            );
+            return customer || {};
+        },
+        totalDiscount() {
+            // Calculo por total (no por linea) para evitar diferencias de 0.01 por redondeo
+            const igv_factor = 1 + this.percentage_igv;
+            let total_items = 0;
+
+            if (this.form.items.length > 0) {
+                this.form.items.forEach(item => {
+                    if (!item.discounts) return;
+                    console.log(item.discounts);
+                    
+                    item.discounts.forEach(discount => {
+                        const is_base = discount.discount_type_id === "00";
+                        const base_amount = discount.amount_without_rounded 
+                            ? discount.amount_without_rounded
+                            : discount.amount;
+                        total_items += is_base ? base_amount * igv_factor : discount.amount;
+                    });
+                });
+            }
+
+            const global_amount = this.form.discounts.length > 0 ? this.form.discounts[0].amount_without_rounded : 0;
+            const total_global = this.isGlobalDiscountBase ? global_amount * igv_factor : global_amount;
+            console.log({ total_items, total_global });
+            
+
+            return _.round(total_items + total_global, 2);
+        },
+        guarantee_fund: function() {
+            let detraction = this.form.detraction || {};
+            let retention = this.form.retention || {};
+            let fund_obj = Object.keys(detraction).length > 0 ? detraction : retention
+            return fund_obj.guarantee_fund ? fund_obj.guarantee_fund : 0
+        }
     },
     async created() {
-        this.loadConfiguration();
-        this.$store.commit("setConfiguration", this.configuration);
-
-        // Cargar price_options desde la API de price labels activos
-        await this.loadPriceOptions();
-
-        await this.initForm();
-        await this.$http.get(`/${this.resource}/tables`).then(response => {
-
-            this.document_types = response.data.document_types_invoice;
-            this.document_types_guide = response.data.document_types_guide;
-            this.currency_types = response.data.currency_types;
-            this.business_turns = response.data.business_turns;
-            this.establishments = response.data.establishments;
-            this.operation_types = response.data.operation_types;
-            this.is_restaurant_active = response.data.is_restaurant_active;
-            this.restaurant_tip_factor = response.data.restaurant_tip_factor;
-            this.$store.commit("setAllSeries", response.data.series);
-            // this.all_series = response.data.series
-            this.all_customers = response.data.customers;
-            this.sellers = response.data.sellers;
-            this.discount_types = response.data.discount_types;
-            this.charges_types = response.data.charges_types;
-            this.payment_method_types = response.data.payment_method_types;
-            this.enabled_discount_global =
-                response.data.enabled_discount_global;
-            this.company = response.data.company;
-            this.user = response.data.user;
-            this.document_type_03_filter =
-                response.data.document_type_03_filter;
-            this.select_first_document_type_03 =
-                response.data.select_first_document_type_03;
-            // this.form.currency_type_id = (this.currency_types.length > 0)?this.currency_types[0].id:null;
-            this.form.establishment_id =
-                this.establishments.length > 0
-                    ? this.establishments[0].id
-                    : null;
-            this.form.document_type_id =
-                this.document_types.length > 0
-                    ? this.document_types[0].id
-                    : null;
-            this.form.operation_type_id =
-                this.operation_types.length > 0
-                    ? this.operation_types[0].id
-                    : null;
-            this.form.seller_id = this.sellers.length > 0 ? this.idUser : null;
-            this.affectation_igv_types = response.data.affectation_igv_types;
-            // this.prepayment_documents = response.data.prepayment_documents;
-            this.is_client = response.data.is_client;
-            // this.cat_payment_method_types = response.data.cat_payment_method_types;
-            // this.all_detraction_types = response.data.detraction_types;
-            this.payment_destinations = response.data.payment_destinations;
-            this.payment_conditions = response.data.payment_conditions;
-
-            this.seller_class =
-                this.user == "admin" ? "col-lg-4 pb-2" : "col-lg-6 pb-2";
-            this.global_discount_types = response.data.global_discount_types;
-
-            // this.default_document_type = response.data.document_id;
-            // this.default_series_type = response.data.series_id;
-            this.selectDocumentType();
-            this.changeEstablishment();
-            this.changeDateOfIssue();
-            this.changeDocumentType();
-            this.changeDestinationSale();
-            this.setDefaultDocumentType();
-            this.setConfigGlobalDiscountType();
-            this.startConnectionQzTray();
-            this.verifySelectedSeller();
-        });
-
+        await this.initComponent();
         await this.getPercentageIgv();
+         
         this.loading_form = true;
         this.$eventHub.$on("reloadDataPersons", customer_id => {
             this.reloadDataCustomers(customer_id);
@@ -4296,6 +4320,9 @@ export default {
         });
         this.$eventHub.$on("reloadDataConsigned", () => {
             this.getConsigneds();
+        });
+        this.$eventHub.$on("establishmentChanged", () => {
+            this.initComponent();
         });
         if (this.documentId) {
             this.btnText = "Actualizar";
@@ -4444,6 +4471,78 @@ export default {
         }
     },
     methods: {
+        async initComponent() {
+            this.loadConfiguration();
+            this.$store.commit("setConfiguration", this.configuration);
+
+            // Cargar price_options desde la API de price labels activos
+            await this.loadPriceOptions();
+
+            await this.initForm();
+            await this.$http.get(`/${this.resource}/tables`).then(response => {
+                this.document_types = response.data.document_types_invoice;
+                this.document_types_guide = response.data.document_types_guide;
+                this.currency_types = response.data.currency_types;
+                this.business_turns = response.data.business_turns;
+                this.establishments = response.data.establishments;
+                this.operation_types = response.data.operation_types;
+                this.is_restaurant_active = response.data.is_restaurant_active;
+                this.restaurant_tip_factor = response.data.restaurant_tip_factor;
+                this.$store.commit("setAllSeries", response.data.series);
+                // this.all_series = response.data.series
+                this.all_customers = response.data.customers;
+                this.sellers = response.data.sellers;
+                this.discount_types = response.data.discount_types;
+                this.charges_types = response.data.charges_types;
+                this.payment_method_types = response.data.payment_method_types;
+                this.enabled_discount_global =
+                    response.data.enabled_discount_global;
+                this.company = response.data.company;
+                this.user = response.data.user;
+                this.document_type_03_filter =
+                    response.data.document_type_03_filter;
+                this.select_first_document_type_03 =
+                    response.data.select_first_document_type_03;
+                // this.form.currency_type_id = (this.currency_types.length > 0)?this.currency_types[0].id:null;
+                this.form.establishment_id =
+                    this.establishments.length > 0
+                        ? this.establishments[0].id
+                        : null;
+                this.form.document_type_id =
+                    this.document_types.length > 0
+                        ? this.document_types[0].id
+                        : null;
+                this.form.operation_type_id =
+                    this.operation_types.length > 0
+                        ? this.operation_types[0].id
+                        : null;
+                this.form.seller_id = this.sellers.length > 0 ? this.idUser : null;
+                this.affectation_igv_types = response.data.affectation_igv_types;
+                // this.prepayment_documents = response.data.prepayment_documents;
+                this.is_client = response.data.is_client;
+                // this.cat_payment_method_types = response.data.cat_payment_method_types;
+                // this.all_detraction_types = response.data.detraction_types;
+                this.payment_destinations = response.data.payment_destinations;
+                this.payment_conditions = response.data.payment_conditions;
+
+                this.seller_class =
+                    this.user == "admin" ? "col-lg-4 pb-2" : "col-lg-6 pb-2";
+                this.global_discount_types = response.data.global_discount_types;
+
+                // this.default_document_type = response.data.document_id;
+                // this.default_series_type = response.data.series_id;
+                this.selectDocumentType();
+                this.changeEstablishment();
+                this.changeDateOfIssue();
+                this.changeDocumentType();
+                this.changeDestinationSale();
+                this.setDefaultDocumentType();
+                this.setConfigGlobalDiscountType();
+                this.startConnectionQzTray();
+                this.verifySelectedSeller();
+            });
+        },
+
         searchNumber(data) {
             this.form.itinerant = {
                 id: this.itinerant_option_id,
@@ -4535,8 +4634,7 @@ export default {
                 const response = await this.$http.get('/price-labels/active');
                 const labels = response.data.data || [];
 
-                console.log(this.config);
-                
+
                 const mainLabel = (this.config && this.config.price1_label) ? this.config.price1_label : 'Precio principal';
                 this.price_options = [
                     {
@@ -4555,8 +4653,11 @@ export default {
                     });
                 });
 
-                // Seleccionar la primera opción por defecto
-                if (this.price_options.length > 0) {
+                // Seleccionar el label marcado como default, o el primero como fallback
+                const defaultLabel = labels.find(l => l.is_default);
+                if (defaultLabel) {
+                    this.selected_option_price = `price_label_${defaultLabel.id}`;
+                } else if (this.price_options.length > 0) {
                     this.selected_option_price = this.price_options[0].id;
                 }
             } catch (error) {
@@ -4680,8 +4781,8 @@ export default {
             this.$eventHub.$emit("eventInitTip");
         },
         startConnectionQzTray() {
-            if (!qz.websocket.isActive() && this.isAutoPrint) {
-                startConnection();
+            if (!this.isBuhoActive && this.isAutoPrint) {
+                this.startConnectionBuho();
             }
         },
         changeRowExchangePoints(row, index) {
@@ -4899,7 +5000,12 @@ export default {
                 // this.series = this.onSetSeries(this.form.document_type_id, this.series);
                 this.changeDocumentType();
             }
+
+            this.customers = this.customers.filter(el => el.id !== data.customer_id)
+            this.customers.push(data.customer)
+
             this.form.id = data.id;
+            this.form.custom_fields_data = data.custom_fields_data;
             this.form.hash = data.hash;
             this.form.number = data.number;
             this.form.date_of_issue = moment(data.date_of_issue).format(
@@ -4915,7 +5021,7 @@ export default {
             this.form.perception = data.perception;
             this.form.note = data.note;
             this.form.plate_number = data.plate_number;
-            this.form.payments = data.payments;
+            this.form.payments = data.payments || [];
             this.form.prepayments = data.prepayments || [];
             this.form.legends = [];
             // this.form.detraction = data.detraction;
@@ -4998,15 +5104,15 @@ export default {
                 ? "03"
                 : data.payment_condition_id;
             this.form.fee = data.fee;
-            this.form.retention = data.retention;
+            this.form.retention = data.retention ? data.retention : {};
 
             this.form.quotation_id = data.quotation_id;
 
-            if (data.discounts[0]) {
+            if (data.discounts && data.discounts[0]) {
                 this.recordDiscountsGlobal = data.discounts[0]
                 let discount_type_id = data.discounts[0].discount_type_id
                 this.total_global_discount = discount_type_id !== "02" ? data.total_discount :
-                    _.round(Number(data.total_discount * 1.18).toFixed(3), 2);
+                    _.round(data.total_discount * (1 + this.percentage_igv), 2);
             }
 
 
@@ -5056,6 +5162,9 @@ export default {
             // this.currency_type = _.find(this.currency_types, {'id': this.form.currency_type_id})
 
             this.filterSeriesForTable();
+            if (!this.form.custom_fields_data) {
+                this.$set(this.form, 'custom_fields_data', {});
+            }
         },
         filterSeriesForTable() {
             if (this.table) {
@@ -5179,7 +5288,9 @@ export default {
                         }
                     } else {
                         this.form.payment_destination_id = this.payment_destinations[0].id;
-                        this.form.payments[0].payment_destination_id = this.payment_destinations[0].id;
+                        if (this.form.payments[0] !== undefined) {
+                            this.form.payments[0].payment_destination_id = this.payment_destinations[0].id;
+                        }
                     }
                 }
             }
@@ -5413,8 +5524,26 @@ export default {
             this.recordItem = null;
             this.showDialogAddItem = true;
         },
-        getFormatUnitPriceRow(unit_price) {
-            return _.round(unit_price, 6);
+        getFormatUnitPriceRow(unit_price, row) {
+            // El precio base siempre está guardado en Soles (PEN).
+            // Si el comprobante está en Dólares (USD) se convierte usando el tipo de cambio.
+            let price = parseFloat(unit_price) || 0;
+            const exchange_rate =
+                    parseFloat(this.form.exchange_rate_sale) || 0;
+                    
+
+            if (this.form.currency_type_id === row.item.currency_type_id) return price
+
+            if (this.form.currency_type_id === "USD" ) {
+
+                if (exchange_rate > 0) {
+                    price = price / exchange_rate;
+                }
+            } else if (this.form.currency_type_id === 'PEN' && row.item.currency_type_id === 'USD') {
+                price = price * exchange_rate;
+            }
+
+            return _.round(price, 2);
             // return unit_price.toFixed(6)
         },
         discountGlobalPrepayment() {
@@ -5789,6 +5918,7 @@ export default {
                         } */
                     });
             } else {
+                this.form.customer_id = null;
                 this.filterCustomers();
                 this.input_person.number = null;
             }
@@ -6279,6 +6409,28 @@ export default {
                     this.setTotalExchangePoints();
                     this.recalculateUsedPointsForExchange(row);
                 }
+            } else if (this.shouldUnifyAmountItems(row)) {
+                const index = this.getUnifiedItemIndex(row);
+
+                if (index !== -1) {
+                    const newItem = JSON.parse(
+                        JSON.stringify(this.form.items[index])
+                    );
+
+                    newItem.quantity =
+                        parseFloat(newItem.quantity) + parseFloat(row.quantity);
+
+                    const unifiedRow = await calculateRowItem(
+                        newItem,
+                        row.item.currency_type_id,
+                        this.form.exchange_rate_sale,
+                        row.percentage_igv
+                    );
+
+                    this.form.items[index] = unifiedRow;
+                } else {
+                    this.form.items.push(JSON.parse(JSON.stringify(row)));
+                }
             } else if (enable_barcode_quick_sale || enable_search_on_enter) {
                 let index = this.form.items.findIndex(
                     item => item.item.internal_id === row.item.internal_id
@@ -6301,6 +6453,38 @@ export default {
             }
 
             await this.calculateTotal();
+        },
+        shouldUnifyAmountItems(row) {
+            return (
+                this.config &&
+                this.config.show_unify_amount_items &&
+                row.item &&
+                !row.item.series_enabled &&
+                !row.item.lots_enabled
+            );
+        },
+        getUnifiedItemIndex(row) {
+            const presentationId = _.get(row, "item.presentation.id", null);
+
+            return this.form.items.findIndex(item => {
+                const itemPresentationId = _.get(
+                    item,
+                    "item.presentation.id",
+                    null
+                );
+
+                return (
+                    String(item.item_id) === String(row.item_id) &&
+                    String(itemPresentationId || "") ===
+                        String(presentationId || "") &&
+                    String(item.affectation_igv_type_id || "") ===
+                        String(row.affectation_igv_type_id || "") &&
+                    String(item.unit_price || "") ===
+                        String(row.unit_price || "") &&
+                    String(item.warehouse_id || "") ===
+                        String(row.warehouse_id || "")
+                );
+            });
         },
         clickRemoveItem(index) {
             this.form.items.splice(index, 1);
@@ -6529,6 +6713,7 @@ export default {
             this.form.total_isc = _.round(total_isc, 2);
 
             this.form.total_igv_free = _.round(total_igv_free, 2);
+            this.form.total_discount_item = _.round(total_discount, 2);
             this.form.total_discount = _.round(total_discount, 2);
             this.form.total_exportation = _.round(total_exportation, 2);
             this.form.total_taxed = _.round(total_taxed, 2);
@@ -6563,21 +6748,25 @@ export default {
 
             }
 
+            
             // this.form.subtotal = _.round(total + this.form.total_plastic_bag_taxes, 2)
             // this.form.total = _.round(total + this.form.total_plastic_bag_taxes - this.total_discount_no_base, 2)
 
             if (this.enabled_discount_global)
-                this.discountGlobal(totals_without_rounding);
+                this.discountGlobalItems(totals_without_rounding);
 
             if (this.prepayment_deduction) this.discountGlobalPrepayment();
 
             if (["1001", "1004"].includes(this.form.operation_type_id))
                 this.changeDetractionType();
 
-            if (this.form.has_retention) {
-                this.changeRetention();
-            }
 
+            let customer = _.find(this.customers, {
+                id: this.form.customer_id
+            });
+            if (customer) {
+                this.validateCustomerRetention(customer.identity_document_type_id)
+            }
             this.setTotalDefaultPayment();
             this.setPendingAmount();
 
@@ -6756,7 +6945,12 @@ export default {
 
             if (index > -1) {
                 this.form.discounts.splice(index, 1);
-                this.form.total_discount = 0;
+                if (this.form.total_discount_item > 0 ) {
+                    this.form.total_discount = this.form.total_discount_item;
+                    
+                } else {
+                    this.form.total_discount = 0;
+                }
             }
         },
         setConfigGlobalDiscountType() {
@@ -6764,14 +6958,15 @@ export default {
                 id: this.configuration.global_discount_type_id
             });
         },
-        setGlobalDiscount(factor, amount, base) {
+        setGlobalDiscount(factor, amount, base, amount_without_rounded) {
             this.form.discounts.push({
                 discount_type_id: this.recordDiscountsGlobal ? this.recordDiscountsGlobal.discount_type_id : this.global_discount_type.id,
                 description: this.recordDiscountsGlobal ? this.recordDiscountsGlobal.description : this.global_discount_type.description,
                 factor: factor,
                 amount: amount,
                 base: base,
-                is_amount: this.is_amount
+                is_amount: this.is_amount,
+                amount_without_rounded: amount_without_rounded
             });
         },
         //Parametro ctx, mantiene los valores sin redondeo
@@ -6796,7 +6991,7 @@ export default {
             }
 
             let input_global_discount = parseFloat(amount_discount);
-            if (input_global_discount > 0) {
+            if (this.total_global_discount &&  this.total_global_discount > 0) {
                 const percentage_igv = this.percentage_igv * 100;
                 let base = this.isGlobalDiscountBase
                     ? parseFloat(ctx.total_taxed + ctx.total_exportation + ctx.total_isc + ctx.total_plastic_bag_taxes)
@@ -6850,20 +7045,312 @@ export default {
                         this.$message.error(
                             "El total debe ser mayor a 0, verifique el tipo de descuento asignado (Configuración/Avanzado/Contable)"
                         );
+                    
+                    this.form.total_discount += _.round(amount, 2);
                 }
                 // descuentos que no afectan la bi
                 else {
                     this.form.total = _.round(this.form.total - amount, 2);
+                    this.form.total_discount += _.round(amount, 2);
                 }
 
-                this.form.total_discount = _.round(amount, 2);
                 this.setGlobalDiscount(
                     factor,
                     _.round(amount, 2),
-                    _.round(base, 2)
+                    _.round(base, 2),
+                    amount
                 );
             }
         },
+        /**
+         * Descuento global para repatir en items.
+         *  [(valor del item)/suma de todo los items] * descuento global
+         *
+         * @param ctx
+         */
+        /**
+         * Elimina IN-PLACE los descuentos marcados como from_global_distribution
+         * de todos los items. Usa splice en reversa para mutar el mismo array
+         * (no crea uno nuevo), de modo que cualquier referencia externa al array
+         * también vea la eliminación y los objetos descuento queden sin referencias
+         * vivas para ser liberados por el GC.
+         */
+        clearGlobalDistributionDiscounts() {
+            this.form.items.forEach((item, index) => {
+                item.discounts = item.discounts.filter( le => !le.from_global_distribution) || [];
+                // if (!item.discounts || item.discounts.length === 0) return;
+                // let changed = false;
+                // for (let i = item.discounts.length - 1; i >= 0; i--) {
+                //     if (item.discounts[i].from_global_distribution) {
+                //         item.discounts.splice(i, 1);
+                //         changed = true;
+                //     }
+                // }
+                // if (changed) {
+                //     this.form.items.splice(
+                //         index,
+                //         1,
+                //         calculateRowItem(
+                //             item,
+                //             this.form.currency_type_id,
+                //             this.form.exchange_rate_sale,
+                //             this.percentage_igv
+                //         )
+                //     );
+                // }
+            });
+        },
+        discountGlobalItems(ctx) {
+             let total_discounts_item = 0;
+             // Limpiar descuentos globales previamente distribuidos para no acumular en cada recalculo
+             this.clearGlobalDistributionDiscounts();
+
+             if (!this.total_global_discount || this.total_global_discount <= 0) return;
+
+             // Si el monto incluye IGV (descuento exacto tipo "02"), extraemos la base sin IGV
+             let amount_discount = parseFloat(this.total_global_discount);
+             if (this.is_amount) {
+                 if (this.recordDiscountsGlobal) {
+                     if (this.recordDiscountsGlobal.discount_type_id === "02") {
+                        amount_discount = this.total_global_discount / (1 + this.percentage_igv);
+                    }
+                } else if (
+                    this.configuration.global_discount_type_id === "02" &&
+                    this.configuration.exact_discount
+                ) {
+                    amount_discount = this.total_global_discount / (1 + this.percentage_igv);
+                }
+            }
+
+            let total_base = parseFloat(ctx.total_taxed)
+                + parseFloat(ctx.total_exonerated)
+                + parseFloat(ctx.total_unaffected)
+                + parseFloat(ctx.total_exportation)
+                + parseFloat(ctx.total_free);
+
+            let global_amount = this.is_amount
+                ? parseFloat(amount_discount)
+                : _.round((parseFloat(amount_discount) / 100) * total_base, 2);
+
+            // Suma de todos los items (denominador de la formula)
+            let sum_items_value = _.sumBy(this.form.items, item => {
+                return item.total_value_without_rounding
+                    ? parseFloat(item.total_value_without_rounding)
+                    : parseFloat(item.total_value);
+            });
+
+            if (sum_items_value <= 0) return;
+
+            let discount_type_id = this.recordDiscountsGlobal
+                ? this.recordDiscountsGlobal.discount_type_id
+                : this.global_discount_type.id;
+            let description = this.recordDiscountsGlobal
+                ? this.recordDiscountsGlobal.description
+                : this.global_discount_type.description;
+            
+            this.form.items.forEach((item, index) => {
+                let item_value = item.total_value_without_rounding
+                    ? parseFloat(item.total_value_without_rounding)
+                    : parseFloat(item.total_value);
+
+                if (item_value <= 0) return;
+
+                // [(valor del item) / suma de todo los items] * descuento global
+                let item_discount_amount = 
+                    (item_value / sum_items_value) * global_amount
+
+                if (item_discount_amount <= 0) return;
+
+                total_discounts_item += item_discount_amount;
+
+                console.log("amount discount item 1", item_discount_amount);
+                console.log("amount discount item round", _.round(item_discount_amount, 2));
+                
+                let factor = _.round(item_discount_amount / item_value, 5);
+
+                item.discounts = item.discounts || [];
+                
+                let $_discount_type_id  = discount_type_id === "02" ? "00" : "01"
+                
+
+                
+                item.discounts.push({
+                    discount_type_id: $_discount_type_id, 
+                    discount_type : _.filter(this.discount_types, { id: $_discount_type_id }), 
+                    description: description,
+                    factor: factor,
+                    percentage: _.round(factor * 100, 5),
+                    amount: _.round(item_discount_amount, 2),
+                    base: _.round(item_value, 2),
+                    is_amount: true,
+                    amount_without_rounded: item_discount_amount,
+                    from_global_distribution: true
+                });
+
+                item = this.recalcItemBasesAndIgv(item);
+
+            });
+
+            let amount = 0;
+            let factor = 0;
+                if (this.is_amount) {
+                    amount = global_amount;
+                    factor = _.round(amount / total_base, 5);
+                } else {
+                    factor = _.round(global_amount / 100, 5);
+                    amount = global_amount;
+                }
+
+
+                if (this.isGlobalDiscountBase) {
+
+                    let total_taxed = total_base  - amount;
+                    let total_igv = total_taxed * this.percentage_igv;
+                    let total_taxes =
+                        total_igv + ctx.total_isc + ctx.total_plastic_bag_taxes;
+                    let total_out = _.round(
+                        ctx.total_exonerated + ctx.total_unaffected + ctx.total_exportation + ctx.total_free,
+                        2
+                    );
+                    let total = total_taxed + total_out + total_taxes;
+
+                    this.form.total_taxed = _.round(
+                        parseFloat(total_taxed.toFixed(3)),
+                         2
+                     );
+
+                    this.form.total_value = total_taxed + total_out;
+                    console.log(this.percentage_igv);
+                    
+
+                    this.form.total_igv = _.round(
+                        total_taxed * this.percentage_igv,
+                        2
+                    );
+
+                    //impuestos (isc + igv + icbper)
+                    this.form.total_taxes = _.round(
+                        parseFloat(total_taxes.toFixed(3)),
+                        2
+                    );
+                    this.form.total = _.round(total, 2);
+                    this.form.subtotal = this.form.total;
+
+                    if (this.form.total <= 0)
+                        this.$message.error(
+                            "El total debe ser mayor a 0, verifique el tipo de descuento asignado (Configuración/Avanzado/Contable)"
+                        );
+                    
+                    this.form.total_discount += _.round(amount, 2);
+                }
+                // descuentos que no afectan la bi
+                else {
+                    this.form.total = _.round(this.form.total - amount, 2);
+                    this.form.total_discount += _.round(amount, 2);
+                }
+
+            // this.form.total_discount = _.round(total_discounts_item, 2);
+        },
+        /**
+         * Recalcula los totales del item considerando los descuentos que afectan
+         * a la base imponible, para CUALQUIER afectación (gravada, exonerada,
+         * inafecta, exportación o gratuita). El descuento reduce siempre el
+         * total_value y la base imponible del item; el IGV solo se genera cuando
+         * la afectación es gravada ('10') — en el resto queda en 0 por norma SUNAT.
+         */
+        recalcItemBasesAndIgv(item) {
+            const pigv = this.percentage_igv;
+            const affectation = item.affectation_igv_type_id;
+
+            const unit_value = affectation === '10'
+                ? parseFloat(item.unit_price) / (1 + pigv)
+                : parseFloat(item.unit_price);
+
+            const total_value_partial = unit_value * parseFloat(item.quantity);
+
+            let discount_base = 0;
+            let discount_no_base = 0;
+            if (item.discounts && item.discounts.length > 0) {
+                item.discounts.forEach(d => {
+                    if (!d.from_global_distribution) return;
+                    const amount = d.amount_without_rounded ? d.amount_without_rounded : d.amount;
+                    discount_base += parseFloat(amount);
+                });
+            }
+
+            // Aplica a todas las afectaciones: reduce el valor del item
+            const total_value = total_value_partial - discount_base - discount_no_base;
+            // Aplica a todas: reduce la base imponible (relevante solo si paga IGV)
+            const total_base_igv = total_value_partial - discount_base;
+
+            // IGV por afectación
+            let total_igv = 0;
+            switch (affectation) {
+                case '10': // Gravada
+                    total_igv = total_base_igv * pigv;
+                    break;
+                case '20': // Exonerada
+                case '30': // Inafecta - Operación Onerosa
+                case '31': // Inafecta - Retiro por Bonificación
+                case '32': // Inafecta - Retiro
+                case '33': // Inafecta - Retiro por Muestras Médicas
+                case '34': // Inafecta - Retiro por Convenio Colectivo
+                case '35': // Inafecta - Retiro por Premio
+                case '36': // Inafecta - Retiro por Publicidad
+                case '40': // Exportación
+                case '21': // Exonerada - Transferencia Gratuita
+                case '37': // Inafecta - Transferencia Gratuita
+                default:
+                    total_igv = 0;
+                    break;
+            }
+
+            const total_isc = parseFloat(item.total_isc || 0);
+            const total_plastic_bag_taxes = parseFloat(item.total_plastic_bag_taxes || 0);
+            const total_taxes = total_igv + total_isc + total_plastic_bag_taxes;
+            const total = total_value + total_taxes;
+
+            const quantity = parseFloat(item.quantity);
+            // Recalcular unit_price para que SUNAT no marque diferencia entre
+            // (unit_price * quantity) y el total de línea tras el descuento base.
+            const new_unit_price = quantity > 0
+                ? (total_value + total_taxes - discount_no_base) / quantity
+                : parseFloat(item.unit_price);
+
+            // item.unit_value = _.round(unit_value,2);
+            item.unit_price = _.round(new_unit_price, 6);
+            item.total_value = _.round(total_value, 2);
+            item.total_base_igv = _.round(total_base_igv, 2);
+            item.total_igv = _.round(total_igv, 2);
+            item.total_taxes = _.round(total_taxes, 2);
+            item.total_discount = _.round(discount_base + discount_no_base, 2);
+            item.total = _.round(total, 2);
+
+            item.total_value_without_rounding = total_value;
+            item.total_base_igv_without_rounding = total_base_igv;
+            item.total_igv_without_rounding = total_igv;
+            item.total_taxes_without_rounding = total_taxes;
+            item.total_without_rounding = total;
+
+            return item;
+        },
+        // Descuento por item
+        setTextDiscountItem(item) {
+            let discount = 0;
+            
+            item.discounts.forEach(dis => {
+                if (dis.from_global_distribution) return;
+                    
+                if (dis.discount_type && dis.discount_type.base) {
+                    discount += dis.amount_without_rounded * 1.18;
+                } else {
+                    discount += dis.amount ; 
+                }
+            });
+            
+            return discount > 0 ? _.round(discount, 2) : "0";
+        },
+
         async deleteInitGuides() {
             await _.remove(this.form.guides, { number: null });
         },
@@ -6925,18 +7412,26 @@ export default {
         async submit() {
             // validar monto total y cliente_id para "Clientes varios"
             const monto = parseFloat(this.form.total) || 0;
-            const clienteId = this.form.customer_id;
-            
-            console.log('Monto:', monto, 'Cliente ID:', clienteId);
-            
-            // Si monto > 700 y cliente_id = 1 (Clientes varios)
-            if (monto > 700 && clienteId === 1) {
-                this.$alert('Montos > S/ 700 no pueden usar "Clientes varios"', 'Cliente Requerido', {
-                    confirmButtonText: 'Entendido',
-                    type: 'error'
-                });
-                return false;
+
+            let customer = _.find(this.customers, {
+                id: this.form.customer_id
+            });
+
+            if (customer) {
+                // Si monto > 700 y cliente_id = 1 (Clientes varios)
+                if (monto > 700 && (customer.number === "99999999" && customer.identity_document_type_id === "0")) {
+                    this.$alert('Ventas mayores a S/ 700 requieren un cliente con DNI registrado.', 'Cliente Requerido', {
+                        confirmButtonText: 'Entendido',
+                        type: 'error'
+                    });
+                    return false;
+                }
             }
+
+            if (customer) {
+                this.validateCustomerRetention(customer.identity_document_type_id)
+            }
+
             //Validando las series seleccionadas
             let errorSeries = false;
             _.forEach(this.form.items, row => {
@@ -7020,6 +7515,15 @@ export default {
                         validate_exchange_points.message
                     );
             }
+
+            if (this.config.enabled_guarantee_fund) {
+                let fund_obj = Object.keys(this.form.detraction).length > 0 ? this.form.detraction : this.form.retention 
+
+                if(parseFloat(fund_obj.guarantee_fund) > this.form.total_pending_payment) {
+                    return this.$message.error('El fondo de garantía no puede ser mayor al monto pendiente')
+                }
+            }
+
             // validacion sistema por puntos
 
             if (this.isGeneratedFromExternal) {
@@ -7032,6 +7536,9 @@ export default {
                         validate_restrict_sale_items_cpe.message
                     );
             }
+
+            // Capturar el cliente antes del submit, ya que resetForm() limpia el customer
+            this.customerCurrent = this.getCustomer;
 
             this.loading_submit = true;
             this.is_consumption_charge = false;
@@ -7049,6 +7556,7 @@ export default {
                     if (response.data.success) {
                         let response_sent = response
                         this.documentNewId = response.data.data.id;
+                        this.printTicketUrl = response.data?.links?.print_ticket ?? null;
 
                         if(this.config.send_auto && this.form.document_type_id === '01') {
                             response_sent = await this.sendDocument(this.documentNewId);
@@ -7059,6 +7567,12 @@ export default {
                         this.$eventHub.$emit("reloadDataItems", null);
                         this.resetForm();
 
+                        if (!response_sent.data.success) {
+                            this.failSendDocument = true;
+
+                            this.failsMessage = response_sent.data.message;
+                        }
+
                         this.showOptionsDialog(response_sent);
 
                         this.form_cash_document.document_id =
@@ -7068,6 +7582,7 @@ export default {
                         this.saveCashDocument();
 
                         this.autoPrintDocument();
+                        await this.autoSendPdfMail();
                     } else {
                         this.$message.error(response.data.message);
                     }
@@ -7082,6 +7597,7 @@ export default {
                 })
                 .finally(() => {
                     this.loading_submit = false;
+                    this.customerCurrent = null;
                     this.setDefaultDocumentType();
                     this.selectDefaultCustomer()
                 });
@@ -7102,41 +7618,37 @@ export default {
             }
         },
         autoPrintDocument() {
-            if (this.isAutoPrint) {
-                this.$http
-                    .get(`/printticket/document/${this.documentNewId}/ticket`)
-                    .then(response => {
-                        this.printTicket(response.data);
-                    })
-                    .catch(error => {
-                        console.log(error);
-                    });
+            if (this.isAutoPrint && this.printTicketUrl) {
+                this.printDocument(this.printTicketUrl, this.configuration.printer_name_documents);
             }
         },
-        printTicket(html_pdf) {
-            if (html_pdf.length > 0) {
-                const config = getUpdatedConfig();
-                const opts = getUpdatedConfig();
+        async autoSendPdfMail() {
+            if(!this.config.auto_send_pdf_email) return;
 
-                const printData = [
-                    {
-                        type: "html",
-                        format: "plain",
-                        data: html_pdf,
-                        options: opts
-                    }
-                ];
-
-                qz.print(config, printData)
-                    .then(() => {
-                        this.$notify({
-                            title: "",
-                            message: "Impresión en proceso...",
-                            type: "success"
-                        });
-                    })
-                    .catch(displayError);
+            const customer = this.customerCurrent;
+            if(!customer || !customer.email) {
+                this.$message.warning('El cliente no tiene un correo electrónico registrado. No se pudo enviar el comprobante por correo.')
+                return;
             }
+
+            this.$http.post(`/${this.resource}/email`, {
+                customer_email: customer.email,
+                id: this.documentNewId
+            })
+                .then(response => {
+                    if (response.data.success) {
+                        this.$message.success('El correo fue enviado satisfactoriamente')
+                    } else {
+                        this.$message.error('Error al enviar el correo')
+                    }
+                })
+                .catch(error => {
+                    if (error.response.status === 422) {
+                        this.errors = error.response.data.errors
+                    } else {
+                        this.$message.error(error.response.data.message)
+                    }
+                })
         },
         saveCashDocument() {
             this.$http
@@ -7191,12 +7703,20 @@ export default {
                     this.form.customer_id = customer_id;
                     let customer = _.find(this.customers, {'id': customer_id});
                     this.form.has_retention = customer.is_agent_retention
-                    this.changeRetention();
+                    if (this.form.has_retention && this.amountRetentionValidate) {
+                        this.changeRetention();
+                    }
 
                     this.setCustomerAccumulatedPoints(
                         customer_id,
                         this.config.enabled_point_system
                     );
+
+                    if (customer.price_label_id) {
+                        this.selected_option_price = `price_label_${customer.price_label_id}`;
+                    } else {
+                        this.selected_option_price = 1;
+                    }
                 });
         },
         changeCustomer() {
@@ -7231,7 +7751,11 @@ export default {
                 this.form.seller_id = seller.id;
             }
 
+            if (customer.price_label_id) {
+                this.selected_option_price = `price_label_${customer.price_label_id}`;
+            } 
             // retencion para clientes con ruc
+            
 
             this.validateCustomerRetention(customer.identity_document_type_id);
 
@@ -7271,14 +7795,14 @@ export default {
         },
         validateCustomerRetention(identity_document_type_id) {
             if (identity_document_type_id != "6") {
-                if (this.form.has_retention) {
-                    this.form.has_retention = false;
-                    this.changeRetention();
-                }
-
                 this.show_has_retention = false;
-            } else {
-                this.show_has_retention = true;
+                return;
+            }
+
+            this.show_has_retention = true;
+
+            if (this.form.has_retention && this.amountRetentionValidate) {
+                this.changeRetention();
             }
         },
         initDataPaymentCondition01() {
@@ -7409,7 +7933,7 @@ export default {
         },
         getTotal() {
             let total_pay = this.form.total;
-            if (this.form.has_retention) {
+            if (this.form.has_retention && this.amountRetentionValidate) {
                 total_pay -= this.form.retention.amount;
             }
             // console.log(this.form.retention)
@@ -7486,6 +8010,7 @@ export default {
             }
             this.showDialogPreview = true;
         },
+
         async validatePreview() {
             let errorSeries = false;
             _.forEach(this.form.items, row => {

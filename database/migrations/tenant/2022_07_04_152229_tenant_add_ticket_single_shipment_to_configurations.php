@@ -14,7 +14,7 @@ class TenantAddTicketSingleShipmentToConfigurations extends Migration
     public function up()
     {
         Schema::table('configurations', function (Blueprint $table) {
-            $table->boolean('ticket_single_shipment')->default(false);
+            $table->boolean('ticket_single_shipment')->default(true);
         });
     }
 

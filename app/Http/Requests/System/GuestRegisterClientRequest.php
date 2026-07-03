@@ -31,6 +31,11 @@ class GuestRegisterClientRequest extends FormRequest
                 'required',
                 'email',
             ],
+            'plan_id' => [
+                'required',
+                'integer',
+                Rule::exists('system.plans', 'id')->where('locked', 0),
+            ],
         ];
     }
 

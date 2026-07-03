@@ -3,31 +3,98 @@
     $path[1] = (array_key_exists(1, $path)> 0)?$path[1]:'';
     $path[2] = (array_key_exists(2, $path)> 0)?$path[2]:'';
     $path[0] = ($path[0] === '')?'documents':$path[0];
+    $sysAdmin = auth()->guard('admin')->user();
 @endphp
 <aside id="sidebar-left" class="sidebar-left mt-0" style="z-index: 900">
+        <div class="header-mobile d-flex flex-column d-md-none">
+            <div class="logo-container m-2 d-flex align-items-center justify-content-between w-100">
+            @php
+                use App\Models\System\Configuration;
+                $configuration = Configuration::first();
+                $logo = $configuration->login->logo ?? null;
+            @endphp
+            @if ($logo)
+                <a href="{{ route('system.dashboard') }}" class="logo pt-2 pt-md-0 position-relative">
+                    <img class="uk-logo-inverse" width="100" height="auto" src="{{ $logo }}" alt="Logo" />
+                </a>
+            @elseif (file_exists(public_path('theme/logo.svg')))
+                <a href="{{ route('system.dashboard') }}" class="logo pt-2 pt-md-0 position-relative">
+                    <img class="uk-logo-inverse" width="100" height="auto" src="{{ asset('theme/logo.svg') }}" alt="Logo" />
+                </a>
+            @else
+                <a href="{{ route('system.dashboard') }}" class="text-logo pt-md-0 position-relative">
+                    PANEL RESELLER
+                </a>
+            @endif
+            <div class="d-md-none toggle-sidebar-left" role="button" tabindex="0" aria-label="Alternar menú">
+                <i class="fas fa-times icon-close-sidebar" aria-label="Cerrar menú"></i>
+            </div>
+        </div>
+
+        <div class="d-flex alig-items-center justify-content-start user-mobile d-md-none">
+            @php
+                $userName = trim(\Auth::getUser()->name ?? '');
+                $nameParts = preg_split('/\s+/', $userName, -1, PREG_SPLIT_NO_EMPTY);
+                $initials = '';
+                if (!empty($nameParts)) {
+                    $initials = mb_strtoupper(mb_substr($nameParts[0], 0, 1));
+                    if (count($nameParts) > 1) {
+                        $initials .= mb_strtoupper(mb_substr(end($nameParts), 0, 1));
+                    }
+                }
+                $initials = $initials !== '' ? $initials : '?';
+            @endphp
+            <div class="icon-user">
+                <span>
+                    {{ $initials }}
+                </span>
+            </div>
+            <div class="d-flex flex-column align-items-start justify-content-center" data-lock-name="{{ \Auth::getUser()->email }}"
+                data-lock-email="{{ \Auth::getUser()->email }}">
+                <span class="name fw-semibold text-primary-new">{{ \Auth::getUser()->name }}</span>
+                <span class="role">{{ \Auth::getUser()->email }}</span>
+            </div>
+        </div>
+    </div>
     <div class="nano px-2">
         <div class="nano-content">
             <nav id="menu" class="nav-main pt-1" role="navigation">
                 <ul class="nav nav-main">
                     <li class="{{ (in_array($path[0], ['clients', 'dashboard']))?'nav-active':'' }}">
+                        @if($sysAdmin && ($sysAdmin->reseller_id === null || $sysAdmin->canAccessSystemModule('clients')))
                         <a class="nav-link" href="{{route('system.dashboard')}}">
                             <svg  xmlns="http://www.w3.org/2000/svg"  width="30"  height="30"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-layout-dashboard"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M5 4h4a1 1 0 0 1 1 1v6a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1v-6a1 1 0 0 1 1 -1" /><path d="M5 16h4a1 1 0 0 1 1 1v2a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1v-2a1 1 0 0 1 1 -1" /><path d="M15 12h4a1 1 0 0 1 1 1v6a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1v-6a1 1 0 0 1 1 -1" /><path d="M15 4h4a1 1 0 0 1 1 1v2a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1v-2a1 1 0 0 1 1 -1" /></svg>
                             <span>Dashboard</span>
                         </a>
+                        @endif
                     </li>
                 </ul>
             </nav>
             <nav id="menu" class="nav-main" role="navigation">
                 <ul class="nav nav-main">
+                    @if($sysAdmin && $sysAdmin->canAccessSystemModule('admin-reseller'))
+                    <li class="{{ ($path[0] === 'admin-reseller')?'nav-active':'' }}">
+                        <a class="nav-link" href="{{ route('system.admin_reseller.administrators.index') }}">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-user-shield"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M6 21v-2a4 4 0 0 1 4 -4h2" /><path d="M22 16c0 4 -2.5 6 -3.5 6s-3.5 -2 -3.5 -6c1 0 2.5 -.5 3.5 -1.5c1 1 2.5 1.5 3.5 1.5z" /><path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0" /></svg>
+                            <span>Administradores</span>
+                        </a>
+                    </li>
+                    @endif
+                </ul>
+            </nav>
+            <nav id="menu" class="nav-main" role="navigation">
+                <ul class="nav nav-main">
+                    @if($sysAdmin && $sysAdmin->canAccessSystemModule('payment-orders'))
                     <li class="{{ ($path[0] === 'payment-orders')?'nav-active':'' }}">
                         <a class="nav-link" href="{{route('system.payments.index')}}">
                             <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-credit-card"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M3 5m0 3a3 3 0 0 1 3 -3h12a3 3 0 0 1 3 3v8a3 3 0 0 1 -3 3h-12a3 3 0 0 1 -3 -3z" /><path d="M3 10l18 0" /><path d="M7 15l.01 0" /><path d="M11 15l2 0" /></svg>
                             <span>Pagos</span>
                         </a>
                     </li>
+                    @endif
                 </ul>
             </nav>
-            @if(config('configuration.multi_user_enabled'))
+            @if(config('configuration.multi_user_enabled') && $sysAdmin && $sysAdmin->canAccessSystemModule('multi-users'))
                 <nav id="menu" class="nav-main" role="navigation">
                     <ul class="nav nav-main">
                         <li class="{{ ($path[0] === 'multi-users')?'nav-active':'' }}">
@@ -40,6 +107,7 @@
                 </nav>
             @endif
 
+            @if($sysAdmin && $sysAdmin->canAccessSystemModule('plans'))
             <nav id="menu" class="nav-main" role="navigation">
                 <ul class="nav nav-main">
                     <li class="{{ ($path[0] === 'plans')?'nav-active':'' }}">
@@ -50,7 +118,9 @@
                     </li>
                 </ul>
             </nav>
+            @endif
 
+            @if($sysAdmin && $sysAdmin->canAccessSystemModule('massive-invoice'))
             <nav id="menu" class="nav-main" role="navigation">
                 <ul class="nav nav-main">
                     <li class="{{ ($path[0] === 'massive-invoice')?'nav-active':'' }}">
@@ -61,7 +131,10 @@
                     </li>
                 </ul>
             </nav>
+            {{-- 
+            @endif
 
+            @if($sysAdmin && $sysAdmin->canAccessSystemModule('accounting'))
             <nav id="menu" class="nav-main" role="navigation">
                 <ul class="nav nav-main">
                     <li class="{{ ($path[0] === 'accounting')?'nav-active':'' }}">
@@ -72,7 +145,10 @@
                     </li>
                 </ul>
             </nav>
+            --}}
+            @endif
             
+            @if($sysAdmin && $sysAdmin->canAccessSystemModule('auto-update'))
             <nav id="menu" class="nav-main" role="navigation">
                 <ul class="nav nav-main">
                     <li class="{{ ($path[0] === 'auto-update')?'nav-active':'' }}">
@@ -83,6 +159,8 @@
                     </li>
                 </ul>
             </nav>
+            @endif
+            @if($sysAdmin && $sysAdmin->canAccessSystemModule('backup'))
             <nav id="menu" class="nav-main" role="navigation">
                 <ul class="nav nav-main">
                     <li class="{{ ($path[0] === 'backup')?'nav-active':'' }}">
@@ -93,6 +171,8 @@
                     </li>
                 </ul>
             </nav>
+            @endif
+            @if($sysAdmin && $sysAdmin->canAccessSystemModule('information'))
             <nav id="menu" class="nav-main" role="navigation">
                 <ul class="nav nav-main">
                     <li class="{{ ($path[0] === 'information')?'nav-active':'' }}">
@@ -103,6 +183,8 @@
                     </li>
                 </ul>
             </nav>
+            @endif
+            @if($sysAdmin && $sysAdmin->canAccessSystemModule('logs'))
             <nav id="menu" class="nav-main" role="navigation">
                 <ul class="nav nav-main">
                     <li class="">
@@ -113,7 +195,9 @@
                     </li>
                 </ul>
             </nav>
+            @endif
 
+            @if($sysAdmin && $sysAdmin->canAccessSystemModule('reports'))
             <nav id="menu" class="nav-main pb-2" role="navigation">
                 <ul class="nav nav-main">
                     <li class="{{ ($path[0] === 'reports')?'nav-active':'' }}">
@@ -124,6 +208,7 @@
                     </li>
                 </ul>
             </nav>
+            @endif
         </div>
         <script>
             // Maintain Scroll Position
@@ -161,6 +246,7 @@
         </script>
 
     </div>
+    @if($sysAdmin && ($sysAdmin->reseller_id === null || $sysAdmin->canAccessSystemModule('configurations')))
     <nav id="menu" class="nav-main configuration-nav pt-0 px-2" role="navigation">
         <ul class="nav nav-main">
             <li class="{{ ($path[0] === 'configurations')?'nav-active':'' }}">
@@ -170,6 +256,101 @@
                 </a>
             </li>
         </ul>
+        <ul class="nav nav-main d-md-none">
+            <li class="{{ ($path[0] === 'users')?'nav-active':'' }}">
+                <a class="nav-link" href="{{ route('system.users.create') }}">
+                    <svg  xmlns="http://www.w3.org/2000/svg"  width="18"  height="18"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-user"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0" /><path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2" /></svg>
+                    <span>Perfil</span>
+                </a>
+            </li>
+        </ul>
+        <ul class="nav nav-main d-md-none">
+            <li class="{{ ($path[0] === 'themes')?'nav-active':'' }}">
+                <a class="nav-link" onclick="toggleThemeSidebar()">
+                    <svg  xmlns="http://www.w3.org/2000/svg"  width="18"  height="18"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-paint"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M5 3m0 2a2 2 0 0 1 2 -2h10a2 2 0 0 1 2 2v2a2 2 0 0 1 -2 2h-10a2 2 0 0 1 -2 -2z" /><path d="M19 6h1a2 2 0 0 1 2 2a5 5 0 0 1 -5 5l-5 0v2" /><path d="M10 15m0 1a1 1 0 0 1 1 -1h2a1 1 0 0 1 1 1v4a1 1 0 0 1 -1 1h-2a1 1 0 0 1 -1 -1z" /></svg>
+                    <span>Estilos y Temas</span>
+                </a>
+            </li>
+        </ul>
+        <ul class="nav nav-main d-md-none">
+            <li class="{{ ($path[0] === 'logout')?'nav-active':'' }}">
+                <a class="nav-link text-danger" href="{{ route('logout') }}" onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
+                    <svg  xmlns="http://www.w3.org/2000/svg"  width="18"  height="18"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-logout"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M14 8v-2a2 2 0 0 0 -2 -2h-7a2 2 0 0 0 -2 2v12a2 2 0 0 0 2 2h7a2 2 0 0 0 2 -2v-2" /><path d="M9 12h12l-3 -3" /><path d="M18 15l3 -3" /></svg>
+                    <span>@lang('app.buttons.logout')</span>
+                </a>
+            </li>
+        </ul>
     </nav>
+    @endif
 
 </aside>
+
+<script>
+    (function () {
+        var sidebar = document.getElementById('sidebar-left');
+        if (!sidebar) return;
+
+        var html = document.documentElement;
+        var OPEN_CLASS = 'sidebar-left-opened';
+        var mql = window.matchMedia('(max-width: 767.98px)');
+
+        // Agrega/quita la clase sidebar-mobile según el ancho de pantalla (< 768px).
+        function toggleSidebarMobile(e) {
+            sidebar.classList.toggle('sidebar-mobile', e.matches);
+            if (!e.matches) {
+                closeSidebar();
+            }
+        }
+
+        function openSidebar() {
+            html.classList.add(OPEN_CLASS);
+        }
+
+        function closeSidebar() {
+            html.classList.remove(OPEN_CLASS);
+        }
+
+        function toggleSidebar(e) {
+            if (e) e.preventDefault();
+            html.classList.toggle(OPEN_CLASS);
+        }
+
+        // Botones de apertura/cierre (header y sidebar).
+        var toggles = document.querySelectorAll('.toggle-sidebar-left');
+        for (var i = 0; i < toggles.length; i++) {
+            toggles[i].addEventListener('click', toggleSidebar);
+            toggles[i].addEventListener('keydown', function (e) {
+                if (e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar') {
+                    toggleSidebar(e);
+                }
+            });
+        }
+
+        // Cierra al hacer clic fuera del sidebar (solo en móvil).
+        document.addEventListener('click', function (e) {
+            if (!mql.matches || !html.classList.contains(OPEN_CLASS)) return;
+            if (sidebar.contains(e.target) || e.target.closest('.toggle-sidebar-left')) return;
+            closeSidebar();
+        });
+
+        // Cierra al tocar cualquier opción del menú (solo en móvil).
+        sidebar.addEventListener('click', function (e) {
+            if (mql.matches && e.target.closest('.nav-link, a, li')) {
+                closeSidebar();
+            }
+        });
+
+        // Cierra con la tecla Escape.
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape') closeSidebar();
+        });
+
+        toggleSidebarMobile(mql);
+
+        if (mql.addEventListener) {
+            mql.addEventListener('change', toggleSidebarMobile);
+        } else if (mql.addListener) {
+            mql.addListener(toggleSidebarMobile);
+        }
+    })();
+</script>

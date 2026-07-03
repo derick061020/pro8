@@ -18,23 +18,6 @@ class CashCollection extends ResourceCollection
     public function toArray($request)
     {
         return $this->collection->transform(function($row, $key) {
-            $id_income=$row->user_id;
-            $incomes=Income::where('user_id', $id_income)->whereTypeUser();
-
-            $income_total=0;
-            if($row->date_closed){
-                $incomes=$incomes->whereBetween('date_of_issue',[$row->date_opening,$row->date_closed]);
-                $incomes=$incomes->whereBetween('time_of_issue',[$row->time_opening,$row->time_closed]);
-                $incomes=$incomes->get();
-        
-                if (isset($incomes[0])) {
-                    foreach ($incomes as $income) {
-                        $income_total += app(CashController::class)->getIncomeEgressCashDestination($income->payments);
-
-                    }
-                }
-            }
-            
 
             return [
                 'id' => $row->id,
@@ -47,14 +30,14 @@ class CashCollection extends ResourceCollection
                 'time_closed' => $row->time_closed, 
                 'closed' => "{$row->date_closed} {$row->time_closed}",
                 'beginning_balance' => $row->beginning_balance,
-                'final_balance' => $row->final_balance + $income_total,
+                'final_balance' => $row->final_balance,
                 'income' => $row->income,
                 'expense' => $row->expense,
                 'filename' => $row->filename,
                 'state' => (bool) $row->state, 
                 'state_description' => ($row->state) ? 'Aperturada':'Cerrada',
                 'reference_number' => $row->reference_number,
-
+                'user_email' => optional($row->user)->email,
             ];
         });
     }

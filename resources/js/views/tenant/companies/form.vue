@@ -14,7 +14,7 @@
             </div>
             <div class="card-body">
                 <form autocomplete="off"
-                      @submit.prevent="submit">
+                      @submit.prevent="submit('company')">
                     <div class="form-body">
                         <div class="row">
                             <!-- <div class="col-md-6">
@@ -67,32 +67,59 @@
                                         <i class="el-icon-loading me-2"></i>
                                         <span>Cargando…</span>
                                     </div>
-                                    <div v-else class="image-container">
-                                        <img
-                                            :src="logoLightPreviewUrl"
-                                            alt="Vista previa"
-                                            class="img-fluid img-small img-fluid-light img-thumbnail w-100"
-                                        />
-                                        <div class="overlay">
+                                    <div v-else class="image-container image-container-fluid">
+                                        <div v-if="form.logo">
+                                            <img
+                                                :src="logoLightPreviewUrl"
+                                                alt="Vista previa"
+                                                class="img-fluid img-small img-fluid-light img-thumbnail w-100"
+                                            />
+                                            <div class="overlay">
+                                                <el-button
+                                                    class="me-2 btn btn-sm"
+                                                    @click="onShowFilePicker('logo')"
+                                                    :loading="loading_logo"
+                                                    :disabled="loading_logo"
+                                                >
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-upload" style="margin-top: -2px"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2 -2v-2" /><path d="M7 9l5 -5l5 5" /><path d="M12 4l0 12" /></svg>
+                                                    Cambiar
+                                                </el-button>
+                                                <el-button v-if="form.logo"
+                                                    @click="deleteLogo('logo')"
+                                                    :loading="loading_delete_logo"
+                                                    size="mini"
+                                                    type="danger"
+                                                    class="delete-logo-btn btn btn-sm"
+                                                    plain>
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-trash"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M4 7l16 0" /><path d="M10 11l0 6" /><path d="M14 11l0 6" /><path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2 -2l1 -12" /><path d="M9 7v-3a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v3" /></svg>
+                                                </el-button>
+                                            </div>
+                                        </div>
+                                        <div 
+                                            v-else
+                                            class="d-flex flex-column justify-content-center align-items-center gap-2 p-2 drop-zone"
+                                            :class="{'drop-zone-active': isDraggingLogo}"
+                                            @dragover="onDragOver($event, 'logo')"
+                                            @dragleave="onDragLeave($event, 'logo')"
+                                            @drop="onDrop($event, 'logo')"
+                                        >
+                                            <div class="p-2 bg-light rounded">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="tabler-icon tabler-icon-photo h-8 w-8 text-muted"><path d="M15 8h.01"></path><path d="M3 6a3 3 0 0 1 3 -3h12a3 3 0 0 1 3 3v12a3 3 0 0 1 -3 3h-12a3 3 0 0 1 -3 -3v-12z"></path><path d="M3 16l5 -5c.928 -.893 2.072 -.893 3 0l5 5"></path><path d="M14 14l1 -1c.928 -.893 2.072 -.893 3 0l3 3"></path></svg>
+                                            </div>
+                                            <div class="">
+                                                <p class="text-center">Arrastra una imagen aquí o haz clic para seleccionar</p>
+                                                <p class="text-muted text-center">PNG, JPG, GIF o SVG · Máx. 2 MB</p>
+                                            </div>
                                             <el-button
-                                                type="primary"
-                                                class="change-btn me-2"
                                                 @click="onShowFilePicker('logo')"
                                                 :loading="loading_logo"
                                                 :disabled="loading_logo"
+                                                class="btn btn-sm"
                                             >
-                                                Cambiar logo
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-upload" style="margin-top: -2px"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2 -2v-2" /><path d="M7 9l5 -5l5 5" /><path d="M12 4l0 12" /></svg>
+                                                Seleccionar imagen
                                             </el-button>
-                                            <el-button v-if="form.logo"
-                                                @click="deleteLogo('logo')"
-                                                :loading="loading_delete_logo"
-                                                size="mini"
-                                                type="danger"
-                                                class="delete-logo-btn"
-                                                plain>
-                                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-trash"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M4 7l16 0" /><path d="M10 11l0 6" /><path d="M14 11l0 6" /><path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2 -2l1 -12" /><path d="M9 7v-3a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v3" /></svg>
-                                            </el-button>
-                                        </div>
+                                        </div>                                       
                                     </div>
                                     <input
                                         type="file"
@@ -115,32 +142,59 @@
                                         <i class="el-icon-loading me-2"></i>
                                         <span>Cargando…</span>
                                     </div>
-                                    <div v-else class="image-container">
-                                        <img
-                                            :src="logoDarkPreviewUrl"
-                                            alt="Vista previa"
-                                            class="img-fluid img-small img-fluid-dark img-thumbnail w-100"
-                                        />
-                                        <div class="overlay">
+                                    <div v-else class="image-container image-container-fluid">
+                                        <div v-if="form.logo_dark">
+                                            <img
+                                                :src="logoDarkPreviewUrl"
+                                                alt="Vista previa"
+                                                class="img-fluid img-small img-fluid-dark img-thumbnail w-100"
+                                            />
+                                            <div class="overlay">
+                                                <el-button
+                                                    class="me-2 btn btn-sm"
+                                                    @click="onShowFilePicker('logo_dark')"
+                                                    :loading="loading_logo_dark"
+                                                    :disabled="loading_logo_dark"
+                                                >
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-upload" style="margin-top: -2px"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2 -2v-2" /><path d="M7 9l5 -5l5 5" /><path d="M12 4l0 12" /></svg>
+                                                    Cambiar
+                                                </el-button>
+                                                <el-button v-if="form.logo_dark"
+                                                    @click="deleteLogo('logo_dark')"
+                                                    :loading="loading_delete_logo_dark"
+                                                    size="mini"
+                                                    type="danger"
+                                                    class="delete-logo-btn btn btn-sm"
+                                                    plain>
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-trash"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M4 7l16 0" /><path d="M10 11l0 6" /><path d="M14 11l0 6" /><path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2 -2l1 -12" /><path d="M9 7v-3a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v3" /></svg>
+                                                </el-button>
+                                            </div>
+                                        </div>
+                                        <div 
+                                            v-else
+                                            class="d-flex flex-column justify-content-center align-items-center gap-2 p-2 drop-zone"
+                                            :class="{'drop-zone-active': isDraggingLogoDark}"
+                                            @dragover="onDragOver($event, 'logo_dark')"
+                                            @dragleave="onDragLeave($event, 'logo_dark')"
+                                            @drop="onDrop($event, 'logo_dark')"
+                                        >
+                                            <div class="p-2 bg-light rounded">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="tabler-icon tabler-icon-photo h-8 w-8 text-muted"><path d="M15 8h.01"></path><path d="M3 6a3 3 0 0 1 3 -3h12a3 3 0 0 1 3 3v12a3 3 0 0 1 -3 3h-12a3 3 0 0 1 -3 -3v-12z"></path><path d="M3 16l5 -5c.928 -.893 2.072 -.893 3 0l5 5"></path><path d="M14 14l1 -1c.928 -.893 2.072 -.893 3 0l3 3"></path></svg>
+                                            </div>
+                                            <div class="">
+                                                <p class="text-center">Arrastra una imagen aquí o haz clic para seleccionar</p>
+                                                <p class="text-muted text-center">PNG, JPG, GIF o SVG · Máx. 2 MB</p>
+                                            </div>
                                             <el-button
-                                                type="primary"
-                                                class="change-btn me-2"
                                                 @click="onShowFilePicker('logo_dark')"
                                                 :loading="loading_logo_dark"
                                                 :disabled="loading_logo_dark"
+                                                class="btn btn-sm"
                                             >
-                                                Cambiar logo
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-upload" style="margin-top: -2px"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2 -2v-2" /><path d="M7 9l5 -5l5 5" /><path d="M12 4l0 12" /></svg>
+                                                Seleccionar imagen
                                             </el-button>
-                                            <el-button v-if="form.logo_dark"
-                                                @click="deleteLogo('logo_dark')"
-                                                :loading="loading_delete_logo_dark"
-                                                size="mini"
-                                                type="danger"
-                                                class="delete-logo-btn"
-                                                plain>
-                                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-trash"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M4 7l16 0" /><path d="M10 11l0 6" /><path d="M14 11l0 6" /><path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2 -2l1 -12" /><path d="M9 7v-3a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v3" /></svg>
-                                            </el-button>
-                                        </div>
+                                        </div> 
                                     </div>
                                     <input
                                         type="file"
@@ -163,31 +217,58 @@
                                         <i class="el-icon-loading me-2"></i>
                                         <span>Cargando…</span>
                                     </div>
-                                    <div v-else class="image-container">
-                                        <img
-                                            :src="faviconPreviewUrl"
-                                            @error="onImageError('favicon')"
-                                            alt="Vista previa"
-                                            class="img-fluid img-fluid-dashed img-small img-thumbnail w-100"
-                                        />
-                                        <div class="overlay">
+                                    <div v-else class="image-container image-container-fluid">
+                                        <div v-if="form.favicon">
+                                            <img
+                                                :src="faviconPreviewUrl"
+                                                @error="onImageError('favicon')"
+                                                alt="Vista previa"
+                                                class="img-fluid img-fluid-dashed img-small img-thumbnail w-100"
+                                            />
+                                            <div class="overlay">
+                                                <el-button
+                                                    class="me-2 btn btn-sm"
+                                                    @click="onShowFilePicker('favicon')"
+                                                    :loading="loading_favicon"
+                                                    :disabled="loading_favicon"
+                                                >
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-upload" style="margin-top: -2px"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2 -2v-2" /><path d="M7 9l5 -5l5 5" /><path d="M12 4l0 12" /></svg>
+                                                    Cambiar
+                                                </el-button>
+                                                <el-button v-if="form.favicon"
+                                                    @click="deleteLogo('favicon')"
+                                                    :loading="loading_delete_favicon"
+                                                    size="mini"
+                                                    type="danger"
+                                                    class="delete-logo-btn btn btn-sm"
+                                                    plain>
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-trash"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M4 7l16 0" /><path d="M10 11l0 6" /><path d="M14 11l0 6" /><path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2 -2l1 -12" /><path d="M9 7v-3a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v3" /></svg>
+                                                </el-button>
+                                            </div>
+                                        </div>
+                                        <div 
+                                            v-else
+                                            class="d-flex flex-column justify-content-center align-items-center gap-2 p-2 drop-zone"
+                                            :class="{'drop-zone-active': isDraggingFavicon}"
+                                            @dragover="onDragOver($event, 'favicon')"
+                                            @dragleave="onDragLeave($event, 'favicon')"
+                                            @drop="onDrop($event, 'favicon')"
+                                        >
+                                            <div class="p-2 bg-light rounded">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="tabler-icon tabler-icon-photo h-8 w-8 text-muted"><path d="M15 8h.01"></path><path d="M3 6a3 3 0 0 1 3 -3h12a3 3 0 0 1 3 3v12a3 3 0 0 1 -3 3h-12a3 3 0 0 1 -3 -3v-12z"></path><path d="M3 16l5 -5c.928 -.893 2.072 -.893 3 0l5 5"></path><path d="M14 14l1 -1c.928 -.893 2.072 -.893 3 0l3 3"></path></svg>
+                                            </div>
+                                            <div class="">
+                                                <p class="text-center">Arrastra una imagen aquí o haz clic para seleccionar</p>
+                                                <p class="text-muted text-center">PNG, JPG, GIF o SVG · Máx. 2 MB</p>
+                                            </div>
                                             <el-button
-                                                type="primary"
-                                                class="change-btn me-2"
                                                 @click="onShowFilePicker('favicon')"
                                                 :loading="loading_favicon"
                                                 :disabled="loading_favicon"
+                                                class="btn btn-sm"
                                             >
-                                                Cambiar favicon
-                                            </el-button>
-                                            <el-button v-if="form.favicon"
-                                                @click="deleteLogo('favicon')"
-                                                :loading="loading_delete_favicon"
-                                                size="mini"
-                                                type="danger"
-                                                class="delete-logo-btn"
-                                                plain>
-                                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-trash"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M4 7l16 0" /><path d="M10 11l0 6" /><path d="M14 11l0 6" /><path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2 -2l1 -12" /><path d="M9 7v-3a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v3" /></svg>
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-upload" style="margin-top: -2px"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2 -2v-2" /><path d="M7 9l5 -5l5 5" /><path d="M12 4l0 12" /></svg>
+                                                Seleccionar imagen
                                             </el-button>
                                         </div>
                                     </div>
@@ -196,7 +277,7 @@
                                         @change="onGeneratePreview($event, 'favicon')"
                                         ref="inputFavicon"
                                         class="hidden"
-                                        accept="image/png"
+                                        accept="image/png, image/webp"
                                     />
                                     <div class="sub-title text-muted mt-2"><small>Se recomienda una imagen con fondo transparente y cuadrada en PNG</small></div>
                                 </div>
@@ -209,31 +290,58 @@
                                         <i class="el-icon-loading me-2"></i>
                                         <span>Cargando…</span>
                                     </div>
-                                    <div v-else class="image-container">
-                                        <img
-                                            :src="appLogoPreviewUrl"
-                                            @error="onImageError('app_logo')"
-                                            alt="Vista previa"
-                                            class="img-fluid img-fluid-dashed img-small img-thumbnail w-100"
-                                        />
-                                        <div class="overlay">
+                                    <div v-else class="image-container image-container-fluid">
+                                        <div v-if="form.app_logo">
+                                            <img
+                                                :src="appLogoPreviewUrl"
+                                                @error="onImageError('app_logo')"
+                                                alt="Vista previa"
+                                                class="img-fluid img-fluid-dashed img-small img-thumbnail w-100"
+                                            />
+                                            <div class="overlay">
+                                                <el-button
+                                                    class="me-2 btn btn-sm"
+                                                    @click="onShowFilePicker('app_logo')"
+                                                    :loading="loading_app_logo"
+                                                    :disabled="loading_app_logo"
+                                                >
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-upload" style="margin-top: -2px"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2 -2v-2" /><path d="M7 9l5 -5l5 5" /><path d="M12 4l0 12" /></svg>
+                                                    Cambiar
+                                                </el-button>
+                                                <el-button v-if="form.app_logo"
+                                                    @click="deleteLogo('app_logo')"
+                                                    :loading="loading_delete_app_logo"
+                                                    size="mini"
+                                                    type="danger"
+                                                    class="delete-logo-btn btn btn-sm"
+                                                    plain>
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-trash"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M4 7l16 0" /><path d="M10 11l0 6" /><path d="M14 11l0 6" /><path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2 -2l1 -12" /><path d="M9 7v-3a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v3" /></svg>
+                                                </el-button>
+                                            </div>
+                                        </div>
+                                        <div 
+                                            v-else
+                                            class="d-flex flex-column justify-content-center align-items-center gap-2 p-2 drop-zone"
+                                            :class="{'drop-zone-active': isDraggingAppLogo}"
+                                            @dragover="onDragOver($event, 'app_logo')"
+                                            @dragleave="onDragLeave($event, 'app_logo')"
+                                            @drop="onDrop($event, 'app_logo')"
+                                        >
+                                            <div class="p-2 bg-light rounded">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="tabler-icon tabler-icon-photo h-8 w-8 text-muted"><path d="M15 8h.01"></path><path d="M3 6a3 3 0 0 1 3 -3h12a3 3 0 0 1 3 3v12a3 3 0 0 1 -3 3h-12a3 3 0 0 1 -3 -3v-12z"></path><path d="M3 16l5 -5c.928 -.893 2.072 -.893 3 0l5 5"></path><path d="M14 14l1 -1c.928 -.893 2.072 -.893 3 0l3 3"></path></svg>
+                                            </div>
+                                            <div class="">
+                                                <p class="text-center">Arrastra una imagen aquí o haz clic para seleccionar</p>
+                                                <p class="text-muted text-center">PNG, JPG, GIF o SVG · Máx. 2 MB</p>
+                                            </div>
                                             <el-button
-                                                type="primary"
-                                                class="change-btn me-2"
                                                 @click="onShowFilePicker('app_logo')"
                                                 :loading="loading_app_logo"
                                                 :disabled="loading_app_logo"
+                                                class="btn btn-sm"
                                             >
-                                                Cambiar logo
-                                            </el-button>
-                                            <el-button v-if="form.app_logo"
-                                                @click="deleteLogo('app_logo')"
-                                                :loading="loading_delete_app_logo"
-                                                size="mini"
-                                                type="danger"
-                                                class="delete-logo-btn"
-                                                plain>
-                                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-trash"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M4 7l16 0" /><path d="M10 11l0 6" /><path d="M14 11l0 6" /><path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2 -2l1 -12" /><path d="M9 7v-3a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v3" /></svg>
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-upload" style="margin-top: -2px"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2 -2v-2" /><path d="M7 9l5 -5l5 5" /><path d="M12 4l0 12" /></svg>
+                                                Seleccionar imagen
                                             </el-button>
                                         </div>
                                     </div>
@@ -352,7 +460,7 @@
                         </div> -->
                     </div>
                     <div class="form-actions text-end pt-2">
-                        <el-button :loading="loading_submit"
+                         <el-button :loading="loading_submit.company"
                                    native-type="submit"
                                    type="primary">Guardar
                         </el-button>
@@ -373,7 +481,7 @@
             </div>
             <div class="card-body">
                 <form autocomplete="off"
-                      @submit.prevent="submit">
+                      @submit.prevent="submit('cpe')">
                     <div class="row">
                         <div class="col-md-6">
                             <div :class="{'has-danger': errors.integrated_query_client_id}"
@@ -397,7 +505,7 @@
                         </div>
                     </div>
                     <div class="form-actions text-end pt-2">
-                        <el-button :loading="loading_submit"
+                        <el-button :loading="loading_submit.cpe"
                                    native-type="submit"
                                    type="primary">Guardar
                         </el-button>
@@ -411,7 +519,7 @@
             </div>
             <div class="card-body">
                 <form autocomplete="off"
-                      @submit.prevent="submit">
+                      @submit.prevent="submit('integrated')">
                     <div class="form-body">
                         <div class="row">
                             <div class="col-md-12">
@@ -468,7 +576,7 @@
                         </div>
                     </div>
                     <div class="form-actions text-end pt-2">
-                        <el-button :loading="loading_submit"
+                        <el-button :loading="loading_submit.integrated"
                                    native-type="submit"
                                    type="primary">Guardar
                         </el-button>
@@ -505,6 +613,13 @@ export default {
         return {
             loading_company_record: true,
             loading_submit: false,
+            loading_submit: {
+                company: false,
+                smtp: false,
+                integrated: false,
+                guia: false,
+                cpe: false,
+            },
             loading_delete_logo: false,
             loading_delete_logo_dark: false,
             loading_delete_favicon: false,
@@ -513,6 +628,7 @@ export default {
             loading_logo_dark: false,
             loading_favicon: false,
             loading_app_logo: false,
+            loading_test: false,
             headers: headers_token,
             resource: 'companies',
             errors: {},
@@ -521,6 +637,10 @@ export default {
             logoDarkPreviewUrl: '/logo/tulogo.png',
             faviconPreviewUrl: PLACEHOLDER_IMAGE_DATA_URI,
             appLogoPreviewUrl: PLACEHOLDER_IMAGE_DATA_URI,
+            isDraggingLogo: false,
+            isDraggingLogoDark: false,
+            isDraggingFavicon: false,
+            isDraggingAppLogo: false,
         }
     },
     async created() {
@@ -718,11 +838,20 @@ export default {
                 soap_sunat_password: null,
                 api_sunat_id: null,
                 api_sunat_secret: null,
-                title_web: null
+                title_web: null,
+                /** Mail */
+                smtp_host: null,
+                smtp_port: null,
+                smtp_user: null,
+                smtp_password: null,
+                smtp_encryption: null
             }
         },
-        submit() {
-            this.loading_submit = true
+        submit(section = 'company') {
+            if (!Object.prototype.hasOwnProperty.call(this.loading_submit, section)) {
+                section = 'company'
+            }
+            this.loading_submit[section] = true
             this.$http.post(`/${this.resource}`, this.form)
                 .then(response => {
                     if (response.data.success) {
@@ -732,14 +861,14 @@ export default {
                     }
                 })
                 .catch(error => {
-                    if (error.response.status === 422) {
+                    if (error.response && error.response.status === 422) {
                         this.errors = error.response.data
                     } else {
                         console.log(error)
                     }
                 })
                 .then(() => {
-                    this.loading_submit = false
+                    this.loading_submit[section] = false
                 })
         },
         successUpload(response, file, fileList) {
@@ -814,6 +943,99 @@ export default {
             }).catch(() => {
                 // Usuario canceló la acción
             });
+        },
+        onDragOver(event, type) {
+            event.preventDefault()
+            event.stopPropagation()
+            if (type === 'logo') this.isDraggingLogo = true
+            if (type === 'logo_dark') this.isDraggingLogoDark = true
+            if (type === 'favicon') this.isDraggingFavicon = true
+            if (type === 'app_logo') this.isDraggingAppLogo = true
+        },
+        onDragLeave(event, type) {
+            event.preventDefault()
+            event.stopPropagation()
+            if (type === 'logo') this.isDraggingLogo = false
+            if (type === 'logo_dark') this.isDraggingLogoDark = false
+            if (type === 'favicon') this.isDraggingFavicon = false
+            if (type === 'app_logo') this.isDraggingAppLogo = false
+        },
+        onDrop(event, type) {
+            event.preventDefault()
+            event.stopPropagation()
+            
+            if (type === 'logo') this.isDraggingLogo = false
+            if (type === 'logo_dark') this.isDraggingLogoDark = false
+            if (type === 'favicon') this.isDraggingFavicon = false
+            if (type === 'app_logo') this.isDraggingAppLogo = false
+
+            const files = event.dataTransfer?.files
+            if (!files || !files.length) return
+
+            const file = files[0]
+            
+            // Validar tipo de archivo
+            if (type === 'favicon' && !file.type.startsWith('image/png')) {
+                this.$message.error('Solo se permiten archivos PNG para el favicon')
+                return
+            }
+            
+            if (type !== 'favicon' && !file.type.startsWith('image/')) {
+                this.$message.error('Solo se permiten archivos de imagen')
+                return
+            }
+
+            // Validar tamaño (2 MB máximo)
+            if (file.size > 2 * 1024 * 1024) {
+                this.$message.error('El archivo no debe superar los 2 MB')
+                return
+            }
+
+            // Generar preview y subir
+            const fileReader = new FileReader()
+            fileReader.addEventListener('load', () => {
+                if (type === 'logo') {
+                    this.logoLightPreviewUrl = fileReader.result
+                }
+                if (type === 'logo_dark') {
+                    this.logoDarkPreviewUrl = fileReader.result
+                }
+                if (type === 'favicon') {
+                    this.faviconPreviewUrl = fileReader.result
+                }
+                if (type === 'app_logo') {
+                    this.appLogoPreviewUrl = fileReader.result
+                }
+            })
+            fileReader.readAsDataURL(file)
+
+            this.uploadCompanyFile(file, type)
+        },
+        testEmail() {
+            if (!this.form.smtp_host || !this.form.smtp_port || !this.form.smtp_user || !this.form.smtp_password) {
+                return this.$message.error('Debe completar todos los campos SMTP antes de hacer la prueba');
+            }
+            this.loading_test = true;
+            this.$http.post('/configurations/test-email', {
+                smtp_host: this.form.smtp_host,
+                smtp_port: this.form.smtp_port,
+                smtp_user: this.form.smtp_user,
+                smtp_password: this.form.smtp_password,
+                smtp_encryption: this.form.smtp_encryption,
+            }).then(response => {
+                if (response.data.success) {
+                    this.$message.success(response.data.message);
+                } else {
+                    this.$message.error(response.data.message);
+                }
+            }).catch(error => {
+                this.$message.error(error.response?.data?.message || 'Error al enviar correo de prueba');
+            }).then(() => {
+                this.loading_test = false;
+            });
+        },
+        openMailManual() {
+            window.open('https://manual.pro8.uio.la/guias-adicionales/Configuracion/configuracion-smtp-segura', '_blank');
         }
     }
 }
@@ -843,7 +1065,6 @@ export default {
     justify-content: center;
     opacity: 0;
     transition: opacity 0.3s ease;
-    border-radius: 0.375rem;
 }
 .image-container:hover .overlay {
     opacity: 1;
@@ -855,5 +1076,13 @@ export default {
     height: auto;
     max-height: 80px;
     object-fit: contain;
+}
+.drop-zone {
+    transition: all 0.3s ease;
+    border: 2px dashed transparent;
+    border-radius: 0.5rem;
+}
+.drop-zone-active {
+    border-color: #409eff;
 }
 </style>

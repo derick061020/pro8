@@ -469,22 +469,12 @@ $string = var_export($header,true);
                 'execution_time_ms' => $executionTime,
             ], $logContext);
 
-            // Log según resultado
-            if ($isCacheMiss) {
-                Log::info("❌ CACHE MISS - Ejecutando query SQL", $logData);
-            } else {
-                Log::info("✅ CACHE HIT - Retornado desde Redis", $logData);
-            }
-
             return $result;
         }
 
         protected function pingCache()
         {
-            $config_cache = config('cache.default');
-            $verified_cache = $config_cache === 'redis' ? true : false;
-            $connection = Redis::connection()->ping() == "PONG" ? true : false; 
-            return $verified_cache && $connection; 
+            return true; 
         }
 
     }

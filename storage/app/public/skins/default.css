@@ -20,6 +20,10 @@
     --warning: #ff8400;
     --primary: #007bff;
     --info: #1dadff; 
+    --border-radius-lg: 14px;
+    --border-radius-sm: 8px;
+    --secondary-blue: #1c4bd2;
+    --border-color: #d5dbe8;
 }
 
 html, body {
@@ -461,7 +465,7 @@ nav#menu {
     background: var(--light-color) !important;
     border: 1px solid var(--accent-color) !important;
     color: var(--dark-color) !important;
-    padding: 0.47rem 0.75rem;
+    padding: 12px 15px !important;
     border-radius: 8px !important;
     font-size: 13px !important;
 }
@@ -1682,6 +1686,10 @@ body .v-modal {
 .btn-add-new:hover{
     color: var(--dark-color);
 }
+.btn-edit-person {
+    right: 30px;
+    border-radius: 0 !important;
+}
 /* estilos login */
 .auth .form-group label{
     border-bottom: none !important;
@@ -1932,15 +1940,18 @@ html.sidebar-light:not(.dark) .style-switcher {
     background: #ffffff;
 }
 @media only screen and (min-width: 767px) {
+    html.no-overflowscrolling .nano {
+    height: calc(100% - 66px) !important;
+}
     html.no-overflowscrolling .sidebar-left.show-branch-selector .nano {
-        height: calc(100% - 142px) !important;
+        height: calc(100% - 164px) !important;
     }
     html.no-overflowscrolling .sidebar-left.show-both-selectors .nano {
-        height: calc(100% - 210px) !important;
+        height: calc(100% - 232px) !important;
     }
     html.no-overflowscrolling.sidebar-left-collapsed .sidebar-left.show-branch-selector .nano,
     html.no-overflowscrolling.sidebar-left-collapsed .sidebar-left.show-both-selectors .nano {
-        height: calc(100% - 105px) !important;
+        height: calc(100% - 116px) !important;
     }
 }
 .contain-icon-establishment{
@@ -2359,7 +2370,83 @@ html.sidebar-ligth-blue .card-header.bg-info {
 .table-prices-popover tbody tr td{
     border-color: var(--light-color) !important;
 }
+.ck.ck-toolbar,
+.ck.ck-editor__main>.ck-editor__editable:not(.ck-focused) {
+    border-color: var(--accent-color) !important;
+}
+.ck.ck-toolbar{
+    background-color: var(--light-color);
+}
+.image-container-fluid{
+    border-radius: 8px;
+    border-color: var(--accent-color);
+}
+.img-thumbnail{
+    border-radius: 8px;
+}
+.image-container-fluid:hover{
+    border-color: color-mix(in srgb, var(--accent-color) 90%, #000000);
+}
 /* end */
+.btn-outline-success{
+    border-color: var(--success) !important;
+    color: var(--success) !important;
+    background-color: transparent !important;
+}
+.btn-outline-success:hover{
+    border-color: var(--success) !important;
+    background-color: var(--success) !important;
+    color: #fff !important;
+}
+.btn-outline-info{
+    border-color: var(--info) !important;
+    color: var(--info) !important;
+    background-color: transparent !important;
+}
+.btn-outline-info:hover{
+    border-color: var(--info) !important;
+    background-color: var(--info) !important;
+    color: #fff !important;
+}
+.cbm-wrap{
+    margin: -20px -25px 30px -25px !important;
+}
+.template-skin-item {
+    border-radius: 10px;
+}
+.advanced-settings .el-tabs__nav {
+    border-radius: 8px !important;
+}
+.advanced-settings.el-tabs--border-card>.el-tabs__header .el-tabs__item.is-active {
+    color: var(--primary-color) !important;
+    background-color: color-mix(in srgb, var(--primary-color) 15%, #ffffff00);
+}
+.advanced-settings.el-tabs--border-card>.el-tabs__header .el-tabs__item:hover {
+    background-color: color-mix(in srgb, var(--primary-color) 5%, #ffffff00);
+}
+.advanced-settings .dot {
+    background: var(--primary-color);
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--primary-color) 20%, #ffffff00);
+}
+.tag-icon {
+    background-color: var(--primary-color);
+    color: #fff;
+    box-shadow: 0 8px 20px -6px color-mix(in srgb, var(--primary-color) 20%, #ffffff00);
+}
+.advanced-settings .options-count {
+    background-color: color-mix(in srgb, var(--primary-color) 15%, #ffffff00);
+    color: color-mix(in srgb, var(--dark-color) 70%, #ffffff) !important;
+}
+.advanced-settings .card-body .header-card {
+    border-bottom: 1px solid color-mix(in srgb, var(--accent-color) 40%, #ffffff);
+}
+.route-path-reports {
+    background-color: color-mix(in srgb, var(--accent-color) 25%, #ffffff00);
+    color: color-mix(in srgb, var(--dark-color) 70%, #ffffff);
+}
+.buhoprinter-config .info-text {
+    border: 1px solid color-mix(in srgb, var(--accent-color) 96%, #000000);
+}
 /* --------------------------- tema Oscuro --------------------------- */
 /* html.dark .header .logo-container .topbar-links:hover {
     background: #161d31d1;
@@ -2373,6 +2460,9 @@ html.dark ul.nav-main li .nav-children li a:after {
 .fix-m {
     margin-bottom: -4px;
     margin-top: 5px;
+}
+.coverage-config-message {
+    border-radius: 10px !important;
 }
 /* mode dark default */
 html.fixed.sidebar-dark .sidebar-left,
@@ -3525,32 +3615,65 @@ html.dark .add-row-table:hover{
 html.dark .border-bottom-dashed,
 html.dark .border-top-dashed,
 html.dark .table-list-prices,
-html.dark .table-list-prices tbody tr{
+html.dark .table-list-prices tbody tr,
+html.dark .sc-action-item,
+html.dark .sc-panel-actions,
+html.dark .cem-section,
+html.dark .cd-section,
+html.dark .cd-section-title,
+html.dark .cem-option-row {
+    border-color: var(--borders-dark);
+}
+html.dark .el-alert--info.is-light,
+html.dark .cd-text-block{
+    background-color: var(--inputs-dark);
+    color: var(--accent-color);
+}
+html.dark .el-divider{
+    background-color: var(--borders-dark);
+}
+html.dark .cem-section-header {
+    background-color: var(--inputs-dark);
     border-color: var(--borders-dark);
 }
 html.dark .payment-container-pos {
     border-top: 3px dashed var(--borders-dark);
 }
 html.dark .table-list-prices .btn-dropdown-toggle,
-html.dark .btn.barcode {
+html.dark .btn.barcode,
+html.dark .cem-section-title,
+html.dark .cem-url-text,
+html.dark .cd-section-title,
+html.dark .cd-field>span {
     color: var(--light-color);
 }
 html.dark .table-list-prices .btn-dropdown-toggle:hover,
 html.dark .table-list-prices .btn-dropdown-toggle:focus,
-html.dark .table-list-prices .btn-dropdown-toggle:active {
+html.dark .table-list-prices .btn-dropdown-toggle:active,
+html.dark .sc-action-item {
     background-color: var(--inputs-dark);
 }
-html.dark label.control-label {
+html.dark label.control-label,
+html.dark .cbm-card__label,
+html.dark .cbm-stat__label,
+html.dark .cbm-stat__icon,
+html.dark .cem-option-label {
     color: var(--accent-color);
 }
-html.dark .establishment-selector-container{
+html.dark .establishment-selector-container,
+html.dark .cd-form-section {
     background-color: var(--contents-dark);
 }
-html.dark .contain-icon-establishment{
+html.dark .contain-icon-establishment,
+html.dark .cbm-stat__value,
+html.dark .cbm-card__value {
     color: var(--light-color);
 }
 html.dark .establishment-dropdown,
-html.dark .establishment-dropdown-header {
+html.dark .establishment-dropdown-header,
+html.dark .cbm-card,
+html.dark .cbm-stat,
+html.dark .cbm-secondary-grid {
     background-color: var(--contents-dark) !important;
     border-color: var(--borders-dark) !important;
     color: var(--light-color) !important;
@@ -3701,4 +3824,19 @@ html:not(.dark) .sidebar-toggle-container .sidebar-toggle:hover {
     background-color: rgba(255, 255, 255, .08) !important;
 }
 /* end tema rojo + plomo */
+
+/* --- CKEditor dark mode (version nueva) --- */
+html.dark .ck.ck-toolbar,
+html.dark .ck.ck-editor__main>.ck-editor__editable:not(.ck-focused) {
+    border-color: var(--borders-dark) !important;
+}
+html.dark .ck.ck-reset_all *{
+    border-color: transparent !important;
+}
+html.dark .image-container-fluid{
+    border-color: var(--borders-dark);
+}
+html.dark .image-container-fluid:hover{
+    border-color: color-mix(in srgb, var(--borders-dark) 90%, #ffffff);
+}
 /* end */

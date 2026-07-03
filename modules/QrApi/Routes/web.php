@@ -21,6 +21,7 @@ if($current_hostname) {
                 Route::post('/configuration/update', 'QrApiController@updateConfig');
 
                 Route::post('/encode', 'QrApiController@encodeBase64');
+                Route::post('/send-message', 'QrApiController@sendMessage');
             });
         });
     });

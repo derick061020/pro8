@@ -12,7 +12,8 @@ class Skin extends ModelTenant
     protected $fillable = [
         'name',
         'filename',
-        'status'
+        'status',
+        'is_system',
     ];
 
     /**
@@ -21,10 +22,11 @@ class Skin extends ModelTenant
     public function getCollectionData()
     {
         return [
-            'id' => $this->id,
-            'name' => $this->name,
-            'filename' => $this->filename,
-            'status' => $this->status,
+            'id'        => $this->id,
+            'name'      => $this->name,
+            'filename'  => $this->filename,
+            'status'    => $this->status,
+            'is_system' => (bool) $this->is_system,
         ];
     }
 }

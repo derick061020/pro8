@@ -9,7 +9,7 @@
       </div>
       <template>
         <form autocomplete="off">
-          <el-tabs v-model="activeName" type="border-card" class="rounded">
+          <el-tabs v-model="activeName" type="border-card" class="rounded" @tab-click="onTabClick">
             <el-tab-pane class="mb-3"  name="first">
               <span slot="label">Ambientes</span>
               <Environments />
@@ -500,20 +500,148 @@
                 </div>
               </div>
             </el-tab-pane>
-            <el-tab-pane class="mb-3"  name="six">
-              <span slot="label">Áreas de preparación</span>
+            <el-tab-pane class="mb-3" name="seven">
+              <span slot="label">Impresión</span>
+
+              <div class="row mb-3">
+                <div class="col-md-12">
+                  <h5><b>Asignación de impresoras:</b></h5>
+                  <span class="text-muted">Selecciona qué impresora se usará para cada tipo de salida.</span>
+                </div>
+              </div>
               <div class="row">
                 <div class="col-md-4">
-                  <label class="control-label">Impresora</label>
-                  <el-select v-model="form_preparation_area.printer"
-                    placeholder="Seleccionar impresora"
+                  <div class="form-group">
+                    <label class="control-label">
+                      Impresora - Comanda
+                      <el-tooltip
+                        content="Impresora donde se imprimirán las comandas enviadas a los mozos"
+                        effect="dark"
+                        placement="top">
+                        <i class="fa fa-info-circle text-muted ml-1"></i>
+                      </el-tooltip>
+                    </label>
+                    <el-select
+                      v-model="form_assignment.printer_name_comanda"
+                      clearable
+                      placeholder="Seleccionar impresora"
+                      class="w-100"
+                      @change="saveAssignment">
+                      <el-option
+                        v-for="p in registered_printers"
+                        :key="p.name"
+                        :label="p.name + (p.is_default ? ' (predeterminada)' : '')"
+                        :value="p.name">
+                      </el-option>
+                    </el-select>
+                    <p style="text-align: justify; font-size: 0.5em;" class="text-muted mt-2">
+                      Si el producto no tiene un área de preparación asignada, se imprimirá automáticamente en la impresora seleccionada.
+                    </p>
+                  </div>
+                </div>
+                <div class="col-md-4">
+                  <div class="form-group">
+                    <label class="control-label">
+                      Impresora - Documents
+                      <el-tooltip
+                        content="Impresora asignada para impresión de documentos"
+                        effect="dark"
+                        placement="top">
+                        <i class="fa fa-info-circle text-muted ml-1"></i>
+                      </el-tooltip>
+                    </label>
+                    <el-select
+                      v-model="form_assignment.printer_name_documents"
+                      clearable
+                      placeholder="Seleccionar impresora"
+                      class="w-100"
+                      @change="saveAssignment">
+                      <el-option
+                        v-for="p in registered_printers"
+                        :key="p.name"
+                        :label="p.name + (p.is_default ? ' (predeterminada)' : '')"
+                        :value="p.name">
+                      </el-option>
+                    </el-select>
+                  </div>
+                </div>
+                <div class="col-md-4">
+                  <div class="form-group">
+                    <label class="control-label">
+                      Impresora - Precuenta
+                      <el-tooltip
+                        content="Impresora donde se imprimirá la pre-cuenta para el cliente"
+                        effect="dark"
+                        placement="top">
+                        <i class="fa fa-info-circle text-muted ml-1"></i>
+                      </el-tooltip>
+                    </label>
+                    <el-select
+                      v-model="form_assignment.printer_name_precuenta"
+                      clearable
+                      placeholder="Seleccionar impresora"
+                      class="w-100"
+                      @change="saveAssignment">
+                      <el-option
+                        v-for="p in registered_printers"
+                        :key="p.name"
+                        :label="p.name + (p.is_default ? ' (predeterminada)' : '')"
+                        :value="p.name">
+                      </el-option>
+                    </el-select>
+                  </div>
+                </div>
+              </div>
+            </el-tab-pane>
+            <el-tab-pane class="mb-3" name="six">
+              <span slot="label">Áreas de preparación</span>
+
+              <div class="row mt-3">
+                <div class="col-md-12">
+                  <h5><b>Áreas de preparación:</b></h5>
+                  <span class="text-muted">
+                    Por defecto, todas las áreas utilizarán la impresora configurada en “Impresora - Comanda”.<br>
+                    Si deseas asignar una impresora diferente para cada área, activa la opción a continuación.
+                  </span>
+                </div>
+              </div>
+              <div class="row mt-2">
+                <div class="col-md-12 d-flex align-items-center">
+                  <el-switch
+                    v-model="form_assignment.printer_per_area_enabled"
+                    active-text="Permitir una impresora distinta por área"
+                    @change="savePrinterPerArea">
+                  </el-switch>
+                  <el-tooltip
+                    content="Cuando está activo, podrás escoger una impresora específica para cada área. Si está inactivo, todas las áreas comparten la impresora de comanda."
+                    effect="dark"
+                    placement="top">
+                    <i class="fa fa-info-circle text-muted ml-2"></i>
+                  </el-tooltip>
+                </div>
+              </div>
+              <div class="row mt-3">
+                <div class="col-md-4">
+                  <label class="control-label">
+                    Impresora
+                    <el-tooltip
+                      v-if="!form_assignment.printer_per_area_enabled"
+                      content="Se usa la misma impresora seleccionada en 'Impresora - Comanda'. Activa el toggle de arriba para escoger una distinta."
+                      effect="dark"
+                      placement="top">
+                      <i class="fa fa-info-circle text-muted ml-1"></i>
+                    </el-tooltip>
+                  </label>
+                  <el-select v-model="areaPrinterModel"
+                    :placeholder="form_assignment.printer_per_area_enabled ? 'Seleccionar impresora' : 'Selecciona primero \'Impresora - Comanda\''"
+                    :disabled="!form_assignment.printer_per_area_enabled"
                     filterable
                     style="width: 100%;">
                     <el-option
-                      v-for="printer in printers"
-                      :key="printer"
-                      :label="printer"
-                      :value="printer">
+                      v-for="p in registered_printers"
+                      :key="p.name"
+                      :label="p.name + (p.is_default ? ' (predeterminada)' : '')"
+                      :value="p.name">
                     </el-option>
                   </el-select>
                 </div>
@@ -549,12 +677,12 @@
                           <td>{{ area.name }}</td>
                           <td>{{ area.printer }}</td>
                           <td class="text-end">
-                            <el-button type="primary" size="mini" class="mx-1" @click="editArea(area)">
-                              <i class="fa fa-edit"></i>
-                            </el-button>
-                            <el-button type="danger" size="mini" @click="deleteArea(area.id)">
-                              <i class="fa fa-trash"></i>
-                            </el-button>
+                            <button type="button" class="btn btn-xs btn-info btn-shad" title="Editar" @click="editArea(area)">
+                              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-edit"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M7 7h-1a2 2 0 0 0 -2 2v9a2 2 0 0 0 2 2h9a2 2 0 0 0 2 -2v-1" /><path d="M20.385 6.585a2.1 2.1 0 0 0 -2.97 -2.97l-8.415 8.385v3h3l8.385 -8.415" /><path d="M16 5l3 3" /></svg>
+                            </button>
+                            <button type="button" class="btn btn-xs btn-danger btn-shad ms-1" title="Eliminar" @click="deleteArea(area.id)">
+                              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-trash"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M4 7l16 0" /><path d="M10 11l0 6" /><path d="M14 11l0 6" /><path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2 -2l1 -12" /><path d="M9 7v-3a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v3" /></svg>
+                            </button>
                           </td>
                         </tr>
                       </tbody>
@@ -588,6 +716,7 @@
 <script>
 import { io } from 'socket.io-client'
 import {deletable} from '@mixins/deletable'
+import { buhoprinter } from '@mixins/buhoprinter'
 import Notas from '../notes/index.vue'
 import UsersForm from './partials/form.vue'
 import Environments from './partials/environments.vue'
@@ -608,7 +737,7 @@ const SOCKET = io(url, {
 //  }
 
 export default {
-    mixins: [deletable],
+    mixins: [deletable, buhoprinter],
     components: {Notas,UsersForm,Environments},
     data() {
       return {
@@ -661,11 +790,18 @@ export default {
         environment_3 :{name: 'Ambiente 3',original_name:'Ambiente 3',enabled_edit: false},
         environment_4 :{name: 'Ambiente 4',original_name:'Ambiente 4',enabled_edit: false},
         printers: ['No asignada'],
+        registered_printers: [],
+        form_assignment: {
+          printer_name_comanda:     null,
+          printer_name_documents:   null,
+          printer_name_precuenta:   null,
+          printer_per_area_enabled: false,
+        },
         preparation_areas: [],
         form_preparation_area: {
           id: null,
           name: '',
-          printer: ''
+          printer: '',
         },
         qzConnected: false
       }
@@ -675,8 +811,29 @@ export default {
         return (this.form_role.user_id != '' && this.form_role.role_id != '') ? false : true
       },
       canSaveArea() {
+        const effectivePrinter = this.form_assignment.printer_per_area_enabled
+          ? this.form_preparation_area.printer
+          : this.form_assignment.printer_name_comanda;
         return this.form_preparation_area.name.trim() !== '' &&
-               this.form_preparation_area.printer.trim() !== '';
+               !!(effectivePrinter || '').trim();
+      },
+      /**
+       * Modelo del select Impresora del form de áreas.
+       * Cuando el toggle "Permitir una impresora distinta por área" está OFF,
+       * el select se sincroniza con la impresora de Comanda y no es editable.
+       * Cuando está ON, el usuario puede escoger una impresora distinta por área.
+       */
+      areaPrinterModel: {
+        get() {
+          return this.form_assignment.printer_per_area_enabled
+            ? this.form_preparation_area.printer
+            : this.form_assignment.printer_name_comanda;
+        },
+        set(value) {
+          if (this.form_assignment.printer_per_area_enabled) {
+            this.form_preparation_area.printer = value;
+          }
+        }
       }
     },
     created() {
@@ -687,9 +844,8 @@ export default {
       this.getUsers();
       this.getWaiters();
       this.getEnvs();
-      this.startConnectionQzTray();
       this.getPreparationAreas();
-
+      this.loadPrinterAssignment();
     },
     mounted() {
 
@@ -703,6 +859,7 @@ export default {
             this.info.ruc = infoData.ruc
             this.info.userEmail = infoData.userEmail
             this.info.socketServer = infoData.socketServer
+            this.currentUserType = infoData.userType
           }
         });
         this.$http.get(`/${this.resource}/get-roles`).then(response => {
@@ -896,40 +1053,65 @@ export default {
         this[`environment_${index}`].enabled_edit = false;
         this[`environment_${index}`].name = this[`environment_${index}`].original_name;
       },
-      async startConnectionQzTray() {
 
-        if (!qz.websocket.isActive()) {
-          console.log('Iniciando conexión con QZ Tray...');
-          try {
-            await qz.websocket.connect();
-            console.log('Conexión QZ Tray establecida exitosamente');
-            this.qzConnected = qz.websocket.isActive();
-            // Ahora que la conexión está establecida, consultar impresoras
-            await this.getAllPrintersAvailable();
-          } catch (err) {
-            console.error('Error al conectar con QZ Tray:', err);
-            this.qzConnected = false;
-          }
-        } else {
-          console.log('QZ Tray ya está conectado');
-          this.qzConnected = true;
-          await this.getAllPrintersAvailable();
+      onTabClick(tab) {
+        if (tab.name === 'six' && this.printers.length <= 1) {
+          this.loadPrintersFromDB()
         }
       },
-      async getAllPrintersAvailable() {
-        qz.printers.find("Microsoft Print to PDF").then(function(found) {
-          console.log("Printer: " + found);
-        });
+      async loadPrintersFromDB() {
         try {
-          console.log('Consultando impresoras disponibles...');
-          const availablePrinters = await qz.printers.find();
-          console.log('Impresoras obtenidas de QZ Tray:', availablePrinters);
-          console.log('Total de impresoras:', availablePrinters.length);
-          this.printers = ['No asignada', ...availablePrinters];
-          console.log('Impresoras asignadas a Vue:', this.printers);
+          const { data } = await this.$http.get(`/${this.resource}/printers/`)
+          if (data.success) {
+            this.registered_printers = data.data
+            this.printers = ['No asignada', ...data.data.map(p => p.name)]
+          }
         } catch (err) {
-          console.error('Error al obtener impresoras:', err);
-          this.printers = ['No asignada'];
+          console.error('Error al cargar impresoras desde BD:', err)
+          this.printers = ['No asignada']
+          this.registered_printers = []
+        }
+      },
+      async loadPrinterAssignment() {
+        try {
+          const { data } = await this.$http.get(`/${this.resource}/printers/config`)
+          if (data.success) {
+            this.form_assignment.printer_name_comanda     = data.data.printer_name_comanda
+            this.form_assignment.printer_name_documents   = data.data.printer_name_documents
+            this.form_assignment.printer_name_precuenta   = data.data.printer_name_precuenta
+            this.form_assignment.printer_per_area_enabled = data.data.printer_per_area_enabled || false
+            this.registered_printers = data.data.printers || []
+          }
+        } catch (err) {
+          console.error('Error al cargar configuración de impresión:', err)
+        }
+      },
+      async saveAssignment() {
+        try {
+          const res = await this.$http.post(`/${this.resource}/printers/config`, {
+            printer_name_comanda:   this.form_assignment.printer_name_comanda,
+            printer_name_documents: this.form_assignment.printer_name_documents,
+            printer_name_precuenta: this.form_assignment.printer_name_precuenta,
+          })
+          if (res.data.success) {
+            this.$message.success('Asignación de impresoras actualizada.')
+          }
+        } catch (err) {
+          this.$message.error('Error al guardar la asignación de impresoras.')
+          console.error(err)
+        }
+      },
+      async savePrinterPerArea() {
+        try {
+          const res = await this.$http.post(`/${this.resource}/printers/config`, {
+            printer_per_area_enabled: this.form_assignment.printer_per_area_enabled,
+          })
+          if (res.data.success) {
+            this.$message.success('Configuración actualizada.')
+          }
+        } catch (err) {
+          this.$message.error('Error al guardar la configuración.')
+          console.error(err)
         }
       },
       async getPreparationAreas() {
@@ -950,9 +1132,13 @@ export default {
 
           const method = this.form_preparation_area.id ? 'put' : 'post';
 
+          const effectivePrinter = this.form_assignment.printer_per_area_enabled
+            ? this.form_preparation_area.printer
+            : this.form_assignment.printer_name_comanda;
+
           const response = await this.$http[method](url, {
             name: this.form_preparation_area.name,
-            printer: this.form_preparation_area.printer
+            printer: effectivePrinter,
           });
 
           if (response.data.success) {
@@ -969,7 +1155,7 @@ export default {
         this.form_preparation_area = {
           id: area.id,
           name: area.name,
-          printer: area.printer
+          printer: area.printer,
         };
       },
       cancelEditArea() {
@@ -1000,7 +1186,7 @@ export default {
         this.form_preparation_area = {
           id: null,
           name: '',
-          printer: ''
+          printer: '',
         };
       }
     }

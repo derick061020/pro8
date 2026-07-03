@@ -81,18 +81,22 @@
                 }
             },
             clickAddItem() {
-                // console.log(this.form)
-                // let total = 0
+                // Validación: no permitir agregar con campos vacíos
+                let errors = {}
+                if (!this.form.description) {
+                    errors.description = ['La descripción es obligatoria']
+                }
+                if (!this.form.total || parseFloat(this.form.total) <= 0) {
+                    errors.total = ['El total es obligatorio y debe ser mayor a 0']
+                }
+                this.errors = errors
+                if (Object.keys(errors).length > 0) {
+                    return   // hay errores → no emite, no agrega
+                }
+
+                // Si pasó la validación, continúa con lo de siempre
                 this.form.currency_type_id = this.currencyType.id
                 this.form.total_original = parseFloat(this.form.total)
-                // if (this.currencyType.id === 'USD')
-                // {
-                //     total = this.form.total / this.exchangeRateSale;
-                // }
-                // else{
-                //     total = this.form.total;
-                // }
-                // this.form.total = _.round(total,4)
                 this.$emit('add', this.form)
                 this.initForm()
             },

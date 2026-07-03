@@ -13,7 +13,6 @@ use Modules\Hotel\Http\Requests\HotelRoomRequest;
 use Modules\Hotel\Http\Requests\HotelFloorRequest;
 use Modules\Hotel\Models\HotelRate;
 use Modules\Hotel\Models\HotelRoomRate;
-use Modules\Hotel\Models\HotelRent;
 use App\Models\Tenant\Establishment;
 use App\Models\Tenant\Item;
 use Modules\Finance\Helpers\UploadFileHelper;
@@ -385,67 +384,5 @@ class HotelRoomController extends Controller
 			'success'     => true,
 			'message'     => 'Información actualizada',
 		], 200);
-	}
-
-	/**
-	 * Eliminar el registro de alquiler de una habitación ocupada
-	 * @param int $id
-	 * @return Response
-	 */
-	public function deleteRecord($id)
-	{
-		try {
-			\Illuminate\Support\Facades\DB::connection('tenant')->beginTransaction();
-
-			$activeRent = HotelRent::findOrFail($id);
-
-			// Desvincular documentos y sale notes que apunten a este rent
-			// (no se pueden borrar porque son comprobantes ya emitidos, pero
-			// sí podemos romper la FK para permitir eliminar el alquiler).
-			\App\Models\Tenant\Document::where('hotel_rent_id', $id)
-				->update(['hotel_rent_id' => null]);
-			\App\Models\Tenant\SaleNote::where('hotel_rent_id', $id)
-				->update(['hotel_rent_id' => null]);
-
-			// Eliminar pagos de los items
-			foreach ($activeRent->items as $item) {
-				if ($item->payments) {
-					$item->payments()->delete();
-				}
-			}
-
-			// Eliminar items relacionados con el alquiler
-			$activeRent->items()->delete();
-
-			// Eliminar órdenes relacionadas con el alquiler
-			$activeRent->orders()->delete();
-
-			// Eliminar entradas del historial de cambios (si existen)
-			\Modules\Hotel\Models\HotelRentChange::where('hotel_rent_id', $id)->delete();
-
-			// Obtener la habitación para cambiar su estado
-			$room = HotelRoom::find($activeRent->hotel_room_id);
-			if ($room) {
-				$room->status = 'DISPONIBLE';
-				$room->save();
-			}
-
-			// Eliminar el registro de alquiler
-			$activeRent->delete();
-
-			\Illuminate\Support\Facades\DB::connection('tenant')->commit();
-
-			return response()->json([
-				'success' => true,
-				'message' => 'Registro de alquiler eliminado exitosamente. La habitación ahora está disponible.'
-			], 200);
-
-		} catch (\Throwable $th) {
-			\Illuminate\Support\Facades\DB::connection('tenant')->rollBack();
-			return response()->json([
-				'success' => false,
-				'message' => 'Ocurrió un error al eliminar el registro: ' . $th->getMessage()
-			], 500);
-		}
 	}
 }

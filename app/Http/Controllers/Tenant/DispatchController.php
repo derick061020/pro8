@@ -119,6 +119,23 @@ class DispatchController extends Controller
         return $query->latest();
     }
 
+    public function updateCustomFields(Request $request)
+    {
+        $request->validate([
+            'id' => 'required|integer',
+            'custom_fields_data' => 'nullable|array'
+        ]);
+
+        $dispatch = Dispatch::findOrFail($request->input('id'));
+        $dispatch->custom_fields_data = $request->input('custom_fields_data', []);
+        $dispatch->save();
+
+        return [
+            'success' => true,
+            'data' => $dispatch->custom_fields_data
+        ];
+    }
+
     public function data_table()
     {
         $customers = Person::whereType('customers')->orderBy('name')->take(20)->get()->transform(function ($row) {
@@ -208,14 +225,18 @@ class DispatchController extends Controller
             $presentation = !empty($item->item->presentation) ? $item->item->presentation->description : '';
             $unit_type = !empty($item->item->presentation) ? $item->item->presentation->unit_type_id : $item->item->unit_type_id;
             $IdLoteSelected = !empty($item->item->IdLoteSelected) ? $item->item->IdLoteSelected : null;
+            $weight = $item->item->weight ?? 0;
             $items[] = [
                 'item_id' => $item->item_id,
                 'item' => $item,
                 'quantity' => $item->quantity,
                 'description' => $description.' '.$presentation,
                 'unit_type_id' => $unit_type,
+                'weight' => $weight,
                 'name_product_pdf' => $name_product_pdf,
                 'IdLoteSelected' => $IdLoteSelected,
+                'unit_price' => $item->item->unit_price ?? 0,
+                'total' => $item->item->total ?? 0,
             ];
         }
 
@@ -251,6 +272,7 @@ class DispatchController extends Controller
                 'reference_purchase_id' => $document->reference_purchase_id,
                 'document_data' => $document->reference_documents?? [],
                 'reference_documents' => $document->reference_documents?? [],
+                'custom_fields_data' => $document->custom_fields_data 
             ];
         } else {
             $observations = '';
@@ -260,6 +282,21 @@ class DispatchController extends Controller
                 $observations = $document->observation;
             }
             $company = Company::first();
+
+            $total_weight_from_attributes = 0;
+            if ($parentTable === 'quotation') {
+                foreach ($document->items as $item) {
+                    $raw_attributes = $item->getRawOriginal('attributes');
+                    if ($raw_attributes) {
+                        $attrs = json_decode($raw_attributes, true);
+                        if (is_array($attrs) && count($attrs) > 0) {
+                            $first_attr = $attrs[0];
+                            $total_weight_from_attributes += (float)($first_attr['value'] ?? 0) * (float)$item->quantity;
+                        }
+                    }
+                }
+            }
+
             $data = [
                 'establishment_id' => $document->establishment_id,
                 'customer_id' => $document->customer_id,
@@ -278,7 +315,7 @@ class DispatchController extends Controller
                     'name' => $parentTable == 'purchases' ? $document->supplier->name : $company->name
                 ],
                 'observations' => $observations,
-
+                'total_weight' => $total_weight_from_attributes,
             ];
         }
 
@@ -569,6 +606,11 @@ class DispatchController extends Controller
         switch ($type) {
             case 'pdf':
                 $folder = 'pdf';
+                // Validar existencia física del PDF. 
+                // Si el archivo fue purgado, invocar al orquestador para reconstruir la guía en segundo plano.
+                if (!$this->existFileInStorage($retention->filename, $folder)) {
+                    (new \App\CoreFacturalo\Facturalo)->createPdf($retention, 'dispatch', 'a4');
+                }
                 break;
             case 'xml':
                 $folder = 'signed';

@@ -16,9 +16,12 @@ class EstablishmentCollection extends ResourceCollection
     {
         return $this->collection->transform(function($row, $key) {
             return [
-                'id' => $row->id,
-                'code' => $row->code,
+                'id'          => $row->id,
+                'code'        => $row->code,
                 'description' => $row->description,
+                'address'     => $row->address_full,
+                'telephone'   => ($row->telephone && $row->telephone !== '-') ? $row->telephone : null,
+                'email'       => ($row->email && $row->email !== '-') ? $row->email : null,
             ];
         });
     }

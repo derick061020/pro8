@@ -35,18 +35,50 @@ class RestaurantConfiguration extends ModelTenant
         'enabled_close_table_mozo',
         'enabled_server_print',
         'replace_template_mozo',
+        'printer_enabled',
+        'printer_host',
+        'printer_status',
+        'printer_public_ip',
+        'print_local_enabled',
+        'printer_name_comanda',
+        'printer_name_documents',
+        'printer_name_precuenta',
+        'printer_per_area_enabled',
+        'print_destination',
+    ];
+
+    protected $casts = [
+        'print_local_enabled'      => 'boolean',
+        'printer_enabled'          => 'boolean',
+        'printer_per_area_enabled' => 'boolean',
+        'print_destination'        => 'boolean',
     ];
 
     public $timestamps = false;
 
     public function getCollectionData() {
-        $restaurant_tip_factor = optional(Configuration::first())->restaurant_tip_factor;
+        // Cargar configuración global con la relación del tipo de descuento para evitar múltiples consultas
+        $config = Configuration::with('globalDiscountType')->first();
+
+        $restaurant_tip_factor = optional($config)->restaurant_tip_factor;
+        $global_discount_type_id = optional($config)->global_discount_type_id;
         $is_restaurant_active = DB::connection('tenant')->table('business_turns')
         ->where('id', 3)
         ->where('active', 1)
         ->exists();
 
-        $configurations_global = DB::connection('tenant')->table('configurations')->first();
+        // ya tenemos la configuración en $config
+        $configurations_global = $config;
+
+        // Obtener información del tipo de descuento global desde la relación cargada
+        $global_discount_type = null;
+        if ($config && $config->globalDiscountType) {
+            $g = $config->globalDiscountType;
+            $global_discount_type = (object)[
+                'id' => $g->id,
+                'description' => $g->description,
+            ];
+        }
 
         return [
             'menu_pos' => (bool)$this->menu_pos,
@@ -74,10 +106,26 @@ class RestaurantConfiguration extends ModelTenant
             'enabled_close_table_mozo' => (bool)$this->enabled_close_table_mozo,
             'enabled_server_print' => (bool)$this->enabled_server_print,
             'replace_template_mozo' => (bool)$this->replace_template_mozo,
+            'printer_enabled'        => (bool)$this->printer_enabled,
+            'printer_host'           => $this->printer_host,
+            'printer_status'         => $this->printer_status,
+            'printer_name_comanda'     => $this->printer_name_comanda,
+            'printer_name_documents'   => $this->printer_name_documents,
+            'printer_name_precuenta'   => $this->printer_name_precuenta,
+            'printer_per_area_enabled' => (bool) $this->printer_per_area_enabled,
+            'printers'               => Printer::where('active', true)
+                ->orderByDesc('is_default')
+                ->orderBy('name')
+                ->get(['id', 'name', 'is_default'])
+                ->toArray(),
             'restaurant_tip_factor' => $restaurant_tip_factor,
+            'global_discount_type' => $global_discount_type ? [
+                'id' => $global_discount_type->id,
+                'description' => $global_discount_type->description,
+            ] : null,
             'is_restaurant_active' => $is_restaurant_active,
-            'show_item_description_pack' => (bool)$configurations_global->show_item_description_pack,
-            'allow_edit_unit_price_to_seller' => (bool)$configurations_global->allow_edit_unit_price_to_seller,
+            'show_item_description_pack' => (bool)optional($configurations_global)->show_item_description_pack,
+            'allow_edit_unit_price_to_seller' => (bool)optional($configurations_global)->allow_edit_unit_price_to_seller,
         ];
     }
 }

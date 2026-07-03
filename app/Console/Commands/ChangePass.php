@@ -59,7 +59,7 @@ class ChangePass extends Command
             $temp = [
                 'username'=>$site->uuid,
                 'password'=>$contra,
-                'query'=> "ALTER USER `".$site->uuid."`@`127.0.0.1` IDENTIFIED BY '$contra' ;",
+                'query'=> "ALTER USER `".$site->uuid."`@`%` IDENTIFIED BY '$contra' ;",
             ];
             $passwords[] = $temp;
             $this->line($temp['query'] );
@@ -68,7 +68,7 @@ class ChangePass extends Command
 
             }catch (\Illuminate\Database\QueryException $e){
                 if("HY000"==$e->getCode()){
-                    $temp['query'] = "CREATE USER `".$site->uuid."`@`127.0.0.1` IDENTIFIED BY '$contra';";
+                    $temp['query'] = "CREATE USER `".$site->uuid."`@`%` IDENTIFIED BY '$contra';";
                     $this->line($temp['query'] );
                     \DB::update( $temp['query'] );
 
@@ -77,7 +77,7 @@ class ChangePass extends Command
 
             // Otorgar privilegios sobre la BD existente al usuario del tenant
             $dbName = $site->uuid; // Se asume que el nombre de la BD es el uuid del sitio
-            foreach (['127.0.0.1'] as $host) {
+            foreach (['%'] as $host) {
                 try {
                     // Asegurar que exista la cuenta para ese host (no falla si ya existe)
                     $ensure = "CREATE USER IF NOT EXISTS `{$site->uuid}`@`{$host}` IDENTIFIED BY '$contra';";

@@ -45,6 +45,18 @@ class ItemUnitType extends ModelTenant
             $id = $itemUnitType->item_id;
             Cache::tags(['item_detail'])->forget("item_detail_{$id}");
         });
+        static::updated(function (self $itemUnitType){
+            $id = $itemUnitType->item_id;
+            Cache::tags(['item_detail'])->forget("item_detail_{$id}");
+        });
+        static::deleted(function (self $itemUnitType){
+            $id = $itemUnitType->item_id;
+            Cache::tags(['item_detail'])->forget("item_detail_{$id}");
+        });
+        static::saved(function (self $itemUnitType){
+            $id = $itemUnitType->item_id;
+            Cache::tags(['item_detail'])->forget("item_detail_{$id}");
+        });
     }
 
     /**
@@ -98,6 +110,7 @@ class ItemUnitType extends ModelTenant
                     'id'             => $price ? $price->id : null,
                     'price_label_id' => $price_label->id,
                     'position'       => $price_label->position,
+                    'quantity_unit' => number_format($this->quantity_unit, $decimal_units, '.', ''),
                     'label'          => $price_label->label,
                     'price'          => $price ? number_format($price->price, $decimal_units, '.', '') : 0,
                     'is_active'      => $price ? (bool) $price->is_active : false,

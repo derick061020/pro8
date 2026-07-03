@@ -3,7 +3,7 @@
         <form autocomplete="off" @submit.prevent="clickAddItem">
             <div class="form-body">
                 <div class="row">
-                    <div class="col-md-6">
+                    <div class="" :class="{'col-md-6': affectation_igv_types.length > 1, 'col-12': affectation_igv_types.length <= 1}">
                         <div class="form-group" :class="{'has-danger': errors.fixed_asset_item_id}">
                             <label class="control-label d-flex align-items-center">
                                 Producto/Servicio
@@ -41,7 +41,7 @@
                             <small class="form-control-feedback" v-if="errors.fixed_asset_item_id" v-text="errors.fixed_asset_item_id[0]"></small>
                         </div>
                     </div>
-                    <div class="col-md-6">
+                    <div class="col-md-6" v-if="affectation_igv_types.length > 1">
                         <div class="form-group" :class="{'has-danger': errors.affectation_igv_type_id}">
                             <label class="control-label">Afectación Igv</label>
                             <el-select v-model="form.affectation_igv_type_id" :disabled="!change_affectation_igv_type_id" filterable>
@@ -67,9 +67,9 @@
                             <small class="form-control-feedback" v-if="errors.unit_price" v-text="errors.unit_price[0]"></small>
                         </div>
                     </div>
-                    <div class="col-md-12 mt-3">
+                    <div class="col-md-12 mt-3" v-if="config.show_item_discounts_charges_attributes !== false">
                         <section :class="['card mb-2 card-transparent', {'card-collapsed': !showAdditionalInfo}]" id="card-section">
-                                <header class="card-header hoverable bg-light border-top rounded-0 py-1 d-flex align-items-center justify-content-between" style="cursor: pointer; padding: 4px 0 !important;" id="card-click" @click="toggleAdditionalInfo">
+                                <header class="hoverable bg-light border-top rounded-0 py-1 d-flex align-items-center justify-content-between" style="cursor: pointer; padding: 4px 0 !important;" id="card-click" @click="toggleAdditionalInfo">
                                     <p class="ps-1 m-0">Información adicional atributos UBL 2.1</p>
                                     <div>
                                         <a href="#" class="card-action card-action-toggle text-info"
@@ -210,10 +210,14 @@
 
     import FaItemForm from '../../fixed_asset_items/form.vue'
     import {calculateRowItem} from '@helpers/functions'
+    import { mapState } from 'vuex/dist/vuex.mjs'
 
     export default {
         props: ['showDialog', 'currencyTypeIdActive', 'exchangeRateSale', 'percentageIgv'],
         components: {FaItemForm},
+        computed: {
+            ...mapState(['config'])
+        },
         data() {
             return {
                 titleDialog: 'Agregar Producto o Servicio',
@@ -232,7 +236,8 @@
                 attribute_types: [],
                 showAdditionalInfo: false,
                 loading_search: false,
-                itemSearchTerm: ''
+                itemSearchTerm: '',
+                decimal_quantity: 2
             }
         },
         watch: {
@@ -248,6 +253,7 @@
             }
         },
         created() {
+            this.loadDecimalQuantity()
             this.initForm()
             this.$http.get(`/${this.resource}/item/tables`).then(response => {
 
@@ -266,6 +272,25 @@
             })
         },
         methods: {
+            async loadDecimalQuantity() {
+                try {
+                    const response = await this.$http.get('/configurations/record')
+                    const decimalQuantity = response.data.data.decimal_quantity
+
+                    this.decimal_quantity = parseInt(decimalQuantity || 2)
+                } catch (error) {
+                    this.decimal_quantity = 2
+                }
+            },
+            formatDecimal(value) {
+                const number = parseFloat(value || 0)
+
+                if (isNaN(number)) {
+                    return Number(0).toFixed(this.decimal_quantity)
+                }
+
+                return number.toFixed(this.decimal_quantity)
+            },
             handleCloseDialog() {
               if (this.hasUnsavedChanges()) {
                 this.$confirm('¿Estás seguro de cerrar el formulario? Se perderán los datos no guardados.', 'Confirmar', {
@@ -385,7 +410,7 @@
             },
             changeItem() {
                 this.form.item = _.find(this.items, {'id': this.form.fixed_asset_item_id})
-                this.form.unit_price = this.form.item.purchase_unit_price
+                this.form.unit_price = this.form.item.purchase_unit_price > 0 ? this.formatDecimal(this.form.item.purchase_unit_price) : 0
                 this.form.affectation_igv_type_id = this.form.item.purchase_affectation_igv_type_id
             },
             async clickAddItem() {
@@ -395,7 +420,7 @@
                 this.form.item.presentation = this.item_unit_type;
                 this.form.affectation_igv_type = _.find(this.affectation_igv_types, {'id': this.form.affectation_igv_type_id})
                 this.row = await calculateRowItem(this.form, this.currencyTypeIdActive, this.exchangeRateSale, this.percentageIgv)
-                this.row.fixed_asset_item_id = await this.row.item_id
+                this.row.fixed_asset_item_id = this.form.fixed_asset_item_id
                 this.initForm()
                 this.$emit('add', this.row)
             },

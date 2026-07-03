@@ -17,7 +17,7 @@
             <table>
                 <tr>
                     <td>
-                        <p><strong>Empresa: </strong>{{$company->name}}</p>
+                        <p>@include('partials.report_company_header')</p>
                     </td>
                     <td>
                         <p><strong>Ruc: </strong>{{$company->number}}</p>

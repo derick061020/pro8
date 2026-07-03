@@ -84,7 +84,7 @@ $half = 50;
 <table>
     <tr>
             <td class="width-custom">
-                <p><strong>Empresa: </strong>{{$company->name}}</p>
+                <p>@include('partials.report_company_header')</p>
             </td>
             <td class="td-custom">
                 <p><strong>Fecha reporte: </strong>{{date('Y-m-d')}}</p>

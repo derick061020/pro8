@@ -14,8 +14,10 @@
                     {{ session('status') }}
                 </div>
             @endif
+            
             @csrf
 
+            @if (!session('status'))
             <div class="form-group">
                 <div class="">
                     <input id="email" type="email" class="form-control{{ $errors->has('email') ? ' is-invalid' : '' }}" name="email" value="{{ old('email') }}" required placeholder="Correo electrónico">
@@ -27,10 +29,13 @@
                     @endif
                 </div>
             </div>
+            @endif
             <div class="form-group text-center">
+                @if (!session('status'))
                 <button class="btn btn-signin btn-block" type="submit">ENVIAR LINK</button>
                 <br>
-                <a href="{{ url('login') }}" class="btn btn-link">
+                @endif
+                <a href="{{ route('login') }}" class="btn btn-link">
                     <i class="fa fa-arrow-left mr-2"></i> Regresar al login
                 </a>
             </div>

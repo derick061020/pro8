@@ -9,7 +9,7 @@
 <div style="height:10pt"></div>
 <table class="full-width">
     <tr>
-        <td class="text-center"><h4>{{ $company->name }}</h4></td>
+        <td class="text-center">@include('pdf.partials.company_document_header_names')</td>
     </tr>
     <tr>
         <td class="text-center"><h5>{{ 'RUC '.$company->number }}</h5></td>

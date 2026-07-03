@@ -319,6 +319,11 @@ use Illuminate\Support\Str;
             return Configuration::getConfigurationInPdf();
         }
 
+        public static function getConfigurationShowGuaranteeFund()
+        {
+            return Configuration::getConfigurationShowGuaranteeFund();
+        }
+
         public static function getTypeSoap()
         {
             return Company::getTypeSoap();

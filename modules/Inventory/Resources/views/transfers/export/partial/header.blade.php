@@ -40,15 +40,15 @@
                 <!-- Logo aqui -->
                     @if(!empty($company->logo))
                         <img src="data:{{mime_content_type(public_path("storage/uploads/logos/{$company->logo}"))}};base64, {{base64_encode(file_get_contents(public_path("storage/uploads/logos/{$company->logo}")))}}"
-                             alt="{{$company->name}}"
+                             alt="{{ \App\CoreFacturalo\Helpers\CompanyDocumentDisplay::logoAlt($company) }}"
                              class="company_logo_ticket contain"
                              style="max-width: 300px; height: auto;"
                              >
                     @endif
                 @else
-                    <h3>
-                        {{$company->name}}
-                    </h3>
+                    <div style="font-size:1.1em;font-weight:bold;">
+                        @include('pdf.partials.company_document_header_names_plain')
+                    </div>
                 @endif
 
             </td>

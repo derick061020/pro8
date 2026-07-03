@@ -5,11 +5,16 @@ namespace App\Http\Controllers\System;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\System\Client;
+use App\Services\System\GitVersionService;
 use Symfony\Component\Process\Process;
 use Symfony\Component\Process\Exception\ProcessFailedException;
 
 class HomeController extends Controller
 {
+    public function __construct(private GitVersionService $gitVersion)
+    {
+    }
+
     public function index()
     {
         $clients = Client::get();
@@ -33,9 +38,7 @@ class HomeController extends Controller
         $storage_size = $df->getOutput();
         $storage_size = $storage_size != "" ? substr($storage_size, 0, -1) : 0;
 
-        $id = Process::fromShellCommandline('git describe --tags');
-        $id->run();
-        $version = $id->getOutput();
+        $version = $this->gitVersion->resolve();
         // $tag = new Process('git tag | sort -V | tail -1');
         // $tag->run();
         // $res_tag = $tag->getOutput();

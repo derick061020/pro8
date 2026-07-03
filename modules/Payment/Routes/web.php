@@ -43,6 +43,44 @@ if($hostname) {
 
             });
 
+            Route::prefix('payment-gateway')->group(function() {
+
+                Route::get('enabled-checkout', 'PaymentGatewayController@enabledCheckouts')->name('system.enabled.checkouts');
+
+                Route::prefix('culqi')->group(function() {
+                    Route::get('record', 'PaymentGatewayController@culqiRecord')->name('tenant.culqi.configuration')->withoutMiddleware(['locked.tenant', 'auth', 'web', 'redirect.level']);
+                    Route::post('charge', 'PaymentGatewayController@culqiCreateCharge');
+                    Route::post('webhook', 'PaymentGatewayController@webhook');
+                });
+
+                Route::prefix('izipay')->group(function() {
+                    Route::get('record', 'PaymentGatewayController@izipayRecord')->name('tenant.izipay.record');
+                    Route::post('payment', 'PaymentGatewayController@izipayCreatePayment');
+                    Route::post('transaction', 'PaymentGatewayController@izipayTransaction')->name('tenant.izipay.transaction');
+                });
+            });
+
+
         });
     });
+} else {
+        Route::middleware('auth:admin')->group(function () {
+            Route::prefix('payment-gateway')->group(function() {
+
+                Route::get('enabled-checkout', 'PaymentGatewayController@enabledCheckouts')->name('system.enabled.checkouts');
+
+                Route::prefix('culqi')->group(function() {
+                    Route::get('record', 'PaymentGatewayController@culqiRecord')->name('system.culqi.configuration');
+                    Route::post('charge', 'PaymentGatewayController@culqiCreateCharge');
+                    // Route::post('result', 'PaymentGatewayController@culqiResult')->name('system.culqi.result');
+                });
+
+                Route::prefix('izipay')->group(function() {
+                    Route::get('record', 'PaymentGatewayController@izipayRecord')->name('system.izipay.record');
+                    Route::post('payment', 'PaymentGatewayController@izipayCreatePayment');
+                    Route::post('transaction', 'PaymentGatewayController@izipayTransaction')->name('tenant.izipay.transaction');
+                });
+            });
+        });
+
 }

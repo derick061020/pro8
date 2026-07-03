@@ -55,6 +55,7 @@ use Modules\Hotel\Models\HotelRent;
 use Modules\Hotel\Models\HotelRentItem;
 use Modules\Hotel\Models\HotelRentItemPayment;
 use Modules\Hotel\Models\HotelRentOrder;
+use App\Models\Tenant\Dispatch;
 
 class OptionController extends Controller
 {
@@ -73,6 +74,14 @@ class OptionController extends Controller
 
         Summary::where('soap_type_id', '01')->delete();
         Voided::where('soap_type_id', '01')->delete();
+
+        $dispatches = Dispatch::where('soap_type_id', '01')->get();
+        $this->deleteInventoryKardex(Dispatch::class, $dispatches);
+
+        $dispatches->each(function ($dispatch) {
+            $dispatch->items()->delete();
+            $dispatch->delete();
+        });
 
         //Purchase
         $this->deleteInventoryKardex(Purchase::class);

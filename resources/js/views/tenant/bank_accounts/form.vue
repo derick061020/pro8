@@ -53,7 +53,7 @@
                     </div>
                     <div class="col-md-8 form-group mt-3">
                         <el-switch v-model="form.show_in_documents"></el-switch>
-                        <label>Mostrar cuenta en los reportes de comprobantes</label>
+                        <label class="ms-2">Visualizar en el pdf al generar comprobantes</label>
                     </div>
 
                     <div class="col-md-4" v-if="select_establishment_bank_account">

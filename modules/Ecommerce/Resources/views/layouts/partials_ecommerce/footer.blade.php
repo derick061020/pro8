@@ -1,9 +1,6 @@
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
+
 <style>
-    .vl {
-        border-left: 2px solid black;
-        height: 100%;
-        margin-left: 30%;
-    }
     .page-wrapper {
         display: flex;
         flex-direction: column;
@@ -13,108 +10,353 @@
         flex: 1;
     }
 
+    /* ── Footer middle ── */
+    .footer-middle {
+        padding: 60px 0;
+    }
+    .footer-col-title {
+        font-size: 13px;
+        font-weight: 700;
+        letter-spacing: 1.5px;
+        text-transform: uppercase;
+        color: #fff;
+        margin-bottom: 6px;
+    }
+    .footer-col-divider {
+        width: 36px;
+        height: 3px;
+        background: var(--primary-color);
+        border-radius: 3px;
+        margin-bottom: 22px;
+    }
+
+    /* Links */
+    .footer-nav {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+    .footer-nav li {
+        margin-bottom: 4px;
+    }
+    .footer-nav li a {
+        font-size: 15px;
+        font-weight: 500;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 0;
+        opacity: 0.75;
+        transition: opacity 0.2s, gap 0.2s;
+    }
+    .footer-nav li a i {
+        font-size: 14px;
+        opacity: 0.6;
+    }
+    .footer-nav li a:hover {
+        opacity: 1;
+        gap: 12px;
+    }
+
+    /* Social icons */
+    .footer-socials {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 4px;
+    }
+    .footer-social-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 42px;
+        height: 42px;
+        border-radius: 50%;
+        background: hsl(var(--primary-h), var(--primary-s), 92%);
+        color: var(--primary-color) !important;
+        font-size: 20px;
+        transition: background 0.2s, color 0.2s, transform 0.15s;
+    }
+    .footer-social-btn:hover {
+        background: var(--primary-color);
+        color: #fff !important;
+        transform: translateY(-3px);
+    }
+
+    /* Contact items */
+    .footer-contact-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+    .footer-contact-list li {
+        display: flex;
+        align-items: flex-start;
+        gap: 14px;
+        margin-bottom: 20px;
+    }
+    .footer-contact-list li:last-child {
+        margin-bottom: 0;
+    }
+    .fci-icon {
+        flex-shrink: 0;
+        width: 46px;
+        height: 46px;
+        border-radius: 50%;
+        background: hsl(var(--primary-h), var(--primary-s), 92%);
+        color: var(--primary-color);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 22px;
+    }
+    .fci-body {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+    }
+    .fci-label {
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        opacity: 0.45;
+        line-height: 1;
+        margin-bottom: 4px;
+    }
+    .fci-value,
+    .fci-value a {
+        font-size: 15px;
+        font-weight: 600;
+        line-height: 1.4;
+        word-break: break-word;
+        opacity: 0.85;
+    }
+    .fci-value a:hover {
+        opacity: 1;
+    }
+
+    /* Logo tagline */
+    .footer-tagline {
+        font-size: 14px;
+        line-height: 1.65;
+        opacity: 0.6;
+        margin: 10px 0 20px;
+    }
 </style>
 
 <div class="footer-middle">
     <div class="container">
         <div class="row">
-            <div class="col-md-4">
-                <div class="widget widget-info">
-                    <h4 class="widget-title">Contáctanos</h4>
-                    <ul class="contact-info">
+
+            {{-- Columna 1: Logo + Redes Sociales --}}
+            <div class="col-md-3 col-sm-6">
+                @php($footerLogo = data_get($company ?? null, 'logo_dark') ?: data_get($company ?? null, 'logo') ?: data_get($information ?? null, 'logo'))
+                <a href="{{ route('tenant.ecommerce.index') }}" class="d-inline-block mb-1">
+                    @if($footerLogo)
+                        <img src="{{ asset('storage/uploads/logos/'.$footerLogo) }}" alt="{{ $company->name ?? 'Logo' }}" style="max-height: 64px;">
+                    @else
+                        <img src="{{ asset('logo/tulogo.png') }}" alt="Logo" style="max-height: 64px;">
+                    @endif
+                </a>
+                @if(!empty($company->trade_name)  && $company->name !== $company->trade_name)
+                    <p class="footer-tagline m-0">{{ $company->trade_name }}</p>
+                @endif
+                @if(!empty($company->name))
+                    <p class="footer-tagline m-0">{{ $company->name }}</p>
+                @endif
+                @if(!empty($company->number))
+                    <p class="footer-tagline m-0 pb-4">RUC: {{ $company->number }}</p>
+                @endif
+
+                <p class="footer-col-title">Síguenos</p>
+                <div class="footer-col-divider"></div>
+                <div class="footer-socials">
+                    @if($information->link_facebook)
+                        <a href="{{ $information->link_facebook }}" class="footer-social-btn" target="_blank" title="Facebook">
+                            <i class="ti ti-brand-facebook"></i>
+                        </a>
+                    @endif
+                    @if($information->link_twitter)
+                        <a href="{{ $information->link_twitter }}" class="footer-social-btn" target="_blank" title="X / Twitter">
+                            <i class="ti ti-brand-x"></i>
+                        </a>
+                    @endif
+                    @if($information->link_tiktok)
+                        <a href="{{ $information->link_tiktok }}" class="footer-social-btn" target="_blank" title="TikTok">
+                            <i class="ti ti-brand-tiktok"></i>
+                        </a>
+                    @endif
+                    @if($information->link_instagram)
+                        <a href="{{ $information->link_instagram }}" class="footer-social-btn" target="_blank" title="Instagram">
+                            <i class="ti ti-brand-instagram"></i>
+                        </a>
+                    @endif
+                </div>
+            </div>
+
+            {{-- Columna 2: Información --}}
+            <div class="col-md-3 col-sm-6">
+                <p class="footer-col-title">Información</p>
+                <div class="footer-col-divider"></div>
+                <ul class="footer-nav">
+                    @if(!empty($information->about_us))
                         <li>
-                            <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-phone"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M5 4h4l2 5l-2.5 1.5a11 11 0 0 0 5 5l1.5 -2.5l5 2v4a2 2 0 0 1 -2 2a16 16 0 0 1 -15 -15a2 2 0 0 1 2 -2" /></svg>
-                            <a href="tel:{{$information->information_contact_phone}}" target="blank" style="font-size: 25px;">{{$information->information_contact_phone}}</a>
-                        </li>
-                        @if($information->information_contact_address)
-                        <li>
-                            <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-map-pin"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M9 11a3 3 0 1 0 6 0a3 3 0 0 0 -6 0" /><path d="M17.657 16.657l-4.243 4.243a2 2 0 0 1 -2.827 0l-4.244 -4.243a8 8 0 1 1 11.314 0z" /></svg>
-                            <a href="#" target="blank" style="font-size: 14px;">
-                                {{$information->information_contact_address}}
+                            <a href="{{ route('tenant_ecommerce_about_us') }}">
+                                <i class="ti ti-chevron-right"></i> Sobre Nosotros
                             </a>
                         </li>
-                        @endif
-                        <!-- correo -->
-                        @if($information->information_contact_email)
+                    @endif
+                    @if(!empty($information->terms_conditions))
                         <li>
-                            <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-mail"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M3 7a2 2 0 0 1 2 -2h14a2 2 0 0 1 2 2v10a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2v-10z" /><path d="M3 7l9 6l9 -6" /></svg>
-                            <a href="mailto:{{$information->information_contact_email}}" target="blank" style="font-size: 14px;">{{$information->information_contact_email}}</a>
+                            <a href="{{ route('tenant_ecommerce_terms_conditions') }}">
+                                <i class="ti ti-chevron-right"></i> Términos y Condiciones
+                            </a>
                         </li>
-                        @endif
-                    </ul>
-                </div>
+                    @endif
+                    @if(!empty($information->privacy_policy))
+                        <li>
+                            <a href="{{ route('tenant_ecommerce_privacy_policy') }}">
+                                <i class="ti ti-chevron-right"></i> Política de Privacidad
+                            </a>
+                        </li>
+                    @endif
+                        <li>
+                            <a href="{{ route('search.index') }}">
+                                <i class="ti ti-chevron-right"></i> Consulta de Comprobantes Electrónicos
+                            </a>
+                        </li>
+
+                    @if(!empty($information->customised_link_one) && !empty($information->title_one_customised_link))
+                        <li>
+                            <a href="{{ $information->customised_link_one }}">
+                                <i class="ti ti-chevron-right"></i> {{ $information->title_one_customised_link }}
+                            </a>
+                        </li>
+                    @endif
+                    @if(!empty($information->customised_link_two) && !empty($information->title_two_customised_link))
+                        <li>
+                            <a href="{{ $information->customised_link_two }}">
+                                <i class="ti ti-chevron-right"></i> {{ $information->title_two_customised_link }}
+                            </a>
+                        </li>
+                    @endif
+                    @if(!empty($information->customised_link_three) && !empty($information->title_three_customised_link))
+                        <li>
+                            <a href="{{ $information->customised_link_three }}">
+                                <i class="ti ti-chevron-right"></i> {{ $information->title_three_customised_link }}
+                            </a>
+                        </li>
+                    @endif
+                </ul>
             </div>
-            <div class="col-md-4">
-                <div class="widget">
-                    <h4 class="widget-title text-center">Enlaces de interés</h4>
-                    <div class="row d-flex align-items-center justify-content-center">
-                        <div class="col-sm-6 col-md-5 text-center">
-                            <ul class="links">
-                                <li><a href="{{ route("tenant.ecommerce.index") }}">Inicio</a></li>
-                                <li><a href="{{ route('tenant_detail_cart') }}">Ver Carrito</a></li>
-                                @guest
-                                <li><a href="{{route('tenant_ecommerce_login')}}" class="login-link">Login</a></li>
-                                @else
-                                <li><a role="menuitem" href="{{ route('logout') }}" class="login-link" onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
-                                    Salir
-                                </a></li>
-                                <form id="logout-form" action="{{ route('logout') }}" method="POST" style="display: none;">
-                                    @csrf
-                                </form>
-                                @endguest
-                            </ul>
-                        </div>
-                    </div>
-                </div>
+
+            {{-- Columna 3: Categorías --}}
+            <div class="col-md-3 col-sm-6">
+                <p class="footer-col-title">Categorías</p>
+                <div class="footer-col-divider"></div>
+                <ul class="footer-nav">
+                    <li>
+                        <a href="{{ route('tenant.ecommerce.index') }}">
+                            <i class="ti ti-chevron-right"></i> Ver todas
+                        </a>
+                    </li>
+                    @foreach($categories as $category)
+                        <li>
+                            <a href="{{ route('tenant.ecommerce.category', \Illuminate\Support\Str::slug($category->name, '-')) }}">
+                                <i class="ti ti-chevron-right"></i> {{ $category->name }}
+                            </a>
+                        </li>
+                    @endforeach
+                </ul>
             </div>
-            <div class="col-md-4">
-                <div class="widget">
-                    <h4 class="widget-title text-right">Redes Sociales</h4>
-                    <div class="social-icons d-flex justify-content-end">
 
-                        <!-- @if($information->link_facebook)
-                            <a href="{{$information->link_facebook}}" class="social-icon" target="_blank"></a>
-                        @endif -->
-
-                        <!-- @if($information->link_twitter)
-                            <a href="{{$information->link_twitter}}" class="social-icon" target="_blank"><i class="icon-twitter"></i></a>
-                        @endif -->
-
-                        <!-- @if($information->link_instagram)
-                            <a href="{{$information->link_instagram}}" class="social-icon" target="_blank"><i class="fab fa-youtube"></i></a>
-                        @endif -->
-
-                        <a href="{{$information->link_facebook}}" target="_blank">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-brand-facebook"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M7 10v4h3v7h4v-7h3l1 -4h-4v-2a1 1 0 0 1 1 -1h3v-4h-3a5 5 0 0 0 -5 5v2h-3" /></svg>
-                        </a>
-                        <a href="{{$information->link_twitter}}" target="_blank">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-brand-x"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M4 4l11.733 16h4.267l-11.733 -16z" /><path d="M4 20l6.768 -6.768m2.46 -2.46l6.772 -6.772" /></svg>
-                        </a>
-                        <a href="{{$information->link_tiktok}}" target="_blank">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-brand-tiktok"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M21 7.917v4.034a9.948 9.948 0 0 1 -5 -1.951v4.5a6.5 6.5 0 1 1 -8 -6.326v4.326a2.5 2.5 0 1 0 4 2v-11.5h4.083a6.005 6.005 0 0 0 4.917 4.917z" /></svg>
-                        </a>
-                        <a href="{{$information->link_instagram}}" target="_blank">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-brand-instagram"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M4 8a4 4 0 0 1 4 -4h8a4 4 0 0 1 4 4v8a4 4 0 0 1 -4 4h-8a4 4 0 0 1 -4 -4z" /><path d="M9 12a3 3 0 1 0 6 0a3 3 0 0 0 -6 0" /><path d="M16.5 7.5v.01" /></svg>
-                        </a>
-                    </div>
-                </div>
+            {{-- Columna 4: Contacto & Ayuda --}}
+            <div class="col-md-3 col-sm-6">
+                <p class="footer-col-title">Contacto &amp; Ayuda</p>
+                <div class="footer-col-divider"></div>
+                <ul class="footer-contact-list">
+                    @if($information->phone_whatsapp)
+                        <li>
+                            <div class="fci-icon"><i class="ti ti-brand-whatsapp"></i></div>
+                            <div class="fci-body">
+                                <span class="fci-label">WhatsApp</span>
+                                <span class="fci-value">
+                                    <a href="https://wa.me/{{ $information->phone_whatsapp }}" target="_blank">
+                                        {{ $information->phone_whatsapp }}
+                                    </a>
+                                </span>
+                            </div>
+                        </li>
+                    @endif
+                    @if($information->information_contact_phone)
+                        <li>
+                            <div class="fci-icon"><i class="ti ti-phone"></i></div>
+                            <div class="fci-body">
+                                <span class="fci-label">Teléfono</span>
+                                <span class="fci-value">
+                                    <a href="tel:{{ $information->information_contact_phone }}">
+                                        {{ $information->information_contact_phone }}
+                                    </a>
+                                </span>
+                            </div>
+                        </li>
+                    @endif
+                    @if($information->information_contact_email)
+                        <li>
+                            <div class="fci-icon"><i class="ti ti-mail"></i></div>
+                            <div class="fci-body">
+                                <span class="fci-label">Email</span>
+                                <span class="fci-value">
+                                    <a href="mailto:{{ $information->information_contact_email }}">
+                                        {{ $information->information_contact_email }}
+                                    </a>
+                                </span>
+                            </div>
+                        </li>
+                    @endif
+                    @if($information->information_contact_address)
+                        <li>
+                            <div class="fci-icon"><i class="ti ti-clock"></i></div>
+                            <div class="fci-body">
+                                <span class="fci-label">Horario de atención</span>
+                                <span class="fci-value">{{ $information->information_contact_address }}</span>
+                            </div>
+                        </li>
+                    @endif
+                        <li>
+                            <div style="text-align: center">
+                                <span class="fci-label">Libro de Reclamaciones</span>
+                                <a class="pt-4" style="display: block" href="{{ route('tenant.ecommerce.claims_book') }}"><img src="{{ asset('porto-ecommerce/assets/images/libro-de-reclamaciones.png') }}" style="margin: auto" width="96px" alt="Libro de Reclamaciones"></a>
+                            </div>
+                        </li>
+                </ul>
             </div>
+
         </div>
     </div>
 </div>
 
-<div class="container container-footer d-flex align-items-center justify-content-between px-0">
-    <p class="text-center copy-text mt-3 mb-3">&copy; Copyright {{ date('Y') }} {{ $company->name }}. Todos los derechos reservados</p>
-    <div class="footer-bottom" style="padding-bottom: 2rem;">
-        <!-- <p class="footer-copyright">Facturador Pro 4. &copy; {{ now()->year }}. Todos los Derechos Reservados</p> -->
-        <img src="{{ asset('porto-ecommerce/assets/images/payments.svg') }}" alt="payment methods"
-            class="footer-payments">
+<div class="container-footer ">
+    <div class="container d-flex align-items-center justify-content-between">
+        <p class="text-center copy-text mt-3 mb-3">&copy; Copyright {{ date('Y') }} {{ $company->name }}. Todos los derechos reservados</p>
+        <div class="footer-bottom" style="padding-bottom: 2rem;">
+            <!-- <p class="footer-copyright">Facturador Pro 4. &copy; {{ now()->year }}. Todos los Derechos Reservados</p> -->
+            <img src="{{ asset('porto-ecommerce/assets/images/payments.svg') }}" alt="payment methods"
+                class="footer-payments">
+        </div>
     </div>
 </div>
 
 @if($information->phone_whatsapp)
+    <div class="ws-tooltip" id="wsTooltip">
+        <span id="wsTooltipText">¿En qué podemos ayudarte?</span>
+    </div>
+
     @if(strlen($information->phone_whatsapp) > 0)
-    <a class='ws-flotante' href='https://wa.me/{{$information->phone_whatsapp}}' target="BLANK" style="background-image: url('{{asset('logo/ws.png')}}'); background-size: 70px; background-repeat: no-repeat;" ></a>
+    <a class='ws-flotante-ecommerce d-flex align-items-center justify-content-center' href='https://wa.me/{{$information->phone_whatsapp}}' target="BLANK" style="color: #fff !important;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-brand-whatsapp"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M3 21l1.65 -3.8a9 9 0 1 1 3.4 2.9l-5.05 .9" /><path d="M9 10a.5 .5 0 0 0 1 0v-1a.5 .5 0 0 0 -1 0v1a5 5 0 0 0 5 5h1a.5 .5 0 0 0 0 -1h-1a.5 .5 0 0 0 0 1" /></svg>
+    </a>
     @endif
 @endif
 
@@ -210,17 +452,14 @@
                                 </div>
                                 <div class="form-group">
                                     <label for="ruc">Tipo de Documento:</label>
-                                    <div class="document-selector-container">
-                                        <select class="form-select select-ruc-dni" id="selectDocument">
-                                            <option value="dni" selected>DNI (8 dígitos)</option>
-                                            <option value="ruc">RUC (11 dígitos)</option>
+                                    <div class="unified-input-group position-relative">
+                                        <select class="select-part" id="selectDocument">
+                                            <option value="dni" selected>DNI</option>
+                                            <option value="ruc">RUC</option>
                                         </select>
+                                        <input type="number" oninput="inputDocument()" required autocomplete="off" maxlength="11" class="input-part" id="ruc_reg" placeholder="Ingrese su número de documento" name="ruc">
+                                        <span id="counter" class="text-center counter-part">0/8</span>
                                     </div>
-                                    <div class="document-input-container">
-                                        <input type="number" oninput="inputDocument()" required autocomplete="off" maxlength="11" class="form-control" id="ruc_reg"
-                                            placeholder="Ingrese su número de documento" name="ruc">
-                                        <span id="counter" class="text-center">0/8</span>
-                                    </div>                                    
                                 </div>
                                 <div class="form-group">
                                     <label for="email">Nombres:</label>
@@ -276,16 +515,16 @@ function setDocumentsCounter() {
         counter.classList.remove('warning', 'success', 'error');
         if (select.value === 'dni') {
             ruc_reg.setAttribute('maxlength', '8');
-            ruc_reg.setAttribute('placeholder', 'Ingrese su DNI (8 dígitos)');
+            ruc_reg.setAttribute('placeholder', 'Ingrese su DNI');
             counter.textContent = '0/8';
         } else if (select.value === 'ruc') {
             ruc_reg.setAttribute('maxlength', '11');
-            ruc_reg.setAttribute('placeholder', 'Ingrese su RUC (11 dígitos)');
+            ruc_reg.setAttribute('placeholder', 'Ingrese su RUC');
             counter.textContent = '0/11';
         }
     }
 }
-    
+
 document.addEventListener("DOMContentLoaded", () => {
     const firstColumn = document.getElementById("contenedor-form");
 
@@ -346,23 +585,15 @@ function hexToHSL(hex) {
   ];
 }
 
-// Fetch a Laravel
 fetch('/ecommerce/color-ecommerce')
   .then(response => response.json())
   .then(data => {
-    console.log('Color ecommerce:', data.color);
-
-    // Convertir el HEX recibido a HSL
     const hsl = hexToHSL(data.color);
-
-    // Guardar en variables CSS globales
     document.documentElement.style.setProperty("--primary-h", hsl[0]);
     document.documentElement.style.setProperty("--primary-s", hsl[1]);
     document.documentElement.style.setProperty("--primary-l", hsl[2]);
-
   })
   .catch(error => console.error('Error obteniendo el color:', error));
-
 </script>
 
 
@@ -463,13 +694,13 @@ fetch('/ecommerce/color-ecommerce')
             ruc_reg.addEventListener('input', function() {
                 const currentLength = ruc_reg.value.length;
                 const maxLength = parseInt(ruc_reg.getAttribute('maxlength'));
-                
+
                 // Actualizar el texto del contador
                 counter.textContent = `${currentLength}/${maxLength}`;
-                
+
                 // Remover clases previas
                 counter.classList.remove('warning', 'success', 'error');
-                
+
                 // Agregar clase según el estado
                 if (currentLength === 0) {
                     // Sin clase adicional para estado inicial
@@ -493,6 +724,38 @@ fetch('/ecommerce/color-ecommerce')
             });
         }
     }
+
+    document.addEventListener("DOMContentLoaded", function () {
+
+        const mensajes = [
+            "¿En qué podemos ayudarte?",
+            "¡Escríbenos por WhatsApp!",
+            "¿Tienes alguna duda?",
+            "Te respondemos al instante 😉",
+            "Habla con nosotros 📲",
+            "Estamos para ayudarte"
+        ];
+
+        const tooltip = document.getElementById("wsTooltip");
+        const texto = document.getElementById("wsTooltipText");
+        /*
+        function mostrarMensaje() {
+            const random = mensajes[Math.floor(Math.random() * mensajes.length)];
+            texto.innerText = random;
+
+            tooltip.classList.add("show");
+
+            setTimeout(() => {
+                tooltip.classList.remove("show");
+            }, 4000);
+        }
+        */
+        // aparece cada cierto tiempo
+        // setInterval(mostrarMensaje, 10000);
+
+        // primera vez
+        setTimeout(mostrarMensaje, 2000);
+    });
 
 </script>
 @endpush

@@ -27,6 +27,11 @@ class DispatchEmail extends Mailable
      */
     public function build()
     {
+        // Validar existencia física del PDF antes de adjuntar.
+        if (!$this->existFileInStorage($this->dispatch->filename, 'pdf')) {
+            (new \App\CoreFacturalo\Facturalo)->createPdf($this->dispatch, 'dispatch', 'a4');
+        }
+
         $pdf = $this->getStorage($this->dispatch->filename, 'pdf');
         return $this->subject('Envio de guía')
                     ->from(config('mail.username'), 'Guía')

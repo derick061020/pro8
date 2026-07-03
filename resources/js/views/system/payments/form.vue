@@ -12,6 +12,9 @@
                                     >Empresa</label
                                 >
                                 <el-select v-model="form.client_id" 
+                                    filterable
+                                    clearable
+                                    placeholder="Seleccione una empresa"
                                 >
                                     <el-option
                                     v-for="client in clients.filter(c => c.name !== 'Todos' && c.id !== 'all')"

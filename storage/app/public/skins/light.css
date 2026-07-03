@@ -859,6 +859,9 @@ html.sidebar-gray ul.nav-main li .nav-children li a:after {
     border: none !important;
     padding: 5px !important;
 }
+.btn-edit-person {
+    right: 40px;
+}
 @media only screen and (min-width: 767px){
     .welcome-component {
         margin-right: -18px;
@@ -927,6 +930,16 @@ html.sidebar-gray ul.nav-main li .nav-children li a:after {
     background-color: var(--primary-color);
     color: var(--light-color);
 }
+.el-tag.el-tag--danger{
+    background-color: color-mix(in srgb, var(--danger) 10%, #ffffff00) !important;
+    border-color: var(--danger) !important;
+    color: var(--danger) !important;
+}
+.el-tag.el-tag--warning{
+    background-color: color-mix(in srgb, var(--warning) 10%, #ffffff00) !important;
+    border-color: var(--warning) !important;
+    color: var(--warning) !important;
+}
 /* style editor de etiquetas */
 .container-tag-editor .btn-icon-tags{
     background-color: transparent;
@@ -968,6 +981,12 @@ html.sidebar-gray ul.nav-main li .nav-children li a:after {
 }
 .circle-child{
     background-color: color-mix(in srgb, var(--accent-color) 40%, #ffffff00);
+}
+.template-skin-item {
+    border-radius: 6px;
+}
+.coverage-config-message {
+    border-radius: 4px !important;
 }
 /* end */
 /************************************ tema verde ************************************/
@@ -1346,14 +1365,107 @@ html.sidebar-light .establishment-selector-container{
     color: var(--dark-color) !important;
     border-color: var(--accent-color) !important;
 }
+.image-container-fluid{
+    border-radius: 4px;
+    border-color: var(--accent-color);
+}
+.img-thumbnail{
+    border-radius: 4px;
+}
+.image-container-fluid:hover{
+    border-color: color-mix(in srgb, var(--accent-color) 90%, #000000);
+}
+.item-actions-tooltip {
+    right: 6px !important;
+}
+.item-actions-tooltip button{
+    height: 31px !important;
+    width: 47px !important;
+}
+.item-actions-tooltip button:first-child{
+    border-radius: 0 !important;
+}
+.item-actions-tooltip button:last-child{
+    border-radius: 0 4px 4px 0 !important;
+}
+.btn-outline-success{
+    border-color: var(--success) !important;
+    color: var(--success) !important;
+    background-color: transparent !important;
+}
+.btn-outline-success:hover{
+    border-color: var(--success) !important;
+    background-color: var(--success) !important;
+    color: #fff !important;
+}
+.btn-outline-info{
+    border-color: var(--info) !important;
+    color: var(--info) !important;
+    background-color: transparent !important;
+}
+.btn-outline-info:hover{
+    border-color: var(--info) !important;
+    background-color: var(--info) !important;
+    color: #fff !important;
+}
 @media only screen and (min-width: 767px) {
+    html.no-overflowscrolling .nano {
+    height: calc(100% - 66px) !important;
+}
     html.no-overflowscrolling .sidebar-left.show-branch-selector .nano{
-        height: calc(100% - 130px) !important;
+        height: calc(100% - 150px) !important;
+    }
+    html.no-overflowscrolling .sidebar-left.show-both-selectors .nano {
+        height: calc(100% - 204px) !important;
     }
     html.no-overflowscrolling.sidebar-left-collapsed .sidebar-left.show-branch-selector .nano,
     html.no-overflowscrolling.sidebar-left-collapsed .sidebar-left.show-both-selectors .nano {
-        height: calc(100% - 104px) !important;
+        height: calc(100% - 116px) !important;
     }
+}
+.cbm-wrap{
+    margin: -18px -18px 28px -18px !important;
+}
+.advanced-settings .el-tabs__nav {
+    border-radius: 6px !important;
+}
+.advanced-settings.el-tabs--border-card>.el-tabs__header .el-tabs__item.is-active {
+    color: var(--primary-color) !important;
+    background-color: color-mix(in srgb, var(--primary-color) 15%, #ffffff00);
+    border-radius: 4px;
+}
+.advanced-settings.el-tabs--border-card>.el-tabs__header .el-tabs__item:hover {
+    background-color: color-mix(in srgb, var(--primary-color) 5%, #ffffff00);
+    border-radius: 4px;
+    color: var(--primary-color);
+}
+.advanced-settings .dot {
+    background: var(--primary-color);
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--primary-color) 20%, #ffffff00);
+}
+.tag-icon {
+    background-color: var(--primary-color);
+    color: #fff;
+    box-shadow: 0 8px 20px -6px color-mix(in srgb, var(--primary-color) 20%, #ffffff00);
+}
+.advanced-settings .options-count {
+    background-color: color-mix(in srgb, var(--primary-color) 15%, #ffffff00);
+    color: color-mix(in srgb, var(--dark-color) 70%, #ffffff) !important;
+    border-radius: 6px;
+}
+.advanced-settings .card-body .header-card {
+    border-bottom: 1px solid color-mix(in srgb, var(--accent-color) 40%, #ffffff);
+}
+.route-path-reports {
+    background-color: color-mix(in srgb, var(--accent-color) 25%, #ffffff00);
+    color: color-mix(in srgb, var(--dark-color) 70%, #ffffff);
+}
+.buhoprinter-config .info-text {
+    border: 1px solid color-mix(in srgb, var(--accent-color) 96%, #000000);
+    border-radius: 6px;
+}
+.text-primary {
+    color: var(--primary-color) !important;
 }
 /* modo oscuro */
 html.dark .table-responsive.payment {
@@ -1772,14 +1884,22 @@ html.dark .border-bottom-dashed,
 html.dark .border-top-dashed,
 html.dark .table-list-prices,
 html.dark .table-list-prices tbody tr,
-html.dark .establishment-selector-container {
+html.dark .establishment-selector-container,
+html.dark .cbm-stat,
+html.dark .cem-option-row {
     border-color: var(--borders-dark);
 }
 html.dark .payment-container-pos {
     border-top: 3px dashed var(--borders-dark);
 }
 html.dark .table-list-prices .btn-dropdown-toggle,
-html.dark .btn.barcode {
+html.dark .btn.barcode,
+html.dark .cbm-stat__value,
+html.dark .cbm-card__value,
+html.dark .cem-section-title,
+html.dark .cem-url-text,
+html.dark .cd-section-title,
+html.dark .cd-field>span {
     color: var(--light-color);
 }
 html.dark .table-list-prices .btn-dropdown-toggle:hover,
@@ -1787,14 +1907,50 @@ html.dark .table-list-prices .btn-dropdown-toggle:focus,
 html.dark .table-list-prices .btn-dropdown-toggle:active {
     background-color: var(--inputs-dark);
 }
-html.dark .contain-icon-establishment{
+html.dark .contain-icon-establishment,
+html.dark .cbm-card__label,
+html.dark .cbm-stat__label,
+html.dark .cbm-stat__icon,
+html.dark .cem-option-label {
     color: var(--accent-color);
+}
+html.dark .cbm-card,
+html.dark .cbm-secondary-grid,
+html.dark .cd-form-section{
+    background-color: var(--contents-dark);
+    border-color: var(--borders-dark);
+}
+html.dark .sc-action-item,
+html.dark .cem-section-header{
+    background-color: var(--inputs-dark);
+    border-color: var(--borders-dark);
 }
 html.dark .establishment-dropdown,
 html.dark .establishment-dropdown-header {
     background-color: var(--contents-dark) !important;
     border-color: var(--borders-dark) !important;
     color: var(--light-color) !important;
+}
+html.dark .ck.ck-editor__main>.ck-editor__editable{
+    background-color: var(--inputs-dark);
+}
+html.dark .image-container-fluid,
+html.dark .sc-panel-actions,
+html.dark .cem-section,
+html.dark .cd-section,
+html.dark .cd-section-title {
+    border-color: var(--borders-dark);
+}
+html.dark .image-container-fluid:hover{
+    border-color: color-mix(in srgb, var(--borders-dark) 90%, #ffffff);
+}
+html.dark .ch-divider{
+    background-color: var(--borders-dark);
+}
+html.dark .el-alert--info.is-light,
+html.dark .cd-text-block {
+    background-color: var(--inputs-dark);
+    color: var(--accent-color);
 }
 @media only screen and (min-width: 391px){
     .card-body-invoice div .row .filter-invoice{

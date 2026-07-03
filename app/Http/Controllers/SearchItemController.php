@@ -530,6 +530,7 @@
             // Generar clave de caché basada en todos los parámetros del request
             $cacheParams = [
                 'id' => $id,
+                'establishment_id' => auth()->user()->establishment_id,
                 'input' => $request ? $request->input('input') : null,
                 'input_item' => $request ? $request->input('input_item') : null,
                 'search_by_barcode' => $request ? $request->input('search_by_barcode') : null,

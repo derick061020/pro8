@@ -2,17 +2,27 @@
     // Detectar contexto de restaurant por nombre de ruta
     $isRestaurant = request()->routeIs('tenant.restaurant.*', 'restaurant.*');
 @endphp
-<div class="dropdown cart-dropdown" style="margin-left: 9px;">
+<div class="dropdown cart-dropdown" style="margin-left: 16px;">
 
     @guest('ecommerce')
         <a class="header-contact mr-0 login-link" href="#" style="text-decoration: none;">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-user-circle" style="margin-top: -2px; color: #fff;"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0" /><path d="M9 10a3 3 0 1 0 6 0a3 3 0 1 0 -6 0" /><path d="M6.168 18.849a4 4 0 0 1 3.832 -2.849h4a4 4 0 0 1 3.834 2.855" /></svg>
-            <strong class="ml-2" style="font-size: 15px; color: #fff;">Iniciar sesión</strong>
+            <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-user-circle" style="color: #fff;"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0" /><path d="M9 10a3 3 0 1 0 6 0a3 3 0 1 0 -6 0" /><path d="M6.168 18.849a4 4 0 0 1 3.832 -2.849h4a4 4 0 0 1 3.834 2.855" /></svg>
+            <strong class="ml-2 log-in-text" style="font-size: 15px; color: #fff;">Iniciar sesión</strong>
+
+            <div class="user-name-ecommerce ml-2">
+                <span class="text-name">Ingresar</span>
+            </div>
         </a>
     @elseauth('ecommerce')
-        <a href="#" class="dropdown-toggle" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"
+        <a href="#" class="dropdown-toggle dropdown-toggle-ecommerce" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"
             data-display="static">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-user"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0" /><path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2" /></svg>
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-user icon-user-restaurant"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0" /><path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2" /></svg>
+
+            <div class="user-name-ecommerce d-flex align-items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-user-circle"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0" /><path d="M9 10a3 3 0 1 0 6 0a3 3 0 1 0 -6 0" /><path d="M6.168 18.849a4 4 0 0 1 3.832 -2.849h4a4 4 0 0 1 3.834 2.855" /></svg>
+                <span class="text-name ml-2 mr-1">{{ Auth::guard('ecommerce')->user()->name }}</span>
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-chevron-down"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M6 9l6 6l6 -6" /></svg>
+            </div>
         </a>
         <div class="dropdown-menu">
             <div class="dropdownmenu-wrapper dropdown-ecommerce">
@@ -20,9 +30,9 @@
                     <span style="font-weight: bold;">{{ Auth::guard('ecommerce')->user()->name }}</span>
                     <span class="text-muted" style="line-height: .6; font-size: 12px;">{{ Auth::guard('ecommerce')->user()->email }} </span>
                 </div>
-                
+
                 <div class="dropdown-divider"></div>
-                
+
                 @if(!$isRestaurant)
                     <a href="{{ route('tenant_document_list') }}" class="dropdown-cart-total dropdown-options span-start d-flex align-items-center text-left text-decoration-none text-dark" >
                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"></path><path d="M14 3v4a1 1 0 0 0 1 1h4"></path><path d="M19 12v7a1.78 1.78 0 0 1 -3.1 1.4a1.65 1.65 0 0 0 -2.6 0a1.65 1.65 0 0 1 -2.6 0a1.65 1.65 0 0 0 -2.6 0a1.78 1.78 0 0 1 -3.1 -1.4v-14a2 2 0 0 1 2 -2h7l5 5v4.25"></path></svg>
@@ -41,7 +51,7 @@
                     <span class="ml-2">Cerrar sesión</span>
                 </a>
 
-            </div>            
+            </div>
         </div>
         <form id="logout-form-header" action="{{ route('tenant_ecommerce_logout') }}" method="POST" style="display: none;">
             @csrf

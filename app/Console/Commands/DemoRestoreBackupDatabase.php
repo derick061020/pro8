@@ -52,6 +52,9 @@ class DemoRestoreBackupDatabase extends Command
 
             $this->initDbConfig();
 
+            $mysqlBin = 'mysql';
+            $bin = (strpbrk($mysqlBin, '\\/') !== false) ? escapeshellarg($mysqlBin) : $mysqlBin;
+
             $backupPath = ($restore_type=='demo')?storage_path("app/demo_backups/demo/{$restore_dbname}.sql"):storage_path("app/demo_backups/system/{$restore_dbname}.sql");
 
             if (!file_exists($backupPath)) {
@@ -60,14 +63,24 @@ class DemoRestoreBackupDatabase extends Command
                 return;
             }
 
+            $check = []; $checkVar = 0;
+            exec($bin . ' --version 2>&1', $check, $checkVar);
+            if ($checkVar !== 0) {
+                Log::error("No se encuentra mysql en el PATH. Salida: " . implode("\n", $check));
+                $this->error("No se encuentra mysql en el PATH.");
+                return;   // aborta SIN borrar => no hay pérdida de datos
+            }
+
             $this->dropAllTables($database);
 
+            $passwordParam = $this->password ? '-p' . escapeshellarg($this->password) : '';
             // Construir el comando para restaurar
             $command = sprintf(
-                'mysql -h %s -u %s -p%s %s < %s',
+                '%s -h %s -u %s %s %s < %s 2>&1',
+                $bin,
                 escapeshellarg($this->host),
                 escapeshellarg($this->username),
-                escapeshellarg($this->password),
+                $passwordParam,
                 escapeshellarg($database),
                 escapeshellarg($backupPath)
             );

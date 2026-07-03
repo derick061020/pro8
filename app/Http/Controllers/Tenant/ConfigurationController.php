@@ -29,6 +29,11 @@ use App\Models\Tenant\Skin;
 use Modules\Finance\Helpers\UploadFileHelper;
 use App\Models\Tenant\ConfigurationEcommerce;
 use App\Models\Tenant\TemplateColumnsConfig;
+use Modules\Restaurant\Models\Printer;
+use Exception;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Mail;
 
 
 class ConfigurationController extends Controller
@@ -282,7 +287,7 @@ class ConfigurationController extends Controller
 
         // Verificar que el establecimiento existe en la base de datos del tenant
         $establishment = Establishment::find($request->establishment);
-        
+
         if (!$establishment) {
             return response()->json([
                 'success' => false,
@@ -313,7 +318,7 @@ class ConfigurationController extends Controller
     public function getColumnsConfig(Request $request)
     {
         $establishmentId = $request->get('establishment_id');
-        
+
         if (!$establishmentId) {
             return [
                 'success' => false,
@@ -372,6 +377,7 @@ class ConfigurationController extends Controller
     public function record()
     {
         $configuration = Configuration::first();
+        Configuration::setConfigSmtpMail();
         $is_restaurant_active = DB::connection('tenant')->table('business_turns')
             ->where('id', 3)
             ->where('active', 1)
@@ -393,6 +399,56 @@ class ConfigurationController extends Controller
         $record = new ConfigurationResource($configuration);
 
         return  $record;
+    }
+
+    public function testEmail(Request $request)
+    {
+        $request->validate([
+            'smtp_host' => 'required|string',
+            'smtp_port' => 'required|numeric',
+            'smtp_user' => 'required|string',
+            'smtp_password' => 'required|string',
+            'smtp_encryption' => 'nullable|string',
+        ]);
+
+        $this->applyTenantMailConfiguration($request->all());
+
+        $recipient = Auth::user()->email ?? $request->user()->email;
+        if (empty($recipient)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No se encontró una dirección de correo válida para el usuario actual.',
+            ], 422);
+        }
+
+        try {
+            Mail::raw('Este es un correo de prueba para verificar la configuración SMTP del cliente.', function ($message) use ($recipient) {
+                $message->to($recipient)->subject('Prueba de configuración SMTP');
+            });
+
+            return [
+                'success' => true,
+                'message' => 'Correo de prueba enviado a ' . $recipient,
+            ];
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al enviar el correo de prueba: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    protected function applyTenantMailConfiguration(array $data)
+    {
+        if (!empty($data['smtp_host']) && !empty($data['smtp_port']) && !empty($data['smtp_user']) && !empty($data['smtp_password'])) {
+            Config::set('mail.host', $data['smtp_host']);
+            Config::set('mail.port', $data['smtp_port']);
+            Config::set('mail.username', $data['smtp_user']);
+            Config::set('mail.password', $data['smtp_password']);
+            Config::set('mail.encryption', $data['smtp_encryption'] ?? null);
+        } else {
+            Configuration::setConfigSmtpMail();
+        }
     }
 
     public function store(ConfigurationRequest $request)
@@ -474,12 +530,70 @@ class ConfigurationController extends Controller
         ];
     }
 
+    public function getPublicSearchBackground()
+    {
+        $configuration = Configuration::first();
+
+        return response()->json([
+            'success' => true,
+            'background_color' => $configuration->public_search_bg_color ?? null,
+            'background_image_url' => !empty($configuration->public_search_bg_image_path)
+                ? asset('storage/' . ltrim($configuration->public_search_bg_image_path, '/'))
+                : null,
+        ]);
+    }
+
+    public function storePublicSearchBackground(Request $request)
+    {
+        $validated = $request->validate([
+            'background_color' => ['nullable', 'regex:/^#([A-Fa-f0-9]{6})$/'],
+            'background_image' => ['nullable', 'file', 'image', 'mimes:jpg,jpeg,png,webp', 'max:4096'],
+            'remove_background_image' => ['nullable', 'boolean'],
+        ]);
+
+        $configuration = Configuration::first();
+        $configuration->public_search_bg_color = !empty($validated['background_color'])
+            ? strtolower($validated['background_color'])
+            : null;
+
+        if ($request->boolean('remove_background_image') && !empty($configuration->public_search_bg_image_path)) {
+            Storage::disk('public')->delete($configuration->public_search_bg_image_path);
+            $configuration->public_search_bg_image_path = null;
+        }
+
+        if ($request->hasFile('background_image')) {
+            if (!empty($configuration->public_search_bg_image_path)) {
+                Storage::disk('public')->delete($configuration->public_search_bg_image_path);
+            }
+
+            $configuration->public_search_bg_image_path = $request->file('background_image')
+                ->store('uploads/public-search-backgrounds', 'public');
+        }
+
+        $configuration->save();
+
+        return response()->json([
+            'success' => true,
+            'background_color' => $configuration->public_search_bg_color,
+            'background_image_url' => !empty($configuration->public_search_bg_image_path)
+                ? asset('storage/' . ltrim($configuration->public_search_bg_image_path, '/'))
+                : null,
+        ]);
+    }
+
     public function tables()
     {
         $affectation_igv_types = AffectationIgvType::whereActive()->get();
         $global_discount_types = ChargeDiscountType::whereIn('id', ['02', '03'])->whereActive()->get();
 
-        return compact('affectation_igv_types', 'global_discount_types');
+        // Impresoras activas registradas por BuhoPrinter, para el selector de impresora en auto_print
+        $printers = Printer::where('active', true)
+            ->orderByDesc('is_default')
+            ->orderBy('name')
+            ->get(['id', 'name', 'is_default'])
+            ->toArray();
+
+        return compact('affectation_igv_types', 'global_discount_types', 'printers');
     }
 
     public function visualDefaults()
@@ -592,7 +706,7 @@ class ConfigurationController extends Controller
             $ext = $file->getClientOriginalExtension();
             $name = date('Ymd') . '_' . $configuration->id . '.' . $ext;
 
-            request()->validate(['file' => 'required|image|mimes:jpeg,png,jpg,gif,svg|max:2048']);
+            request()->validate(['file' => 'required|image|mimes:jpeg,png,jpg,gif,svg,webp|max:2048']);
 
             UploadFileHelper::checkIfValidFile($name, $file->getPathName(), true);
 
@@ -667,16 +781,16 @@ class ConfigurationController extends Controller
         $configuration->top_menu_b_id = $request->menu_b;
         $configuration->top_menu_c_id = $request->menu_c;
         $configuration->top_menu_d_id = $request->menu_d;
-        
+
         // Convertir a JSON si viene como array, si no, mantener el valor
-        $configuration->top_menu_extra_one = is_array($request->menu_extra_1) 
-            ? json_encode($request->menu_extra_1) 
+        $configuration->top_menu_extra_one = is_array($request->menu_extra_1)
+            ? json_encode($request->menu_extra_1)
             : $request->menu_extra_1;
-            
-        $configuration->top_menu_extra_two = is_array($request->menu_extra_2) 
-            ? json_encode($request->menu_extra_2) 
+
+        $configuration->top_menu_extra_two = is_array($request->menu_extra_2)
+            ? json_encode($request->menu_extra_2)
             : $request->menu_extra_2;
-            
+
         $configuration->save();
 
         return [
@@ -688,7 +802,7 @@ class ConfigurationController extends Controller
 
     public function visualUploadSkin(Request $request)
     {
-        if ($request->file->getClientMimeType() != 'text/css') {
+        if (strtolower($request->file->getClientOriginalExtension()) !== 'css') {
             return [
                 'success' => false,
                 'message' =>  'Tipo de archivo no permitido',
@@ -708,7 +822,6 @@ class ConfigurationController extends Controller
             $filename = $file->getClientOriginalName();
             $name = pathinfo($file->getClientOriginalName());
 
-            UploadFileHelper::checkIfValidCssFile($filename, $file->getPathName(), 'css', ['text/css', 'text/plain']);
 
             Storage::disk('public')->put('skins'.DIRECTORY_SEPARATOR.$filename, $file_content);
 
@@ -717,11 +830,10 @@ class ConfigurationController extends Controller
             $skin->name = $name['filename'];
             $skin->save();
 
-            $skins = Skin::all();
             return [
                 'success' => true,
-                'message' =>  'Archivo cargado exitosamente',
-                'skins' => $skins
+                'message' => 'Archivo cargado exitosamente',
+                'skins'   => Skin::all()->map(fn($s) => $s->getCollectionData()),
             ];
         }
         return [
@@ -732,25 +844,32 @@ class ConfigurationController extends Controller
 
     public function visualDeleteSkin(Request $request)
     {
-        $config = Configuration::first();
-        if($config->skin_id == $request->id) {
-            return [
-                'success' => false,
-                'message' => 'No se puede eliminar el Tema actual'
-            ];
+        $skin = Skin::find($request->id);
+
+        if (!$skin) {
+            return ['success' => false, 'message' => 'Tema no encontrado'];
         }
 
+        if ($skin->is_system) {
+            return ['success' => false, 'message' => 'No se pueden eliminar los temas del sistema'];
+        }
 
-        $skin = Skin::find($request->id);
+        try {
+            $config = Configuration::first();
+            if ($config && $config->skin_id == $request->id) {
+                return ['success' => false, 'message' => 'No se puede eliminar el tema actualmente en uso'];
+            }
+        } catch (\Exception $e) {
+            // Si falla la consulta de configuración, continuamos con el delete
+        }
+
         Storage::disk('public')->delete('skins'.DIRECTORY_SEPARATOR.$skin->filename);
         $skin->delete();
 
-        $skins = Skin::all();
-
         return [
             'success' => true,
-            'message' =>  'Tema eliminado correctamente',
-            'skins' => $skins
+            'message' => 'Tema eliminado correctamente',
+            'skins'   => Skin::all()->map(function($s) { return $s->getCollectionData(); }),
         ];
     }
 
@@ -808,7 +927,7 @@ class ConfigurationController extends Controller
 
         return $this->generalResponse(true, 'Proceso realizado correctamente.');
     }
-    
-    
+
+
 }
 

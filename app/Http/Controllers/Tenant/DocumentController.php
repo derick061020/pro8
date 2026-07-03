@@ -72,12 +72,16 @@ use Modules\Inventory\Models\{
     InventoryConfiguration
 };
 use App\Models\Tenant\Cash;
+use Modules\LevelAccess\Traits\SystemActivityTrait;
 
 class DocumentController extends Controller
 {
     use FinanceTrait;
     use OfflineTrait;
     use StorageDocument;
+    use SystemActivityTrait;
+
+    private $route_path;
 
     private $max_count_payment = 0;
 
@@ -117,8 +121,10 @@ class DocumentController extends Controller
         ];
     }
 
+    // TODO: refactorizar para usar el mismo método en el controller de sale notes
     public function records(Request $request)
     {
+        $auth_id = auth()->user()->id;
         $cacheParams = [
             'category_id' => $request->category_ido,
             'page' => $request->page,
@@ -134,7 +140,7 @@ class DocumentController extends Controller
             'series' => $request->series,
             'state_type_id' => $request->state_type_id,
         ];
-        $cacheKey = 'document_list_' . md5(json_encode($cacheParams));
+        $cacheKey = 'document_list_' . "user-$auth_id" . "_" . md5(json_encode($cacheParams));
         if ($this->pingCache()) {
             return $this->cacheWithTagKey(
                 $cacheKey,
@@ -236,6 +242,9 @@ class DocumentController extends Controller
         $cash = Cash::where([['user_id', auth()->user()->id], ['state', true]])->first();
 
         if (!$cash) {
+            if (!$this->userCanAccessCash()) {
+                return redirect('/documents')->with('toast_warning', 'No tienes permisos para abrir caja. Contacta al administrador para acceder a la configuración de Finanzas.');
+            }
             return redirect()->route('tenant.cash.index', ['redirect_reason' => 'no_cash_document']);
         }
 
@@ -252,11 +261,30 @@ class DocumentController extends Controller
         $cash = Cash::where([['user_id', auth()->user()->id], ['state', true]])->first();
 
         if (!$cash) {
+            if (!$this->userCanAccessCash()) {
+                return redirect('/documents')->with('toast_warning', 'No tienes permisos para abrir caja. Contacta al administrador para acceder a la configuración de Finanzas.');
+            }
             return redirect()->route('tenant.cash.index', ['redirect_reason' => 'no_cash_document']);
         }
 
         $is_contingency = 0;
         return view('tenant.documents.form_tensu', compact('is_contingency'));
+    }
+
+    private function userCanAccessCash(): bool
+    {
+        // Simula una petición GET a /cash con el usuario actual
+        $cashRequest = \Illuminate\Http\Request::create('cash', 'GET');
+        $cashRequest->setUserResolver(fn () => auth()->user());
+
+        $passed = false;
+        $middleware = new \App\Http\Middleware\RedirectModuleLevel();
+        $middleware->handle($cashRequest, function () use (&$passed) {
+            $passed = true;            // si llega aquí, el middleware dejó pasar => sí puede entrar a /cash
+            return response('ok');
+        });
+
+        return $passed;                // false => el middleware redirigiría => sin acceso a caja
     }
 
 
@@ -435,7 +463,6 @@ class DocumentController extends Controller
             $customers = Person::with('addresses')
                 ->whereType('customers')
                 ->whereIsEnabled()
-                ->whereFilterCustomerBySeller('customers')
                 ->orderBy('name')
                 ->take(20)
                 ->get()->transform(function ($row) {
@@ -1025,24 +1052,29 @@ class DocumentController extends Controller
 
     public function send($document_id)
     {
-        $document = Document::find($document_id);
 
-        $fact = DB::connection('tenant')->transaction(function () use ($document) {
-            $facturalo = new Facturalo();
-            $facturalo->setDocument($document);
-            $facturalo->loadXmlSigned();
-            $hasSendPse = $facturalo->hasPseSend() ? '200' : null;
-            $facturalo->onlySenderXmlSignedBill($hasSendPse);
-            return $facturalo;
-        });
+        try {
+            $document = Document::find($document_id);
 
-        $response = $fact->getResponse();
+            $fact = DB::connection('tenant')->transaction(function () use ($document) {
+                $facturalo = new Facturalo();
+                $facturalo->setDocument($document);
+                $facturalo->loadXmlSigned();
+                $hasSendPse = $facturalo->hasPseSend() ? '200' : null;
+                $facturalo->onlySenderXmlSignedBill($hasSendPse);
+                return $facturalo;
+            });
 
-        return [
-            'success' => true,
-            'response' => $response,
-            'message' => $response['description'],
-        ];
+            $response = $fact->getResponse();
+
+            return [
+                'success' => true,
+                'response' => $response,
+                'message' => $response['description'],
+            ];
+        } catch (\Throwable $th) {
+            return $this->generalResponse(false, "Ya se genero el documento, pero hubo un problema en el envio. En el listado por favor, volver a reenviar.");
+        }
     }
 
     public function consultCdr($document_id)
@@ -1139,7 +1171,6 @@ class DocumentController extends Controller
 
         $customers = Person::with('addresses')->whereType('customers')
             ->where('id', $id)
-            ->whereFilterCustomerBySeller('customers')
             ->get()->transform(function ($row) {
                 /** @var  Person $row */
                 return $row->getCollectionData();
@@ -1275,6 +1306,23 @@ class DocumentController extends Controller
         ];
     }
 
+    public function updateCustomFields(Request $request)
+    {
+        $request->validate([
+            'id' => 'required|integer',
+            'custom_fields_data' => 'nullable|array'
+        ]);
+
+        $Document = Document::findOrFail($request->input('id'));
+        $Document->custom_fields_data = $request->input('custom_fields_data', []);
+        $Document->save();
+
+        return [
+            'success' => true,
+            'data' => $Document->custom_fields_data
+        ];
+    }
+
     public function getRecords($request)
     {
         $d_end = $request->d_end;
@@ -1292,9 +1340,11 @@ class DocumentController extends Controller
         $guides = $request->guides;
         $plate_numbers = $request->plate_numbers;
         $observations = $request->observations;
+        $custom_fiels = $request->custom_fiels;
 
 //        return $observations;
         $records = Document::query();
+
         if ($d_start && $d_end) {
             $records->whereBetween('date_of_issue', [$d_start, $d_end]);
         }

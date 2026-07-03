@@ -14,9 +14,12 @@
     </style>
 </head>
 <body>
+@php
+    use App\CoreFacturalo\Helpers\CompanyDocumentDisplay as EmailOrdNoteCo;
+@endphp
 <p>Estimad@: 
 
-    {{ $company->name }}
+    {{ EmailOrdNoteCo::commercialLine($company) }}
   
     , informamos que su pedido ha sido emitido exitosamente.</p>
 

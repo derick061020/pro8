@@ -121,7 +121,7 @@
 
         <span slot="footer" class="dialog-footer">
             <el-button @click="close" size="medium">Cancelar</el-button>
-            <el-button type="primary" :loading="saving" @click="save" size="medium">
+            <el-button type="primary" :loading="saving" :disabled="!hasItems" @click="save" size="medium">
                 {{ saving ? 'Guardando...' : (form.id ? 'Actualizar' : 'Crear Modificador') }}
             </el-button>
         </span>
@@ -154,6 +154,11 @@ export default {
             selectedItemName: '',
             addPrice: 0,
             saving: false
+        }
+    },
+    computed: {
+        hasItems() {
+            return Array.isArray(this.form.items) && this.form.items.length > 0
         }
     },
     methods: {
@@ -272,6 +277,11 @@ export default {
         async save() {
             if (!this.form.name) {
                 this.$message.warning('Ingresa el nombre de categoría')
+                return
+            }
+
+            if (!this.form.items || this.form.items.length === 0) {
+                this.$message.warning('Agrega al menos una opción al modificador')
                 return
             }
 

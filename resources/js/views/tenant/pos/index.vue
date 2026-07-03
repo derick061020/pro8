@@ -1,7 +1,7 @@
 <template>
     <div class="pos container-fluid p-0">
         <span class="module-title-marker" data-page-title="Punto de Venta"></span>
-        <div class="row page-header pe-0 no-gutters" style="height:auto">
+        <div class="row page-header pe-0 no-gutters" style="min-height:48px">
             <Keypress
                 key-event="keyup"
                 :key-code="112"
@@ -73,7 +73,7 @@
                 </div>
             </div>
             <div class="col-md-3 pe-0">
-                <div class="d-flex justify-content-center">
+                <div class="d-flex justify-content-center h-100 align-items-center">
                     <div v-if="!configuration.enable_list_product" class="col-6" style="padding-top: 2.5px;">
                         <el-select
                             v-model="selected_option_price"
@@ -154,8 +154,8 @@
                 </div>
             </div>
             <div class="col-md-4">
-                <div class="pull-right">
-                    <p class="pe-3 pt-2 mb-2 exchange-currency">
+                <div class="pull-right h-100 d-flex align-items-center" v-if="currency_types.length > 1">
+                    <p class="pe-3 exchange-currency m-0">
                         T.C.
                         <span>S/ {{ form.exchange_rate_sale }}</span> Cambiar
                         Moneda
@@ -760,74 +760,71 @@
                                     v-for="(item, index) in form.items"
                                     :key="index"
                                 >
-                                    <td class="">
-                                        <p class="item-description">
-                                            {{ item.item.description }}
-                                        </p>
-                                        <small>{{ item.unit_type_id }}</small
-                                        ><br />
-                                        <small
-                                            v-html="nameSets(item.item_id)"
-                                        ></small>
-                                    </td>
-                                    <td
-                                        style="width: 80px; vertical-align: top"
-                                    >
-                                        <el-input
-                                            v-model="item.item.aux_quantity"
-                                            @input="
-                                                    clickAddItem(
-                                                        item,
-                                                        index,
-                                                        true,
+                                    <td>
+                                        <div class="d-flex justify-content-between align-items-start">
+                                            <p class="item-description mb-0">
+                                                {{ item.item.description }}
+                                                <template v-if="item.presentation &&
+                                                    item.presentation.hasOwnProperty(
+                                                        'description'
                                                     )
-                                            "
-                                            @keyup.enter.native="
-                                                keyupEnterQuantity
-                                            "
-                                        ></el-input>
-                                    </td>
-
-                                    <td
-                                        class="font-weight-semibold"
-                                        style="width: 80px; text-align: right"
-                                    >
-                                        <template v-if="edit_unit_price">
-                                            <span class="d-flex">
-                                                <span>
-                                                    {{ currency_type.symbol }}
-                                                </span>
-                                                <span
-                                                    v-text="item.total.toFixed(2)"
-                                                    @input="
-                                                        calculateQuantity(index)
-                                                    "
-                                                    @blur="
-                                                        blurCalculateQuantity(index)
-                                                    "
-                                                    :contenteditable="
-                                                        !item.item
-                                                            .calculate_quantity
-                                                            ? 'false'
-                                                            : 'true'
-                                                    "
-                                                ></span>
-                                            </span>
-                                        </template>
-                                        <template v-else>
-                                            {{ item.total }}
-                                        </template>
-                                    </td>
-                                    <td
-                                        class="text-end"
-                                        style="width: 36px; padding-left: 0; padding-right: 0; vertical-align: top"
-                                    >
-                                        <a
-                                            class="btn btn-sm btn-default text-danger btn-trash-product-pos"
-                                            @click="clickDeleteItem(item)"
-                                        >
-                                            <i class="fas fa-trash"></i>
-                                        </a>
+                                                 " >
+                                                 {{ item.item.presentation
+                                                              .description
+                                                  }}
+                                                </template>
+                                            </p>
+                                            <a
+                                                class="btn btn-sm btn-default text-danger btn-trash-product-pos"
+                                                @click="clickDeleteItem(item)"
+                                            >
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-trash"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M4 7l16 0" /><path d="M10 11l0 6" /><path d="M14 11l0 6" /><path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2 -2l1 -12" /><path d="M9 7v-3a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v3" /></svg>
+                                            </a>
+                                        </div>
+                                        <div class="d-flex justify-content-between align-items-center mt-1">
+                                            <div>
+                                                <small>{{ item.unit_type_id }}</small>
+                                                <small
+                                                    v-html="nameSets(item.item_id)"
+                                                ></small>
+                                            </div>
+                                            <div class="d-flex align-items-center justify-content-end gap-4">
+                                                <div :style="{ width: Math.min(120, Math.max(50, String(item.item.aux_quantity == null ? '' : item.item.aux_quantity).length * 9 + 24)) + 'px' }">
+                                                    <el-input
+                                                        v-model="item.item.aux_quantity"
+                                                        @input="
+                                                                clickAddItem(
+                                                                    item,
+                                                                    index,
+                                                                    true,
+                                                                )
+                                                        "
+                                                        @keyup.enter.native="
+                                                            keyupEnterQuantity
+                                                        "
+                                                    ></el-input>
+                                                </div>
+                                                <div class="font-weight-semibold text-end">
+                                                    <template v-if="edit_unit_price">
+                                                        <span class="d-flex align-items-center">
+                                                            <span class="me-2">
+                                                                {{ currency_type.symbol }}
+                                                            </span>
+                                                            <el-input
+                                                                v-model="item.total"
+                                                                size="mini"
+                                                                :style="{ width: Math.min(120, Math.max(70, String(item.total == null ? '' : item.total).length * 9 + 24)) + 'px' }"
+                                                                @blur="changeRowTotal(index)"
+                                                                :readonly="!edit_unit_price && !item.item.calculate_quantity"
+                                                            ></el-input>
+                                                        </span>
+                                                    </template>
+                                                    <template v-else>
+                                                        {{ currency_type.symbol }} {{ item.total }}
+                                                    </template>
+                                                </div>
+                                            </div>
+                                        </div>
                                     </td>
                                 </tr>
                             </table>
@@ -992,7 +989,7 @@
                                     : 'bg-dark text-white'
                             ]"
                         >
-                            <span>PAGAR</span>
+                            <span>PAGAR </span>
                             <b
                                 >{{ currency_type.symbol }}
                                 {{ form.total.toFixed(2) }}</b
@@ -1024,6 +1021,8 @@
                 :currency-type-active="currency_type"
                 :exchange-rate-sale="form.exchange_rate_sale"
                 :customer="customer"
+                :customer_email="customerEmail"
+                :config="config"
                 :soapCompany="soapCompany"
                 :businessTurns="businessTurns"
                 :is-print="isPrint"
@@ -1311,6 +1310,7 @@ export default {
             affectation_igv_types: [],
             all_customers: [],
             establishment: null,
+            currency_types: [],
             currency_type: {},
             form_item: {},
             customer: {},
@@ -1349,6 +1349,7 @@ export default {
     async created() {
         await this.loadPriceOptions();
         this.loadConfiguration();
+        this.enabledSearchItemByBarcode();
         this.$store.commit("setConfiguration", this.configuration2);
 
         await this.initForm();
@@ -1368,14 +1369,22 @@ export default {
         await this.enabledSearchItemByBarcode();
         this.enabledCategoriesProductsView();
     },
-
     computed: {
         layout_mode() {
-            return (
-                localStorage.getItem("layout_mode") ||
-                this.visuals.layout_mode ||
-                "default"
-            );
+            const cols = parseInt(this.configuration.colums_grid_item, 10);
+            switch (cols) {
+                case 2:
+                    return "default";
+                case 3:
+                    return "comfortable";
+                case 4:
+                    return "compact";
+                case 5:
+                case 6:
+                    return "stacked";
+                default:
+                    return "default";
+            }
         },
         ...mapState(["config"]),
         canSeeHistoryPurchase: function() {
@@ -1429,22 +1438,55 @@ export default {
             };
         },
         edit_unit_price() {
-            if (this.typeUser === "admin") {
-                return true;
-            }
-            if (this.typeUser === "seller") {
-                return this.configuration.allow_edit_unit_price_to_seller;
-            }
-            return false;
+            return this.user && this.user.permission_edit_item_prices;
         },
         changeValuesElectronicScale() {
             return (
                 this.electronic_scale_barcode &&
                 this.electronic_scale_data.pass_validations
             );
+        },
+        customerEmail() {
+            const customer = _.find(this.all_customers, c => String(c.id) === String(this.form.customer_id));
+            console.log('found customer:', customer);
+            return customer ? customer.email : null;
         }
     },
     methods: {
+        enabledSearchItemByBarcode() {
+            if (this.configuration.search_item_by_barcode) {
+                this.search_item_by_barcode = true;
+            }
+        },
+        changeRowTotal(index) {
+            const item = this.form.items[index];
+
+            if (item.item.calculate_quantity) {
+                this.blurCalculateQuantity(index);
+                return;
+            }
+
+            const quantity = parseFloat(item.quantity);
+            const newTotal = parseFloat(item.total);
+
+            if (isNaN(newTotal) || isNaN(quantity) || quantity <= 0) {
+                this.blurCalculateQuantity(index);
+                return;
+            }
+
+            const newUnitPrice = newTotal / quantity;
+            item.item.unit_price = newUnitPrice;
+            item.item.sale_unit_price = item.item.has_igv
+                ? newUnitPrice
+                : newUnitPrice / (1 + this.percentage_igv);
+
+            this.row = calculateRowItem(item, this.form.currency_type_id, 1, this.percentage_igv);
+            this.row["unit_type_id"] = item.unit_type_id;
+            this.form.items[index] = this.row;
+
+            this.calculateTotal();
+            this.setFormPosLocalStorage();
+        },
         ...mapActions(["loadConfiguration"]),
         /**
          * Cargar opciones de precio desde la API de price_labels activos
@@ -1472,8 +1514,11 @@ export default {
                     });
                 });
 
-                // Seleccionar la primera opción por defecto
-                if (this.price_options.length > 0) {
+                // Seleccionar el label marcado como default, o el primero como fallback
+                const defaultLabel = labels.find(l => l.is_default);
+                if (defaultLabel) {
+                    this.selected_option_price = `price_label_${defaultLabel.id}`;
+                } else if (this.price_options.length > 0) {
                     this.selected_option_price = this.price_options[0].id;
                 }
             } catch (error) {
@@ -1589,6 +1634,7 @@ export default {
                         this.pagination.total = 0;
                     }
                     this.fixItems();
+                    this.ChangeSelectedPrice()
                 });
         },
         getQueryParameters() {
@@ -1605,9 +1651,15 @@ export default {
             return this.colors[i % this.colors.length];
         },
         initCurrencyType() {
-            this.currency_type = _.find(this.currency_types, {
+            const exists = _.find(this.currency_types, {
                 id: this.form.currency_type_id
             });
+            if (!exists && this.currency_types.length > 0) {
+                this.form.currency_type_id = this.currency_types[0].id;
+                this.changeCurrencyType();
+                return;
+            }
+            this.currency_type = exists;
         },
         getFormPosLocalStorage() {
             let form_pos = localStorage.getItem("form_pos");
@@ -1689,6 +1741,7 @@ export default {
 
             this.items[index].sale_unit_price = price.price;
             this.items[index].unit_type_id = price.unit_type_id;
+            this.items[index].presentation = price
             this.$message.success("Precio seleccionado");
         },
         clickWarehouseDetail(item) {
@@ -1827,7 +1880,7 @@ export default {
                     customer.identity_document_type_id === "6" ? "01" : "03";
             }
 
-            if (this.form.has_retention) {
+            if (this.form.has_retention && this.form.total > 700) {
                 this.changeRetention();
             }
 
@@ -2111,6 +2164,10 @@ export default {
                 return
             }
 
+            if (this.form.has_retention && this.form.total > 700) {
+                this.changeRetention();
+            }
+
             if (flag > 0)
                 return this.$message.error("Cantidad negativa o incorrecta");
             if (!this.form.customer_id)
@@ -2160,7 +2217,13 @@ export default {
                 return;
             }
 
-            this.loading = true;
+            let addingNotification = this.$notify({
+                title: "",
+                message: "Agregando...",
+                type: "info",
+                duration: 0
+            });
+
             let exchangeRateSale = this.form.exchange_rate_sale;
             let presentation = item.presentation;
             let exist_item = false;
@@ -2224,6 +2287,7 @@ export default {
                     if (!response.success) {
                         item.item.aux_quantity = item.quantity;
                         this.loading = false;
+                        addingNotification.close();
                         return this.$message.error(response.message);
                     }
 
@@ -2235,6 +2299,7 @@ export default {
                     );
                     if (!response.success) {
                         this.loading = false;
+                        addingNotification.close();
                         return this.$message.error(response.message);
                     }
 
@@ -2293,6 +2358,9 @@ export default {
 
                 this.row["unit_type_id"] = item.unit_type_id;
 
+                // Preservar la presentation (calculateRowItem no la copia)
+                this.row.presentation = exist_item.presentation;
+
                 this.form.items[pos] = this.row;
             } else {
                 response = await this.getStatusStock(
@@ -2301,6 +2369,7 @@ export default {
                 );
                 if (!response.success) {
                     this.loading = false;
+                    addingNotification.close();
                     return this.$message.error(response.message);
                 }
 
@@ -2367,11 +2436,13 @@ export default {
 
             // console.log("pos", this.row);
 
+            addingNotification.close();
+
             this.$notify({
                 title: "",
                 message: "Producto añadido!",
                 type: "success",
-                duration: 700
+                duration: 1000
             });
 
             this.cleanInput();
@@ -2383,7 +2454,6 @@ export default {
             // console.log(this.row)
             // console.log(this.form.items)
             await this.calculateTotal();
-            this.loading = false;
 
             await this.setFormPosLocalStorage();
 
@@ -2554,9 +2624,6 @@ export default {
 
             this.form.subtotal = this.form.total;
 
-            if (this.form.has_retention) {
-                this.changeRetention();
-            }
         },
         recalculateDecimalTotalTaxed(total, igv) {
             return total - igv;
@@ -2650,6 +2717,8 @@ export default {
                             this.loading = false;
                             this.filterItems();
                         }
+
+                        this.ChangeSelectedPrice()
                     });
             } else {
                 this.getRecords();
@@ -2780,7 +2849,6 @@ export default {
                 await this.$http
                     .get(`/${this.resource}/search_items?${parameters}`)
                     .then(response => {
-                        // console.log("buah");
                         if (response.data.items.length > 0) {
 
                             let presentation = response.data.items[0].unit_type.length > 0 ? true: false
@@ -2803,6 +2871,8 @@ export default {
                             this.cleanInput();
                             this.loading = false;
                         }
+
+                        this.ChangeSelectedPrice()
 
                     });
             } else {
@@ -2845,7 +2915,7 @@ export default {
                 //busqueda comun
                 else {
                     if (this.items.length == 1) {
-                        // console.log(this.items)
+                        console.log(this.items)
                         this.clickAddItem(this.items[0], 0);
                         this.filterItems();
                     }
@@ -2958,9 +3028,8 @@ export default {
             if (item.description == null) return 0;
             return item.description.length;
         },
-        ChangeSelectedPrice() {
+        async ChangeSelectedPrice() {
             // recorrer items
-            console.log("recorrer items");
             
             this.items.forEach(row => {
                     if(row.item_unit_types && row.item_unit_types.length > 0) {
@@ -3001,7 +3070,7 @@ export default {
             {
                 
                 if(!this.configuration.enable_list_product && this.selected_option_price !== 1) {
-                    if(row.item_unit_types.length) {
+                    if(Array.isArray( row.item_unit_types) &&  row.item_unit_types.length) {
                         let first_list = row.item_unit_types[0];
 
                         // Extraer price_label_id del selectedOptionPrice (formato: "price_label_2")
@@ -3054,5 +3123,14 @@ export default {
 @keyframes float {
   0%, 100% { transform: translateY(0);    }
   50%       { transform: translateY(-2px); }
+}
+
+.item-description {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 </style>

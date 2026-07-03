@@ -195,12 +195,12 @@
                                     {{ currency_type.symbol }} {{ form.total_unaffected }}</p>
                                 <p class="text-right" v-if="form.total_exonerated > 0">OP.EXONERADAS:
                                     {{ currency_type.symbol }} {{ form.total_exonerated }}</p>
-                                <p class="text-right" v-if="form.total_taxed > 0">OP.GRAVADA: {{ currency_type.symbol }}
-                                    {{ form.total_taxed }}</p>
-                                <p class="text-right" v-if="form.total_igv > 0">IGV: {{ currency_type.symbol }}
-                                    {{ form.total_igv }}</p>
-                                <h3 class="text-right" v-if="form.total > 0"><b>TOTAL
-                                    COMPRAS: </b>{{ currency_type.symbol }} {{ form.total }}</h3>
+                                <p class="text-right" v-if="form.items.length > 0">OP.GRAVADA: 
+                                    {{ currency_type.symbol }} {{ form.total_taxed }}</p>
+                                <p class="text-right" v-if="form.items.length > 0">IGV: 
+                                    {{ currency_type.symbol }} {{ form.total_igv }}</p>
+                                <h3 class="text-right" v-if="form.items.length > 0"><b>TOTAL COMPRAS: </b>
+                                    {{ currency_type.symbol }} {{ form.total }}</h3>
 
                             </div>
                         </div>
@@ -208,7 +208,7 @@
                     <div class="form-actions text-right mt-4">
                         <el-button @click.prevent="close()">Cancelar</el-button>
                         <el-button type="primary" native-type="submit" :loading="loading_submit"
-                                   v-if="form.items.length > 0 && !hide_button && form.total>0">Generar
+                                   v-if="form.items.length > 0">Generar
                         </el-button>
                     </div>
                 </form>
@@ -350,46 +350,86 @@ export default {
 
         },
 
-        setData() {
+        async setData() {
+            let oc = this.purchase_quotation;
 
-            let oc = this.purchase_quotation
+            // Asignación de fechas y IDs
+            this.form.date_of_issue = oc.date_of_issue;
+            this.form.date_of_due = oc.date_of_issue;
+            this.form.time_of_issue = oc.time_of_issue;
+            this.form.purchase_quotation_id = oc.id;
 
-            // this.form.establishment_id =  null
-            this.form.date_of_issue = oc.date_of_issue
-            this.form.date_of_due = oc.date_of_issue
-            this.form.time_of_issue = oc.time_of_issue
-            this.form.purchase_quotation_id = oc.id
+            // Procesar items de forma segura (creando un nuevo array para no alterar el original)
+            if (oc.items && oc.items.length > 0) {
+                this.form.items = oc.items.map(it => {
+                    const fullItem = _.find(this.items, { id: it.item_id });
+                    return {
+                        ...it,
+                        item: fullItem || it.item,
+                        affectation_igv_type_id: fullItem
+                            ? fullItem.purchase_affectation_igv_type_id
+                            : (it.affectation_igv_type_id || '10'),
+                        unit_price: fullItem
+                            ? parseFloat(fullItem.purchase_unit_price) || 0
+                            : parseFloat(it.unit_price) || 0,
+                        unit_value: 0,
+                        total_base_igv: 0,
+                        total_igv: 0,
+                        total_value: 0,
+                        total_base_isc: 0,
+                        total_isc: 0,
+                        total_base_other_taxes: 0,
+                        total_other_taxes: 0,
+                        total_taxes: 0,
+                        total: 0,
+                        discounts: [],
+                        charges: []
+                    };
+                });
+            }
 
-            oc.items.forEach(it => {
-                it.unit_price = 0
-                it.total_igv = 0
-                it.total_value = 0
-                it.total = 0
-                it.discounts = []
-                it.charges = []
-            });
+            console.log(this.form.items);
 
-            this.form.items = oc.items
+            const suppliersArray = oc.suppliers ? Object.values(oc.suppliers) : [];
 
+            if (suppliersArray.length === 1) {
+                const primerProveedor = suppliersArray[0];
+                this.$set(this.form, 'supplier_id', primerProveedor.supplier_id || primerProveedor.id);
+                this.$set(this.form, 'supplier', primerProveedor.name); 
+            } else {
+                this.$set(this.form, 'supplier_id', null);
+                this.$set(this.form, 'supplier', null);
+            }
+
+            for (let index = 0; index < this.form.items.length; index++) {
+                await this.clickAddItem(index);
+            }
         },
         addRow(row) {
             this.form.items.push(row)
             this.calculateTotal()
         },
         async inputUnitPrice(index) {
-            this.form.items[index].item = await _.find(this.items, {'id': this.form.items[index].item_id})
-            // this.form.unit_price = this.form.item.purchase_unit_price
-            this.form.items[index].affectation_igv_type_id = this.form.items[index].item.purchase_affectation_igv_type_id
-            // this.form.item_unit_types = _.find(this.items, {'id': this.form.item_id}).item_unit_types
-            await this.clickAddItem(index)
+            const found = _.find(this.items, {'id': this.form.items[index].item_id});
+            if (found) {
+                this.form.items[index].item = found;
+                this.form.items[index].affectation_igv_type_id = found.purchase_affectation_igv_type_id;
+            }
+            // si no se encuentra, mantiene el item que ya tiene
+            await this.clickAddItem(index);
         },
         async clickAddItem(index) {
-            this.form.items[index].item.unit_price = this.form.items[index].unit_price
-            this.form.items[index].item.presentation = [];
-            this.form.items[index].affectation_igv_type = _.find(this.affectation_igv_types, {'id': this.form.items[index].affectation_igv_type_id})
-            this.row = await calculateRowItem(this.form.items[index], this.form.currency_type_id, this.exchangeRateSale, this.percentage_igv)
-            this.form.items[index] = this.row
-            await this.calculateTotal()
+            try {
+                this.form.items[index].unit_price = parseFloat(this.form.items[index].unit_price) || 0
+                this.form.items[index].item.unit_price = this.form.items[index].unit_price
+                this.form.items[index].item.presentation = [];
+                this.form.items[index].affectation_igv_type = _.find(this.affectation_igv_types, {'id': this.form.items[index].affectation_igv_type_id})
+                this.row = await calculateRowItem(this.form.items[index], this.form.currency_type_id, this.exchangeRateSale, this.percentage_igv)
+                this.form.items[index] = this.sanitizeRow(this.row)
+                await this.calculateTotal()
+            } catch(e) {
+                console.error('clickAddItem error index', index, e)
+            }
 
             // this.initForm()
             // this.initializeFields()
@@ -462,13 +502,8 @@ export default {
             }
         },
         inputTotalPerception() {
-            this.total_amount = parseFloat(this.form.total) + parseFloat(this.form.total_perception)
-            if (isNaN(this.total_amount)) {
-                this.hide_button = true
-            } else {
-                this.hide_button = false
-
-            }
+            this.total_amount = (parseFloat(this.form.total) || 0) + (parseFloat(this.form.total_perception) || 0)
+            this.hide_button = false   // ya nunca es NaN, el botón siempre visible
         },
         changeSupplier() {
             this.calculatePerception()
@@ -540,6 +575,12 @@ export default {
             this.fileList = []
 
         },
+        sanitizeRow(row) {
+            ['unit_price','unit_value','total_value','total_igv','total_base_igv','total','total_charge','total_discount','total_base_isc','total_isc','total_base_other_taxes','total_other_taxes','total_taxes'].forEach(k => {
+                if (isNaN(parseFloat(row[k]))) row[k] = 0
+            })
+            return row
+        },
         resetForm() {
             this.initForm()
             this.form.currency_type_id = (this.currency_types.length > 0) ? this.currency_types[0].id : null
@@ -569,7 +610,7 @@ export default {
             this.currency_type = _.find(this.currency_types, {'id': this.form.currency_type_id})
             let items = []
             this.form.items.forEach((row) => {
-                items.push(calculateRowItem(row, this.form.currency_type_id, this.form.exchange_rate_sale, this.percentage_igv))
+                items.push(this.sanitizeRow(calculateRowItem(row, this.form.currency_type_id, this.form.exchange_rate_sale, this.percentage_igv)))
             });
             this.form.items = items
             this.calculateTotal()
@@ -591,28 +632,28 @@ export default {
             // console.log(this.form.items)
 
             this.form.items.forEach((row) => {
-                total_discount += parseFloat(row.total_discount)
-                total_charge += parseFloat(row.total_charge)
+                total_discount += parseFloat(row.total_discount) || 0
+                total_charge += parseFloat(row.total_charge) || 0
 
                 if (row.affectation_igv_type_id === '10') {
-                    total_taxed += parseFloat(row.total_value)
+                    total_taxed += parseFloat(row.total_value) || 0
                 }
                 if (row.affectation_igv_type_id === '20') {
-                    total_exonerated += parseFloat(row.total_value)
+                    total_exonerated += parseFloat(row.total_value) || 0
                 }
                 if (row.affectation_igv_type_id === '30') {
-                    total_unaffected += parseFloat(row.total_value)
+                    total_unaffected += parseFloat(row.total_value) || 0
                 }
                 if (row.affectation_igv_type_id === '40') {
-                    total_exportation += parseFloat(row.total_value)
+                    total_exportation += parseFloat(row.total_value) || 0
                 }
-                if (['10', '20', '30', '40'].indexOf(row.affectation_igv_type_id) < 0) {
-                    total_free += parseFloat(row.total_value)
+                if (['10','20','30','40'].indexOf(row.affectation_igv_type_id) < 0) {
+                    total_free += parseFloat(row.total_value) || 0
                 }
 
-                total_value += parseFloat(row.total_value)
-                total_igv += parseFloat(row.total_igv)
-                total += parseFloat(row.total)
+                total_value += parseFloat(row.total_value) || 0
+                total_igv += parseFloat(row.total_igv) || 0
+                total += parseFloat(row.total) || 0
             });
 
             this.form.total_exportation = _.round(total_exportation, 2)
@@ -627,7 +668,7 @@ export default {
 
             this.calculatePerception()
 
-
+            console.log('calculateTotal corre', this.form.total)
         },
         calculatePerception() {
 

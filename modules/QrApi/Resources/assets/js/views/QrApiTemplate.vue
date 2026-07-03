@@ -75,14 +75,10 @@ export default {
             const {extension_only, filename_only} = this.wsData;
             this.convertFileToBase64(this.wsFile)
                 .then(file_encode64 => {
-                    
+
                     this.setForm(file_encode64, `${filename_only}.${extension_only}`)
                     return this.$http
-                        .post(`${this.wsUrl}\\api\\message\\send\\pdf`, this.form, {
-                            headers: {
-                                "Authorization" : `Bearer ${this.wsApiKey}`
-                            }
-                        })
+                        .post('/qrapi/send-message', this.form)
                         .then(response => {
                             if(response.status == 200) {
                                 return this.$message.success('Documento enviado con exito')
@@ -102,7 +98,7 @@ export default {
                 file: base64file,
                 number: `51${this.wsPhone}`,
                 message: this.wsMessage,
-                filename: full_filename 
+                filename: full_filename
             }
         },
         async convertFileToBase64(url) {

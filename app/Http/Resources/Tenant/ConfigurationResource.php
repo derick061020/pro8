@@ -43,6 +43,7 @@ class ConfigurationResource extends JsonResource
             'terms_condition_sale' => $this->terms_condition_sale,
             'cotizaction_finance' => (bool) $this->cotizaction_finance,
             'include_igv' => (bool) $this->include_igv,
+            'global_igv_handling' => (bool) $this->global_igv_handling,
             'product_only_location' => (bool) $this->product_only_location,
             'legend_footer' => (bool) $this->legend_footer,
             'default_document_type_03' => (bool) $this->default_document_type_03,

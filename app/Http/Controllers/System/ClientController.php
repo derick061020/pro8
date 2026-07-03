@@ -11,6 +11,7 @@
     use App\Models\System\Configuration;
     use App\Models\System\Module;
     use App\Models\System\Plan;
+    use App\Models\System\Skin as SystemSkin;
     use Carbon\Carbon;
     use Exception;
     use Hyn\Tenancy\Contracts\Repositories\HostnameRepository;
@@ -27,7 +28,10 @@
     use Illuminate\Support\Str;
     use Illuminate\Support\Facades\Cache;
     use App\Helpers\GuestRegisterHelper;
-use App\Models\System\PlanPeriod;
+    use App\Models\System\PlanPeriod;
+    use App\Models\System\User as SystemUser;
+    use Illuminate\Support\Facades\Config;
+    use Illuminate\Support\Facades\Mail;
 
     class ClientController extends Controller
     {
@@ -124,6 +128,14 @@ use App\Models\System\PlanPeriod;
             $soap_password = $config->soap_password;
             $regex_password_client = $config->regex_password_client;
 
+            $global_smtp_config = [
+                'smtp_host' => $config->mail_host ?? 'smtp.gmail.com',
+                'smtp_port' => $config->mail_port ?? 465,
+                'smtp_user' => $config->mail_username ?? '',
+                'smtp_password' => $config->mail_password ?? '',
+                'smtp_encryption' => $config->mail_encryption ?? 'ssl',
+            ];
+
             return compact(
                 'url_base',
                 'plans',
@@ -141,7 +153,9 @@ use App\Models\System\PlanPeriod;
                 'group_hotel_apps',
                 'group_pharmacy_apps',
                 'regex_password_client',
-                'group_restaurant_apps');
+                'group_restaurant_apps',
+                'group_restaurant_apps',
+                'global_smtp_config');
         }
 
         private function prepareModules(Module $module): Module
@@ -176,7 +190,7 @@ use App\Models\System\PlanPeriod;
                 $current_month_end = $current_day->endOfMonth()->format('Y-m-d');
                 $row->current_count_doc_month = DB::connection('tenant')->table('documents')->whereBetween('date_of_issue', [$current_month_start, $current_month_end])->count(); // contador mensual
                 $row->count_doc_pse = DB::connection('tenant')->table('documents')->where('send_to_pse', true)->count();
-                // dd($row->count_doc_pse);
+                //dd($row->count_doc_pse);
 
                 $row->count_doc = DB::connection('tenant')
                     ->table('configurations')
@@ -337,6 +351,12 @@ use App\Models\System\PlanPeriod;
             $client->config_system_env = $config->config_system_env;
             $client->ruc_api_provider = $config->ruc_api_provider ?? 'apiperu';
 
+            $client->smtp_host       = $config->smtp_host;
+            $client->smtp_port       = $config->smtp_port;
+            $client->smtp_user       = $config->smtp_user;
+            $client->smtp_password   = $config->smtp_password;
+            $client->smtp_encryption = $config->smtp_encryption;
+
             $company = DB::connection('tenant')
                 ->table('companies')
                 ->first();
@@ -435,7 +455,6 @@ use App\Models\System\PlanPeriod;
                 return [
                     'line' => $line,
                     'total_documents' => 0,
-                    'error' => 'Error al cargar los datos del gráfico'
                 ];
             }
         }
@@ -657,6 +676,14 @@ use App\Models\System\PlanPeriod;
             ini_set('memory_limit', '2048M');
             \Log::info('=== INICIO STORE CLIENT ===', ['timestamp' => now()]);
 
+            $authAdmin = auth('admin')->user();
+            if ($authAdmin instanceof SystemUser && $authAdmin->reseller_id !== null && ! $authAdmin->canCreateClients()) {
+                return [
+                    'success' => false,
+                    'message' => 'No tiene permiso para crear nuevos clientes.',
+                ];
+            }
+
             $hostname = new Hostname();
             $website = new Website();
 
@@ -714,6 +741,7 @@ use App\Models\System\PlanPeriod;
 
                 \Log::info('Creando cliente...');
                 $client = Client::query()->create([
+                    'created_by_user_id' => auth('admin')->check() ? auth('admin')->id() : null,
                     'hostname_id' => $hostname->id,
                     'token' => $token,
                     'email' => strtolower($request->input('email')),
@@ -732,7 +760,12 @@ use App\Models\System\PlanPeriod;
                 ]);
                 \Log::info('Cliente creado', ['client_id' => $client->id]);
 
-                $client->createPayemtnOrder();
+                $is_guest_register = $request->input('from_guest_register', false);
+                $payment_description = $is_guest_register
+                    ? 'Pago por autoregistro - Plan ' . optional($client->plan)->name
+                    : null;
+                $payment_created_by = $is_guest_register ? 'Autoregistro' : 'Sistema';
+                $payment_order = $client->createPayemtnOrder($payment_description, $payment_created_by);
                 \Log::info('Configurando tenancy...');
                 $tenancy = app(Environment::class);
                 $tenancy->tenant($website);
@@ -761,11 +794,49 @@ use App\Models\System\PlanPeriod;
             // Definir variable para registro de invitado
             $from_guest_register = $request->input('from_guest_register', false);
 
+            \Log::info('Sembrando temas del sistema en el nuevo tenant...');
+            $customSystemSkins = SystemSkin::where('is_default', false)->where('is_visible_to_clients', true)->get();
+            foreach ($customSystemSkins as $customSkin) {
+                if (!DB::connection('tenant')->table('skins')->where('filename', $customSkin->filename)->exists()) {
+                    DB::connection('tenant')->table('skins')->insert([
+                        'name'      => $customSkin->name,
+                        'filename'  => $customSkin->filename,
+                        'status'    => 1,
+                        'is_system' => true,
+                    ]);
+                }
+            }
+
+            $replacedDefaultSkins = SystemSkin::where('is_default', true)->whereNotNull('custom_filename')->get();
+            foreach ($replacedDefaultSkins as $replacedSkin) {
+                DB::connection('tenant')->table('skins')
+                    ->where('filename', $replacedSkin->filename)
+                    ->where('is_system', true)
+                    ->update(['filename' => $replacedSkin->custom_filename]);
+            }
+
+            $tenantDefaultSkin = SystemSkin::where('is_tenant_default', true)->first();
+            $tenantSkinId = 3;
+            if ($tenantDefaultSkin) {
+                if ($tenantDefaultSkin->is_default) {
+                    // Los skins predeterminados tienen IDs consistentes entre system y tenant (seeded)
+                    $tenantSkinId = $tenantDefaultSkin->id;
+                } else {
+                    // Skin custom — buscar su ID en la tabla skins del tenant por filename
+                    $tenantSkin = DB::connection('tenant')->table('skins')
+                        ->where('filename', $tenantDefaultSkin->filename)
+                        ->first();
+                    $tenantSkinId = $tenantSkin ? $tenantSkin->id : 3;
+                }
+            }
+            \Log::info('Temas sembrados', ['tenant_skin_id' => $tenantSkinId]);
+
             \Log::info('Insertando configuración...');
             DB::connection('tenant')->table('configurations')->insert([
                 'send_auto' => true,
                 'locked_emission' => $request->input('locked_emission'),
                 'enable_list_product' => $request->input('enable_list_product'),
+                'ticket_single_shipment' => true,
                 'locked_tenant' => false,
                 'locked_users' => false,
                 'limit_documents' => $plan->limit_documents,
@@ -798,7 +869,7 @@ use App\Models\System\PlanPeriod;
                     'sidebars' => 'light',
                     'sidebar_theme' => 'white'
                 ]),
-                'skin_id' => 2,
+                'skin_id' => $tenantSkinId,
                 'top_menu_a_id' => 1,
                 'top_menu_b_id' => 15,
                 'top_menu_c_id' => 76,
@@ -852,7 +923,7 @@ use App\Models\System\PlanPeriod;
             \Log::info('Series insertadas');
 
             \Log::info('Insertando usuario...');
-            $user_id = DB::connection('tenant')->table('users')->insert([
+                $user_id = DB::connection('tenant')->table('users')->insertGetId([
                 'name' => 'Administrador',
                 'email' => $request->input('email'),
                 'password' => bcrypt($request->input('password')),
@@ -902,7 +973,8 @@ use App\Models\System\PlanPeriod;
             \Log::info('=== CLIENTE REGISTRADO EXITOSAMENTE ===', ['timestamp' => now()]);
             return [
                 'success' => true,
-                'message' => 'Cliente Registrado satisfactoriamente'
+                'message' => 'Cliente Registrado satisfactoriamente',
+                'guest_register' => $this->runGuestRegister($from_guest_register, $user_id, $request->email, $client->id, $payment_order)
             ];
 
         } catch (Exception $e) {
@@ -915,6 +987,25 @@ use App\Models\System\PlanPeriod;
             ];
         }
     }
+
+        private function runGuestRegister($from_guest_register, $user_id, $email, $client_id, $payment_order = null)
+        {
+            if($from_guest_register)
+            {
+                $helper = new GuestRegisterHelper();
+                $encrypt_client_id = $helper->encryptValue($client_id);
+                $payment_uuid = $payment_order ? $payment_order->uuid : null;
+                $helper->sendEmail($user_id, $email, $encrypt_client_id, $payment_uuid);
+
+                return [
+                    'user_id' => (string) $user_id,
+                    'key' => $encrypt_client_id,
+                    'payment_uuid' => $payment_uuid,
+                ];
+            }
+
+            return [];
+        }
 
         public function validateWebsite($uuid, $website)
         {
@@ -1065,7 +1156,7 @@ use App\Models\System\PlanPeriod;
          */
         public function destroy($id, $input_validate)
         {
-            $client = Client::find($id);
+            $client = Client::findOrFail($id);
 
             $check_input_validate_delete = $this->checkInputValidateDelete($client, $input_validate);
             if(!$check_input_validate_delete['success']) return $check_input_validate_delete;
@@ -1091,7 +1182,7 @@ use App\Models\System\PlanPeriod;
 
         public function password($id)
         {
-            $client = Client::find($id);
+            $client = Client::findOrFail($id);
             $website = Website::find($client->hostname->website_id);
             $tenancy = app(Environment::class);
             $tenancy->tenant($website);
@@ -1204,9 +1295,10 @@ use App\Models\System\PlanPeriod;
         {
             $query = $request->input('query');
 
-            $clients = Client::where('name', 'like', "%{$query}%")
-                        ->orWhere('number', 'like', "%{$query}%")
-                        ->get();
+            $clients = Client::where(function ($q) use ($query) {
+                $q->where('name', 'like', "%{$query}%")
+                    ->orWhere('number', 'like', "%{$query}%");
+            })->get();
 
             $clients = $clients->transform(function($row) {
                 return [
@@ -1220,6 +1312,10 @@ use App\Models\System\PlanPeriod;
 
         public function confirmLimitReseller(Request $request)
         {
+            if ($this->resellerSystemAdminLacksPlansModule()) {
+                return $this->generalResponse(true, 'Sin evaluación de cupo de suscripción');
+            }
+
             $limiteClientes = (int) config('app.limite_reseller' , 999);
             $totalClientes = Client::count();
 
@@ -1228,5 +1324,66 @@ use App\Models\System\PlanPeriod;
             }
 
             return $this->generalResponse(true, 'Aun puede registrar más clientes');
+        }
+
+        /**
+         * Sin permiso "plans" no se conoce el contexto del cupo de la suscripción; no aplicar aviso de límite.
+         */
+        protected function resellerSystemAdminLacksPlansModule(): bool
+        {
+            $user = auth('admin')->user();
+
+            return $user instanceof SystemUser
+                && $user->reseller_id !== null
+                && ! $user->canAccessSystemModule('plans');
+        }
+
+        public function testEmail(Request $request)
+        {
+            $request->validate([
+                'smtp_host' => 'required|string',
+                'smtp_port' => 'required|integer',
+                'smtp_user' => 'required|string',
+                'smtp_password' => 'required|string',
+                'email' => 'required|email',
+            ]);
+
+            $this->applyMailConfiguration($request->all());
+
+            $recipient = $request->email;
+            if (empty($recipient)) {
+                return response()->json(['success' => false, 'message' => 'No se especificó un correo de destino'], 422);
+            }
+
+            try {
+                Mail::raw('Este es un correo de prueba para verificar que tu configuración SMTP está funcionando correctamente.', function ($message) use ($recipient) {
+                    $message->to($recipient)->subject('Prueba de configuración SMTP');
+                });
+                return ['success' => true, 'message' => 'Correo de prueba enviado correctamente a ' . $recipient];
+            } catch (Exception $e) {
+                \Log::error('Mail test error: ' . $e->getMessage());
+                return response()->json(['success' => false, 'message' => 'Error al enviar correo: ' . $e->getMessage()], 500);
+            }
+        }
+
+        protected function applyMailConfiguration(array $data)
+        {
+            if (!empty($data['smtp_host'])) {
+                Config::set('mail.host', $data['smtp_host']);
+            }
+            if (!empty($data['smtp_port'])) {
+                Config::set('mail.port', $data['smtp_port']);
+            }
+            if (!empty($data['smtp_user'])) {
+                Config::set('mail.username', $data['smtp_user']);
+            }
+            if (!empty($data['smtp_password'])) {
+                Config::set('mail.password', $data['smtp_password']);
+            }
+            if (!empty($data['smtp_encryption'])) {
+                Config::set('mail.encryption', $data['smtp_encryption']);
+            } else {
+                Config::set('mail.encryption', null);
+            }
         }
     }

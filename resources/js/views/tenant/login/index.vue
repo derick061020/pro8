@@ -133,12 +133,14 @@ export default {
     };
   },
   mounted() {
-      this.form = this.configuration.login;
+      this.form = Object.assign({}, this.configuration.login);
+      this.form.padding_in_form = Boolean(this.form.padding_in_form);
   },
   methods: {
     onSubmit() {
       delete this.form.type;
       delete this.form.image;
+      console.log("Datos enviados:", this.form);
       this.loading = true;
       this.$http
         .post("login-page/update", this.form)
@@ -148,7 +150,10 @@ export default {
             type: "success",
           });
         })
-        .catch((error) => this.axiosError(error))
+        .catch((error) => {
+          console.log("Error:", error.response.data); // 👈 VER RESPUESTA DEL SERVIDOR
+          this.axiosError(error);
+        })
         .finally(() => (this.loading = false));
     },
   },

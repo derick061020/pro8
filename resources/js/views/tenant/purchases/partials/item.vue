@@ -122,7 +122,7 @@
                     name="first">
                     <span slot="label">Datos generales</span>
                     <div class="row">
-                        <div class="col-md-8">
+                        <div class="col-md-8" v-if="affectation_igv_types.length > 1">
                             <div :class="{'has-danger': errors.affectation_igv_type_id}"
                                  class="form-group">
                                 <label class="control-label">Afectación Igv</label>
@@ -155,27 +155,25 @@
                         <div v-if="form.item.currency_type_id !== undefined" class="col-12">
                             <div :class="{'has-danger': errors.unit_price}"
                                 >
-                                <label class="control-label">Precio Unitario
-
-                                </label>
+                                <label class="control-label">Precio Unitario</label>
                                 <div class="position-relative el-select-currency-container row mx-0">
-                                    <div class="col-3">
+                                    <div class="col-3" v-if="showCurrencySelector">
                                         <div class="form-group">
                                             <el-select slot="prepend" v-model="form.item.currency_type_id" class="el-select-currency">
-                                                <el-option label="S/"
-                                                           value="PEN"></el-option>
-                                                <el-option label="$"
-                                                           value="USD"></el-option>
+                                                <el-option v-for="option in availableCurrencyTypes"
+                                                           :key="option.id"
+                                                           :label="option.symbol"
+                                                           :value="option.id"></el-option>
                                             </el-select>
                                         </div>
                                     </div>
-                                    <div class="col-9">
+                                    <div :class="showCurrencySelector ? 'col-9' : 'col-12'">
                                         <div class="form-group">
                                             <el-input v-if="form.item.currency_type_id !== undefined"
                                                       v-model="form.unit_price"
                                                       class="input-with-select"
                                                       :filterable="false"
-                                            >                                    
+                                            >
                                             </el-input>
                                         </div>
                                     </div>
@@ -328,85 +326,6 @@
                     </div>
 
                 </el-tab-pane>
-                <!-- Lista de precios -->
-
-                <el-tab-pane
-                    v-show="form.item_unit_types !== undefined && form.item_unit_types.length > 0 "
-                    class
-                    name="second">
-                    <span slot="label">
-                         Lista de Precios
-                                    <el-tooltip class="item"
-                                                content="Aplica para realizar compra/venta en presentacion de diferentes precios y/o cantidades"
-                                                effect="dark"
-                                                placement="top">
-                                        <i class="fa fa-info-circle"></i>
-                                    </el-tooltip>
-                    </span>
-                    <div class="row">
-                        <div class="col-md-12 ">
-                            <div class="table-responsive"
-                                 style="margin:3px">
-
-                                <table class="table">
-                                    <thead>
-                                    <tr>
-                                        <th class="text-center">Unidad</th>
-                                        <th class="text-center">Descripción</th>
-                                        <th class="text-center">Factor</th>
-                                        <th class="text-center">{{ config.price1_label }}</th>
-                                        <th class="text-center">{{ config.price2_label }}</th>
-                                        <th class="text-center">{{ config.price3_label }}</th>
-                                        <th class="text-center">Precio Default</th>
-                                        <th></th>
-                                    </tr>
-                                    </thead>
-                                    <tbody>
-                                    <tr v-for="(row, index) in form.item_unit_types"
-                                        :key="index">
-                                        <td class="text-center">{{ row.unit_type_id }}</td>
-                                        <td class="text-center">{{ row.description }}</td>
-                                        <td class="text-center">{{ row.quantity_unit }}</td>
-                                        <td class="text-center">
-                                            <template v-if=" canEditPrice === false">
-                                                {{ row.price1 }}
-                                            </template>
-                                            <template v-else>
-                                                <el-input v-model="row.price1"></el-input>
-                                            </template>
-                                        </td>
-                                        <td class="text-center">
-                                            <template v-if=" canEditPrice === false">
-                                                {{ row.price2 }}
-                                            </template>
-                                            <template v-else>
-                                                <el-input v-model="row.price2"></el-input>
-                                            </template>
-
-                                        </td>
-                                        <td class="text-center">
-                                            <template v-if=" canEditPrice === false">
-                                                {{ row.price3 }}
-                                            </template>
-                                            <template v-else>
-                                                <el-input v-model="row.price3"></el-input>
-                                            </template>
-                                        </td>
-                                        <td class="text-center">Precio {{ row.price_default }}</td>
-                                        <td class="series-table-actions text-right">
-                                            <button class="btn waves-effect waves-light btn-xs btn-success"
-                                                    type="button"
-                                                    @click.prevent="selectedPrice(row)">
-                                                <i class="el-icon-check"></i>
-                                            </button>
-                                        </td>
-                                    </tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-                </el-tab-pane>
                 <!-- Almacenes -->
                 <el-tab-pane
                     v-show="form.item.item_warehouse_prices !== undefined && form.item.item_warehouse_prices.length > 0 && canEditPrice === true"
@@ -452,7 +371,7 @@
                 </div>
             </div>
 
-            <div class="form-body">
+            <div class="form-body" v-if="config.show_item_discounts_charges_attributes !== false">
                 <div class="row">
                     <div class="col-md-12 mt-3">
                             <el-collapse v-model="activeNameCollapse" accordion>
@@ -642,13 +561,14 @@ import WeightedAverageCost from '@components/items/WeightedAverageCost.vue'
 
 
 export default {
-    props: [
-        'showDialog',
-        'currencyTypeIdActive',
-        'exchangeRateSale',
-        'localHasGlobalIgv',
-        'percentageIgv'
-    ],
+    props: {
+        showDialog: { default: false },
+        currencyTypeIdActive: { default: null },
+        currencyTypes: { type: Array, default: () => [] },
+        exchangeRateSale: { default: null },
+        localHasGlobalIgv: { default: null },
+        percentageIgv: { default: 0 },
+    },
     components: {
         itemForm, 
         LotsForm, 
@@ -712,6 +632,16 @@ export default {
             }
 
             return false;
+        },
+        availableCurrencyTypes() {
+            const isActive = (c) => c.active === undefined || c.active === true || c.active === 1
+            if (this.currencyTypes && this.currencyTypes.length > 0) {
+                return this.currencyTypes.filter(isActive)
+            }
+            return []
+        },
+        showCurrencySelector() {
+            return this.availableCurrencyTypes.length > 1
         },
     },
     data() {
@@ -1021,6 +951,12 @@ export default {
 
         },
         setGlobalPurchaseCurrencyToItem(){
+
+            if (this.availableCurrencyTypes.length === 1)
+            {
+                this.form.item.currency_type_id = this.availableCurrencyTypes[0].id
+                return
+            }
 
             if(this.config.set_global_purchase_currency_items)
             {

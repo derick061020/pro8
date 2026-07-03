@@ -28,7 +28,7 @@ class HotelRentItemPayment extends ModelTenant
     ];
 
     protected $casts = [
-        'date_of_payment' => 'datetime',
+        'date_of_payment' => 'date',
     ];
 
     public function payment_method_type()

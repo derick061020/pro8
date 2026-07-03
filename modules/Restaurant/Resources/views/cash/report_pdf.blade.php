@@ -184,7 +184,7 @@ $cash_final_balance = $final_balance + $cash->beginning_balance;
             <table>
                 <tr>
                     <td class="td-custom width-custom">
-                        <p><strong>Empresa: </strong>{{$company->name}}</p>
+                        <p>@include('partials.report_company_header')</p>
                     </td>
                     <td class="td-custom">
                         <p><strong>Fecha reporte: </strong>{{date('Y-m-d')}}</p>

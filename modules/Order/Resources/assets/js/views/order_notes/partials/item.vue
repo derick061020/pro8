@@ -15,9 +15,10 @@
             <div class="form-body">
                 <div class="row">
                     <div
-                        class="col-md-7 col-lg-7 col-xl-7 product-model position-relative"
+                        class="product-model position-relative"
+                        :class="{'col-md-7 col-lg-7 col-xl-7': affectation_igv_types.length > 1, 'col-12': affectation_igv_types.length <= 1}"
                     >
-                        <div class="tooltips-container" style="top: 46px;" v-show="hasSelectedItem">
+                        <div class="tooltips-container item-actions-tooltip" style="top: 46px;" v-show="hasSelectedItem">
                             <el-tooltip
                                 slot="append"
                                 :disabled="isUpdateItem"
@@ -134,7 +135,7 @@
                             ></small>
                         </div>
                     </div>
-                    <div class="col-md-5">
+                    <div class="col-md-5" v-if="affectation_igv_types.length > 1">
                         <div
                             :class="{
                                 'has-danger': errors.affectation_igv_type_id
@@ -411,7 +412,7 @@
                                 <small class="form-control-feedback" v-if="errors.item_unit_type_id" v-text="errors.item_unit_type_id[0]"></small>
                             </div>
                         </div>-->
-                        <div class="col-md-12 mt-2">
+                        <div class="col-md-12 mt-2" v-if="config.show_item_discounts_charges_attributes !== false">
                             <el-collapse v-model="activePanel">
                                 <el-collapse-item
                                     :disabled="isUpdateItem"
@@ -765,7 +766,8 @@ export default {
         "configuration",
         "percentageIgv",
         "permissionEditItemPrices",
-        "customerId"
+        "customerId",
+        "selectedOptionPrice"
     ],
     components: {
         ItemForm,
@@ -1338,6 +1340,28 @@ export default {
             this.item_unit_types.length > 0
                 ? (this.has_list_prices = true)
                 : (this.has_list_prices = false);
+
+            // Auto-seleccionar precio según tipo de cliente
+            if (this.selectedOptionPrice !== 1 && this.item_unit_types.length) {
+                let price_label_id = null;
+                if (typeof this.selectedOptionPrice === "string") {
+                    if (this.selectedOptionPrice.startsWith("price_label_")) {
+                        price_label_id = parseInt(this.selectedOptionPrice.replace("price_label_", ""));
+                    } else if (this.selectedOptionPrice.startsWith("price")) {
+                        price_label_id = parseInt(this.selectedOptionPrice.replace("price", ""));
+                    }
+                }
+                if (price_label_id) {
+                    let first_list = this.item_unit_types[0];
+                    if (first_list.prices && Array.isArray(first_list.prices)) {
+                        const priceObj = first_list.prices.find(p => p.price_label_id === price_label_id);
+                        if (priceObj && Number(priceObj.price) > 0) {
+                            this.selectedPrice(first_list, Number(priceObj.price));
+                        }
+                    }
+                }
+            }
+
             this.form.lots_group = this.form.item.lots_group;
 
             this.setDefaultAttributes();

@@ -25,7 +25,7 @@
                 </el-dropdown>
             </div>
             <div class="card-body">
-                <div class="row">
+                <div class="row mx-0">
                     <div class="col-md-4">
                         <div class="form-group">
                             <label class="control-label mb-2">

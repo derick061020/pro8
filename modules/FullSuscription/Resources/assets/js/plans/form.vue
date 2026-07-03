@@ -3,15 +3,16 @@
         :title="titleDialog"
         :visible="showDialog"
         @close="close"
-        @open="create">
+        @open="create"
+        :close-on-click-modal="false"
+        width="70%">
         <form
             autocomplete="off"
             @submit.prevent="submit">
             <el-tabs v-model="tabActive">
-                <el-tab-pane class
-                             name="first">
+                <el-tab-pane class name="first">
                     <span slot="label">
-                        Datos del plan
+                        1. Configuración del plan
                     </span>
                     <div class="form-body">
 
@@ -24,7 +25,7 @@
                                         Nombre
                                     </label>
                                     <el-input
-                                        v-model="form_data.name"
+                                        v-model="fakeForm.name"
                                     ></el-input>
                                     <small
                                         v-if="errors.name"
@@ -42,7 +43,7 @@
                                         Tipo de Periodos
                                     </label>
                                     <el-select
-                                        v-model="form_data.periods"
+                                        v-model="fakeForm.periods"
                                         filterable>
                                         <el-option
                                             v-for="option in periods"
@@ -67,7 +68,8 @@
                                         Cant de Periodos
                                     </label>
                                     <el-input
-                                        v-model="form_data.quantity_period"
+                                        v-model="fakeForm.quantity_period"
+                                        :disabled="fakeForm.unlimited"
                                     ></el-input>
                                     <small
                                         v-if="errors.quantity_period"
@@ -75,6 +77,13 @@
                                         v-text="errors.quantity_period[0]">
                                     </small>
                                 </div>
+                            </div>
+                            <div class="col-md-12 text-end mt-2">
+                                <el-switch
+                                    v-model="fakeForm.unlimited"
+                                    @change="toggleUnlimited"
+                                ></el-switch>
+                                <label class="ms-2">Ilimitado — sin vencimiento</label>
                             </div>
 
                             <div class="col-md-12">
@@ -85,7 +94,7 @@
                                         Descripcion
                                     </label>
                                     <el-input
-                                        v-model="form_data.description"
+                                        v-model="fakeForm.description"
                                     ></el-input>
                                     <small
                                         v-if="errors.description"
@@ -96,134 +105,148 @@
                             </div>
                         </div>
                     </div>
-
                 </el-tab-pane>
-                <el-tab-pane class
-                             name="second">
+                <el-tab-pane class name="second">
                     <span slot="label">
-                        Servicios en el plan
+                        2. Productos y precios
                     </span>
                     <div class="form-body">
-
-                        <div class="row">
-
-                            <div class="col-12">
-                                <div class="col-md-12">
-                                    <div class="table-responsive">
-                                        <table class="table">
-                                            <thead>
-                                            <tr>
-                                                <th>#</th>
-                                                <th class="font-weight-bold">Descripción</th>
-                                                <th class="text-center font-weight-bold">Unidad</th>
-                                                <th class="text-end font-weight-bold">Cantidad</th>
-                                                <th class="text-end font-weight-bold">Valor Unitario</th>
-                                                <th class="text-end font-weight-bold">Precio Unitario</th>
-                                                <th class="text-end font-weight-bold">Subtotal</th>
-                                                <!--<th class="text-right font-weight-bold">Cargo</th>-->
-                                                <th class="text-end font-weight-bold">Total</th>
-                                                <th></th>
-                                            </tr>
-                                            </thead>
-                                            <tbody v-if="fakeForm.items !== undefined && fakeForm.items.length > 0">
-                                            <tr v-for="(row, index) in fakeForm.items"
-                                                :key="index">
-                                                <td>{{ index + 1 }}</td>
-                                                <td>
-                                                    {{ setDescriptionOfItem(row.item) }}
-                                                    {{
-                                                        row.item.presentation.hasOwnProperty('description') ? row.item.presentation.description : ''
-                                                    }}<br/><small>{{ row.affectation_igv_type.description }}</small>
-                                                </td>
-                                                <td class="text-center">{{ row.item.unit_type_id }}</td>
-                                                <td class="text-end">{{ row.quantity }}</td>
-                                                <!-- <td class="text-right">{{currency_type.symbol}} {{row.unit_price}}</td> -->
-                                                <td class="text-end">{{ currency_type.symbol }}
-                                                                       {{ getFormatUnitPriceRow(row.unit_value) }}
-                                                </td>
-                                                <td class="text-end">{{ currency_type.symbol }}
-                                                                       {{ getFormatUnitPriceRow(row.unit_price) }}
-                                                </td>
-
-                                                <td class="text-end">{{ currency_type.symbol }}
-                                                                       {{ row.total_value }}
-                                                </td>
-                                                <!--<td class="text-right">{{ currency_type.symbol }} {{ row.total_charge }}</td>-->
-                                                <td class="text-end">{{ currency_type.symbol }} {{ row.total }}</td>
-                                                <td class="text-end">
-                                                    <button class="btn waves-effect waves-light btn-xs btn-info"
-                                                            type="button"
-                                                            @click="ediItem(row, index)"><span style='font-size:10px;'>&#9998;</span>
-                                                    </button>
-                                                    <button class="btn waves-effect waves-light btn-xs btn-danger"
-                                                            type="button"
-                                                            @click.prevent="clickRemoveItem(index)">x
-                                                    </button>
-                                                </td>
-                                            </tr>
-                                            <tr>
-                                                <td colspan="9"></td>
-                                            </tr>
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </div>
-                                <div class="col-12  text-center">
-                                    <div class="form-group">
-                                        <button class="btn waves-effect waves-light btn-primary"
-                                                type="button"
-                                                @click="clickAddItem">+ Agregar Producto
+                        <div class="table-responsive">
+                            <table class="table">
+                                <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th class="font-weight-bold">Descripción</th>
+                                    <th class="text-center font-weight-bold">Unidad</th>
+                                    <th class="text-end font-weight-bold">Cantidad</th>
+                                    <th class="text-end font-weight-bold">Valor Unitario</th>
+                                    <th class="text-end font-weight-bold">Total</th>
+                                    <th v-if="fakeForm.items && fakeForm.items.length > 1" class="font-weight-bold">Aplicar en periodo</th>
+                                    <th></th>
+                                </tr>
+                                </thead>
+                                <tbody v-if="fakeForm.items !== undefined && fakeForm.items.length > 0">
+                                <tr v-for="(row, index) in fakeForm.items"
+                                    :key="`item-${row.id || index}-${index}`">
+                                    <td>{{ index + 1 }}</td>
+                                    <td>
+                                        {{ setDescriptionOfItem(row.item) }}
+                                        {{
+                                            (row.item && row.item.presentation && row.item.presentation.hasOwnProperty('description')) ? row.item.presentation.description : ''
+                                        }}<br/><small>{{ row.affectation_igv_type.description }}</small>
+                                    </td>
+                                    <td class="text-center">{{ row.item.unit_type_id }}</td>
+                                    <td class="text-end">{{ row.quantity }}</td>
+                                    <td class="text-end">{{ currency_type.symbol }}
+                                        {{ row.total_value }}
+                                    </td>
+                                    <td class="text-end">{{ currency_type.symbol }} {{ row.total }}</td>
+                                    <td v-if="fakeForm.items && fakeForm.items.length > 1">
+                                        <el-select
+                                            v-model="row.apply_in_period"
+                                            placeholder="Aplicar en"
+                                            style="width: 100%;"
+                                            size="mini"
+                                        >
+                                            <el-option
+                                                label="Cobrar en todos los periodos"
+                                                value="all"
+                                            ></el-option>
+                                            <el-option
+                                                v-if="fakeForm.unlimited"
+                                                label="Estar al primer cobro"
+                                                value="first"
+                                            ></el-option>
+                                            <el-option
+                                                v-for="period in getAvailablePeriods()"
+                                                :key="period.value"
+                                                :label="period.label"
+                                                :value="period.value"
+                                            ></el-option>
+                                        </el-select>
+                                    </td>
+                                    <td class="text-end">
+                                        <button class="btn waves-effect waves-light btn-xs btn-info me-1"
+                                            type="button"
+                                            @click="ediItem(row, index)">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-edit"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M7 7h-1a2 2 0 0 0 -2 2v9a2 2 0 0 0 2 2h9a2 2 0 0 0 2 -2v-1" /><path d="M20.385 6.585a2.1 2.1 0 0 0 -2.97 -2.97l-8.415 8.385v3h3l8.385 -8.415" /><path d="M16 5l3 3" /></svg>
                                         </button>
-                                    </div>
-                                </div>
-                                <div class="col-xlg-push-6 col-6 text-end">
-                                    <p v-if="fakeForm.total_exportation > 0"
-                                       class="text-end">
-                                        OP.EXPORTACIÓN: {{ currency_type.symbol }} {{ fakeForm.total_exportation }}
-                                    </p>
-                                    <p v-if="fakeForm.total_free > 0"
-                                       class="text-end">
-                                        OP.GRATUITAS: {{ currency_type.symbol }} {{ fakeForm.total_free }}
-                                    </p>
-                                    <p v-if="fakeForm.total_unaffected > 0"
-                                       class="text-end">
-                                        OP.INAFECTAS: {{ currency_type.symbol }} {{ fakeForm.total_unaffected }}
-                                    </p>
-                                    <p v-if="fakeForm.total_exonerated > 0"
-                                       class="text-end">
-                                        OP.EXONERADAS: {{ currency_type.symbol }} {{ fakeForm.total_exonerated }}
-                                    </p>
-                                    <p v-if="fakeForm.total_taxed > 0"
-                                       class="text-end">
-                                        OP.GRAVADA: {{ currency_type.symbol }} {{ fakeForm.total_taxed }}
-                                    </p>
-                                    <p v-if="fakeForm.total_igv > 0"
-                                       class="text-end">
-                                        IGV: {{ currency_type.symbol }} {{ fakeForm.total_igv }}
-                                    </p>
-                                    <h3 v-if="fakeForm.total > 0"
-                                        class="text-end">
-                                        <b>
-                                            TOTAL DEL PLAN:
-                                        </b>
-                                        {{ currency_type.symbol }} {{ fakeForm.total }}
-                                    </h3>
-                                </div>
-                                <div class="col-12"  v-if="errors.items">
-                                    <small
-                                        v-if="errors.items"
-                                        class="form-control-feedback"
-                                        v-text="errors.items[0]">
-                                    </small>
+                                        <button class="btn waves-effect waves-light btn-xs btn-danger"
+                                            type="button"
+                                            @click.prevent="clickRemoveItem(index)">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-trash"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M4 7l16 0" /><path d="M10 11l0 6" /><path d="M14 11l0 6" /><path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2 -2l1 -12" /><path d="M9 7v-3a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v3" /></svg>
+                                        </button>
+                                    </td>
+                                </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div v-if="fakeForm.items && fakeForm.items.length > 1 && !fakeForm.items.some(i => i.apply_in_period === 'all')" class="alert alert-warning py-1 px-2 mt-2 mb-0">
+                            Al menos un producto debe tener seleccionada la opción <strong>"Cobrar en todos los periodos"</strong>.
+                        </div>
+                        <div class="row">
+                            <div class="col-12 text-center mt-2">
+                                <div class="form-group">
+                                    <button class="btn waves-effect waves-light btn-primary btn-sm" type="button" @click="clickAddItem">+ Agregar Producto
+                                    </button>
                                 </div>
                             </div>
-
+                            <div class="col-12 px-0">
+                                <div class="row">
+                                    <div class="col-4 col-md-4">
+                                        <div class="form-group">
+                                            <label class="control-label">Periodo de prueba</label>
+                                            <el-input
+                                                type="number"
+                                                v-model.number="fakeForm.trial_days"
+                                                placeholder="N° Días"
+                                            ></el-input>
+                                            <small class="form-control-feedback">Días de prueba gratuita</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-8 col-md-8 text-end">
+                                        <p v-if="fakeForm.total_exportation > 0"
+                                           class="text-end mb-0">
+                                            OP.EXPORTACIÓN: {{ currency_type.symbol }} {{ fakeForm.total_exportation }}
+                                        </p>
+                                        <p v-if="fakeForm.total_free > 0"
+                                           class="text-end mb-0">
+                                            OP.GRATUITAS: {{ currency_type.symbol }} {{ fakeForm.total_free }}
+                                        </p>
+                                        <p v-if="fakeForm.total_unaffected > 0"
+                                           class="text-end mb-0">
+                                            OP.INAFECTAS: {{ currency_type.symbol }} {{ fakeForm.total_unaffected }}
+                                        </p>
+                                        <p v-if="fakeForm.total_exonerated > 0"
+                                           class="text-end mb-0">
+                                            OP.EXONERADAS: {{ currency_type.symbol }} {{ fakeForm.total_exonerated }}
+                                        </p>
+                                        <p v-if="fakeForm.total_taxed > 0"
+                                           class="text-end mb-0">
+                                            OP.GRAVADA: {{ currency_type.symbol }} {{ fakeForm.total_taxed }}
+                                        </p>
+                                        <p v-if="fakeForm.total_igv > 0"
+                                           class="text-end mb-0">
+                                            IGV: {{ currency_type.symbol }} {{ fakeForm.total_igv }}
+                                        </p>
+                                        <h3 v-if="fakeForm.total > 0"
+                                            class="text-end mb-0 font-weight-bold">
+                                            TOTAL DEL PLAN:
+                                            {{ currency_type.symbol }} {{ fakeForm.total }}
+                                        </h3>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-12"  v-if="errors.items">
+                                <small
+                                    v-if="errors.items"
+                                    class="form-control-feedback"
+                                    v-text="errors.items[0]">
+                                </small>
+                            </div>
                         </div>
-
                     </div>
-
                 </el-tab-pane>
-
             </el-tabs>
             <div class="form-actions text-end mt-4">
                 <el-button
@@ -251,33 +274,13 @@
             :displayDiscount="false"
             @add="addRow"
             :percentage-igv="percentage_igv"
-        >
-
-        </tenant-quotations-item-form>
-
-        <!--
-
-        <tenant-documents-items-list
-            :currency_types=currency_types
-            :document_type_id='"01"'
-            :exchange-rate-sale="exchange_rate"
-            :external="true"
-            :showDialog.sync="showDialogNewPerson"
-            :operationTypeId="'0101'"
-
-            type="customers"
-        ></tenant-documents-items-list>
-        -->
+        ></tenant-quotations-item-form>
     </el-dialog>
-
 </template>
 
 <script>
-
 import {mapActions, mapState} from "vuex/dist/vuex.mjs";
-
 import {serviceNumber, functions} from '../../../../../../resources/js/mixins/functions'
-
 import {
     calculateRowItem,
     FormatUnitPriceRow,
@@ -313,9 +316,11 @@ export default {
                 date_of_issue: moment().format('YYYY-MM-DD'),
                 establishment_id: null
             }, //usado para obtener los datos del igv
+            previousQuantityPeriod: null,
         }
     },
     async created() {
+        this.$store.commit('setItemSearchExtraParameters', {'only_service': 0});
         await this.initForm()
         await this.$http
             .post(`/full_suscription/${this.resource}/tables`, {})
@@ -338,6 +343,7 @@ export default {
             'affectation_igv_types',
             'unit_types',
             'payment_method_types',
+            'item_search_extra_parameters',
         ]),
     },
     methods: {
@@ -368,7 +374,10 @@ export default {
                 period: null,
                 items: [],
                 periods: 12,
-                quantity_period : 'M'
+                quantity_period : 'M',
+                unlimited: false
+                ,
+                trial_days: null
             }
             this.$store.commit('setFormData', form)
         },
@@ -376,18 +385,26 @@ export default {
             this.tabActive = 'first'
             this.errors = {}
 
-
             if (this.form_data === undefined) {
                 this.clearForm();
             }
             this.titleDialog = (this.form_data.id) ? 'Editar Plan' : 'Nuevo Plan'
             if (this.form_data.items === undefined) this.form_data.items = [];
-            if (this.fakeForm.currency_type_id === undefined) this.fakeForm.currency_type_id = this.config.currency_type_id;
-            this.fakeForm = this.form_data
+            // Deep clone para evitar referencia directa y permitir que Vue detecte cambios
+            this.fakeForm = JSON.parse(JSON.stringify(this.form_data))
+
+            // Asegurar que el formulario tenga `currency_type_id`; tomar de `config` si falta
+            if (this.fakeForm.currency_type_id === undefined || this.fakeForm.currency_type_id === null) {
+                this.fakeForm.currency_type_id = this.config.currency_type_id;
+            }
 
             this.changeCurrencyType()
 
-
+            // Si el registro cargado ya tiene unlimited activo, asegurarnos de limpiar quantity_period
+            if (this.fakeForm && this.fakeForm.unlimited) {
+                this.previousQuantityPeriod = this.fakeForm.quantity_period || null
+                this.fakeForm.quantity_period = null
+            }
         },
         create() {
             this.initForm()
@@ -398,20 +415,35 @@ export default {
                     })
                     .then(response => {
                         this.$store.commit('setFormData', response.data.data)
-
-                        // this.form = response.data.data
-                        // this.filterProvinces()
-                        // this.filterDistricts()
+                        // Re-inicializar fakeForm con los datos actualizados
+                        this.initForm()
                     })
+            } else {
+                // ensure quantity_period null if unlimited on new form
+                if (this.fakeForm && this.fakeForm.unlimited) {
+                    this.previousQuantityPeriod = this.fakeForm.quantity_period || null
+                    this.fakeForm.quantity_period = null
+                }
             }
         },
 
         submit() {
             this.loading_submit = true
-            let data = this.form_data;
+            // Validar que al menos 1 producto tenga 'Cobrar en todos los periodos' cuando hay más de 1
+            if (this.fakeForm.items && this.fakeForm.items.length > 1) {
+                const hasAll = this.fakeForm.items.some(item => item.apply_in_period === 'all');
+                if (!hasAll) {
+                    this.errors = { apply_in_period: ['Al menos un producto debe tener seleccionada la opción "Cobrar en todos los periodos".'] };
+                    this.loading_submit = false;
+                    return;
+                }
+            }
+            // Sincronizar fakeForm hacia el store (form_data) antes de enviar
+            this.$store.commit('setFormData', this.fakeForm)
+            let data = this.fakeForm;
             // console.dir(data)
             this.$http.post(`/full_suscription/${this.resource}`, data)
-                .then(response => {
+                .then(() => {
                     this.$eventHub.$emit('reloadData')
                     // this.EmitEvent('reloadData')
                     this.close()
@@ -443,11 +475,22 @@ export default {
                 this.recordItem = null
 
             } else {
-                this.fakeForm.items.push(JSON.parse(JSON.stringify(row)));
+                // Deep clone del item y asegurar que tiene apply_in_period por defecto
+                const newItem = JSON.parse(JSON.stringify(row));
+                if (!newItem.apply_in_period) {
+                    newItem.apply_in_period = 'all';
+                }
+                this.fakeForm.items.push(newItem);
             }
+            // Si solo hay 1 item, forzar apply_in_period = 'all'
+            if (this.fakeForm.items.length === 1) {
+                this.fakeForm.items[0].apply_in_period = 'all';
+            }
+            // Sincronizar fakeForm con store
             this.$store.commit('setFormData', this.fakeForm)
 
             this.calculateTotal();
+            // Sincronizar nuevamente después de calcular totales
             this.$store.commit('setFormData', this.fakeForm)
         },
         clickAddItem() {
@@ -456,13 +499,51 @@ export default {
         },
 
         clickRemoveItem(index) {
-            this.fakeForm.items.splice(index, 1)
+            // Crear nuevo array sin el item para que Vue reactive correctamente
+            const newItems = [...this.fakeForm.items]
+            newItems.splice(index, 1)
+            // Si queda solo 1 item, forzar apply_in_period = 'all'
+            if (newItems.length === 1) {
+                newItems[0].apply_in_period = 'all';
+            }
+            // Usar $set para que Vue detecte el cambio
+            this.$set(this.fakeForm, 'items', newItems)
+
+            // Recalcular totales
             this.calculateTotal()
+            // Sincronizar con store
+            this.$store.commit('setFormData', this.fakeForm)
         },
         ediItem(row, index) {
             row.indexi = index
             this.recordItem = row
             this.showDialogAddItem = true
+        },
+
+        // Construir opciones de períodos basado en unlimited y quantity_period
+        getAvailablePeriods() {
+            const periods = [];
+
+            // Si el plan no es ilimitado y tiene cantidad de períodos, mostrar opciones por período
+            if (!this.fakeForm.unlimited && this.fakeForm.quantity_period) {
+                const qty = parseInt(this.fakeForm.quantity_period) || 0;
+                for (let i = 1; i <= qty; i++) {
+                    periods.push({
+                        label: `Solo al ${this.getPeriodNumber(i)} cobro`,
+                        value: i.toString()
+                    });
+                }
+            }
+
+            return periods;
+        },
+
+        // Convertir número a texto ordinal (1er, 2do, 3er, etc.)
+        getPeriodNumber(n) {
+            const suffixes = ['er', 'do', 'er', 'to', 'to', 'to', 'mo', 'vo', 'no', 'o'];
+            const tens = n % 10;
+            const suffix = (n > 10 && n < 20) ? 'o' : suffixes[tens - 1] || 'o';
+            return n + suffix;
         },
 
         changeCurrencyType() {
@@ -476,12 +557,36 @@ export default {
             }
             this.currency_type = _.find(this.currency_types, {'id': currencyT})
 
-            let items = []
-            this.form_data.items.forEach((row) => {
-                items.push(calculateRowItem(row, this.form_data.currency_type_id, this.form_data.exchange_rate_sale, this.percentage_igv))
+            // Guardar apply_in_period antes de recalcular
+            const applyInPeriodMap = {};
+            this.fakeForm.items.forEach((row, index) => {
+                applyInPeriodMap[index] = row.apply_in_period || 'all';
             });
-            this.form_data.items = items
+
+            let items = []
+            this.fakeForm.items.forEach((row, index) => {
+                const calculatedItem = calculateRowItem(row, this.fakeForm.currency_type_id, this.exchange_rate, this.percentage_igv)
+                // Restaurar apply_in_period después del cálculo
+                calculatedItem.apply_in_period = applyInPeriodMap[index] || 'all';
+                items.push(calculatedItem)
+            });
+            this.fakeForm.items = items
             this.calculateTotal()
+        },
+
+        // Cuando cambie el switch 'unlimited' debemos poner quantity_period en null y deshabilitar el campo.
+        toggleUnlimited(value) {
+            if (value) {
+                // guardar valor previo y limpiar
+                this.previousQuantityPeriod = this.fakeForm.quantity_period || null
+                this.fakeForm.quantity_period = null
+            } else {
+                // restaurar si existe un previo
+                if (this.previousQuantityPeriod !== null) {
+                    this.fakeForm.quantity_period = this.previousQuantityPeriod
+                }
+                this.previousQuantityPeriod = null
+            }
         },
         calculateTotal() {
 

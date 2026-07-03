@@ -33,7 +33,7 @@
                             <div class="form-group col-lg-6 col-12 ms-auto" :class="{'has-danger': errors.date_of_issue}">
                                 <!--<label class="control-label">Fecha de emisión</label>-->
                                 <label class="control-label">Fec. Emisión</label>
-                                <el-date-picker v-model="form.date_of_issue" type="date" value-format="yyyy-MM-dd"
+                                <el-date-picker v-model="form.date_of_issue" type="date" :format="dpDateFormat" value-format="yyyy-MM-dd"
                                                 :clearable="false" @change="changeDateOfIssue"></el-date-picker>
                                 <small class="form-control-feedback" v-if="errors.date_of_issue"
                                        v-text="errors.date_of_issue[0]"></small>
@@ -44,7 +44,7 @@
                 <form autocomplete="off" @submit.prevent="submit">
                     <div class="form-body m-3 m-md-4">
                         <div class="row mt-1">
-                            <div class="col-md-6 col-lg-8 pb-2">
+                            <div class="pb-2" :class="{'col-md-6 col-lg-8': currency_types.length > 1, 'col-12': currency_types.length <= 1}">
                                 <div class="form-group position-relative" :class="{'has-danger': errors.customer_id}">
                                     <label class="control-label font-weight-bold">
                                         Cliente
@@ -84,7 +84,12 @@
                                             </div>
                                         </template>
                                     </el-select>
-                                    <span class="btn-add-new" @click.prevent="showDialogNewPerson = true" title="Agregar nuevo cliente">
+                                    <template v-if="form.customer_id">
+                                        <span class="btn-add-new btn-edit-person" @click.prevent="personRecordId = form.customer_id; showDialogNewPerson = true" title="Editar cliente">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-user-edit"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0" /><path d="M6 21v-2a4 4 0 0 1 4 -4h3.5" /><path d="M18.42 15.61a2.1 2.1 0 0 1 2.97 2.97l-3.39 3.42h-3v-3l3.42 -3.39" /></svg>
+                                        </span>
+                                    </template>
+                                    <span class="btn-add-new" @click.prevent="personRecordId = null; showDialogNewPerson = true" title="Agregar nuevo cliente">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-user-plus"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0" /><path d="M16 19h6" /><path d="M19 16v6" /><path d="M6 21v-2a4 4 0 0 1 4 -4h4" /></svg>
                                     </span>
                                     <small class="form-control-feedback" v-if="errors.customer_id"
@@ -92,7 +97,7 @@
                                 </div>
                             </div>
 
-                            <div class="col-6 col-md-3 col-lg-2">
+                            <div v-if="currency_types.length > 1" class="col-6 col-md-3 col-lg-2">
                                 <div class="form-group" :class="{'has-danger': errors.currency_type_id}">
                                     <label class="control-label">Moneda</label>
                                     <el-select v-model="form.currency_type_id" @change="changeCurrencyType">
@@ -103,7 +108,7 @@
                                            v-text="errors.currency_type_id[0]"></small>
                                 </div>
                             </div>
-                            <div class="col-6 col-md-3 col-lg-2">
+                            <div v-if="currency_types.length > 1" class="col-6 col-md-3 col-lg-2">
                                 <div class="form-group" :class="{'has-danger': errors.exchange_rate_sale}">
                                     <label class="control-label">Tipo de cambio
                                         <el-tooltip class="item" effect="dark"
@@ -269,6 +274,7 @@
         <person-form :showDialog.sync="showDialogNewPerson"
                      type="customers"
                      :external="true"
+                     :recordId="personRecordId"
                      :input_person="personFormInput"
                      :document_type_id="form.document_type_id"></person-form>
 
@@ -337,6 +343,7 @@ export default {
             headers: headers_token,
             showDialogAddItem: false,
             showDialogNewPerson: false,
+            personRecordId: null,
             showDialogOptions: false,
             recordItem: null,
             loading_submit: false,
@@ -626,6 +633,7 @@ export default {
             })
         },
         openNewPersonDialog() {
+            this.personRecordId = null
             this.showDialogNewPerson = true
         },
     }

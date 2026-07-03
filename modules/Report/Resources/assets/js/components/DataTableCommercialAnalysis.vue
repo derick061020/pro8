@@ -1,6 +1,6 @@
 <template>
     <div>
-        <div class="row">
+        <div class="row mx-0">
 
             <div class="col-md-12 col-lg-12 col-xl-12 ">
                   <div class="row">
@@ -43,29 +43,19 @@
                             </el-select> 
                         </div>
                     </div>      
-                    
-                </div>
-                <div class="row mt-1 mb-3">
-                    
-                    <div class="col-lg-9 col-md-9 col-md-9 col-sm-12" style="margin-top:29px"> 
-                        <el-button class="submit" type="primary" @click.prevent="getRecordsByFilter" :loading="loading_submit" icon="el-icon-search" >Buscar</el-button>
+                    <div class="col-12 mt-3 d-flex"> 
+                        <el-button class="submit me-2" type="primary" @click.prevent="getRecordsByFilter" :loading="loading_submit" icon="el-icon-search" >Buscar</el-button>
                         
                         <template v-if="records.length>0"> 
                             <el-button class="submit" type="success" @click.prevent="clickDownload('excel')"><i class="fa fa-file-excel" ></i>  Exportal Excel</el-button>
                         </template>
 
-                    </div>     
-                </div> 
+                    </div>  
+                </div>
             </div>
-            <div class="row mt-2">  
-
-            </div>
-                <div class="row mt-1 mb-4">
-                    
-                </div> 
             </div>
 
-            <div class="col-md-12">
+            <div class="col-md-12 px-0">
                 <div class="scroll-shadow shadow-left" v-show="showLeftShadow"></div>
                 <div class="scroll-shadow shadow-right" v-show="showRightShadow"></div>
                 <div class="table-responsive" ref="scrollContainer">
@@ -149,12 +139,9 @@
             })
         },
         async mounted () { 
-
-            
             await this.$http.get(`/${this.resource}/data_table`).then((response) => {
                 this.categories = response.data.categories
-                this.person_types = response.data.person_types 
-
+                this.person_types = [{ id: 'all', description: 'TODOS' }, ...response.data.person_types]
             });
 
             await this.$http.get(`/${this.resource}/filter`)

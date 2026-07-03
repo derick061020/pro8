@@ -27,7 +27,7 @@
     ">
         <img
             src="data:{{ mime_content_type(public_path($logo)) }};base64,{{ base64_encode(file_get_contents(public_path($logo))) }}"
-            alt="{{ $company->name }}"
+            alt="{{ \App\CoreFacturalo\Helpers\CompanyDocumentDisplay::logoAlt($company) }}"
             style="width: 100%; height: auto; object-fit: contain; opacity: 0.1;"
         >
     </div>
@@ -36,11 +36,11 @@
     <tr>
         @if($company->logo)
             <td width="10%">
-                <img src="data:{{mime_content_type(public_path("storage/uploads/logos/{$company->logo}"))}};base64, {{base64_encode(file_get_contents(public_path("storage/uploads/logos/{$company->logo}")))}}" alt="{{ $company->name }}" class="company_logo" style="max-width: 300px">
+                <img src="data:{{mime_content_type(public_path("storage/uploads/logos/{$company->logo}"))}};base64, {{base64_encode(file_get_contents(public_path("storage/uploads/logos/{$company->logo}")))}}" alt="{{ \App\CoreFacturalo\Helpers\CompanyDocumentDisplay::logoAlt($company) }}" class="company_logo" style="max-width: 300px">
             </td>
                 <td width="50%" class="text-center">
                 <div class="text-left">
-                    <h3 class="">{{ $company->name }}</h3>
+                    @include('pdf.partials.company_document_header_names', ['tagPrimary' => 'h3', 'tagLegal' => 'h4'])
                     <h4>{{ 'RUC '.$company->number }}</h4>
                     <h5 style="text-transform: uppercase;">
                         {{ ($establishment->address !== '-')? $establishment->address : '' }}
@@ -59,7 +59,7 @@
         @else
             <td width="50%" class="pl-1">
                 <div class="text-left">
-                    <h3 class="">{{ $company->name }}</h3>
+                    @include('pdf.partials.company_document_header_names', ['tagPrimary' => 'h3', 'tagLegal' => 'h4'])
                     <h4>{{ 'RUC '.$company->number }}</h4>
                     <h5 style="text-transform: uppercase;">
                         {{ ($establishment->address !== '-')? $establishment->address : '' }}
@@ -352,7 +352,7 @@ foreach($document->items as $row) {
             <td class="text-left align-top">
                 @isset($row->item->lots)
                     @foreach($row->item->lots as $lot)
-                        @if( isset($lot->has_sale) && $lot->has_sale)
+                        @if(!empty($lot->series))
                             <span style="font-size: 9px">{{ $lot->series }}</span><br>
                         @endif
                     @endforeach

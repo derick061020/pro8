@@ -2,7 +2,6 @@
 
 use App\Models\Tenant\Configuration;
 use Modules\Inventory\Models\InventoryConfiguration;
-use Modules\Hotel\Models\HotelRoom;
 
 $configuration = Configuration::first();
 $firstLevel = $path[0] ?? null;
@@ -16,16 +15,6 @@ $visual = $configuration->visual ?? null;
 $showInSidebar = null; // will be resolved after multi-user calculation
 
 $establishments = App\Models\Tenant\Establishment::select('id', 'description')->get();
-
-// Obtener contador de habitaciones ocupadas
-$occupiedRoomsCount = 0;
-if(in_array('hotels', $vc_modules)) {
-    $user = auth()->user();
-    $establishment_id = $user->establishment_id;
-    $occupiedRoomsCount = HotelRoom::where('establishment_id', $establishment_id)
-        ->where('status', 'OCUPADO')
-        ->count();
-}
 
 $multiUserCount = 0;
 if(config('configuration.multi_user_enabled')) {
@@ -57,13 +46,17 @@ if(config('configuration.multi_user_enabled')) {
 }
 $showMultiUser = $multiUserCount > 1 && config('configuration.multi_user_enabled');
 
+// Si hay múltiples sucursales o multiempresa disponible,
+// el selector debe permanecer visible en sidebar para evitar perder acceso.
+$defaultSidebarVisibility = (count($establishments) > 1) || $showMultiUser;
+
 if (is_null($showInSidebar)) {
     if (is_object($visual) && property_exists($visual, 'branch_selector_in_sidebar')) {
         $showInSidebar = (bool)$visual->branch_selector_in_sidebar;
     } elseif (is_array($visual) && array_key_exists('branch_selector_in_sidebar', $visual)) {
         $showInSidebar = (bool)$visual['branch_selector_in_sidebar'];
     } else {
-        $showInSidebar = (count($establishments) > 1) || $showMultiUser;
+        $showInSidebar = $defaultSidebarVisibility;
     }
 }
 
@@ -80,7 +73,7 @@ try {
 
 $showTransfer = collect($vc_module_levels)->intersect(['inventory', 'inventory_devolutions', 'inventory_report_kardex', 'inventory_report', 'inventory_report_valued_kardex'])->isEmpty() && in_array('inventory_transfers', $vc_module_levels);
 ?>
-<aside id="sidebar-left" class="sidebar-left {{ ($showInSidebar && $canShowBranchSelector && $showMultiUser) ? 'show-both-selectors' : (($showInSidebar && ($canShowBranchSelector || $showMultiUser)) ? 'show-branch-selector' : '') }}">
+<aside id="sidebar-left" class="sidebar-left {{ ($showInSidebar && $canShowBranchSelector && $showMultiUser) ? 'show-both-selectors' : (($showInSidebar && ($canShowBranchSelector || $showMultiUser)) ? 'show-branch-selector' : 'no-branch-selector') }}">
     <div class="sidebar-header sidebar-header-desktop">
         <div class="logo-container-sidebar pe-2">
             <a href="{{ route('tenant.dashboard.index') }}" class="logo pt-2 pt-md-0">
@@ -130,7 +123,7 @@ $showTransfer = collect($vc_module_levels)->intersect(['inventory', 'inventory_d
                         @endforeach
                     </select>
                 </div>
-            @endif            
+            @endif
 
             @if($showMultiUser)
                 <div class="sidebar-multi-user-selector-container" id="sidebar-multi-user-selector-container" style="display: {{ $showInSidebar ? 'block' : 'none' }};">
@@ -184,7 +177,7 @@ $showTransfer = collect($vc_module_levels)->intersect(['inventory', 'inventory_d
                             </div>
                         </div>
                     @endif
-                </div>                
+                </div>
             </div>
         </div>
     @endif
@@ -435,9 +428,15 @@ $showTransfer = collect($vc_module_levels)->intersect(['inventory', 'inventory_d
 
                                 {{-- Venta Rápida --}}
                                 @if(in_array('pos_garage', $vc_module_levels))
+                                @php
+                                    $business_turns_active = \Modules\BusinessTurn\Models\BusinessTurn::where('id', 4)->value('active');
+                                @endphp
                                     <li class="{{ ($firstLevel === 'pos' && $secondLevel === 'garage') ? 'nav-active' : '' }}">
-                                        <a class="nav-link" href="{{ route('tenant.pos.garage') }}">Venta rápida <span
-                                                style="font-size:.65rem;">(Grifos y Markets)</span></a>
+                                        <a class="nav-link" href="{{ route('tenant.pos.garage') }}">Venta rápida
+                                            @if($business_turns_active)
+                                                <span style="font-size:.65rem;">(Grifos y Markets)</span>
+                                            @endif
+                                        </a>
                                     </li>
                                 @endif
 
@@ -738,11 +737,11 @@ $showTransfer = collect($vc_module_levels)->intersect(['inventory', 'inventory_d
                                                             valorizado</a>
                                                     </li>
                                                 @endif
-                                                @if(in_array('production_app', $vc_modules) && $configuration->isShowExtraInfoToItem())
+                                                <!-- @if(in_array('production_app', $vc_modules) && $configuration->isShowExtraInfoToItem())
                                                     <li class="{{($firstLevel === 'extra_info_items') ? 'nav-active' : ''}}">
                                                         <a class="nav-link" href="{{route('extra_info_items.index')}}">Datos extra de items</a>
                                                     </li>
-                                                @endif
+                                                @endif -->
                                                 @if($inventory_configuration->inventory_review)
                                                     <li class="{{ ($firstLevel === 'inventory-review') ? 'nav-active' : '' }}">
                                                         <a class="nav-link" href="{{route('tenant.inventory-review.index')}}">Revisión de
@@ -848,7 +847,7 @@ $showTransfer = collect($vc_module_levels)->intersect(['inventory', 'inventory_d
                                                             Egresos - M. Pago</a>
                                                     </li>
                                                 @endif
-                                                @if(in_array('purchases_expenses', $vc_module_levels))
+                                                @if(in_array('bank_loan', $vc_module_levels))
                                                     <li class="{{ ($firstLevel === 'bank_loan') ? 'nav-active' : '' }}">
                                                         <a class="nav-link" href="{{route('tenant.bank_loan.index')}}">Credito Bancario</a>
                                                     </li>
@@ -1158,13 +1157,6 @@ $showTransfer = collect($vc_module_levels)->intersect(['inventory', 'inventory_d
                                 <span>Tienda Virtual</span>
                             </a>
                             <ul class="nav nav-children">
-                                @if(in_array('ecommerce', $vc_module_levels))
-                                    <li class="">
-                                        <a class="nav-link" onclick="window.open( '{{ route("tenant.ecommerce.index") }} ')">Ir
-                                            a
-                                            Tienda</a>
-                                    </li>
-                                @endif
                                 @if(in_array('ecommerce_orders', $vc_module_levels))
                                     <li class="{{ ($firstLevel === 'orders') ? 'nav-active' : '' }}">
                                         <a class="nav-link" href="{{route('tenant_orders_index')}}">Pedidos</a>
@@ -1172,8 +1164,7 @@ $showTransfer = collect($vc_module_levels)->intersect(['inventory', 'inventory_d
                                 @endif
                                 @if(in_array('ecommerce_items', $vc_module_levels))
                                     <li class="{{ ($firstLevel === 'items_ecommerce') ? 'nav-active' : '' }}">
-                                        <a class="nav-link" href="{{route('tenant.items_ecommerce.index')}}">Productos Tienda
-                                            Virtual</a>
+                                        <a class="nav-link" href="{{route('tenant.items_ecommerce.index')}}">Productos visibles</a>
                                     </li>
                                 @endif
 
@@ -1184,20 +1175,25 @@ $showTransfer = collect($vc_module_levels)->intersect(['inventory', 'inventory_d
 
                                 @if(in_array('ecommerce_tags', $vc_module_levels))
                                     <li class="{{ ($firstLevel === 'tags') ? 'nav-active' : '' }}">
-                                        <a class="nav-link" href="{{route('tenant.tags.index')}}">Tags -
-                                            Categorias(Etiquetas)</a>
+                                        <a class="nav-link" href="{{route('tenant.tags.index')}}">Etiquetas</a>
                                     </li>
                                 @endif
                                 @if(in_array('ecommerce_promotions', $vc_module_levels))
                                     <li class="{{ ($firstLevel === 'promotions') ? 'nav-active' : '' }}">
-                                        <a class="nav-link" href="{{route('tenant.promotion.index')}}">Promociones(Banners)</a>
+                                        <a class="nav-link" href="{{route('tenant.promotion.index')}}">Banners</a>
                                     </li>
                                 @endif
-                                {{-- @if(in_array('ecommerce_settings', $vc_module_levels))
-                                <li class="{{ ($secondLevel === 'configuration')?'nav-active':'' }}">
+                                @if(in_array('ecommerce_settings', $vc_module_levels))
+                                <li class="nav-item-with-action {{ ($secondLevel === 'configuration')?'nav-active':'' }}">
                                     <a class="nav-link" href="{{route('tenant_ecommerce_configuration')}}">Configuración</a>
+                                    <button
+                                        type="button"
+                                        class="{{ ($firstLevel === 'quotations') ? 'second-buton' : 'btn-primary' }} btn btn-xs nav-action m-0 py-0"
+                                        title="Ver tienda"
+                                        onclick="window.open( '{{ route("tenant.ecommerce.index") }} ')">Ver Tienda
+                                    </button>
                                 </li>
-                                @endif --}}
+                                @endif
                             </ul>
                         </li>
                     @endif
@@ -1358,6 +1354,61 @@ $showTransfer = collect($vc_module_levels)->intersect(['inventory', 'inventory_d
                         </ul>
                     </li>
                     @endif --}}
+                    {{-- @if(in_array('hotels', $vc_modules) || in_array('documentary-procedure', $vc_modules))
+                    <li class="nav-description">Módulos extras</li>
+                    @endif --}}
+                    @if(in_array('hotels', $vc_modules))
+                        <li class=" nav-parent {{ ($firstLevel === 'hotels') ? 'nav-active nav-expanded' : '' }}">
+                            <a class="nav-link" href="#">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                                    fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    class="icon icon-tabler icons-tabler-outline icon-tabler-building-skyscraper">
+                                    <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                                    <path d="M3 21l18 0" />
+                                    <path d="M5 21v-14l8 -4v18" />
+                                    <path d="M19 21v-10l-6 -4" />
+                                    <path d="M9 9l0 .01" />
+                                    <path d="M9 12l0 .01" />
+                                    <path d="M9 15l0 .01" />
+                                    <path d="M9 18l0 .01" />
+                                </svg>
+                                <span>Hoteles</span>
+                            </a>
+                            <ul class="nav nav-children">
+                                @if(in_array('hotels_reception', $vc_module_levels))
+                                    <li
+                                        class="{{ (($firstLevel === 'hotels') && ($secondLevel === 'reception')) ? 'nav-active' : '' }}">
+                                        <a class="nav-link" href="{{ url('hotels/reception') }}">Recepción</a>
+                                    </li>
+                                @endif
+                                @if(in_array('hotels_rates', $vc_module_levels))
+                                    <li
+                                        class="{{ (($firstLevel === 'hotels') && ($secondLevel === 'rates')) ? 'nav-active' : '' }}">
+                                        <a class="nav-link" href="{{ url('hotels/rates') }}">Tarifas</a>
+                                    </li>
+                                @endif
+                                @if(in_array('hotels_floors', $vc_module_levels))
+                                    <li
+                                        class="{{ (($firstLevel === 'hotels') && ($secondLevel === 'floors')) ? 'nav-active' : '' }}">
+                                        <a class="nav-link" href="{{ url('hotels/floors') }}">Ubicaciones</a>
+                                    </li>
+                                @endif
+                                @if(in_array('hotels_cats', $vc_module_levels))
+                                    <li
+                                        class="{{ (($firstLevel === 'hotels') && ($secondLevel === 'categories')) ? 'nav-active' : '' }}">
+                                        <a class="nav-link" href="{{ url('hotels/categories') }}">Categorías</a>
+                                    </li>
+                                @endif
+                                @if(in_array('hotels_rooms', $vc_module_levels))
+                                    <li
+                                        class="{{ (($firstLevel === 'hotels') && ($secondLevel === 'rooms')) ? 'nav-active' : '' }}">
+                                        <a class="nav-link" href="{{ url('hotels/rooms') }}">Habitaciones</a>
+                                    </li>
+                                @endif
+                            </ul>
+                        </li>
+                    @endif
                     {{-- Suscription --}}
                     @if(in_array('suscription_app', $vc_modules))
                         <li class=" nav-parent {{ ($firstLevel === 'full_suscription') ? 'nav-active nav-expanded' : '' }}">
@@ -1381,23 +1432,10 @@ $showTransfer = collect($vc_module_levels)->intersect(['inventory', 'inventory_d
                                     <path d="M10.01 17h.005" />
                                 </svg>
                                 <span>
-                                    Suscripción <sup
-                                        style="background: #ffc300;padding: 0px 3px;border-radius: 4px;">Beta</sup>
+                                    Suscripción
                                 </span>
                             </a>
                             <ul class="nav nav-children">
-                                <li
-                                    class="{{ ($firstLevel === 'full_suscription' && $secondLevel === 'client') ? 'nav-active' : '' }}">
-                                    <a class="nav-link" href="{{ route('tenant.fullsuscription.client.index') }}">
-                                        Clientes
-                                    </a>
-                                </li>
-                                <li
-                                    class="{{ (($firstLevel === 'full_suscription') && ($secondLevel === 'plans')) ? 'nav-active' : '' }}">
-                                    <a class="nav-link" href="{{ route('tenant.fullsuscription.plans.index') }}">
-                                        Planes
-                                    </a>
-                                </li>
                                 <li
                                     class="{{ (($firstLevel === 'full_suscription') && ($secondLevel === 'payments')) ? 'nav-active' : '' }}">
                                     <a class="nav-link" href="{{ route('tenant.fullsuscription.payments.index') }}">
@@ -1410,6 +1448,29 @@ $showTransfer = collect($vc_module_levels)->intersect(['inventory', 'inventory_d
                                         Recibos de pago
                                     </a>
                                 </li>
+                                <li
+                                    class="{{ (($firstLevel === 'full_suscription') && ($secondLevel === 'plans')) ? 'nav-active' : '' }}">
+                                    <a class="nav-link" href="{{ route('tenant.fullsuscription.plans.index') }}">
+                                        Planes
+                                    </a>
+                                </li>
+                                @if(in_array('suscription_app_pending_payments', $vc_module_levels))
+                                <li
+                                    class="{{ (($firstLevel === 'full-suscription') && ($secondLevel === 'pending-payments')) ? 'nav-active' : '' }}">
+                                    <a class="nav-link" href="{{ route('tenant.full_suscription.pending-payments.index') }}">
+                                        Pagos pendientes
+                                    </a>
+                                </li>
+                                @endif
+
+                                @if(in_array('suscription_app_payment_reminders', $vc_module_levels))
+                                <li
+                                    class="{{ (($firstLevel === 'full-suscription') && ($secondLevel === 'payment-reminders')) ? 'nav-active' : '' }}">
+                                    <a class="nav-link" href="{{ route('tenant.full_suscription.payment-reminders.index') }}">
+                                        Recordatorios de pago
+                                    </a>
+                                </li>
+                                @endif
                             </ul>
                         </li>
                     @endif
@@ -1502,6 +1563,7 @@ $showTransfer = collect($vc_module_levels)->intersect(['inventory', 'inventory_d
                                         Grados y Secciones
                                     </a>
                                 </li>
+
                             </ul>
                         </li>
                     @endif
@@ -1574,7 +1636,17 @@ $showTransfer = collect($vc_module_levels)->intersect(['inventory', 'inventory_d
                         </li>
                     @endif
 
-                    {{-- Produccion 
+                    @if(in_array('claims_book', $vc_modules))
+                        <li
+                            class="{{  ($firstLevel === 'claims' ) ? 'nav-active' : ''}}">
+                            <a class="nav-link dashboard-link" href="{{ url('claims') }}">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-book-2"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M19 4v16h-12a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 2 -2h12" /><path d="M19 16h-12a2 2 0 0 0 -2 2" /><path d="M9 8h6" /></svg>
+                                <span>Libro de Reclamaciones</span>
+                            </a>
+                        </li>
+                    @endif
+
+                    {{-- Produccion
                     @if(in_array('production_app', $vc_modules))
 
                                         <li class=" nav-parent {{ (
@@ -1692,7 +1764,7 @@ $showTransfer = collect($vc_module_levels)->intersect(['inventory', 'inventory_d
         <div class="more-config more-config-mobile">
             <div class="nano-content nano-content-config pt-0">
                 <ul class="nav nav-main">
-                    <li>
+                    <li class="mb-0">
                         <a class="nav-link">
                             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
                                 stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"
@@ -1705,6 +1777,7 @@ $showTransfer = collect($vc_module_levels)->intersect(['inventory', 'inventory_d
                             <span>Configuración y más</span>
                         </a>
                     </li>
+                    <span class="w-100 text-center text-muted">{{ $vc_version ?? 'Pro 8' }}</span>
                 </ul>
             </div>
 
@@ -1805,13 +1878,13 @@ $showTransfer = collect($vc_module_levels)->intersect(['inventory', 'inventory_d
         const payload = {
             establishment_id: establishmentId
         };
-        
+
         const selector = document.getElementById('sidebar-establishment-selector');
         if (selector) {
             selector.disabled = true;
         }
 
-        fetch('/hotels/reception/change-user-establishment', {
+        fetch('/establishments/change-user-establishment', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -1825,19 +1898,19 @@ $showTransfer = collect($vc_module_levels)->intersect(['inventory', 'inventory_d
                 const mainWrapper = document.getElementById('main-wrapper');
                 if (mainWrapper && mainWrapper.__vue__) {
                     const vueInstance = mainWrapper.__vue__;
-                    
+
                     if (vueInstance.$message) {
                         vueInstance.$message({
                             type: 'success',
                             message: data.message
                         });
                     }
-                    
+
                     if (vueInstance.$eventHub) {
                         vueInstance.$eventHub.$emit('establishmentChanged', establishmentId);
                     }
                 }
-                
+
                 if (selector) {
                     selector.disabled = false;
                 }
@@ -1845,7 +1918,7 @@ $showTransfer = collect($vc_module_levels)->intersect(['inventory', 'inventory_d
         })
         .catch(error => {
             console.error('Error al cambiar establecimiento:', error);
-            
+
             const mainWrapper = document.getElementById('main-wrapper');
             if (mainWrapper && mainWrapper.__vue__ && mainWrapper.__vue__.$message) {
                 mainWrapper.__vue__.$message({
@@ -1853,7 +1926,7 @@ $showTransfer = collect($vc_module_levels)->intersect(['inventory', 'inventory_d
                     message: 'Error al cambiar establecimiento'
                 });
             }
-            
+
             if (selector) {
                 selector.disabled = false;
             }
@@ -1892,9 +1965,9 @@ $showTransfer = collect($vc_module_levels)->intersect(['inventory', 'inventory_d
         // Dropdown de establecimiento
         const establishmentIcon = document.getElementById('establishment-icon-trigger');
         const establishmentDropdown = document.getElementById('establishment-dropdown');
-        
+
         if (establishmentIcon && establishmentDropdown) {
-            
+
             establishmentIcon.addEventListener('click', function(e) {
                 e.stopPropagation();
                 establishmentDropdown.classList.toggle('show');
@@ -1902,7 +1975,7 @@ $showTransfer = collect($vc_module_levels)->intersect(['inventory', 'inventory_d
 
             });
 
-            
+
             document.addEventListener('click', function(e) {
                 if (!establishmentIcon.contains(e.target) && !establishmentDropdown.contains(e.target)) {
                     establishmentDropdown.classList.remove('show');
@@ -1910,11 +1983,41 @@ $showTransfer = collect($vc_module_levels)->intersect(['inventory', 'inventory_d
                 }
             });
 
-            
+
             establishmentDropdown.addEventListener('click', function(e) {
                 e.stopPropagation();
             });
         }
+
+        function reconcileHeaderSelectorsSection() {
+            var li = document.getElementById('multi-user-content-li');
+            if (!li) return;
+            var divider = document.getElementById('multi-user-content-divider');
+
+            var branchInSidebar = li.getAttribute('data-branch-in-sidebar') === '1';
+            var branchSelector = document.getElementById('header-establishment-selector-container');
+
+            var multiUserHasContent = !!document.querySelector('#header-multi-user-selector-container select[name="multi_user_id"]');
+
+            var multiUserVisible = multiUserHasContent && !branchInSidebar;
+            var branchVisible = !!branchSelector && !branchInSidebar;
+            var sectionVisible = multiUserVisible || branchVisible;
+
+            li.style.display = sectionVisible ? '' : 'none';
+            if (divider) {
+                divider.style.display = sectionVisible ? '' : 'none';
+            }
+        }
+
+        document.addEventListener('tenant-multi-users-mounted', function() {
+            reconcileHeaderSelectorsSection();
+        });
+
+        document.addEventListener('DOMContentLoaded', function() {
+            reconcileHeaderSelectorsSection();
+            setTimeout(reconcileHeaderSelectorsSection, 800);
+            setTimeout(reconcileHeaderSelectorsSection, 2500);
+        });
 
         // Listener para cambios de visibilidad del selector de establecimiento en sidebar
         window.addEventListener('branchSelectorVisibilityChanged', function(event) {
@@ -1936,7 +2039,7 @@ $showTransfer = collect($vc_module_levels)->intersect(['inventory', 'inventory_d
             }
 
             if (typeof showInSidebarEvent !== 'undefined') {
-                
+
                 if (selectorContainer) {
                     selectorContainer.style.display = showInSidebarEvent ? 'block' : 'none';
                 }
@@ -1955,6 +2058,22 @@ $showTransfer = collect($vc_module_levels)->intersect(['inventory', 'inventory_d
                 if (multiUserSelectorDropdown) {
                     multiUserSelectorDropdown.style.display = showInSidebarEvent ? 'block' : 'none';
                 }
+
+                var headerBranchSelector = document.getElementById('header-establishment-selector-container');
+                if (headerBranchSelector) {
+                    headerBranchSelector.style.display = showInSidebarEvent ? 'none' : 'block';
+                }
+
+                var headerMultiUserSelector = document.getElementById('header-multi-user-selector-container');
+                if (headerMultiUserSelector) {
+                    headerMultiUserSelector.style.display = showInSidebarEvent ? 'none' : 'block';
+                }
+
+                var headerSectionLi = document.getElementById('multi-user-content-li');
+                if (headerSectionLi) {
+                    headerSectionLi.setAttribute('data-branch-in-sidebar', showInSidebarEvent ? '1' : '0');
+                }
+                reconcileHeaderSelectorsSection();
 
                 var shouldShowBranch = !!selectorContainer && showInSidebarEvent;
                 var shouldShowMulti = !!multiuserSelector && showInSidebarEvent;
@@ -2027,14 +2146,14 @@ $showTransfer = collect($vc_module_levels)->intersect(['inventory', 'inventory_d
 
 <style>
     html.no-overflowscrolling .nano {
-        height: calc(100% - 50px);
+        height: calc(100% - 62px);
     }
     @media only screen and (min-width: 767px) {
         html.no-overflowscrolling .sidebar-left.show-branch-selector .nano {
-            height: calc(100% - 130px);
+            height: calc(100% - 146px);
         }
         html.no-overflowscrolling .sidebar-left.show-both-selectors .nano {
-            height: calc(100% - 184px);
+            height: calc(100% - 200px);
         }
     }
     .more-config {
@@ -2052,7 +2171,7 @@ $showTransfer = collect($vc_module_levels)->intersect(['inventory', 'inventory_d
         min-width: 230px;
         border: 1px solid #e0e6f8;
         box-shadow: 0 0 16px 0px rgb(0 36 96 / 12%);
-        bottom: 105px;
+        bottom: 116px;
         left: 15px;
         border-radius: 8px;
         padding: 15px;
@@ -2236,7 +2355,7 @@ $showTransfer = collect($vc_module_levels)->intersect(['inventory', 'inventory_d
         width: 12px;
         height: 12px;
         margin-right: 5px
-    }        
+    }
     tenant-multi-users-change-client.sidebar-multi-user-selector {
         display: block;
         position: relative;
@@ -2247,8 +2366,6 @@ $showTransfer = collect($vc_module_levels)->intersect(['inventory', 'inventory_d
         0% { background-position: 200% 0; }
         100% { background-position: -200% 0; }
     }
-
-
 
     .hotel-rooms-counter {
         display: inline-flex;

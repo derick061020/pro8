@@ -149,6 +149,7 @@ class DocumentCollection extends ResourceCollection
             }
 
             $btn_retention = !is_null($row->retention);
+            $custom_fields_data = $row->custom_fields_data;
 
             return [
                 'id' => $row->id,
@@ -162,6 +163,7 @@ class DocumentCollection extends ResourceCollection
                 'customer_number' => $row->customer->number,
                 'customer_telephone' => $row->customer->telephone,
                 'customer_email' => optional($row->customer)->email,
+                'custom_fields_data' => $custom_fields_data,
                 'currency_type_id' => $row->currency_type_id,
                 'exchange_rate_sale' => $row->exchange_rate_sale,
                 'total_exportation' => $row->total_exportation,

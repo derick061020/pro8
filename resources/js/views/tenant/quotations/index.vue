@@ -42,20 +42,13 @@
             <div class="data-table-visible-columns">
                 <el-dropdown :hide-on-click="false">
                     <el-button type="secondary">
-                        Mostrar columnas<i
-                            class="el-icon-arrow-down el-icon--right"
-                        ></i>
+                        Mostrar columnas<i class="el-icon-arrow-down el-icon--right"></i>
                     </el-button>
                     <el-dropdown-menu slot="dropdown">
-                        <el-dropdown-item
-                            v-for="(column, index) in columns"
-                            :key="index"
-                        >
-                            <el-checkbox
-                                v-model="column.visible"
-                                @change="saveColumnVisibilityQuotations"
-                                >{{ column.title }}</el-checkbox
-                            >
+                        <el-dropdown-item v-for="col in orderedColumns" :key="col.key">
+                            <el-checkbox v-model="columns[col.key].visible" @change="saveColumnVisibilityQuotations">
+                                {{ col.title }}
+                            </el-checkbox>
                         </el-dropdown-item>
                     </el-dropdown-menu>
                 </el-dropdown>
@@ -63,277 +56,113 @@
             <div class="card-body">
                 <data-table :resource="resource" :state-types="state_types">
                     <tr slot="heading">
-                        <!-- <th>#</th> -->
-                        <th class="text-start">Fecha Emisión</th>
-                        <th
-                            class="text-center"
-                            v-if="columns.delivery_date.visible"
-                        >
-                            T. Entrega
-                        </th>
-                        <th>Registrado por</th>
-                        <th>Vendedor</th>
-                        <th>Cliente</th>
-                        <th>Estado</th>
-                        <th>Cotización</th>
-                        <th>Comprobantes</th>
-                        <th>Notas de venta</th>
-                        <th v-if="columns.order_note.visible">Pedido</th>
-                        <th>Oportunidad Venta</th>
-                        <th v-if="columns.referential_information.visible">
-                            Inf.Referencial
-                        </th>
-                        <th v-if="columns.contract.visible">Contrato</th>
-                        <!-- <th>Estado</th> -->
-                        <th v-if="columns.exchange_rate_sale.visible">T.C.</th>
-                        <th class="text-center">Moneda</th>
-                        <th class="text-center"></th>
-                        <th
-                            class="text-end"
-                            v-if="columns.total_exportation.visible"
-                        >
-                            T.Exportación
-                        </th>
-                        <th
-                            class="text-end"
-                            v-if="columns.total_free.visible"
-                        >
-                            T.Gratuito
-                        </th>
-                        <th
-                            class="text-end"
-                            v-if="columns.total_unaffected.visible"
-                        >
-                            T.Inafecta
-                        </th>
-                        <th
-                            class="text-end"
-                            v-if="columns.total_exonerated.visible"
-                        >
-                            T.Exonerado
-                        </th>
-                        <th class="text-end">T.Gravado</th>
-                        <th class="text-end">T.Igv</th>
-                        <th class="text-end">Total</th>
-                        <th class="text-center">PDF</th>
-                        <th class="text-end"></th>
-                        <!-- <th class="text-right">Acciones</th> -->
+                        <template v-for="col in orderedColumns">
+                            <th v-if="col.visible && col.key === 'date_of_issue'" :key="col.key" class="text-start">Fecha Emisión</th>
+                            <th v-if="col.visible && col.key === 'delivery_date'" :key="col.key" class="text-center">T. Entrega</th>
+                            <th v-if="col.visible && col.key === 'registered_by'" :key="col.key">Registrado por</th>
+                            <th v-if="col.visible && col.key === 'seller'" :key="col.key">Vendedor</th>
+                            <th v-if="col.visible && col.key === 'customer'" :key="col.key">Cliente</th>
+                            <th v-if="col.visible && col.key === 'state_type'" :key="col.key">Estado</th>
+                            <th v-if="col.visible && col.key === 'identifier'" :key="col.key">Cotización</th>
+                            <th v-if="col.visible && col.key === 'documents'" :key="col.key">Comprobantes</th>
+                            <th v-if="col.visible && col.key === 'sale_notes'" :key="col.key">Notas de venta</th>
+                            <th v-if="col.visible && col.key === 'order_note'" :key="col.key">Pedido</th>
+                            <th v-if="col.visible && col.key === 'sale_opportunity'" :key="col.key">Oportunidad Venta</th>
+                            <th v-if="col.visible && col.key === 'referential_information'" :key="col.key">Inf.Referencial</th>
+                            <th v-if="col.visible && col.key === 'contract'" :key="col.key">Contrato</th>
+                            <th v-if="col.visible && col.key === 'exchange_rate_sale'" :key="col.key">T.C.</th>
+                            <th v-if="col.visible && col.key === 'currency_type_id'" :key="col.key" class="text-center">Moneda</th>
+                            <th v-if="col.visible && col.key === 'payments'" :key="col.key" class="text-end">Pagos</th>
+                            <th v-if="col.visible && col.key === 'total_exportation'" :key="col.key" class="text-end">T.Exportación</th>
+                            <th v-if="col.visible && col.key === 'total_free'" :key="col.key" class="text-end">T.Gratuito</th>
+                            <th v-if="col.visible && col.key === 'total_unaffected'" :key="col.key" class="text-end">T.Inafecta</th>
+                            <th v-if="col.visible && col.key === 'total_exonerated'" :key="col.key" class="text-end">T.Exonerado</th>
+                            <th v-if="col.visible && col.key === 'total_taxed'" :key="col.key" class="text-end">T.Gravado</th>
+                            <th v-if="col.visible && col.key === 'total_igv'" :key="col.key" class="text-end">T.Igv</th>
+                            <th v-if="col.visible && col.key === 'total'" :key="col.key" class="text-end">Total</th>
+                            <th v-if="col.visible && col.key === 'pdf'" :key="col.key" class="text-center">PDF</th>
+                            <th v-if="col.visible && col.key === 'actions'" :key="col.key" class="text-end"></th>
+                        </template>
                     </tr>
                     <tr
                         slot-scope="{ index, row }"
                         :class="{ anulate_color: row.state_type_id == '11' }"
                     >
-                        <td class="text-start">
-                            {{ formatDate(row.date_of_issue) }}
-                        </td>
-                        <td
-                            class="text-center"
-                            v-if="columns.delivery_date.visible"
-                        >
-                            {{ row.delivery_date }}
-                        </td>
-                        <td>{{ row.user_name }}</td>
-                        <td>{{ row.seller_name }}</td>
-                        <td>
-                            {{ row.customer_name }}<br /><small
-                                v-text="row.customer_number"
-                            ></small>
-                        </td>
-                        <td>
-                            <template v-if="row.state_type_id == '11'">
-                                {{ row.state_type_description }}
-                            </template>
-                            <template v-else>
-                                <el-select
-                                    v-model="row.state_type_id"
-                                    @change="changeStateType(row)"
-                                    style="width:120px !important"
-                                >
-                                    <el-option
-                                        v-for="option in state_types"
-                                        :key="option.id"
-                                        :value="option.id"
-                                        :label="option.description"
-                                    ></el-option>
-                                </el-select>
-                            </template>
-                        </td>
-                        <td>{{ row.identifier }}</td>
-                        <td>
-                            <template v-for="(document, i) in row.documents">
-                                <template v-if="document.is_voided_or_rejected">
-                                    <label :key="i" class="d-block text-danger">
-                                        {{ document.number_full }}
-                                        <!-- {{ document.number_full }} ({{document.state_type_description}}) -->
-                                    </label>
-                                </template>
+                        <template v-for="col in orderedColumns">
+                            <td v-if="col.visible && col.key === 'date_of_issue'" :key="col.key" class="text-start">{{ row.date_of_issue | toDate }}</td>
+                            <td v-if="col.visible && col.key === 'delivery_date'" :key="col.key" class="text-center">{{ row.delivery_date }}</td>
+                            <td v-if="col.visible && col.key === 'registered_by'" :key="col.key">{{ row.user_name }}</td>
+                            <td v-if="col.visible && col.key === 'seller'" :key="col.key">{{ row.seller_name }}</td>
+                            <td v-if="col.visible && col.key === 'customer'" :key="col.key">{{ row.customer_name }}<br /><small v-text="row.customer_number"></small></td>
+                            <td v-if="col.visible && col.key === 'state_type'" :key="col.key">
+                                <template v-if="row.state_type_id == '11'">{{ row.state_type_description }}</template>
                                 <template v-else>
-                                    <label
-                                        :key="i"
-                                        v-text="document.number_full"
-                                        class="d-block"
-                                    ></label>
+                                    <el-select v-model="row.state_type_id" @change="changeStateType(row)" style="width:120px !important">
+                                        <el-option v-for="option in state_types" :key="option.id" :value="option.id" :label="option.description"></el-option>
+                                    </el-select>
                                 </template>
-                            </template>
-                        </td>
-                        <td>
-                            <template v-for="(sale_note, i) in row.sale_notes">
-                                <label
-                                    :key="i"
-                                    v-text="sale_note.number_full"
-                                    class="d-block"
-                                ></label>
-                            </template>
-                        </td>
-                        <td v-if="columns.order_note.visible">
-                            <!-- Pedidos -->
-                            <template
-                                v-if="
-                                    row.order_note !== undefined &&
-                                        row.order_note.full_number !== undefined
-                                "
-                            >
-                                <label class="d-block"
-                                    >{{ row.order_note.full_number }}
-                                </label>
-                            </template>
-                        </td>
-                        <td>
-
-                            <el-popover
-                                placement="right"
-                                v-if="row.sale_opportunity"
-                                width="400"
-                                trigger="click"
-                            >
-                                <div class="col-md-12 mt-4">
-                                    <table>
-                                        <tr>
-                                            <td><strong>O. Venta: </strong></td>
-                                            <td>
-                                                <strong>{{
-                                                    row.sale_opportunity_number_full
-                                                }}</strong>
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td><strong>Detalle: </strong></td>
-                                            <td>
-                                                <strong>{{
-                                                    row.sale_opportunity.detail
-                                                }}</strong>
-                                            </td>
-                                        </tr>
-                                        <tr class="mt-4 mb-4">
-                                            <td>
-                                                <strong>F. Emisión:</strong>
-                                            </td>
-                                            <td>
-                                                <strong>{{
-                                                    row.date_of_issue
-                                                }}</strong>
-                                            </td>
-                                        </tr>
-                                    </table>
-
-                                    <div class="table-responsive mt-4">
-                                        <table class="table">
-                                            <thead>
-                                                <tr>
-                                                    <th>#</th>
-                                                    <th>Descripción</th>
-                                                    <th>Cantidad</th>
-                                                    <th>Total</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                <tr
-                                                    v-for="(row, index) in row
-                                                        .sale_opportunity.items"
-                                                    :key="index"
-                                                >
-                                                    <td>{{ index + 1 }}</td>
-                                                    <td>
-                                                        {{
-                                                            row.item.description
-                                                        }}
-                                                    </td>
-                                                    <td>{{ row.quantity }}</td>
-                                                    <td>{{ row.total }}</td>
-                                                </tr>
-                                            </tbody>
+                            </td>
+                            <td v-if="col.visible && col.key === 'identifier'" :key="col.key">{{ row.identifier }}</td>
+                            <td v-if="col.visible && col.key === 'documents'" :key="col.key">
+                                <template v-for="(document, i) in row.documents">
+                                    <template v-if="document.is_voided_or_rejected">
+                                        <label :key="i" class="d-block text-danger">{{ document.number_full }}</label>
+                                    </template>
+                                    <template v-else>
+                                        <label :key="i" v-text="document.number_full" class="d-block"></label>
+                                    </template>
+                                </template>
+                            </td>
+                            <td v-if="col.visible && col.key === 'sale_notes'" :key="col.key">
+                                <template v-for="(sale_note, i) in row.sale_notes">
+                                    <label :key="i"v-text="sale_note.number_full" class="d-block"></label>
+                                </template>
+                            </td>
+                            <td v-if="col.visible && col.key === 'order_note'" :key="col.key">
+                                <template v-if="row.order_note !== undefined && row.order_note.full_number !== undefined">
+                                    <label class="d-block">{{ row.order_note.full_number }}</label>
+                                </template>
+                            </td>
+                            <td v-if="col.visible && col.key === 'sale_opportunity'" :key="col.key">
+                                <el-popover placement="right" v-if="row.sale_opportunity" width="400" trigger="click">
+                                    <div class="col-md-12 mt-4">
+                                        <table>
+                                            <tr><td><strong>O. Venta: </strong></td><td><strong>{{ row.sale_opportunity_number_full }}</strong></td></tr>
+                                            <tr><td><strong>Detalle: </strong></td><td><strong>{{ row.sale_opportunity.detail }}</strong></td></tr>
+                                            <tr class="mt-4 mb-4"><td><strong>F. Emisión:</strong></td><td><strong>{{ row.date_of_issue | toDate }}</strong></td></tr>
                                         </table>
+                                        <div class="table-responsive mt-4">
+                                            <table class="table">
+                                                <thead><tr><th>#</th><th>Descripción</th><th>Cantidad</th><th>Total</th></tr></thead>
+                                                <tbody>
+                                                    <tr v-for="(row, index) in row.sale_opportunity.items" :key="index">
+                                                        <td>{{ index + 1 }}</td><td>{{ row.item.description }}</td><td>{{ row.quantity }}</td><td>{{ row.total }}</td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
                                     </div>
-                                </div>
-                                <el-button slot="reference"
-                                    ><i class="fa fa-eye"></i
-                                ></el-button>
-                            </el-popover>
-                        </td>
-                        <!-- <td>{{ row.state_type_description }}</td> -->
-                        <td v-if="columns.referential_information.visible">
-                            {{ row.referential_information }}
-                        </td>
-                        <td v-if="columns.contract.visible">
-                            {{ row.contract_number_full }}
-                        </td>
-                        <td v-if="columns.exchange_rate_sale.visible">
-                            {{ row.exchange_rate_sale }}
-                        </td>
-                        <td class="text-center">{{ row.currency_type_id }}</td>
-
-                        <td class="text-end">
-                            <button
-                                type="button"
-                                class="btn waves-effect waves-light btn-xs btn-info"
-                                @click.prevent="clickPayment(row.id)"
-                            >
-                                Pagos
-                            </button>
-                        </td>
-
-                        <td
-                            class="text-end"
-                            v-if="columns.total_exportation.visible"
-                        >
-                            {{row.currency_type_id === 'PEN' ? 'S/' : '$'}}
-                            {{ row.total_exportation }}
-                        </td>
-                        <td
-                            class="text-end"
-                            v-if="columns.total_free.visible"
-                        >
-                            {{row.currency_type_id === 'PEN' ? 'S/' : '$'}}
-                            {{ row.total_free }}
-                        </td>
-                        <td
-                            class="text-end"
-                            v-if="columns.total_unaffected.visible"
-                        >
-                            {{row.currency_type_id === 'PEN' ? 'S/' : '$'}}
-                            {{ row.total_unaffected }}
-                        </td>
-                        <td
-                            class="text-end"
-                            v-if="columns.total_exonerated.visible"
-                        >
-                            {{row.currency_type_id === 'PEN' ? 'S/' : '$'}}
-                            {{ row.total_exonerated }}
-                        </td>
-                        <td class="text-end">{{row.currency_type_id === 'PEN' ? 'S/' : '$'}} {{ row.total_taxed }}</td>
-                        <td class="text-end">{{row.currency_type_id === 'PEN' ? 'S/' : '$'}} {{ row.total_igv }}</td>
-                        <td class="text-end">{{row.currency_type_id === 'PEN' ? 'S/' : '$'}} {{ row.total }}</td>
-                        <td class="text-end">
-                            <button
-                                type="button"
-                                class="btn waves-effect waves-light btn-xs btn-info"
-                                @click.prevent="clickOptionsPdf(row.id)"
-                            >
-                                PDF
-                            </button>
-                        </td>
-
-                        <td class="text-end">
+                                    <el-button slot="reference"><i class="fa fa-eye"></i></el-button>
+                                </el-popover>
+                            </td>
+                            <td v-if="col.visible && col.key === 'referential_information'" :key="col.key">{{ row.referential_information }}</td>
+                            <td v-if="col.visible && col.key === 'contract'" :key="col.key">{{ row.contract_number_full }}</td>
+                            <td v-if="col.visible && col.key === 'exchange_rate_sale'" :key="col.key">{{ row.exchange_rate_sale }}</td>
+                            <td v-if="col.visible && col.key === 'currency_type_id'" :key="col.key" class="text-center">{{ row.currency_type_id }}</td>
+                            <td v-if="col.visible && col.key === 'payments'" :key="col.key" class="text-end">
+                                <button type="button" class="btn waves-effect waves-light btn-xs btn-info" @click.prevent="clickPayment(row.id)">Pagos</button>
+                            </td>
+                            <td v-if="col.visible && col.key === 'total_exportation'" :key="col.key" class="text-end text-nowrap">{{ row.currency_type_id === 'PEN' ? 'S/' : '$' }} {{ formatDecimal(row.total_exportation) }}</td>
+                            <td v-if="col.visible && col.key === 'total_free'" :key="col.key" class="text-end text-nowrap">{{ row.currency_type_id === 'PEN' ? 'S/' : '$' }} {{ formatDecimal(row.total_free) }}</td>
+                            <td v-if="col.visible && col.key === 'total_unaffected'" :key="col.key" class="text-end text-nowrap">{{ row.currency_type_id === 'PEN' ? 'S/' : '$' }} {{ formatDecimal(row.total_unaffected) }}</td>
+                            <td v-if="col.visible && col.key === 'total_exonerated'" :key="col.key" class="text-end text-nowrap">{{ row.currency_type_id === 'PEN' ? 'S/' : '$' }} {{ formatDecimal(row.total_exonerated) }}</td>
+                            <td v-if="col.visible && col.key === 'total_taxed'" :key="col.key" class="text-end text-nowrap">{{ row.currency_type_id === 'PEN' ? 'S/' : '$' }} {{ formatDecimal(row.total_taxed) }}</td>
+                            <td v-if="col.visible && col.key === 'total_igv'" :key="col.key" class="text-end text-nowrap">{{ row.currency_type_id === 'PEN' ? 'S/' : '$' }} {{ formatDecimal(row.total_igv) }}</td>
+                            <td v-if="col.visible && col.key === 'total'" :key="col.key" class="text-end text-nowrap">{{ row.currency_type_id === 'PEN' ? 'S/' : '$' }} {{ formatDecimal(row.total) }}</td>
+                            <td v-if="col.visible && col.key === 'pdf'" :key="col.key" class="text-end">
+                                <button type="button" class="btn waves-effect waves-light btn-xs btn-info" @click.prevent="clickOptionsPdf(row.id)">PDF</button>
+                            </td>
+                            <td v-if="col.visible && col.key === 'actions'" :key="col.key" class="text-end">
                             <el-dropdown trigger="click" placement="bottom-end">
                                 <el-button class="btn-dropdown">
                                     <i class="fas fa-ellipsis-v"></i>
@@ -449,6 +278,7 @@
                                 </el-dropdown-menu>
                             </el-dropdown>
                         </td>
+                        </template>
                     </tr>
                 </data-table>
             </div>
@@ -505,7 +335,12 @@ export default {
         SendEmailDocument
     },
     computed: {
-        ...mapState(["config"])
+        ...mapState(["config"]),
+        orderedColumns() {
+            return Object.entries(this.columns)
+                .map(([key, col]) => ({ key, ...col }))
+                .sort((a, b) => a.order - b.order);
+        },
     },
     data() {
         return {
@@ -517,70 +352,92 @@ export default {
             showDialogOptionsPdf: false,
             state_types: [],
             columns: {
-                total_exportation: {
-                    title: "T.Exportación",
-                    visible: false
-                },
-                total_unaffected: {
-                    title: "T.Inafecto",
-                    visible: false
-                },
-                total_exonerated: {
-                    title: "T.Exonerado",
-                    visible: false
-                },
-                total_free: {
-                    title: "T.Gratuito",
-                    visible: false
-                },
-                contract: {
-                    title: "Contrato",
-                    visible: false
-                },
-                delivery_date: {
-                    title: "T.Entrega",
-                    visible: false
-                },
-                referential_information: {
-                    title: "Inf.Referencial",
-                    visible: false
-                },
-                order_note: {
-                    title: "Pedidos",
-                    visible: false
-                },
-                exchange_rate_sale: {
-                    title: "Tipo de cambio",
-                    visible: false
-                }
-            }
+                date_of_issue:           { title: "Fecha Emisión",    visible: true,  order: 0  },
+                delivery_date:           { title: "T.Entrega",        visible: false, order: 1  },
+                registered_by:           { title: "Registrado por",   visible: false, order: 2  },
+                seller:                  { title: "Vendedor",         visible: false, order: 3  },
+                customer:                { title: "Cliente",          visible: true,  order: 4  },
+                state_type:              { title: "Estado",           visible: true,  order: 5  },
+                identifier:              { title: "Cotización",       visible: true,  order: 6  },
+                documents:               { title: "Comprobantes",     visible: false, order: 7  },
+                sale_notes:              { title: "Notas de venta",   visible: false, order: 8  },
+                order_note:              { title: "Pedidos",          visible: false, order: 9  },
+                sale_opportunity:        { title: "Oportunidad Venta",visible: false, order: 10 },
+                referential_information: { title: "Inf.Referencial",  visible: false, order: 11 },
+                contract:                { title: "Contrato",         visible: false, order: 12 },
+                exchange_rate_sale:      { title: "Tipo de cambio",   visible: false, order: 13 },
+                currency_type_id:        { title: "Moneda",           visible: false, order: 14 },
+                payments:                { title: "Pagos",            visible: true,  order: 15 },
+                total_exportation:       { title: "T.Exportación",    visible: false, order: 16 },
+                total_free:              { title: "T.Gratuito",       visible: false, order: 17 },
+                total_unaffected:        { title: "T.Inafecto",       visible: false, order: 18 },
+                total_exonerated:        { title: "T.Exonerado",      visible: false, order: 19 },
+                total_taxed:             { title: "T.Gravado",        visible: true,  order: 20 },
+                total_igv:               { title: "T.Igv",            visible: true,  order: 21 },
+                total:                   { title: "Total",            visible: true,  order: 22 },
+                pdf:                     { title: "PDF",              visible: true,  order: 23 },
+                actions:                 { title: "Acciones",         visible: true,  order: 24 },
+            },
+            decimal_quantity: 2,
         };
     },
     async created() {
         this.loadColumnVisibilityQuotations();
         await this.filter();
+        this.loadDecimalQuantity();
     },
     mounted() {
         this.loadConfiguration();
     },
     methods: {
+        loadDecimalQuantity() {
+            // Obtener la configuración general para los decimales
+            this.$http ? this.$http.get('/configurations/record').then(response => {
+                if (response.data && response.data.data && response.data.data.decimal_quantity) {
+                    this.decimal_quantity = response.data.data.decimal_quantity;
+                }
+            }) :
+            (window.axios && window.axios.get('/configurations/record').then(response => {
+                if (response.data && response.data.data && response.data.data.decimal_quantity) {
+                    this.decimal_quantity = response.data.data.decimal_quantity;
+                }
+            }));
+        },
+        formatDecimal(value) {
+            if (value === undefined || value === null || value === '') return '';
+            let cleanValue = value;
+            if (typeof cleanValue === 'string') {
+                cleanValue = cleanValue.replace(/,/g, '').trim();
+            }
+            if (isNaN(Number(cleanValue))) return '';
+            const num = Number(cleanValue);
+            return num.toLocaleString('en-US', { minimumFractionDigits: this.decimal_quantity, maximumFractionDigits: this.decimal_quantity });
+        },
         formatDate(date) {
             if (!date) return null;
             return moment(date).format("DD-MM-YYYY");
         },
         saveColumnVisibilityQuotations() {
-            localStorage.setItem(
-                "columnVisibilityQuotations",
-                JSON.stringify(this.columns)
-            );
+            const columns = {};
+            Object.keys(this.columns).forEach(key => {
+                columns[key] = { title: this.columns[key].title, visible: this.columns[key].visible, order: this.columns[key].order };
+            });
+            this.$http.post('/column-visibility/quotations_index', { columns }).catch(() => {});
         },
         loadColumnVisibilityQuotations() {
-            const savedColumns = localStorage.getItem(
-                "columnVisibilityQuotations"
-            );
-            if (savedColumns) {
-                this.columns = JSON.parse(savedColumns);
-            }
+            this.$http.get('/column-visibility/quotations_index').then(response => {
+                if (response.data.success && response.data.data) {
+                    const data = response.data.data;
+                    Object.keys(data).forEach(key => {
+                        if (this.columns[key] !== undefined) {
+                            this.columns[key].visible = data[key].visible;
+                            if (data[key].order !== undefined) {
+                                this.columns[key].order = data[key].order;
+                            }
+                        }
+                    });
+                }
+            }).catch(() => {});
         },
         clickSendQuotation(id) {
             this.recordId = id;
@@ -662,7 +519,7 @@ export default {
         },
         // Métodos auxiliares para redirecciones en dropdown
         goToEdit(id) {
-            window.location.href = `/${this.resource}/edit/${id}`;
+            window.location.href = `/${this.resource}/create/${id}`;
         },
         goToDispatch(id) {
             window.location.href = `/dispatches/create_new/quotation/${id}`;

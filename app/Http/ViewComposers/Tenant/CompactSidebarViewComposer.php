@@ -4,6 +4,7 @@ namespace App\Http\ViewComposers\Tenant;
 
 use App\Models\Tenant\Configuration;
 use App\Models\System\User;
+use Symfony\Component\Process\Process;
 
 class CompactSidebarViewComposer
 {
@@ -26,5 +27,29 @@ class CompactSidebarViewComposer
             'quantity_month_remember_change_password' => $configuration->quantity_month_remember_change_password,
         ];
 
+        $process = new Process([$this->resolveGitBinary(), 'describe', '--tags', '--abbrev=0'], base_path());
+        $process->run();
+
+        $version = $process->isSuccessful() ? trim($process->getOutput()) : null;
+
+        $view->vc_version = $version;
+
+
+    }
+
+    private function resolveGitBinary(): string
+    {
+        $windowsGitPaths = [
+            'C:\\Program Files\\Git\\cmd\\git.exe',
+            'C:\\Program Files\\Git\\mingw64\\bin\\git.exe',
+        ];
+
+        foreach ($windowsGitPaths as $path) {
+            if (file_exists($path)) {
+                return $path;
+            }
+        }
+
+        return 'git';
     }
 }

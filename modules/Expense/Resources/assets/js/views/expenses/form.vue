@@ -17,7 +17,7 @@
                     <div class="form-body">
     
                         <div class="row mx-0">
-                             <div class="col-lg-4 col-6">
+                             <div class="col-6" :class="{'col-lg-4': currency_types.length > 1, 'col-lg-5': currency_types.length <= 1}">
                                 <div class="form-group" :class="{'has-danger': errors.expense_type_id}">
                                     <label class="control-label">Tipo comprobante</label>
                                     <el-select v-model="form.expense_type_id"  >
@@ -27,7 +27,7 @@
                                 </div>
                             </div>
     
-                            <div class="col-lg-2 col-3">
+                            <div class="col-3" :class="{'col-lg-2': currency_types.length > 1, 'col-lg-3': currency_types.length <= 1}">
                                 <div class="form-group" :class="{'has-danger': errors.number}">
                                     <label class="control-label">Número <span class="text-danger" v-if="form.expense_type_id != 4">*</span></label>
                                     <el-input v-model="form.number"></el-input>
@@ -35,7 +35,7 @@
                                     <small class="form-control-feedback" v-if="errors.number" v-text="errors.number[0]"></small>
                                 </div>
                             </div>
-                            <div class="col-lg-2 col-3">
+                            <div class="col-lg-2 col-3" v-if="currency_types.length > 1">
                                 <div class="form-group" :class="{'has-danger': errors.currency_type_id}">
                                     <label class="control-label">Moneda</label>
                                     <el-select v-model="form.currency_type_id" @change="changeCurrencyType">
@@ -46,14 +46,14 @@
                             </div>
     
     
-                            <div class="col-lg-2 col-6">
+                            <div class="col-6" :class="{'col-lg-2': currency_types.length > 1, 'col-lg-4': currency_types.length <= 1}">
                                 <div class="form-group" :class="{'has-danger': errors.date_of_issue}">
                                     <label class="control-label">Fec Emisión</label>
                                     <el-date-picker v-model="form.date_of_issue" type="date" value-format="yyyy-MM-dd" :clearable="false" @change="changeDateOfIssue"></el-date-picker>
                                     <small class="form-control-feedback" v-if="errors.date_of_issue" v-text="errors.date_of_issue[0]"></small>
                                 </div>
                             </div>
-                             <div class="col-lg-2 col-6">
+                             <div class="col-lg-2 col-6" v-if="currency_types.length > 1">
                                 <div class="form-group" :class="{'has-danger': errors.exchange_rate_sale}">
                                     <label class="control-label">Tipo de cambio
                                         <el-tooltip class="item" effect="dark" content="Tipo de cambio del día, extraído de SUNAT" placement="top-end">
@@ -92,7 +92,12 @@
                                             </div>
                                         </template>
                                     </el-select>
-                                    <span class="btn-add-new" @click.prevent="showDialogNewPerson = true" title="Agregar nuevo proveedor">
+                                    <template v-if="form.supplier_id">
+                                        <span class="btn-add-new btn-edit-person" @click.prevent="personRecordId = form.supplier_id; showDialogNewPerson = true" title="Editar proveedor">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-user-edit"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0" /><path d="M6 21v-2a4 4 0 0 1 4 -4h3.5" /><path d="M18.42 15.61a2.1 2.1 0 0 1 2.97 2.97l-3.39 3.42h-3v-3l3.42 -3.39" /></svg>
+                                        </span>
+                                    </template>
+                                    <span class="btn-add-new" @click.prevent="personRecordId = null; showDialogNewPerson = true" title="Agregar nuevo proveedor">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-user-plus"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0" /><path d="M16 19h6" /><path d="M19 16v6" /><path d="M6 21v-2a4 4 0 0 1 4 -4h4" /></svg>
                                     </span>
                                     <small class="form-control-feedback" v-if="errors.supplier_id" v-text="errors.supplier_id[0]"></small>
@@ -182,7 +187,7 @@
                                             <tr v-for="(row, index) in form.items" :key="index">
                                                 <td>{{ index + 1 }}</td>
                                                 <td>{{ row.description }}</td>
-                                                <td class="text-end">{{ currency_type.symbol }} {{ row.total }}</td>
+                                                <td class="text-end">{{ currency_type.symbol }} {{ formatDecimal(row.total) }}</td>
                                                 <td class="text-end">
                                                     <button type="button" class="btn waves-effect waves-light btn-xs btn-danger" @click.prevent="clickRemoveItem(index)">
                                                         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-trash"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M4 7l16 0" /><path d="M10 11l0 6" /><path d="M14 11l0 6" /><path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2 -2l1 -12" /><path d="M9 7v-3a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v3" /></svg>
@@ -194,7 +199,7 @@
                                 </div>
                             </div>
                             <div class="col-md-12">
-                                <h3 class="text-end" v-if="form.total > 0"><b>TOTAL: </b>{{ currency_type.symbol }} {{ form.total }}</h3>
+                                <h3 class="text-end" v-if="form.total > 0"><b>TOTAL: </b>{{ currency_type.symbol }} {{ formatDecimal(form.total) }}</h3>
                             </div>
                         </div>
                     </div>
@@ -208,11 +213,13 @@
             <expense-form-item :showDialog.sync="showDialogAddItem"
                                :currency-type="currency_type"
                                :exchange-rate-sale="form.exchange_rate_sale"
+                               :decimal-quantity="decimal_quantity"
                                @add="addRow"></expense-form-item>
     
             <person-form :showDialog.sync="showDialogNewPerson"
                            type="suppliers"
                            :external="true"
+                           :recordId="personRecordId"
                            :input_person="personFormInput"></person-form>
     
             <expense-options :showDialog.sync="showDialogOptions"
@@ -260,6 +267,7 @@
                 resource: 'expenses',
                 showDialogAddItem: false,
                 showDialogNewPerson: false,
+                personRecordId: null,
                 showDialogOptions: false,
                 loading_submit: false,
                 errors: {},
@@ -276,6 +284,7 @@
                 expenseNewId: null,
                 loading_search: false,
                 supplierSearchTerm: '',
+                decimal_quantity: 2
             }
         },
         watch: {
@@ -286,6 +295,7 @@
             }
         },
         async created() {
+            await this.loadDecimalQuantity()
             await this.initForm()
             await this.$http.get(`/${this.resource}/tables`)
                 .then(response => {
@@ -315,6 +325,25 @@
             await this.isUpdate()
         },
         methods: {
+            async loadDecimalQuantity() {
+                try {
+                    const response = await this.$http.get('/configurations/record')
+                    const decimalQuantity = response.data.data.decimal_quantity
+
+                    this.decimal_quantity = parseInt(decimalQuantity || 2)
+                } catch (error) {
+                    this.decimal_quantity = 2
+                }
+            },
+            formatDecimal(value) {
+                const number = parseFloat(value || 0)
+
+                if (isNaN(number)) {
+                    return Number(0).toFixed(this.decimal_quantity)
+                }
+
+                return number.toFixed(this.decimal_quantity)
+            },
             async isUpdate(){
 
                 if (this.id) {
@@ -442,7 +471,7 @@
                     row.total = row.total_original * exchange_rate_sale;
                 }
 
-                row.total = _.round(row.total,2)
+                row.total = parseFloat(this.formatDecimal(row.total))
 
                 return row
             },
@@ -451,7 +480,7 @@
                 this.form.items.forEach((row) => {
                     total += parseFloat(row.total)
                 });
-                this.form.total = _.round(total, 2)
+                this.form.total = parseFloat(this.formatDecimal(total))
                 this.form.payments[0].payment = this.form.total
             },
             submit() {
@@ -527,6 +556,7 @@
                 })
             },            
             openNewPersonDialog() {
+                this.personRecordId = null
                 this.showDialogNewPerson = true
             },
         }

@@ -44,6 +44,7 @@ if($hostname) {
         Route::prefix('guest-register')->group(function () {
             Route::get('email-verification-valid/{key}', 'GuestRegisterController@emailVerificationValid');
             Route::get('not-verified-email', 'GuestRegisterController@notVerifiedEmail')->name('tenant.not-verified-email.index')->middleware(['auth']);
+            Route::get('pending-payment', 'GuestRegisterController@pendingPayment')->name('tenant.pending-payment.index')->middleware(['auth']);
         });
         
         Route::get('check-secret-login/{hash}', 'SecretLoginController@checkSecretLogin');

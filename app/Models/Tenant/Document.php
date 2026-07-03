@@ -21,6 +21,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
 use Modules\BusinessTurn\Models\DocumentHotel;
 use Modules\BusinessTurn\Models\DocumentTransport;
 use Modules\Item\Models\WebPlatform;
@@ -300,7 +301,64 @@ class Document extends ModelTenant
         static::creating(function (self $model) {
             self::adjustSellerIdField($model);
         });
+    }
 
+    protected static function booted()
+    {
+        static::created(function ($document){
+            Cache::tags(['document_list'])->flush();
+            Cache::tags(['document_detail'])->flush();
+        });
+
+        static::updated(function ($document){
+            Cache::tags(['document_list'])->flush();
+            Cache::tags(['document_detail'])->flush();
+        });
+
+        static::deleted(function ($document){
+            Cache::tags(['document_list'])->flush();
+            Cache::tags(['document_detail'])->flush();
+        });
+
+        static::saved(function ($document){
+            Cache::tags(['document_list'])->flush();
+            Cache::tags(['document_detail'])->flush();
+        });
+    }
+
+    public function getTotalDiscountWithIgvAttribute()
+    {
+        // dd($this->items);
+        $total_discount_item = 0;
+        $total_discount_global = 0;
+        $this->items->each(function ($it) use (&$total_discount_item, &$total_discount_global) {
+            if ($it->discounts) {
+                foreach ($it->discounts as $dis) {
+                    $amount = $dis->discount_type_id == "00" ? $dis->amount_without_rounded * 1.18 : $dis->amount;
+                    if (isset($dis->from_global_distribution) && $dis->from_global_distribution)  {
+                        $total_discount_global += $amount;
+                    } else {
+                        $total_discount_item +=  $amount;
+
+                    }
+                }
+            }
+        });
+
+
+        // if ($this->discounts) {
+        //     foreach ($this->discounts as $dis) {
+        //         $total_discount_global +=  $dis->discount_type_id == "02" ? $dis->amount_without_rounded * 1.18 : $dis->amount;
+        //     }
+        // }
+
+        if ($this->total_value > 0 && $total_discount_item == 0 && $total_discount_global == 0) {
+            $factor = ($this->total_value + $this->total_taxes) / $this->total_value;
+            return round($this->total_discount * $factor, 2);
+        }
+        
+        // $factor = ($this->total_value + $this->total_taxes) / $this->total_value;
+        return round($total_discount_global + $total_discount_item, 2);
     }
 
     public function getAdditionalDataAttribute($value)
@@ -1930,4 +1988,9 @@ class Document extends ModelTenant
         return null;
     }
 
+
+    public function has_cash()
+    {
+        return $this->payments->contains('is_cash', true);
+    }
 }

@@ -241,9 +241,62 @@
                             </small>
                         </div>
                     </div>
+                    <h4 class="mt-4">
+                        Información de contacto
+                    </h4>
+                    <div class="col-md-4">
+                        <div :class="{'has-danger': errors.client_name}"
+                                class="form-group">
+                            <label class="control-label">
+                                Nombre del cliente
+                            </label>
+                            <el-input
+                                v-model="form.client_name">
+                            </el-input>
+                            <small
+                                v-if="errors.client_name"
+                                class="form-control-feedback"
+                                v-text="errors.client_name[0]">
+                            </small>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div :class="{'has-danger': errors.contact_email}"
+                                class="form-group">
+                            <label class="control-label">
+                                Correo de contacto
+                            </label>
+                            <el-input
+                                v-model="form.contact_email">
+                            </el-input>
+                            <small
+                                v-if="errors.contact_email"
+                                class="form-control-feedback"
+                                v-text="errors.contact_email[0]">
+                            </small>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div :class="{'has-danger': errors.phone_ws}"
+                                class="form-group">
+                            <label class="control-label">
+                                Nümero de WhatsApp
+                            </label>
+                            <el-input
+                                v-model="form.phone_ws">
+                            </el-input>
+                            <small
+                                v-if="errors.phone_ws"
+                                class="form-control-feedback"
+                                v-text="errors.phone_ws[0]">
+                            </small>
+                        </div>
+                    </div>
                 </div>
+                <div class="row">
                 <el-collapse
-                    v-model="collapse">
+                    v-model="collapse"
+                    class="border-0">
                     <el-collapse-item
                         name="1"
                         title="Módulos">
@@ -251,6 +304,7 @@
                             <span class="ms-4">Giro de negocio <small>(opcional)</small></span>
                             <div class="col-12">
                                 <el-radio-group v-model="business" @change="changeModules">
+                                    <el-radio :label="5">Completo</el-radio>
                                     <el-radio :label="1">Básico</el-radio>
                                     <el-radio :label="2">Farmacia</el-radio>
                                     <el-radio :label="3">Hotel</el-radio>
@@ -601,76 +655,30 @@
                             </div>
 
                             <div class="col-md-6">
-                                <div class="form-group p-t-20 mt-3">
-                                    <a
-                                        :href="'https://manual.uio.la/Pro7/guias-adicionales/configuracion-smtp-segura'"
-                                        class="btn btn-sm btn-outline-primary"
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        role="button"
+                                <div class="form-group p-t-20 mt-3 d-flex flex-wrap gap-2">
+                                    <el-button
+                                        size="small"
+                                        type="info"
+                                        plain
+                                        @click.prevent="openMailManual()"
                                     >
-                                        Para correos Gmail verificar el manual
-                                    </a>
+                                        Ver manual
+                                    </el-button>
+                                    <el-button
+                                        size="small"
+                                        type="primary"
+                                        :loading="loading_test"
+                                        :disabled="loading_submit"
+                                        @click.prevent="testEmail()"
+                                    >
+                                        Hacer prueba
+                                    </el-button>
                                 </div>
                             </div>
                         </div>
                     </el-collapse-item>
-                    <!-- Configuracion de correo -->
-                    <el-collapse-item name="4"
-                                      title="Información de contacto">
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div :class="{'has-danger': errors.client_name}"
-                                     class="form-group">
-                                    <label class="control-label">
-                                        Nombre del cliente
-                                    </label>
-                                    <el-input
-                                        v-model="form.client_name">
-                                    </el-input>
-                                    <small
-                                        v-if="errors.client_name"
-                                        class="form-control-feedback"
-                                        v-text="errors.client_name[0]">
-                                    </small>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div :class="{'has-danger': errors.contact_email}"
-                                     class="form-group">
-                                    <label class="control-label">
-                                        Correo de contacto
-                                    </label>
-                                    <el-input
-                                        v-model="form.contact_email">
-                                    </el-input>
-                                    <small
-                                        v-if="errors.contact_email"
-                                        class="form-control-feedback"
-                                        v-text="errors.contact_email[0]">
-                                    </small>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div :class="{'has-danger': errors.phone_ws}"
-                                     class="form-group">
-                                    <label class="control-label">
-                                        Nümero de WhatsApp
-                                    </label>
-                                    <el-input
-                                        v-model="form.phone_ws">
-                                    </el-input>
-                                    <small
-                                        v-if="errors.phone_ws"
-                                        class="form-control-feedback"
-                                        v-text="errors.phone_ws[0]">
-                                    </small>
-                                </div>
-                            </div>
-                        </div>
-                    </el-collapse-item>
-
                 </el-collapse>
+                </div>
 
                 <div class="row">
                     <div class="col-md-6 center-el-checkbox mt-4">
@@ -696,7 +704,7 @@
                     </div>
                 </div>
             </div>
-            <div class="form-actions text-end pt-2">
+            <div class="form-actions text-end pt-2 px-2">
                 <el-button
                     class="second-buton"
                     @click.prevent="close()">
@@ -802,6 +810,8 @@ export default {
             collapse: 1,
             business: null,
             regex_password_client: false,
+            loading_test: false,
+            global_smtp_config: {},
         }
     },
     updated() {
@@ -830,7 +840,7 @@ export default {
                 this.group_restaurant_apps = response.data.group_restaurant_apps
                 this.regex_password_client = response.data.regex_password_client
                 this.plan_periods = response.data.plan_periods
-
+                this.global_smtp_config = response.data.global_smtp_config || {}
             })
 
         await this.initForm()
@@ -924,19 +934,82 @@ export default {
                 smtp_password: null,
                 smtp_encryption: 'ssl',
                 enable_list_product: true,
+                client_name: null,
+                contact_email: null,
+                phone_ws: null
             }
         },
         changePlan(){
             if (this.form.plan_id) {
                 let plan = this.plans.find(p => p.id === this.form.plan_id);
                 this.form.price = plan.pricing;
+
+                 if (plan.module_permissions) {
+                    if (this.form.is_update) {
+                        this.$confirm('El plan seleccionado tiene una configuración de módulos sugerida. ¿Deseas sobreescribir los módulos actuales con los de este plan?', 'Atención', {
+                            confirmButtonText: 'Sí, sobreescribir',
+                            cancelButtonText: 'No, mantener actuales',
+                            type: 'warning'
+                        }).then(() => {
+                            this.applyPlanModules(plan.module_permissions);
+                        }).catch(() => {
+                            // no sobreescribir
+                        });
+                    } else {
+                        this.applyPlanModules(plan.module_permissions);
+                    }
+                }
             }
+        },
+        applyPlanModules(permissions) {
+            this.business = permissions.business || null;
+            const preSelecteds = [];
+            const preAppSelecteds = [];
+            
+            const preSelectedsModules = permissions.modules || [];
+            const preSelectedsApps = permissions.apps || [];
+            const preSelectedsLevels = permissions.levels || [];
+            
+            this.modules.map(m => {
+                if (preSelectedsModules.includes(m.id)) {
+                    preSelecteds.push(m.id);
+                }
+                m.childrens.map(c => {
+                    const idArray = c.id.split('-');
+                    if (preSelectedsLevels.includes(parseInt(idArray[1])) || preSelectedsLevels.includes(idArray[1].toString())) {
+                        preSelecteds.push(c.id);
+                    }
+                })
+            });
+
+            this.apps.map(m => {
+                if (preSelectedsApps.includes(m.id)) {
+                    preAppSelecteds.push(m.id);
+                }
+                m.childrens.map(c => {
+                    const idArray = c.id.split('-');
+                    if (preSelectedsLevels.includes(parseInt(idArray[1])) || preSelectedsLevels.includes(idArray[1].toString())) {
+                        preAppSelecteds.push(c.id);
+                    }
+                })
+            });
+
+            if (this.$refs.tree) this.$refs.tree.setCheckedKeys(preSelecteds);
+            if (this.$refs.Apptree) this.$refs.Apptree.setCheckedKeys(preAppSelecteds);
         },
         create() {
             if (this.recordId) {
                 this.titleDialog = 'Editar Cliente';
             } else {
                 this.titleDialog = 'Nuevo Cliente';
+                // Load global SMTP configuration for new clients
+                if (this.global_smtp_config && Object.keys(this.global_smtp_config).length > 0) {
+                    this.form.smtp_host = this.global_smtp_config.smtp_host || 'smtp.gmail.com';
+                    this.form.smtp_port = this.global_smtp_config.smtp_port || 465;
+                    this.form.smtp_user = this.global_smtp_config.smtp_user || 'username';
+                    this.form.smtp_password = this.global_smtp_config.smtp_password || '';
+                    this.form.smtp_encryption = this.global_smtp_config.smtp_encryption || 'ssl';
+                }
                 const preSelecteds = [];
                 this.modules.map(m => {
                     preSelecteds.push(m.id);
@@ -1050,6 +1123,9 @@ export default {
 
             this.button_text = (this.form.is_update) ? 'Actualizando cliente...' : 'Creando base de datos...'
             this.loading_submit = true
+            console.log('modules', this.form.modules)
+            console.log('levels', this.form.levels)
+            console.log('form', this.form)
             await this.$http.post(`${this.resource}${(this.form.is_update ? '/update' : '')}`, this.form)
                 .then(response => {
                     if (response.data.success) {
@@ -1062,6 +1138,8 @@ export default {
                 })
                 .catch(error => {
                     if (error.response.status === 422) {
+                        console.log('422 data:', error.response.data)
+                        console.log('422 errors:', error.response.data.errors)
                         this.errors = error.response.data
                     } else if (error.response.status === 500) {
                         this.$message.error(error.response.data.message);
@@ -1097,24 +1175,41 @@ export default {
         changeModules() {
             var group = {
                 modules: [],
+                levels: [],
                 apps: [],
             };
             if(this.business == 1){
                 group.modules = this.getIds(this.group_basic);
+                group.modules.push(12);
+                group.levels = ['12-16'];
             }
             if(this.business == 2){
                 group.modules = this.getIds(this.group_pharmacy);
                 group.apps = this.getIds(this.group_pharmacy_apps);
+                group.modules.push(12);
+                group.levels = ['12-16'];
             }
             if(this.business == 3){
                 group.modules = this.getIds(this.group_hotel);
                 group.apps = this.getIds(this.group_hotel_apps);
+                group.modules.push(12);
+                group.levels = ['12-16'];
             }
             if(this.business == 4){
                 group.modules = this.getIds(this.group_restaurant);
                 group.apps = this.getIds(this.group_restaurant_apps);
+                group.modules.push(12);
+                group.levels = ['12-16'];
             }
-            this.$refs.tree.setCheckedKeys(group.modules);
+            if(this.business == 5){
+                group.modules = this.getIds(this.modules);
+                group.apps = this.getIds(this.apps);
+            }
+
+            this.$refs.tree.setCheckedKeys([
+                ...group.modules,
+                ...group.levels
+            ]);
             this.$refs.Apptree.setCheckedKeys(group.apps);
         },
         getIds(modules) {
@@ -1126,6 +1221,36 @@ export default {
                 });
             });
             return preSelecteds
+        },
+        testEmail() {
+            if (!this.form.email) {
+                return this.$message.error('Debe ingresar un Correo de Acceso para enviar la prueba');
+            }
+            if (!this.form.smtp_host || !this.form.smtp_port || !this.form.smtp_user || !this.form.smtp_password) {
+                return this.$message.error('Debe completar todos los campos SMTP antes de hacer la prueba');
+            }
+            this.loading_test = true;
+            this.$http.post('clients/test-email', {
+                smtp_host: this.form.smtp_host,
+                smtp_port: this.form.smtp_port,
+                smtp_user: this.form.smtp_user,
+                smtp_password: this.form.smtp_password,
+                smtp_encryption: this.form.smtp_encryption,
+                email: this.form.email,
+            }).then(response => {
+                if (response.data.success) {
+                    this.$message.success(response.data.message);
+                } else {
+                    this.$message.error(response.data.message);
+                }
+            }).catch(error => {
+                this.$message.error(error.response?.data?.message || 'Error al enviar correo de prueba');
+            }).then(() => {
+                this.loading_test = false;
+            });
+        },
+        openMailManual() {
+            window.open('https://manual.pro8.uio.la/guias-adicionales/Configuracion/configuracion-smtp-segura', '_blank');
         }
     }
 }

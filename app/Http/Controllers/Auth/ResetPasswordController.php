@@ -7,7 +7,11 @@ use App\Models\Tenant\Company;
 use App\Http\Controllers\Controller;
 use App\Models\Tenant\Configuration;
 use Illuminate\Foundation\Auth\ResetsPasswords;
+use Illuminate\Contracts\Auth\StatefulGuard;
+use Illuminate\Contracts\Auth\PasswordBroker;
 use App\Models\System\Configuration as SystemConfiguration;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Password;
 
 class ResetPasswordController extends Controller
 {
@@ -64,4 +68,24 @@ class ResetPasswordController extends Controller
             ['token' => $token, 'email' => $request->email, 'company' => $company, 'login' => $login, 'useLoginGlobal' => $useLoginGlobal, 'loginBgColor' => $loginBgColor]
         );
     }
+
+    protected function broker(): PasswordBroker
+    {
+        return Password::broker('users');
+    }
+
+    protected function guard(): StatefulGuard
+    {
+        return Auth::guard('web');
+    }
+
+    protected function rules(): array
+    {
+        return [
+            'token' => 'required',
+            'email' => 'required|email',
+            'password' => 'required|string|confirmed',
+        ];
+    }
+
 }

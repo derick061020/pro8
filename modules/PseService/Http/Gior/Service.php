@@ -279,11 +279,11 @@ final class Service
             if($statusCode !== 200) {
                 // dd($body);
                 // dd($response->object());
-                $error = Errors::getMessage($response->status());
+                // $error = Errors::getMessage($response->status());
                 $errors = $this->validateObject($data, 'errores');
                 return [
                     'success' => false,
-                    'message' => $error . ' | Detalles: '.json_encode($errors),
+                    'message' => "Code ". $data['code'] . ' | Detalles: '.json_encode($errors),
                     'code' => $statusCode,
                 ];
             }

@@ -169,10 +169,16 @@
             <cbc:TransportModeCode listURI="urn:pe:gob:sunat:cpe:see:gem:catalogos:catalogo18"
                                    listName="Modalidad de traslado"
                                    listAgencyName="PE:SUNAT">{{ $document['transport_mode_type_id'] }}</cbc:TransportModeCode>
-            <!-- FECHA DE INICIO DEL TRASLADO o FECHA DE ENTREGA DE BIENES AL TRANSPORTISTA -->
-            <cac:TransitPeriod>
-                <cbc:StartDate>{{ $document['date_of_shipping'] }}</cbc:StartDate>
-            </cac:TransitPeriod>
+            
+            @if (
+                $document['transport_mode_type_id'] === '02'
+            )
+                <!-- FECHA DE INICIO DEL TRASLADO o FECHA DE ENTREGA DE BIENES AL TRANSPORTISTA -->
+                <cac:TransitPeriod>
+			        <cbc:StartDate>{{ $document['date_of_shipping'] }}</cbc:StartDate>
+		        </cac:TransitPeriod>
+            @endif
+            
             @if($document['transport_mode_type_id'] === '01' && !$document['is_transport_m1l'])
                 <cac:CarrierParty>
                     <cac:PartyIdentification>
@@ -225,6 +231,14 @@
                     </cac:DriverPerson>
                     @endforeach
                 @endif
+            @endif
+            @if (
+                $document['transport_mode_type_id'] === '01'
+            )
+                <!--FECHA DE ENTREGA DE BIENES AL TRANSPORTISTA-->
+                <cac:LoadingTransportEvent>
+                    <cbc:OccurrenceDate>{{ $document['date_of_shipping'] }}</cbc:OccurrenceDate>
+                </cac:LoadingTransportEvent>
             @endif
         </cac:ShipmentStage>
         <cac:Delivery>

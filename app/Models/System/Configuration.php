@@ -26,7 +26,9 @@ class Configuration extends Model
         'apk_url',
         'login',
         'use_login_global',
-        'enable_guest_register', // Añadir aquí
+        'enable_guest_register',
+        'guest_register_plan_id',
+        'enable_guest_register',
         'regex_password_client',
         'tenant_show_ads',
         'tenant_image_ads',
@@ -43,6 +45,12 @@ class Configuration extends Model
         'hour_generate_payment_order',
         'day_before_due',
         'send_notification_cron',
+        'username_izipay',
+        'password_izipay',
+        'publickey_izipay',
+        'sha256key_izipay',
+        'enabled_izipay',
+        'enabled_culqi',
     ];
 
     
@@ -51,6 +59,8 @@ class Configuration extends Model
         'tenant_show_ads' => 'boolean',
         'enable_guest_register' => 'boolean', // Añadir aquí
         'active_cron' => 'boolean',
+        'enabled_izipay' => 'boolean',
+        'enabled_culqi' => 'boolean',
     ];
 
 
@@ -162,5 +172,22 @@ class Configuration extends Model
                     Config::set('mail.password', $config->mail_password);
                     Config::set('mail.encryption', $config->mail_encryption);
                 }
+    }
+
+    public function scopeAccessIzipay($query)
+    {
+        return $query
+            ->select('username_izipay', 'password_izipay', 'publickey_izipay', 'sha256key_izipay')->first()->toArray();
+    }
+
+    public function scopeEnabledCheckout($query)
+    {
+        $record = $query->where('enabled_izipay', true)->first();
+
+        if ($record) {
+            return 'izipay';
+        }
+
+        return 'culqi';
     }
 }

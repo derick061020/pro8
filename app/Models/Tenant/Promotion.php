@@ -46,5 +46,10 @@ class Promotion extends ModelTenant
         return asset("/logo/{$this->image}");
     }
 
+    public function item()
+    {
+        return $this->belongsTo(\App\Models\Tenant\Item::class, 'item_id');
+    }
+
    
 }

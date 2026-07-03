@@ -1,7 +1,9 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Auth;
 use App\Models\System\Configuration;
+use App\Http\Controllers\AdminReseller\UserController as AdminResellerUserController;
 
 $hostname = app(Hyn\Tenancy\Contracts\CurrentHostname::class);
 
@@ -34,6 +36,9 @@ if ($hostname) {
         // Route::get('/ecommerce/color-ecommerce', [\App\Http\Controllers\Tenant\ConfigurationController::class, 'getColorEcommerce']);
 
         Route::middleware(['auth', 'redirect.module', 'locked.tenant','check.email.verified'])->group(function () {
+            Route::get('keep-alive', function () {
+                return response()->noContent(); // 204
+            });
             // Route::get('catalogs', 'Tenant\CatalogController@index')->name('tenant.catalogs.index');
             Route::get('list-reports', 'Tenant\SettingController@listReports');
             Route::get('list-extras', 'Tenant\SettingController@listExtras');
@@ -78,6 +83,10 @@ if ($hostname) {
 
             //Status Orders
             Route::get('statusOrder/records', 'Tenant\StatusOrdersController@records');
+            Route::get('statusOrder/records', 'Tenant\StatusOrdersController@records');
+            Route::post('statusOrder/store', 'Tenant\StatusOrdersController@store');
+            Route::put('statusOrder/update/{id}', 'Tenant\StatusOrdersController@update');
+            Route::delete('statusOrder/destroy/{id}', 'Tenant\StatusOrdersController@destroy');
 
             //Company
             Route::get('companies/create', 'Tenant\CompanyController@create')->name('tenant.companies.create')->middleware('redirect.level');
@@ -114,6 +123,7 @@ if ($hostname) {
             Route::get('configurations/create', 'Tenant\ConfigurationController@create')->name('tenant.configurations.create');
             Route::get('configurations/record', 'Tenant\ConfigurationController@record');
             Route::post('configurations', 'Tenant\ConfigurationController@store');
+            Route::post('configurations/test-email', 'Tenant\ConfigurationController@testEmail');
             Route::post('configurations/apiruc', 'Tenant\ConfigurationController@storeApiRuc');
             Route::post('configurations/icbper', 'Tenant\ConfigurationController@icbper');
             Route::post('configurations/changeFormat', 'Tenant\ConfigurationController@changeFormat');
@@ -126,6 +136,8 @@ if ($hostname) {
             Route::post('configurations/visual_settings', 'Tenant\ConfigurationController@visualSettings')->name('visual-settings');
             Route::post('configurations/visual/upload_skin', 'Tenant\ConfigurationController@visualUploadSkin')->name('visual_upload_skin');
             Route::post('configurations/visual/delete_skin', 'Tenant\ConfigurationController@visualDeleteSkin')->name('visual_delete_skin');
+            Route::get('configurations/public-search', 'Tenant\ConfigurationController@getPublicSearchBackground')->name('tenant.public_search.background.record');
+            Route::post('configurations/public-search', 'Tenant\ConfigurationController@storePublicSearchBackground')->name('tenant.public_search.background.update');
             Route::get('configurations/pdf_templates', 'Tenant\ConfigurationController@pdfTemplates')->name('tenant.advanced.pdf_templates');
             Route::get('configurations/pdf_guide_templates', 'Tenant\ConfigurationController@pdfGuideTemplates')->name('tenant.advanced.pdf_guide_templates');
             Route::get('configurations/pdf_preprinted_templates', 'Tenant\ConfigurationController@pdfPreprintedTemplates')->name('tenant.advanced.pdf_preprinted_templates');
@@ -150,6 +162,8 @@ if ($hostname) {
             Route::put('price-labels/{id}', 'Tenant\PriceLabelController@update');
             Route::delete('price-labels/{id}', 'Tenant\PriceLabelController@destroy');
             Route::post('price-labels/update-order', 'Tenant\PriceLabelController@updateOrder');
+            Route::post('price-labels/{id}/set-default', 'Tenant\PriceLabelController@setDefault');
+            Route::post('price-labels/clear-default', 'Tenant\PriceLabelController@clearDefault');
 
             //Certificates
             Route::get('certificates/record', 'Tenant\CertificateController@record');
@@ -170,6 +184,7 @@ if ($hostname) {
             Route::get('establishments/tables', 'Tenant\EstablishmentController@tables');
             Route::get('establishments/record/{establishment}', 'Tenant\EstablishmentController@record');
             Route::post('establishments', 'Tenant\EstablishmentController@store');
+            Route::post('establishments/change-user-establishment', 'Tenant\EstablishmentController@changeUserEstablishment');
             Route::get('establishments/records', 'Tenant\EstablishmentController@records');
             Route::delete('establishments/{establishment}', 'Tenant\EstablishmentController@destroy');
             Route::get('establishments/getEstablishmentActive', 'Tenant\EstablishmentController@getEstablishmentActive');
@@ -218,6 +233,8 @@ if ($hostname) {
             Route::get('items', 'Tenant\ItemController@index')->name('tenant.items.index')->middleware('redirect.level');
             Route::get('services', 'Tenant\ItemController@indexServices')->name('tenant.services')->middleware('redirect.level');
             Route::get('items/columns', 'Tenant\ItemController@columns');
+            Route::get('column-visibility/{module}', 'Tenant\ColumnVisibilityController@show');
+            Route::post('column-visibility/{module}', 'Tenant\ColumnVisibilityController@store');
             Route::get('items/records', 'Tenant\ItemController@records');
             Route::get('items/tables', 'Tenant\ItemController@tables');
             Route::get('items/record/{item}', 'Tenant\ItemController@record');
@@ -256,6 +273,9 @@ if ($hostname) {
             Route::get('items/export/barcode/last', 'Tenant\ItemController@itemLast')->name('tenant.items.last');
             Route::post('get-items', 'Tenant\ItemController@getAllItems');
 
+            Route::get('consultas', 'System\PublicDocumentSearchController@tenantForm')->name('tenant.public_search.form');
+            Route::post('consultas', 'System\PublicDocumentSearchController@tenantSearch')->name('tenant.public_search.form.search');
+
             //Persons
             Route::prefix('persons')->group(function () {
                 /**
@@ -285,7 +305,6 @@ if ($hostname) {
                 Route::get('/search/{barcode}', 'Tenant\PersonController@getPersonByBarcode');
                 Route::get('accumulated-points/{id}', 'Tenant\PersonController@getAccumulatedPoints');
                 Route::get('search-data/{type}', 'Tenant\PersonController@searchData');
-                Route::post('{id}/observations', 'Tenant\PersonController@updateObservations');
 
             });
 
@@ -310,6 +329,7 @@ if ($hostname) {
             Route::get('documents', 'Tenant\DocumentController@index')->name('tenant.documents.index')->middleware(['redirect.level', 'tenant.internal.mode']);
             Route::get('documents/columns', 'Tenant\DocumentController@columns');
             Route::get('documents/records', 'Tenant\DocumentController@records');
+            Route::post('documents/custom-fields/update', 'Tenant\DocumentController@updateCustomFields');
             Route::get('documents/recordsTotal', 'Tenant\DocumentController@recordsTotal');
             Route::get('documents/create', 'Tenant\DocumentController@create')->name('tenant.documents.create')->middleware(['redirect.level', 'tenant.internal.mode']);
             Route::get('documents/create_tensu', 'Tenant\DocumentController@create_tensu')->name('tenant.documents.create_tensu');
@@ -432,6 +452,7 @@ if ($hostname) {
                 Route::get('/columns', 'Tenant\DispatchController@columns');
                 Route::get('/records', 'Tenant\DispatchController@records');
                 Route::get('/create/{document?}/{type?}/{dispatch?}', 'Tenant\DispatchController@create');
+                Route::post('/custom-fields/update', 'Tenant\DispatchController@updateCustomFields');
                 Route::post('/tables', 'Tenant\DispatchController@tables');
                 Route::post('', 'Tenant\DispatchController@store');
                 Route::get('/record/{id}', 'Tenant\DispatchController@record');
@@ -508,6 +529,7 @@ if ($hostname) {
             Route::get('unit_types/record/{code}', 'Tenant\UnitTypeController@record');
             Route::post('unit_types', 'Tenant\UnitTypeController@store');
             Route::delete('unit_types/{code}', 'Tenant\UnitTypeController@destroy');
+            Route::post('unit_types/active', 'Tenant\UnitTypeController@active');
 
             //Transfer Reason Types
             Route::get('transfer-reason-types/records', 'Tenant\TransferReasonTypeController@records');
@@ -599,7 +621,7 @@ if ($hostname) {
             Route::get('quotations', 'Tenant\QuotationController@index')->name('tenant.quotations.index')->middleware('redirect.level');
             Route::get('quotations/columns', 'Tenant\QuotationController@columns');
             Route::get('quotations/records', 'Tenant\QuotationController@records');
-            Route::get('quotations/create/{saleOpportunityId?}', 'Tenant\QuotationController@create')->name('tenant.quotations.create')->middleware('redirect.level');
+            Route::get('quotations/create/{id?}/{type?}', 'Tenant\QuotationController@create')->name('tenant.quotations.create')->middleware('redirect.level');
             Route::get('quotations/edit/{id}', 'Tenant\QuotationController@edit')->middleware('redirect.level');
 
             Route::get('quotations/state-type/{state_type_id}/{id}', 'Tenant\QuotationController@updateStateType');
@@ -640,6 +662,7 @@ if ($hostname) {
             Route::post('sale-notes/getUpToOther', 'Tenant\SaleNoteController@getSaleNoteToOtherSite');
             Route::post('sale-notes/urlUpToOther', 'Tenant\SaleNoteController@getSaleNoteToOtherSiteUrl');
             Route::post('sale-notes/duplicate', 'Tenant\SaleNoteController@duplicate');
+            Route::post('sale-notes/custom-fields/update', 'Tenant\SaleNoteController@updateCustomFields');
             Route::get('sale-notes/table/{table}', 'Tenant\SaleNoteController@table');
             Route::post('sale-notes', 'Tenant\SaleNoteController@store');
             Route::get('sale-notes/record/{salenote}', 'Tenant\SaleNoteController@record');
@@ -782,6 +805,8 @@ if ($hostname) {
             Route::get('cuenta/tables', 'Tenant\AccountController@tables');
             Route::post('cuenta/update_plan', 'Tenant\AccountController@updatePlan');
             Route::post('cuenta/payment_culqui', 'Tenant\AccountController@paymentCulqui')->name('tenant.account.payment_culqui');
+            Route::get('cuenta/plan_change/tables', 'Tenant\AccountController@planChangeTables');
+            Route::post('cuenta/plan_change/order', 'Tenant\AccountController@createPlanChangeOrder');
 
             //Payment Methods
             Route::get('payment_method/records', 'Tenant\PaymentMethodTypeController@records');
@@ -834,10 +859,46 @@ if ($hostname) {
         Route::get('login', 'System\LoginController@showLoginForm')->name('login');
         Route::post('login', 'System\LoginController@login');
         Route::post('logout', 'System\LoginController@logout')->name('logout');
+        // --- RUTAS NUEVAS PARA RECUPERACIÓN (ADMIN) ---
+        // Recuperación de Contraseña (ADMIN)
+        Route::get('password/reset', 'System\Auth\ForgotPasswordController@showLinkRequestForm')->name('password.request');
+        Route::post('password/email', 'System\Auth\ForgotPasswordController@sendResetLinkEmail')->name('password.email');
+        Route::get('password/reset/{token}', 'System\Auth\ResetPasswordController@showResetForm')->name('password.reset');
+        Route::post('password/reset', 'System\Auth\ResetPasswordController@reset')->name('password.update');
+        // ----------------------------------------------
         Route::get('phone', 'System\UserController@getPhone');
 
-        //guest-Register
-        Route::prefix('guest-register')->group(function () {
+        Route::middleware('throttle:30,1')->group(function () {
+            Route::get('consultas', 'System\PublicDocumentSearchController@index')->name('system.public_search.index');
+            Route::post('consultas', 'System\PublicDocumentSearchController@search')->name('system.public_search.search');
+            Route::get('consultas/widget/{slug}', 'System\PublicDocumentSearchController@widget')->name('system.public_search.widget');
+            Route::post('consultas/widget/{slug}', 'System\PublicDocumentSearchController@searchWidget')
+                ->withoutMiddleware(\App\Http\Middleware\VerifyCsrfToken::class)
+                ->name('system.public_search.widget.search');
+            Route::get('consultas/widget', 'System\PublicDocumentSearchController@widgetInternal')->name('system.public_search.widget.internal');
+        });
+
+        Route::get('consultas/embed.js', 'System\PublicDocumentSearchController@embedScript')->name('system.public_search.embed');
+
+        Route::prefix('pago')->group(function () {
+            Route::get('{uuid}', 'System\PaymentOrderPublicController@show')->name('payment.public.show');
+            Route::get('{uuid}/success', 'System\PaymentOrderPublicController@success')->name('payment.public.success');
+            Route::get('{uuid}/checkout-config', 'System\PaymentOrderPublicController@enabledCheckout');
+
+            Route::prefix('{uuid}/culqi')->group(function () {
+                Route::get('record', 'System\PaymentOrderPublicController@culqiRecord');
+                Route::post('charge', 'System\PaymentOrderPublicController@culqiCharge');
+            });
+
+            Route::prefix('{uuid}/izipay')->group(function () {
+                Route::get('record', 'System\PaymentOrderPublicController@izipayRecord');
+                Route::post('payment', 'System\PaymentOrderPublicController@izipayPayment');
+                Route::post('transaction', 'System\PaymentOrderPublicController@izipayTransaction');
+            });
+        });
+
+        //Register
+        Route::prefix('register')->group(function () {
 
             Route::get('/disabled', 'System\GuestRegisterController@disabled')->name('guest.register.disabled');
 
@@ -863,17 +924,33 @@ if ($hostname) {
         //     }
         // });
 
-        Route::middleware('auth:admin')->group(function () {
+        Route::middleware(['auth:admin', 'reseller.system.admin'])->group(function () {
             Route::get('logs', '\Rap2hpoutre\LaravelLogViewer\LogViewerController@index');
             Route::get('/', function () {
                 return redirect()->route('system.dashboard');
             });
             Route::get('dashboard', 'System\HomeController@index')->name('system.dashboard');
 
+            Route::get('configurations/public-search', 'System\PublicDocumentSearchController@getMainBackground')->name('system.public_search.background.record');
+            Route::post('configurations/public-search', 'System\PublicDocumentSearchController@updateMainBackground')->name('system.public_search.background.update');
+            Route::post('consultas/widget/{slug}/background', 'System\PublicDocumentSearchController@updateWidgetBackground')->name('system.public_search.widget.background.update');
+
             //Clients
             Route::get('clients', 'System\ClientController@index')->name('system.clients.index');
             Route::get('clients/records', 'System\ClientController@records');
             Route::get('clients/record/{client}', 'System\ClientController@record');
+
+            // Admin Reseller - Administradores
+            // Nota: se usa [AdminResellerUserController::class, ...] para evitar errores de resolución de clase
+            // con el namespace del RouteServiceProvider. Parámetro {administrator} + User tipado evita
+            // colisiones de route-model-binding con rutas tenant que usan {user}.
+            Route::prefix('admin-reseller/administrators')->group(function () {
+                Route::get('/', [AdminResellerUserController::class, 'index'])->name('system.admin_reseller.administrators.index');
+                Route::get('/records', [AdminResellerUserController::class, 'records']);
+                Route::post('/', [AdminResellerUserController::class, 'store']);
+                Route::put('/{administrator}', [AdminResellerUserController::class, 'update']);
+                Route::delete('/{administrator}', [AdminResellerUserController::class, 'destroy']);
+            });
 
             Route::get('clients/create', 'System\ClientController@create');
             Route::get('clients/tables', 'System\ClientController@tables');
@@ -881,6 +958,7 @@ if ($hostname) {
             Route::post('clients', 'System\ClientController@store');
             Route::post('clients/update', 'System\ClientController@update');
             Route::get('clients/search', 'System\ClientController@search');
+            Route::post('clients/test-email', 'System\ClientController@testEmail');
 
             Route::delete('clients/{client}/{input_validate}', 'System\ClientController@destroy');
             // Route::delete('clients/{client}', 'System\ClientController@destroy');
@@ -916,6 +994,7 @@ if ($hostname) {
             Route::get('plans', 'System\PlanController@index')->name('system.plans.index');
             Route::get('plans/records', 'System\PlanController@records');
             Route::get('plans/tables', 'System\PlanController@tables');
+            Route::get('plans/popular', 'System\PlanController@popular');
             Route::get('plans/record/{plan}', 'System\PlanController@record');
             Route::post('plans', 'System\PlanController@store');
             Route::delete('plans/{plan}', 'System\PlanController@destroy');
@@ -958,6 +1037,9 @@ if ($hostname) {
             Route::post('configurations/bg', 'System\ConfigurationController@storeBgLogin');
             Route::post('configurations/other-configuration', 'System\ConfigurationController@storeOtherConfiguration');
             Route::get('configurations/get-other-configuration', 'System\ConfigurationController@getOtherConfiguration');
+            Route::post('configurations/update-guest-register', 'System\ConfigurationController@updateGuestRegister');
+            Route::get('configurations/get-settings', 'System\ConfigurationController@getSettings');
+            Route::post('configurations/update-toggle', 'System\ConfigurationController@updateToggle');
             Route::post('configurations/upload-tenant-ads', 'System\ConfigurationController@uploadTenantAds');
 
             Route::get('companies/record', 'System\CompanyController@record');
@@ -984,6 +1066,18 @@ if ($hostname) {
             Route::post('configurations/visual-theme', 'System\ConfigurationController@storeVisualTheme');
             Route::get('configurations/visual-theme', 'System\ConfigurationController@getVisualTheme');
 
+            // System skins
+            Route::get('configurations/system-skins', 'System\ConfigurationController@getSystemSkins');
+            Route::get('configurations/system-skins/check', 'System\ConfigurationController@checkSystemSkinName');
+            Route::post('configurations/system-skins/upload', 'System\ConfigurationController@uploadSystemSkin');
+            Route::post('configurations/system-skins/replace', 'System\ConfigurationController@replaceSystemSkin');
+            Route::post('configurations/system-skins/revert', 'System\ConfigurationController@revertSystemSkin');
+            Route::post('configurations/system-skins/sync', 'System\ConfigurationController@syncDefaultSkin');
+            Route::post('configurations/system-skins/delete', 'System\ConfigurationController@deleteSystemSkin');
+            Route::post('configurations/system-skins/set-tenant-default', 'System\ConfigurationController@setTenantDefaultSkin');
+            Route::post('configurations/system-skins/force', 'System\ConfigurationController@forceSystemSkin');
+            Route::post('configurations/system-skins/toggle-visibility', 'System\ConfigurationController@toggleSkinVisibility');
+
             Route::get('information', 'System\ConfigurationController@InfoIndex')->name('system.information');
             Route::get('status/history', 'System\StatusController@history')->name('system.status');
             Route::get('status/memory', 'System\StatusController@memory')->name('system.status.memory');
@@ -991,10 +1085,16 @@ if ($hostname) {
             Route::get('configurations/apiruc', 'System\ConfigurationController@apiruc');
             Route::get('configurations/apkurl', 'System\ConfigurationController@apkurl');
             Route::post('configurations/emails', 'System\ConfigurationController@emails');
+            Route::post('configurations/emails/test', 'System\ConfigurationController@testEmail');
             Route::post('configurations/qrapi', 'System\ConfigurationController@qrapi');
             Route::post('configurations/google-maps', 'System\ConfigurationController@googleMaps');
 
             Route::get('configurations/update-tenant-discount-type-base', 'System\ConfigurationController@updateTenantDiscountTypeBase');
+
+            // Column visibility defaults
+            Route::get('configurations/column-visibility', 'System\ColumnVisibilityController@index');
+            Route::get('configurations/column-visibility/{module}', 'System\ColumnVisibilityController@show');
+            Route::post('configurations/column-visibility/{module}', 'System\ColumnVisibilityController@store');
 
             // backup
             Route::get('backup', 'System\BackupController@index')->name('system.backup');

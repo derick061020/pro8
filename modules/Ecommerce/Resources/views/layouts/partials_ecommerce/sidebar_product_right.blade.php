@@ -6,7 +6,7 @@
             </a>
         </div> -->
 
-        <div class="widget widget-info">
+        <div class="widget widget-info mt-2">
             <ul>
                 @if($information->tag_shipping)
                     <li>

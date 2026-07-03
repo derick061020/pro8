@@ -18,9 +18,9 @@
                 PANEL RESELLER
             </a>
         @endif
-        <div class="d-md-none toggle-sidebar-left" data-toggle-class="sidebar-left-opened" data-target="html"
-            data-fire-event="sidebar-left-opened">
-            <i class="fas fa-bars" aria-label="Toggle sidebar"></i>
+        <div class="d-md-none toggle-sidebar-left" role="button" tabindex="0" aria-label="Alternar menú">
+            <i class="fas fa-bars icon-open-sidebar" aria-label="Abrir menú"></i>
+            <i class="fas fa-times icon-close-sidebar" aria-label="Cerrar menú"></i>
         </div>
     </div>
     <!-- start: search & user box -->

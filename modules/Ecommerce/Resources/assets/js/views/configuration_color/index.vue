@@ -24,10 +24,10 @@
                 <div class="form-group form-modern mb-3">
                   <el-switch v-model="form.full_width_banner" :active-value="1" :inactive-value="0"></el-switch>
                   <label class="ms-2 mb-0">Activar ancho completo del banner</label>
-                  <small class="d-block text-muted ms-5" style="padding: 0 !important; line-height: 1.5;">Las imágenes del carrusel ocuparán el 100% del ancho de la pantalla. 
+                  <small class="d-block text-muted ms-5" style="padding: 0 !important; line-height: 1.5;">Las imágenes del carrusel ocuparán el 100% del ancho de la pantalla.
                     Aseguresé que sus imágenes tenga la proporción 5:2
                   </small>
-                </div>                
+                </div>
               </div>
               <div class="col-12 my-3">
                 <h5 class="mb-3 text-muted">Preferencias de Visualización</h5>
@@ -43,10 +43,10 @@
                 </div>
                 <div class="form-group form-modern mb-3">
                   <el-switch v-model="form.only_available_products" :active-value="1" :inactive-value="0"></el-switch>
-                  <label class="ms-2 mb-0">Ocultar productos sin stock</label>                  
+                  <label class="ms-2 mb-0">Ocultar productos sin stock</label>
                   <small class="d-block text-muted ms-5" style="padding: 0 !important; line-height: 1.5;">Los productos agotados no aparecerán en el catálogo de la tienda</small>
                 </div>
-              </div>              
+              </div>
             </div>
           </div>
           <div class="form-actions text-end pt-2">
@@ -80,16 +80,16 @@ export default {
     await this.$http.get(`/${this.resource}/record`).then(response => {
       if (response.data !== "") {
         let data = response.data.data;
-        
+
         // Cargar preferencias si existen
         let preferences = { show_description: 1, show_stock: 0, only_available_products: 0, full_width_banner: 0 };
         if (data.preferences) {
-          const prefs = typeof data.preferences === 'string' 
-            ? JSON.parse(data.preferences) 
+          const prefs = typeof data.preferences === 'string'
+            ? JSON.parse(data.preferences)
             : data.preferences;
           preferences = prefs;
         }
-        
+
         // Inicializar form con todos los datos de una vez
         this.form = {
           id: data.id,

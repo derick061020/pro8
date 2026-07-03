@@ -14,6 +14,7 @@
     use App\Models\Tenant\Configuration;
     use App\Models\Tenant\Item;
     use App\Models\Tenant\PaymentMethodType;
+    use App\Models\Tenant\Person;
     use App\Models\Tenant\PersonType;
     use Carbon\Carbon;
     use Illuminate\Contracts\View\Factory;
@@ -22,11 +23,90 @@
     use Illuminate\Http\Request;
     use Illuminate\Http\Response;
     use Illuminate\View\View;
-    use Modules\FullSuscription\Http\Resources\SuscriptionPlansCollection;
+use Modules\FullSuscription\Http\Resources\SuscriptionOrderCollection;
+use Modules\FullSuscription\Http\Resources\SuscriptionPlansCollection;
+    use Modules\FullSuscription\Models\Tenant\SuscriptionOrder;
     use Modules\FullSuscription\Models\Tenant\SuscriptionPlan;
 
     class PaymentReceiptFullSuscriptionController extends FullSuscriptionController
     {
+        public function Columns(): array
+        {
+            return [
+                'number'        => 'Número',
+                'date_of_issue' => 'Fecha de emisión',
+                'name'          => 'Cliente',
+                'amount'        => 'Total',
+                'status'        => 'Estado',
+            ];
+        }
+
+        public function Records(Request $request)
+        {
+            $orders = SuscriptionOrder::query();
+            $orders->where('type', SuscriptionOrder::TYPE_SUSCRIPTION_ORDER);
+
+            if ($request->has('column') && $request->has('value')) {
+                $columns = $request->input('column');
+                $search  = $request->input('value');
+
+                if (is_array($search)) {
+                    $orders->whereIn($columns, $search);
+                } else {
+                    if (!empty($search) && !empty($columns)) {
+                        if ($columns === 'number' || $columns === 'name') {
+                            $person = Person::where($columns, 'like', "%$search%")->first();
+
+                            if ($person) {
+                                $orders->whereHas('suscription', function ($query) use ($person) {
+                                    $query->where('parent_customer_id', $person->id);
+                                });
+                            } else {
+                                $orders->where('id', null);
+                            }
+                        } elseif ($columns === 'date_of_issue') {
+                            $orders->whereDate($columns, Carbon::parse($search)->format('Y-m-d'));
+                        } else {
+                            if ($columns === 'status') {
+                                $search = collect(SuscriptionOrder::getStatusTypes())
+                                    ->where('description', $search)
+                                    ->pluck('value')
+                                    ->first() ?? $search;
+                            }
+                            $orders->where($columns, 'like', "%$search%");
+                        }
+                    }
+                }
+            }
+
+            return new SuscriptionOrderCollection($orders->latest('date_of_issue')->paginate(config('tenant.items_per_page')));
+        }
+
+        public function statistics()
+        {
+            $query = SuscriptionOrder::selectRaw("
+                COALESCE(SUM(CASE WHEN status = 'paid' THEN amount ELSE 0 END), 0) as total_collected,
+                COUNT(CASE WHEN status = 'paid' THEN 1 END) as total_approved,
+                COUNT(CASE WHEN status IN ('canceled', 'rejected') THEN 1 END) as total_rejected,
+                COUNT(CASE WHEN status = 'pending' THEN 1 END) as total_pending
+            ")->first();
+
+            return response()->json([
+                'success'    => true,
+                'statistics' => $query,
+            ]);
+        }
+
+        public function generate($id)
+        {
+            $order    = SuscriptionOrder::findOrFail($id);
+            $response = $order->generate();
+
+            return response()->json([
+                'success' => $response['success'],
+                'message' => $response['message'],
+            ]);
+        }
         public function Tables()
         {
 
@@ -224,9 +304,7 @@
 
         public function plansRecords(Request $request)
         {
-            $type = 'customers';
             $records = SuscriptionPlan::where($request->column, 'like', "%{$request->value}%")
-                // ->where('type', $type)
                 ->orderBy('name');
 
             return new SuscriptionPlansCollection($records->paginate(config('tenant.items_per_page')));

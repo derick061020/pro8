@@ -14,9 +14,12 @@
     </style>
 </head>
 <body>
+@php
+    use App\CoreFacturalo\Helpers\CompanyDocumentDisplay as EmailRepDocCo;
+@endphp
 <p>Estimad@: 
 
-    {{ $company->name }}
+    {{ EmailRepDocCo::commercialLine($company) }}
   
     , informamos que su reporte de documento ha sido generado exitosamente.</p>
 

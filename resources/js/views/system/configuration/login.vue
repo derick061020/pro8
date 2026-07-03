@@ -8,7 +8,7 @@
       <div class="card mb-0">
         <div class="row">
           <div class="col-12 form-group mb-4">
-            <label>Usar configuración global</label>
+            <label>Usar configuración personalizada</label>
             <el-switch v-model="form.use_login_global"></el-switch>
           </div>          
           <template v-if="form.use_login_global">

@@ -3,7 +3,9 @@
     title="Términos y condiciones - Ventas"
     :visible="showDialog"
     @close="close"
+    @open="onDialogOpen"
     append-to-body
+    destroy-on-close
     top="7vh"
   >
     <form autocomplete="off" @submit.prevent="submit">
@@ -12,6 +14,8 @@
           <div class="col-md-12">
             <div class="form-group">
               <vue-ckeditor
+                v-if="showDialog"
+                ref="editor"
                 type="classic"
                 v-model="form.terms_condition_sale"
                 :editors="editors"
@@ -20,7 +24,7 @@
           </div>
         </div>
       </div>
-      <div class="form-actions text-right pt-2 mt-2">
+      <div class="form-actions text-end pt-2 mt-2">
         <el-button class="second-buton" @click.prevent="close()">Cerrar</el-button>
         <el-button type="primary" @click.prevent="clickSubmit"
           >Guardar</el-button
@@ -48,6 +52,21 @@ export default {
     };
   },
   methods: {
+    onDialogOpen() {
+      this.applyInitialEditorContent();
+    },
+    applyInitialEditorContent(retries = 40) {
+      if (retries <= 0) return;
+      const editor = this.$refs.editor;
+      if (!editor || !editor.instance) {
+        setTimeout(() => this.applyInitialEditorContent(retries - 1), 25);
+        return;
+      }
+      const value = (this.form && this.form.terms_condition_sale) || "";
+      if (editor.instance.getData() !== value) {
+        editor.instance.setData(value);
+      }
+    },
     clickSubmit() {
       this.$eventHub.$emit("submitFormConfigurations", this.form);
       this.close();

@@ -67,6 +67,7 @@
                                     <el-date-picker
                                         v-model="form.date_of_issue"
                                         type="date"
+                                        :format="dpDateFormat"
                                         value-format="yyyy-MM-dd"
                                         :clearable="false"
                                         @change="changeDateOfIssue"
@@ -93,6 +94,7 @@
                                     <el-date-picker
                                         v-model="form.date_of_due"
                                         type="date"
+                                        :format="dpDateFormat"
                                         value-format="yyyy-MM-dd"
                                         :clearable="true"
                                     ></el-date-picker>
@@ -116,6 +118,7 @@
                                     <el-date-picker
                                         v-model="form.delivery_date"
                                         type="date"
+                                        :format="dpDateFormat"
                                         value-format="yyyy-MM-dd"
                                         :clearable="true"
                                     ></el-date-picker>
@@ -132,7 +135,7 @@
                 <form autocomplete="off" @submit.prevent="submit">
                     <div class="form-body m-3 m-md-4">
                         <div class="row mt-1">
-                            <div class="col-md-6 col-lg-8 pb-2">
+                            <div class="pb-2" :class="{'col-md-6 col-lg-8': currency_types.length > 1, 'col-12': currency_types.length <= 1}">
                                 <div
                                     class="form-group position-relative"
                                     :class="{
@@ -189,7 +192,12 @@
                                             </div>
                                         </template>
                                     </el-select>
-                                    <span class="btn-add-new" @click.prevent="showDialogNewPerson = true" title="Agregar nuevo cliente">
+                                    <template v-if="form.customer_id">
+                                        <span class="btn-add-new btn-edit-person" @click.prevent="personRecordId = form.customer_id; showDialogNewPerson = true" title="Editar cliente">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-user-edit"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0" /><path d="M6 21v-2a4 4 0 0 1 4 -4h3.5" /><path d="M18.42 15.61a2.1 2.1 0 0 1 2.97 2.97l-3.39 3.42h-3v-3l3.42 -3.39" /></svg>
+                                        </span>
+                                    </template>
+                                    <span class="btn-add-new" @click.prevent="personRecordId = null; showDialogNewPerson = true" title="Agregar nuevo cliente">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-user-plus"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0" /><path d="M16 19h6" /><path d="M19 16v6" /><path d="M6 21v-2a4 4 0 0 1 4 -4h4" /></svg>
                                     </span>
                                     <small
@@ -213,7 +221,7 @@
                                            v-text="errors.payment_method_type_id[0]"></small>
                                 </div>
                             </div> -->
-                            <div class="col-6 col-md-3 col-lg-2">
+                            <div class="col-6 col-md-3 col-lg-2" v-if="currency_types.length > 1">
                                 <div
                                     class="form-group"
                                     :class="{
@@ -239,7 +247,7 @@
                                     ></small>
                                 </div>
                             </div>
-                            <div class="col-6 col-md-3 col-lg-2">
+                            <div class="col-6 col-md-3 col-lg-2" v-if="currency_types.length > 1">
                                 <div
                                     class="form-group"
                                     :class="{
@@ -990,6 +998,7 @@
             :permissionEditItemPrices="authUser.permission_edit_item_prices"
             :customer-id="form.customer_id"
              :recordItem="recordItem"
+            :selectedOptionPrice="selected_option_price"
             @add="addRow"
         ></order-note-form-item>
 
@@ -997,6 +1006,7 @@
             :showDialog.sync="showDialogNewPerson"
             type="customers"
             :external="true"
+            :recordId="personRecordId"
             :input_person="personFormInput"
             :document_type_id="form.document_type_id"
         ></person-form>
@@ -1140,6 +1150,7 @@ export default {
             resource: "order-notes",
             showDialogAddItem: false,
             showDialogNewPerson: false,
+            personRecordId: null,
             showDialogOptions: false,
             recordItem: null,
             loading_submit: false,
@@ -1194,7 +1205,8 @@ export default {
                 }
             ],
             payment_destinations: [],
-            customerSearchTerm: ''
+            customerSearchTerm: '',
+            selected_option_price: 1
         };
     },
     watch: {
@@ -1351,6 +1363,10 @@ export default {
         ]),
         changeCustomer() {
             this.setAddressByCustomer();
+            let customer = _.find(this.customers, { id: this.form.customer_id });
+            this.selected_option_price = customer?.price_label_id
+                ? `price${customer.price_label_id}`
+                : 1;
         },
         setAddressByCustomer() {
             let customer = _.find(this.customers, {
@@ -1726,7 +1742,7 @@ export default {
                 .then(response => {
                     this.customers = response.data.customers;
                     this.form.customer_id = customer_id;
-                    this.setAddressByCustomer();
+                    this.changeCustomer();
                 });
         },
         setDescriptionOfItem(item) {
@@ -1794,6 +1810,7 @@ export default {
             return '';
         },
         openNewPersonDialog() {
+            this.personRecordId = null
             this.showDialogNewPerson = true
         },
         personFormInput() {

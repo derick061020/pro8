@@ -111,28 +111,27 @@ class PersonController extends Controller
     {
         $customer = null;
 
-        // se retorna clientes varios por defecto para modo pos
-        if(in_array($document_type_id, ['03', '80'], true))
+        $establishment = auth()->user()->establishment;
+        if($establishment->customer_id)
+        {
+            $customer = Person::findOrFail($establishment->customer_id);
+        }
+        elseif(in_array($document_type_id, ['03', '80'], true))
         {
             $customer = Person::whereFilterVariousClients()->first();
-        }
-        else
-        {
-            $establishment = auth()->user()->establishment;
-            if($establishment->customer_id) $customer = Person::findOrFail($establishment->customer_id);
         }
 
         if($customer)
         {
             return [
                 'success' => true,
-                'data' => $customer->getApiRowResource() 
+                'data' => $customer->getApiRowResource()
             ];
         }
 
 		return [
 			'success' => false,
-			'data' => null     
+			'data' => null
 		];
     }
 

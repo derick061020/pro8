@@ -80,7 +80,10 @@
                         <th class="text-start">Tiene Igv</th>
                         <th class="text-end">Acciones</th>
                     <tr>
-                    <tr slot-scope="{ index, row }">
+                    <tr
+                        slot-scope="{ index, row }"
+                        :class="{ disable_color: !row.active }"
+                    >
                         <!-- <td>{{ index }}</td> -->
                         <td class="text-end">{{ row.internal_id }}</td>
                         <td>{{ row.unit_type_id }}</td>
@@ -98,11 +101,34 @@
                         <td class="text-start">{{ row.has_igv_description }}</td>
                         <td class="text-end">
                             <template v-if="typeUser === 'admin'">
-                                <button type="button" class="btn waves-effect waves-light btn-xs btn-info me-1"
-                                        @click.prevent="clickCreate(row.id)">Editar
+                                <button type="button" class="btn btn-xs btn-info btn-shad me-1" title="Editar"
+                                        @click.prevent="clickCreate(row.id)">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-edit"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M7 7h-1a2 2 0 0 0 -2 2v9a2 2 0 0 0 2 2h9a2 2 0 0 0 2 -2v-1" /><path d="M20.385 6.585a2.1 2.1 0 0 0 -2.97 -2.97l-8.415 8.385v3h3l8.385 -8.415" /><path d="M16 5l3 3" /></svg>
                                 </button>
-                                <button type="button" class="btn waves-effect waves-light btn-xs btn-danger me-1"
-                                        @click.prevent="clickDelete(row.id)">Eliminar
+                                <button type="button" class="btn btn-xs btn-danger btn-shad" title="Eliminar"
+                                        @click.prevent="clickDelete(row.id)">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-trash"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M4 7l16 0" /><path d="M10 11l0 6" /><path d="M14 11l0 6" /><path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2 -2l1 -12" /><path d="M9 7v-3a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v3" /></svg>
+                                </button>
+                                <button
+                                    v-if="row.active"
+                                    class="btn btn-xs btn-danger btn-shad"
+                                    title="Inhabilitar"
+                                    @click.prevent="clickDisable(row.id)"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                    <circle cx="12" cy="12" r="9"/>
+                                    <line x1="5" y1="5" x2="19" y2="19"/>
+                                    </svg>
+                                </button>
+                                <button
+                                    v-else
+                                    class="btn btn-xs btn-primary btn-shad"
+                                    title="Habilitar"
+                                    @click.prevent="clickEnable(row.id)"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 16 16">
+                                    <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zM6.97 11.03l5-5-1.414-1.414L6.97 8.202 5.354 6.586 3.94 8l3.03 3.03z"/>
+                                    </svg>
                                 </button>
                             </template>
                         </td>
@@ -219,6 +245,15 @@ export default {
 
     },
     methods: {
+        clickDisable(id) {
+            this.disable(`/items/disable/${id}`)
+                .then(() => this.$eventHub.$emit("reloadData"));
+        },
+
+        clickEnable(id) {
+            this.enable(`/items/enable/${id}`)
+                .then(() => this.$eventHub.$emit("reloadData"));
+        },
         saveColumnVisibility() {
             localStorage.setItem('columnVisibilityItemsets', JSON.stringify(this.columns));
         },

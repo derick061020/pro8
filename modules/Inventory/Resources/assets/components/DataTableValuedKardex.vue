@@ -4,7 +4,7 @@
 
             <div class="col-md-12 col-lg-12 col-xl-12 ">
 
-                <div class="row mt-2">
+                <div class="row mt-2 mx-0">
 
                     <div class="col-md-3 form-modern">
                         <label class="control-label">Periodo</label>

@@ -1,7 +1,7 @@
 <template>
     <div
         v-if="multi_users.length > 1"
-        class=""
+        class="mb-1"
         style="max-height: 100%; width: 100%;"
     >
         <form
@@ -19,7 +19,7 @@
                 v-model="form.is_destination"
             />
 
-            <div class="col-md-12 pr-0 pl-0">
+            <div class="col-md-12 pr-0 pl-0 px-0">
                 <div class="form-group">
                     <label class="control-label mt-1">Cambiar empresa:</label>
                     <select

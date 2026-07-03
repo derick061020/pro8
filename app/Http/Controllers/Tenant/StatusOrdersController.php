@@ -41,7 +41,19 @@ class StatusOrdersController extends Controller
      */
     public function store(Request $request)
     {
-        //
+        $request->validate([
+            'description' => 'required|string|max:255'
+        ]);
+
+        $status = StatusOrder::create([
+            'description' => $request->description
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Estado creado correctamente',
+            'data' => $status
+        ]);
     }
 
     /**
@@ -75,7 +87,19 @@ class StatusOrdersController extends Controller
      */
     public function update(Request $request, $id)
     {
-        //
+        $request->validate([
+            'description' => 'required|string|max:255'
+        ]);
+
+        $status = StatusOrder::findOrFail($id);
+        $status->description = $request->description;
+        $status->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Estado actualizado correctamente',
+            'data' => $status
+        ]);
     }
 
     /**
@@ -86,6 +110,21 @@ class StatusOrdersController extends Controller
      */
     public function destroy($id)
     {
-        //
+        $status = StatusOrder::findOrFail($id);
+
+        // verificar que no tenga pedidos asociados
+        if ($status->order()->count() > 0) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No se puede eliminar, tiene pedidos asociados'
+            ]);
+        }
+
+        $status->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Estado eliminado correctamente'
+        ]);
     }
 }

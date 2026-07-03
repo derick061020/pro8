@@ -100,7 +100,8 @@
             return [
                 'date_of_issue' => 'Fecha de emisión',
                 'delivery_date' => 'Fecha de entrega',
-                'user_name' => 'Vendedor'
+                'user_name' => 'Vendedor',
+                'customer' => 'Cliente',
             ];
         }
 
@@ -122,6 +123,12 @@
                 $records = OrderNote::whereHas('user', function ($query) use ($request) {
                     $query->where('name', 'like', "%{$request->value}%");
                 })
+                    ->whereTypeUser()
+                    ->latest();
+
+            } elseif ($request->column == 'customer') {
+
+                $records = OrderNote::whereRaw("LOWER(JSON_UNQUOTE(JSON_EXTRACT(customer, '$.name'))) LIKE ?", ['%' . strtolower($request->value) . '%'])
                     ->whereTypeUser()
                     ->latest();
 
@@ -156,6 +163,22 @@
             return $records;
         }
 
+        public function updateCustomFields(Request $request)
+        {
+            $request->validate([
+                'id' => 'required|integer',
+                'custom_fields_data' => 'nullable|array'
+            ]);
+
+            $orderNote = OrderNote::findOrFail($request->input('id'));
+            $orderNote->custom_fields_data = $request->input('custom_fields_data', []);
+            $orderNote->save();
+
+            return [
+                'success' => true,
+                'data' => $orderNote->custom_fields_data
+            ];
+        }
 
         public function documents(Request $request)
         {
@@ -696,30 +719,45 @@
 
         public function update(OrderNoteRequest $request)
         {
-
             DB::connection('tenant')->transaction(function () use ($request) {
 
-
                 $this->order_note = OrderNote::firstOrNew(['id' => $request['id']]);
-
-                // $data = $this->mergeData($request, $this->order_note);
                 $data = $this->mergeArray($request, $this->order_note);
-
-
                 $this->order_note->fill($data);
-                //$this->order_note->items()->delete();
 
+                // Obtén IDs de items nuevos
+                $new_item_ids = collect($request['items'])
+                    ->pluck('id')
+                    ->filter() // Solo IDs que no son null
+                    ->toArray();
+
+                // Elimina items que NO están en la nueva lista
+                if (!empty($new_item_ids)) {
+                    $this->order_note->items()
+                        ->whereNotIn('id', $new_item_ids)
+                        ->delete();
+                } else {
+                    // Si no hay IDs, elimina todos (son nuevos)
+                    $this->order_note->items()->delete();
+                }
+
+                // Actualiza o crea items
                 foreach ($request['items'] as $row) {
-
-                    // $this->order_note->items()->create($row);
-                    // $item_id = isset($row['id']) ? $row['id'] : null;
                     $item_id = $this->getRowIdItem($row);
-                    $order_note_item = OrderNoteItem::firstOrNew(['id' => $item_id]);
+                    
+                    if ($item_id) {
+                        $order_note_item = OrderNoteItem::find($item_id);
+                        if (!$order_note_item) {
+                            $order_note_item = new OrderNoteItem();
+                        }
+                    } else {
+                        $order_note_item = new OrderNoteItem();
+                    }
+                    
                     $this->generalSetIdLoteSelectedToItem($row);
                     $order_note_item->fill($row);
                     $order_note_item->order_note_id = $this->order_note->id;
                     $order_note_item->save();
-
                 }
 
                 $this->setFilename();
@@ -731,8 +769,9 @@
                     'id' => $this->order_note->id,
                 ],
             ];
-
         }
+
+
 
 
         /**
@@ -744,18 +783,15 @@
          */
         private function getRowIdItem($row)
         {
-            $row_id = null;
-
-            if(isset($row['id']))
-            {
-                $row_id = $row['id'];
+            if (isset($row['id']) && $row['id']) {
+                return $row['id'];
             }
-            else
-            {
-                if(isset($row['record_id'])) $row_id = $row['record_id'];
+            
+            if (isset($row['record_id']) && $row['record_id']) {
+                return $row['record_id'];
             }
-
-            return $row_id;
+            
+            return null;
         }
 
 
@@ -812,6 +848,25 @@
             return [
                 'success' => true,
                 'message' => 'Pedido anulado con éxito'
+            ];
+        }
+
+        public function filter()
+        {
+            $state_types = \App\Models\Tenant\StateType::whereIn('id', ['01', '03', '05', '07', '09', '13'])->get();
+
+            return compact('state_types');
+        }
+
+        public function updateStateType($state_type_id, $id)
+        {
+            $record = OrderNote::find($id);
+            $record->state_type_id = $state_type_id;
+            $record->save();
+
+            return [
+                'success' => true,
+                'message' => 'Estado actualizado correctamente'
             ];
         }
 

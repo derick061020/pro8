@@ -17,6 +17,9 @@ use Maatwebsite\Excel\Concerns\FromCollection;
 class ItemExport implements FromView, ShouldAutoSize
 {
     use Exportable;
+    public $records;
+    public $extra_data;
+    public $price_labels;
 
     public function records($records) {
         $this->records = $records;
@@ -43,10 +46,16 @@ class ItemExport implements FromView, ShouldAutoSize
         return $this;
     }
 
+    public function priceLabels($price_labels) {
+        $this->price_labels = $price_labels;
+        return $this;
+    }
+
     public function view(): View {
         return view('tenant.items.exports.items', [
             'records'=> $this->records,
             'extra_data'=> $this->extra_data,
+            'price_labels' => $this->price_labels,
         ]);
     }
 

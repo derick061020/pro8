@@ -24,7 +24,7 @@ class UploadFileHelper
      * @param  bool $is_image
      * @return array
      */
-    public static function validateUploadFile($request, $column = 'file', $mimes = 'jpg,jpeg,png,gif,svg,pdf,xlsx', $is_image = true)
+    public static function validateUploadFile($request, $column = 'file', $mimes = 'jpg,jpeg,png,gif,svg,webp,pdf,xlsx', $is_image = true)
     {
         
         $validator = Validator::make($request->all(), [
@@ -97,7 +97,7 @@ class UploadFileHelper
      * @param  string $prefix
      * @return string
      */
-    public static function uploadFileFromTempFile($folder, $old_filename, $temp_path, $id, $prefix = null, $mimes = 'jpg,jpeg,png,svg', $allowed_file_types = ['image/jpg', 'image/jpeg', 'image/png', 'image/svg'])
+    public static function uploadFileFromTempFile($folder, $old_filename, $temp_path, $id, $prefix = null, $mimes = 'jpg,jpeg,png,svg,webp', $allowed_file_types = ['image/jpg', 'image/jpeg', 'image/png', 'image/svg', 'image/webp'])
     {
 
         $directory = 'public'.DIRECTORY_SEPARATOR.'uploads'.DIRECTORY_SEPARATOR.$folder.DIRECTORY_SEPARATOR;
@@ -128,7 +128,7 @@ class UploadFileHelper
      * @param  array $allowed_file_types
      * @return string
      */
-    public static function uploadImageFromTempFile($folder, $old_filename, $temp_path, $name, $file_get_contents, $suffix = null, $mimes = 'jpg,jpeg,png,svg', $allowed_file_types = ['image/jpg', 'image/jpeg', 'image/png', 'image/svg'])
+    public static function uploadImageFromTempFile($folder, $old_filename, $temp_path, $name, $file_get_contents, $suffix = null, $mimes = 'jpg,jpeg,png,svg,webp', $allowed_file_types = ['image/jpg', 'image/jpeg', 'image/png', 'image/svg', 'image/webp'])
     {
         
         $directory = 'public'.DIRECTORY_SEPARATOR.'uploads'.DIRECTORY_SEPARATOR.$folder.DIRECTORY_SEPARATOR;
@@ -282,6 +282,60 @@ class UploadFileHelper
         }
     }
 
+     /**
+     * Optimiza imagen (raster) para que el resultado JPG pese ~targetBytes.
+     * Se usa principalmente para logos que luego se incrustan como base64 en PDFs.
+     *
+     * @param string $absolutePath Ruta absoluta al archivo original
+     * @param int $maxWidth Máximo ancho final (mantiene proporción)
+     * @param int $targetBytes Objetivo en bytes del JPG codificado
+     * @param int $qualityStart Calidad inicial JPG
+     * @param int $qualityMin Calidad mínima JPG
+     * @return array|null ['bytes' => string, 'quality' => int] o null si falla
+     */
+    public static function optimizeRasterImageToTargetJpg(
+        string $absolutePath,
+        int $maxWidth,
+        int $targetBytes,
+        int $qualityStart = 80,
+        int $qualityMin = 20
+    ): ?array {
+        try {
+            $image = Image::make($absolutePath);
+
+            // Limitar tamaño físico para que el base64 del PDF no se dispare.
+            $image->resize($maxWidth, null, function ($constraint) {
+                $constraint->aspectRatio();
+                $constraint->upsize();
+            });
+
+            $bestBytes = '';
+            $bestQuality = $qualityStart;
+
+            // Ajustar calidad en pasos para acercarnos al target (sin adivinar).
+            for ($q = $qualityStart; $q >= $qualityMin; $q -= 5) {
+                $encoded = (string) $image->encode('jpg', $q);
+                if (strlen($encoded) > 0) {
+                    $bestBytes = $encoded;
+                    $bestQuality = $q;
+                }
+
+                if (strlen($encoded) <= $targetBytes) {
+                    break;
+                }
+            }
+
+            if ($bestBytes === '') return null;
+
+            return [
+                'bytes' => $bestBytes,
+                'quality' => $bestQuality,
+            ];
+        } catch (Exception $e) {
+            self::writeErrorLog($e, 'optimizeRasterImageToTargetJpg');
+            return null;
+        }
+    }
     
     /**
      *
@@ -316,7 +370,7 @@ class UploadFileHelper
      */
     public static function getGeneralMimes()
     {
-        return 'jpg,jpeg,png,gif,svg';
+        return 'jpg,jpeg,png,gif,svg,webp';
     }
 
 
@@ -326,7 +380,7 @@ class UploadFileHelper
      */
     public static function getGeneralAllowedFileTypes()
     {
-        return ['image/jpg', 'image/jpeg', 'image/png', 'image/gif', 'image/svg'];
+        return ['image/jpg', 'image/jpeg', 'image/png', 'image/gif', 'image/svg', 'image/webp'];
     }
 
     

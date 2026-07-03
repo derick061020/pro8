@@ -40,7 +40,6 @@ if ($hostname) {
         Route::put('rooms/{id}/update', 'HotelRoomController@update');
         Route::delete('rooms/{id}/delete', 'HotelRoomController@destroy');
         Route::post('rooms/{id}/change-status', 'HotelRoomController@changeRoomStatus');
-        Route::delete('rooms/{id}/delete-record', 'HotelRoomController@deleteRecord');
 
         Route::get('rooms/tables/{id}', 'HotelRoomController@tables');
 
@@ -60,14 +59,12 @@ if ($hostname) {
             hotels/reception/{id}/rent/products/store
             hotels/reception/{id}/rent/checkout
             hotels/reception/{id}/rent/finalized
-            hotels/reception/{id}/rent/extend-stay
-            hotels/reception/{id}/rent/save-payment
             hotels/reception/{id}/rent/extend-time
             hotels/reception/{id}/rent/get-item
-            hotels/reception/{id}/rent/observations
               */
             Route::get('', 'HotelReceptionController@index')->name('tenant.hotels.index');
             Route::post('/search', 'HotelReceptionController@searchRooms');
+            Route::get('/data', 'HotelReceptionController@data');
             Route::get('/tables', 'HotelRentController@tables');
             Route::get('/tables/customers', 'HotelRentController@searchCustomers');
             Route::get('/{roomId}/rent', 'HotelRentController@rent');
@@ -75,16 +72,9 @@ if ($hostname) {
             Route::get('/{id}/rent/products', 'HotelRentController@showFormAddProduct');
             Route::post('/{id}/rent/products/store', 'HotelRentController@addProductsToRoom');
             Route::get('/{id}/rent/checkout', 'HotelRentController@showFormChekout');
-            Route::get('/{id}/rent/checkout-data', 'HotelRentController@getCheckoutData');
             Route::post('/{id}/rent/finalized', 'HotelRentController@finalizeRent');
-            Route::post('/{id}/rent/mark-items-invoiced', 'HotelRentController@markItemsInvoiced');
-            Route::get('/{id}/rent/invoices-history', 'HotelRentController@invoicesHistory');
-            Route::post('/{id}/rent/extend-stay', 'HotelRentController@extendStay');
-            Route::post('/{id}/rent/save-payment', 'HotelRentController@savePayment');
-            Route::post('/{id}/reverse-payment', 'HotelRentController@reversePayment');
             Route::post('/{id}/rent/extend-time', 'HotelRentController@extendTime');
             Route::get('/{id}/rent/get-item', 'HotelReceptionController@getItem');
-            Route::put('/{id}/observations', 'HotelRentController@updateObservations');
             Route::get('checkout-tables', 'HotelRentController@checkoutTables');
             Route::get('rent-products-tables', 'HotelRentController@rentProductsTables');
             Route::get('report/{start}/{end}/{establishment_id}', 'HotelRentController@report');

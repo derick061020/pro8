@@ -1,17 +1,18 @@
 <template>
-    <el-dialog :title="titleDialog" :visible="showDialog" @open="create" @close="close"  append-to-body >
+    <el-dialog width="600px" :title="titleDialog" :visible="showDialog" @open="create" @close="close" append-to-body>
         <form autocomplete="off" @submit.prevent="clickAddItem">
             <div class="form-body">
                 <div class="row">
                     <div class="col-md-8 col-lg-8 col-xl-8 col-sm-8">
-                        <div class="form-group"  :class="{'has-danger': errors.individual_item_id}">
+                        <div class="form-group" :class="{'has-danger': errors.individual_item_id}">
                             <label class="control-label">
                                 Producto
                             </label>
                             <el-select
                                     v-model="form.individual_item_id" @change="changeItem"
                                     filterable
-                                    placeholder="Buscar" >
+                                    placeholder="Buscar"
+                                    class="el-select-product">
 
                                     <el-option v-for="option in individual_items" :key="option.id" :value="option.id" :label="option.full_description"></el-option>
                             </el-select>
@@ -22,26 +23,20 @@
                     <div class="col-md-4">
                         <div class="form-group" :class="{'has-danger': errors.quantity}">
                             <label class="control-label">Cantidad</label>
-                            <el-input-number v-model="form.quantity" :min="0.01"></el-input-number>
+                            <el-input-number class="el-input-number-product" v-model="form.quantity" :min="0.01"></el-input-number>
                             <small class="form-control-feedback" v-if="errors.quantity" v-text="errors.quantity[0]"></small>
                         </div>
                     </div>  
                 </div>
             </div>
-            <div class="form-actions text-right mt-2">
-                <el-button @click.prevent="close()">Cerrar</el-button>
+            <div class="form-actions text-end mt-4">
+                <el-button class="me-2" @click.prevent="close()">Cerrar</el-button>
                 <el-button type="primary" native-type="submit" v-if="form.individual_item_id">Agregar</el-button>
             </div>
         </form>
          
     </el-dialog>
 </template>
-<style>
-.el-select-dropdown {
-    max-width: 80% !important;
-    margin-right: 5% !important;
-}
-</style>
 <script>
 
 

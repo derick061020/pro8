@@ -172,7 +172,9 @@
                     .then(response => {
                         if (response.data.success) {
                             this.$message.success(response.data.message);
-                            this.getData()
+                            setTimeout(() => {
+                                window.location.reload();
+                            }, 2000);
                         } else {
                             this.$message.error(response.data.message);
                         }

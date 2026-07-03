@@ -81,7 +81,6 @@ class UserController extends Controller
         $types = [
             ['type' => 'admin', 'description' => 'Administrador'],
             ['type' => 'seller', 'description' => 'Vendedor'],
-            ['type' => 'limpiador', 'description' => 'Limpiador'],
         ];
 
         $configuration = Configuration::select(['permission_to_edit_cpe', 'regex_password_user'])->first();
@@ -114,6 +113,15 @@ class UserController extends Controller
     public function store(UserRequest $request)
     {
         $id = $request->input('id');
+
+        if ($id) {
+            $response = (new UserControlHelper)->exceedLimitUsersForUpdate();
+        }
+        else {
+            $response = (new UserControlHelper)->exceedLimitUsers();
+        }
+        
+        if($response['success']) return $this->generalResponse(false, $response['message']);
 
         if (!$id) { //VALIDAR EMAIL DISPONIBLE
             $verify = User::where('email', $request->input('email'))->first();
@@ -297,7 +305,8 @@ class UserController extends Controller
 
             if($user->active)
             {
-                (new UserControlHelper)->checkLimitUsers();
+                $response = (new UserControlHelper)->checkLimitUsers();
+                if($response['success']) return $this->generalResponse(false, $response['message']);
                 $active_message = 'habilitado';
                 $user->name = trim(str_replace(User::TEXT_INACTIVE_USER , '' , $user->name));
             }

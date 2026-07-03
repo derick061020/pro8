@@ -12,9 +12,82 @@
                 </li>
             </ol>
         </header>
-        <div class="row mb-3 px-2">
-            <div class="col-lg-8">
-                <div class="card">
+        <!-- ── KPI Strip ─────────────────────────────────────────── -->
+        <div class="row px-2 mb-3">
+            <!-- Total Clientes -->
+            <div class="col-xl-2 col-md-4 col-6 mb-3">
+                <div class="shad-kpi">
+                    <div class="shad-kpi-header">
+                        <span class="shad-kpi-label">Total Clientes</span>
+                        <svg class="shad-kpi-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M9 7m-4 0a4 4 0 1 0 8 0a4 4 0 1 0 -8 0" /><path d="M3 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /><path d="M21 21v-2a4 4 0 0 0 -3 -3.85" /></svg>
+                    </div>
+                    <div class="shad-kpi-value">{{ records.length }}</div>
+                    <div class="shad-kpi-desc"><span class="shad-kpi-green">{{ kpiActivos }}</span> activos · <span :class="kpiBloqueados > 0 ? 'shad-kpi-red' : ''">{{ kpiBloqueados }}</span> bloqueados</div>
+                </div>
+            </div>
+            <!-- Producción -->
+            <div class="col-xl-2 col-md-4 col-6 mb-3">
+                <div class="shad-kpi">
+                    <div class="shad-kpi-header">
+                        <span class="shad-kpi-label">En Producción</span>
+                        <svg class="shad-kpi-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M3 21l18 0" /><path d="M9 8l1 0" /><path d="M9 12l1 0" /><path d="M9 16l1 0" /><path d="M14 8l1 0" /><path d="M14 12l1 0" /><path d="M14 16l1 0" /><path d="M5 21v-16a2 2 0 0 1 2 -2h10a2 2 0 0 1 2 2v16" /></svg>
+                    </div>
+                    <div class="shad-kpi-value">{{ kpiProduccion }}</div>
+                    <div class="shad-kpi-desc">{{ kpiPctProduccion }}% del total de clientes</div>
+                </div>
+            </div>
+            <!-- Demo -->
+            <div class="col-xl-2 col-md-4 col-6 mb-3">
+                <div class="shad-kpi">
+                    <div class="shad-kpi-header">
+                        <span class="shad-kpi-label">En Demo</span>
+                        <svg class="shad-kpi-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M9 3l-6 18" /><path d="M15 3l6 18" /><path d="M4 14l16 0" /><path d="M12 3c-1.333 4.667 -2 8 -2 10c0 3 .667 5.333 2 7" /><path d="M12 3c1.333 4.667 2 8 2 10c0 3 -.667 5.333 -2 7" /></svg>
+                    </div>
+                    <div class="shad-kpi-value">{{ kpiDemo }}</div>
+                    <div class="shad-kpi-desc">{{ kpiInterno }} entorno interno</div>
+                </div>
+            </div>
+            <!-- Total Docs -->
+            <div class="col-xl-2 col-md-4 col-6 mb-3">
+                <div class="shad-kpi">
+                    <div class="shad-kpi-header">
+                        <span class="shad-kpi-label">Total Comprobantes</span>
+                        <svg class="shad-kpi-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M14 3v4a1 1 0 0 0 1 1h4" /><path d="M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2z" /><path d="M9 9l1 0" /><path d="M9 13l6 0" /><path d="M9 17l6 0" /></svg>
+                    </div>
+                    <div class="shad-kpi-value">{{ formatNum(total_documents) }}</div>
+                    <div class="shad-kpi-desc">Historial acumulado</div>
+                </div>
+            </div>
+            <!-- Docs este Mes -->
+            <div class="col-xl-2 col-md-4 col-6 mb-3">
+                <div class="shad-kpi">
+                    <div class="shad-kpi-header">
+                        <span class="shad-kpi-label">Docs. este Mes</span>
+                        <svg class="shad-kpi-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M9 17l0 -5" /><path d="M12 17l0 -3" /><path d="M15 17l0 -1" /><path d="M14 3v4a1 1 0 0 0 1 1h4" /><path d="M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2z" /></svg>
+                    </div>
+                    <div class="shad-kpi-value">{{ formatNum(kpiDocsMes) }}</div>
+                    <div class="shad-kpi-desc">Ciclo actual en curso</div>
+                </div>
+            </div>
+            <!-- Alertas -->
+            <div class="col-xl-2 col-md-4 col-6 mb-3">
+                <div class="shad-kpi" :class="kpiAlertas > 0 ? 'shad-kpi-danger' : ''">
+                    <div class="shad-kpi-header">
+                        <span class="shad-kpi-label">Con Alertas</span>
+                        <svg class="shad-kpi-icon" :style="kpiAlertas > 0 ? 'color:#ef4444' : ''" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M10 5a2 2 0 1 1 4 0a7 7 0 0 1 4 6v3a4 4 0 0 0 2 3h-16a4 4 0 0 0 2 -3v-3a7 7 0 0 1 4 -6" /><path d="M9 17v1a3 3 0 0 0 6 0v-1" /></svg>
+                    </div>
+                    <div class="shad-kpi-value" :style="kpiAlertas > 0 ? 'color:#ef4444' : ''">{{ kpiAlertas }}</div>
+                    <div class="shad-kpi-desc">{{ kpiAlertas > 0 ? 'Clientes con docs pendientes' : 'Sin alertas activas' }}</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── Main Row ───────────────────────────────────────────── -->
+        <div class="row px-2 mb-md-4">
+
+            <!-- Gráfico -->
+            <div class="col-lg-8 d-flex flex-column mb-3">
+                <div class="card flex-fill">
                     <div class="card-body p-0 m-0">
                         <div class="row">
                             <div class="col-lg-12">
@@ -39,181 +112,147 @@
                     </div>
                 </div>
             </div>
-            <div class="col-lg-4">
-                <div class="row">
-                    <div class="col-md-12">
-                        <section class="card card-horizontal mb-4">
-                            <header class="card-header bg-success">
-                                <div class="card-header-icon">
-                                    <svg  xmlns="http://www.w3.org/2000/svg"  width="50"  height="50"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-users-group"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M10 13a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" /><path d="M8 21v-1a2 2 0 0 1 2 -2h4a2 2 0 0 1 2 2v1" /><path d="M15 5a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" /><path d="M17 10h2a2 2 0 0 1 2 2v1" /><path d="M5 5a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" /><path d="M3 13v-1a2 2 0 0 1 2 -2h2" /></svg>
-                                </div>
-                            </header>
-                            <div class="card-body p-4 text-center">
-                                <p class="font-weight-semibold mb-0 mx-4">Total Clientes</p>
-                                <h2 class="font-weight-semibold mt-0">{{ records.length }}</h2>
-                                <div class="summary-footer">
-                                    <a class="text-muted text-uppercase"
-                                       href="#client-list">Ver todos</a>
+            <div class="col-lg-4 d-flex flex-column mb-3">
+
+                <!-- Card única: ambas donas -->
+                <div class="card mb-0 flex-fill">
+                    <div class="card-body p-4 m-0">
+
+                        <!-- Donut: Entorno -->
+                        <p class="donut-card-title">Distribución por Entorno</p>
+                        <div class="donut-wrap">
+                            <div class="donut-svg-wrap">
+                                <svg width="100" height="100" viewBox="0 0 36 36">
+                                    <circle cx="18" cy="18" r="15.9155" fill="none" stroke="#f1f5f9" stroke-width="3.8"/>
+                                    <circle v-if="!records.length" cx="18" cy="18" r="15.9155" fill="none" stroke="#e2e8f0" stroke-width="3.8"/>
+                                    <circle v-for="(seg, i) in envDonutSegments" :key="i"
+                                        cx="18" cy="18" r="15.9155" fill="none"
+                                        :stroke="seg.color" stroke-width="3.8"
+                                        :stroke-dasharray="`${seg.pct} ${100 - seg.pct}`"
+                                        :stroke-dashoffset="seg.offset"
+                                        stroke-linecap="butt"
+                                        transform="rotate(-90 18 18)"/>
+                                </svg>
+                                <div class="donut-center">
+                                    <span class="donut-center-num">{{ records.length }}</span>
+                                    <span class="donut-center-lbl">total</span>
                                 </div>
                             </div>
-                        </section>
+                            <div class="donut-legend">
+                                <div v-for="(seg, i) in envDonutSegments" :key="i" class="donut-legend-row">
+                                    <span class="donut-legend-dot" :style="`background:${seg.color}`"></span>
+                                    <span class="donut-legend-name">{{ seg.label }}</span>
+                                    <span class="donut-legend-count" :style="`color:${seg.color}`">{{ seg.count }}</span>
+                                    <span class="donut-legend-pct">{{ seg.pct }}%</span>
+                                </div>
+                                <div v-if="kpiBloqueados > 0" class="donut-legend-row" style="margin-top:5px;padding-top:5px;border-top:1px solid #f1f5f9">
+                                    <span class="donut-legend-dot" style="background:#ef4444"></span>
+                                    <span class="donut-legend-name">Bloqueados</span>
+                                    <span class="donut-legend-count" style="color:#ef4444">{{ kpiBloqueados }}</span>
+                                    <span class="donut-legend-pct">—</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <hr style="border-color:#f1f5f9;margin:12px 0">
+
+                        <!-- Donut: Planes -->
+                        <p class="donut-card-title">Planes más usados</p>
+                        <div class="donut-wrap">
+                            <div class="donut-svg-wrap">
+                                <svg width="100" height="100" viewBox="0 0 36 36">
+                                    <circle cx="18" cy="18" r="15.9155" fill="none" stroke="#f1f5f9" stroke-width="3.8"/>
+                                    <circle v-if="!topPlanes.length" cx="18" cy="18" r="15.9155" fill="none" stroke="#e2e8f0" stroke-width="3.8"/>
+                                    <circle v-for="(seg, i) in planDonutSegments" :key="i"
+                                        cx="18" cy="18" r="15.9155" fill="none"
+                                        :stroke="seg.color" stroke-width="3.8"
+                                        :stroke-dasharray="`${seg.pct} ${100 - seg.pct}`"
+                                        :stroke-dashoffset="seg.offset"
+                                        stroke-linecap="butt"
+                                        transform="rotate(-90 18 18)"/>
+                                </svg>
+                                <div class="donut-center">
+                                    <span class="donut-center-num">{{ topPlanes.length }}</span>
+                                    <span class="donut-center-lbl">planes</span>
+                                </div>
+                            </div>
+                            <div class="donut-legend">
+                                <div v-for="(seg, i) in planDonutSegments" :key="i" class="donut-legend-row">
+                                    <span class="donut-legend-dot" :style="`background:${seg.color}`"></span>
+                                    <span class="donut-legend-name" style="max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ seg.plan }}</span>
+                                    <span class="donut-legend-count" :style="`color:${seg.color}`">{{ seg.count }}</span>
+                                    <span class="donut-legend-pct">{{ seg.pct }}%</span>
+                                </div>
+                                <div v-if="!topPlanes.length" class="donut-legend-row" style="color:#94a3b8;font-size:11px">Cargando...</div>
+                            </div>
+                        </div>
+
                     </div>
-                    <div class="col-md-12 mb-0">
-                        <section class="card card-horizontal">
-                            <header class="card-header bg-info">
-                                <div class="card-header-icon">
-                                    <svg  xmlns="http://www.w3.org/2000/svg"  width="50"  height="50"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-file-text"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M14 3v4a1 1 0 0 0 1 1h4" /><path d="M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2z" /><path d="M9 9l1 0" /><path d="M9 13l6 0" /><path d="M9 17l6 0" /></svg>
-                                </div>
-                            </header>
-                            <div class="card-body p-4 text-center">
-                                <p class="font-weight-semibold mb-0 mt-3">Total Comprobantes</p>
-                                <h2 class="font-weight-semibold mt-0 mb-3">{{ total_documents }}</h2>
-                            </div>
-                        </section>
+                </div>
+
+            </div>
+        </div>
+        <!-- ── Sistema ────────────────────────────────────────────── -->
+        <div class="row px-2 mb-1" style="display:none">
+            <div class="col-md-3 col-6 mb-3">
+                <div class="sys-card">
+                    <div class="sys-icon" style="background:linear-gradient(135deg,#667eea,#764ba2)">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M5 5m0 2a2 2 0 0 1 2 -2h10a2 2 0 0 1 2 2v10a2 2 0 0 1 -2 2h-10a2 2 0 0 1 -2 -2z" /><path d="M12 9v.01" /><path d="M9 12a3 3 0 1 0 6 0" /></svg>
+                    </div>
+                    <div class="sys-data">
+                        <div class="sys-value">{{ discUsed }}</div>
+                        <div class="sys-label">Disco Duro</div>
+                        <a href="https://docs.google.com/document/d/1hpEQUs9OFha_35yyLb1cMKeluD-dEku5lQsQ3TJFib8/edit" target="_blank" class="sys-action">Incrementar</a>
+                    </div>
+                    <div class="sys-ring">
+                        <svg viewBox="0 0 36 36" width="44" height="44">
+                            <circle cx="18" cy="18" r="15" fill="none" stroke="#f0f0f8" stroke-width="3"/>
+                            <circle cx="18" cy="18" r="15" fill="none" stroke="#667eea" stroke-width="3" stroke-dasharray="94.2" :stroke-dashoffset="94.2 - (94.2 * Math.min(parseFloat(discUsed)||0, 100) / 100)" stroke-linecap="round" transform="rotate(-90 18 18)"/>
+                        </svg>
                     </div>
                 </div>
             </div>
-        </div>
-        <div class="row px-2">
-            <div class="col-md-3">
-                <section class="card card-featured-left card-featured-primary mb-4">
-                    <div class="card-body mx-0">
-                        <div class="widget-summary widget-summary-md">
-                            <div class="widget-summary-col widget-summary-col-icon">
-                                <div class="summary-icon text-secondary">
-                                    <div :data-value='discUsed'
-                                         class="progress1 mx-auto">
-                    <span class="progress1-left">
-                      <span class="progress1-bar border-primary"></span>
-                    </span>
-                                        <span class="progress1-right">
-                      <span class="progress1-bar border-primary"></span>
-                    </span>
-                                        <div class="progress1-value w-100 h-100 rounded-circle d-flex align-items-center justify-content-center">
-                                            <div class="font-weight-bold">{{ discUsed }}<small class="small"></small>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="widget-summary-col">
-                                <div class="summary">
-                                    <h4 class="title"><!-- Disco <br> Duro --></h4>
-                                    <div class="info">
-                                        <strong class="amount">Disco Duro</strong><br>
-                                        <!-- <span class="text-warning" v-if="discUsed == 0">no se pudo obtener</span> -->
-                                    </div>
-                                </div>
-                                <div class="summary-footer d-block">
-                                    <a class="text-muted text-uppercase"
-                                       href="https://docs.google.com/document/d/1hpEQUs9OFha_35yyLb1cMKeluD-dEku5lQsQ3TJFib8/edit"
-                                       target="BLANK">Incrementar</a>
-                                </div>
-                            </div>
-                        </div>
+            <div class="col-md-3 col-6 mb-3">
+                <div class="sys-card">
+                    <div class="sys-icon" style="background:linear-gradient(135deg,#26c6da,#00838f)">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M3 3m0 2a2 2 0 0 1 2 -2h14a2 2 0 0 1 2 2v3a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2z" /><path d="M3 12m0 2a2 2 0 0 1 2 -2h14a2 2 0 0 1 2 2v3a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2z" /><path d="M7 8l0 .01" /><path d="M7 17l0 .01" /></svg>
                     </div>
-                </section>
+                    <div class="sys-data">
+                        <div class="sys-value">{{ iUsed }}</div>
+                        <div class="sys-label">Inodes</div>
+                        <a href="https://drive.google.com/open?id=1foPKDI3V3Z9uKTjRc2SPSoztVSOBevPAluT2BqFbfxA" target="_blank" class="sys-action">Limpiar</a>
+                    </div>
+                    <div class="sys-ring">
+                        <svg viewBox="0 0 36 36" width="44" height="44">
+                            <circle cx="18" cy="18" r="15" fill="none" stroke="#f0f0f8" stroke-width="3"/>
+                            <circle cx="18" cy="18" r="15" fill="none" stroke="#26c6da" stroke-width="3" stroke-dasharray="94.2" :stroke-dashoffset="94.2 - (94.2 * Math.min(parseFloat(iUsed)||0, 100) / 100)" stroke-linecap="round" transform="rotate(-90 18 18)"/>
+                        </svg>
+                    </div>
+                </div>
             </div>
-            <div class="col-md-3">
-                <section class="card card-featured-left card-featured-primary mb-4">
-                    <div class="card-body mx-0">
-                        <div class="widget-summary widget-summary-md">
-                            <div class="widget-summary-col widget-summary-col-icon">
-                                <div class="summary-icon text-secondary">
-                                    <div :data-value='iUsed'
-                                         class="progress1 mx-auto">
-                    <span class="progress1-left">
-                      <span class="progress1-bar border-primary"></span>
-                    </span>
-                                        <span class="progress1-right">
-                      <span class="progress1-bar border-primary"></span>
-                    </span>
-                                        <div class="progress1-value w-100 h-100 rounded-circle d-flex align-items-center justify-content-center">
-                                            <div class="font-weight-bold">{{ iUsed }}<small class="small"></small></div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="widget-summary-col">
-                                <div class="summary">
-                                    <h4 class="title"><!-- Disco <br> Duro --></h4>
-                                    <div class="info">
-                                        <strong class="amount">Inodes</strong>
-                                        <!-- <span class="text-primary">(14 unread)</span> -->
-                                    </div>
-                                </div>
-                                <div class="summary-footer d-block">
-                                    <a class="text-muted text-uppercase"
-                                       href="https://drive.google.com/open?id=1foPKDI3V3Z9uKTjRc2SPSoztVSOBevPAluT2BqFbfxA"
-                                       target="BLANK">Limpiar</a>
-                                </div>
-                            </div>
-                        </div>
+            <div class="col-md-3 col-6 mb-3">
+                <div class="sys-card">
+                    <div class="sys-icon" style="background:linear-gradient(135deg,#11c26d,#00966f)">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M14 3v4a1 1 0 0 0 1 1h4" /><path d="M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2z" /></svg>
                     </div>
-                </section>
+                    <div class="sys-data">
+                        <div class="sys-value">{{ storageSize }}</div>
+                        <div class="sys-label">Archivos generados</div>
+                        <span class="sys-action" style="cursor:default;color:#ccc">—</span>
+                    </div>
+                </div>
             </div>
-            <div class="col-md-3">
-                <section class="card card-featured-left card-featured-primary mb-4">
-                    <div class="card-body mx-0">
-                        <div class="widget-summary widget-summary-md">
-                            <div class="widget-summary-col widget-summary-col-icon">
-                                <div class="summary-icon text-secondary">
-                                    <div class="progress1 mx-auto"
-                                         data-value='100'>
-                    <span class="progress1-left">
-                      <span class="progress1-bar border-tertiary"></span>
-                    </span>
-                                        <span class="progress1-right">
-                      <span class="progress1-bar border-tertiary"></span>
-                    </span>
-                                        <div class="progress1-value w-100 h-100 rounded-circle d-flex align-items-center justify-content-center">
-                                            <div class="font-weight-bold">{{ storageSize }}<small class="small"></small>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="widget-summary-col">
-                                <div class="summary">
-                                    <h4 class="title"><!-- Disco <br> Duro --></h4>
-                                    <div class="info">
-                                        <strong class="amount">Archivos <br> Generados</strong>
-                                        <!-- <span class="text-primary">(14 unread)</span> -->
-                                    </div>
-                                </div>
-                                <div class="summary-footer">
-                                    <!-- <a class="text-muted text-uppercase">(view all)</a> -->
-                                </div>
-                            </div>
-                        </div>
+            <div class="col-md-3 col-6 mb-3">
+                <div class="sys-card">
+                    <div class="sys-icon" style="background:#292961">
+                        <i class="fab fa-gitlab" style="font-size:16px"></i>
                     </div>
-                </section>
-            </div>
-            <div class="col-md-3">
-                <section class="card card-featured-left card-featured-primary mb-4">
-                    <div class="card-body mx-0">
-                        <div class="widget-summary widget-summary-md">
-                            <div class="widget-summary-col widget-summary-col-icon">
-                                <div class="summary-icon"
-                                     style="background-color: #292961">
-                                    <i class="fab fa-gitlab"></i>
-                                </div>
-                            </div>
-                            <div class="widget-summary-col">
-                                <div class="summary">
-                                    <h4 class="title"><!-- Disco <br> Duro --></h4>
-                                    <div class="info">
-                                        <strong class="amount">Versión</strong><br>
-                                        <span class="text-primary">{{ version }}</span>
-                                    </div>
-                                </div>
-                                <div class="summary-footer">
-                                    <!-- <a class="text-muted text-uppercase">(view all)</a> -->
-                                </div>
-                            </div>
-                        </div>
+                    <div class="sys-data">
+                        <div class="sys-value" style="font-size:15px">{{ version }}</div>
+                        <div class="sys-label">Versión del sistema</div>
+                        <span class="sys-action" style="cursor:default;color:#ccc">—</span>
                     </div>
-                </section>
+                </div>
             </div>
         </div>
 
@@ -229,18 +268,18 @@
                         <li class="active">
                             <span>Listado de Clientes</span>
                         </li>
-                    </ol>                    
+                    </ol>
                     <div class="right-wrapper pull-right">
-                        <div class="btn-group flex-wrap">
+                        <div v-if="canCreateClients !== false" class="btn-group flex-wrap">
                             <button
                                 class="btn btn-custom btn-sm mt-2 me-2 mb-3 primary-buton pull-end"
                                 type="button"
                                 @click.prevent="clickCreate()"
                                 v-bind:disabled="!checkLimitUsers || isLoading"
                             >
-                                <i :class="{ 
-                                    'fa-plus-circle': checkLimitUsers, 
-                                    'fa-exclamation-circle': !checkLimitUsers 
+                                <i :class="{
+                                    'fa-plus-circle': checkLimitUsers,
+                                    'fa-exclamation-circle': !checkLimitUsers
                                     }"
                                     class="fa"
                                 ></i>
@@ -248,7 +287,7 @@
                             </button>
                         </div>
                     </div>
-                </header>                
+                </header>
             </div>
         </div>
 
@@ -308,10 +347,10 @@
                                 style="width: 100%;"
                                 @change="applyFilters">
                                 <el-option label="Todos" value=""></el-option>
-                                <el-option 
-                                    v-for="plan in availablePlans" 
-                                    :key="plan" 
-                                    :label="plan" 
+                                <el-option
+                                    v-for="plan in availablePlans"
+                                    :key="plan"
+                                    :label="plan"
                                     :value="plan">
                                 </el-option>
                             </el-select>
@@ -366,7 +405,7 @@
                             <th v-if="columns.ruc.visible">RUC</th>
                             <th v-if="columns.plan.visible">Plan</th>
                             <th v-if="columns.correo.visible">Correo</th>
-                            <th v-if="columns.entorno.visible">Entorno</th>                            
+                            <th v-if="columns.entorno.visible">Entorno</th>
                             <th v-if="columns.total_comprobantes.visible" class="text-center">Total de<br>Comprobantes</th>
                             <th v-if="columns.notificaciones.visible" class="text-center">Notificaciones</th>
                             <th v-if="columns.inicio_ciclo.visible" class="text-center">Inicio<br>Ciclo Facturación</th>
@@ -378,8 +417,8 @@
                             <th v-if="columns.consultas_api.visible" class="text-center">Consultas <br>API Peru <br>(mes)</th>
                             <th v-if="columns.notas_venta.visible" class="text-center">Cant. <br>Notas de venta</th>
                             <th v-if="columns.total_mes.visible" class="text-center">Total<br><small>(Comprobantes <br>por mes)</small></th>
-                            <th v-if="columns.total_pse.visible" class="text-center">Total<br><small>(Comprobantes <br>a PSE-GIOR)</small></th>
-                            <th v-if="columns.total_notas.visible" class="text-center">Total<br><small>(Comprobantes <br>notas de venta)</small></th>                            
+                            <th v-if="columns.total_pse.visible" class="text-center">Total<br><small>(Comprobantes <br>a PSE)</small></th>
+                            <th v-if="columns.total_notas.visible" class="text-center">Total<br><small>(Comprobantes <br>notas de venta)</small></th>
                             <th v-if="columns.limitar_doc.visible" class="text-end">Limitar Doc.</th>
                             <th v-if="columns.limitar_usuarios.visible" class="text-center">Limitar <br>Usuarios</th>
                             <th v-if="columns.limitar_sucursales.visible" class="text-center">Limitar <br>Sucursales</th>
@@ -445,7 +484,7 @@
                                             <i class="far fa-bell text-secondary"></i>
                                         </el-badge>
                                     </el-tooltip>
-                                
+
                                     <el-tooltip
                                         class="item"
                                         content="Comprobantes pendientes de rectificación"
@@ -459,7 +498,7 @@
                                             <i class="fas fa-exclamation-triangle text-secondary"></i>
                                         </el-badge>
                                     </el-tooltip>
-                                
+
                                     <el-tooltip
                                         class="item"
                                         content="Comprobantes por anular"
@@ -473,9 +512,9 @@
                                             <i class="fas fa-exclamation-circle text-secondary"></i>
                                         </el-badge>
                                     </el-tooltip>
-                                
+
                                 </template>
-                            
+
                                 <template v-else>
                                     <span class="text-muted small d-flex align-items-center">
                                         Todo OK
@@ -629,8 +668,8 @@
                                             Acceso Maestro
                                         </el-dropdown-item>
 
-                                        <el-dropdown-item 
-                                            v-if="row.soap_type=='01'" 
+                                        <el-dropdown-item
+                                            v-if="row.soap_type=='01'"
                                             :command="{action: 'demoConfig', id: row.id}">
                                             <svg  xmlns="http://www.w3.org/2000/svg"  width="16"  height="16"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-settings me-2"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M10.325 4.317c.426 -1.756 2.924 -1.756 3.35 0a1.724 1.724 0 0 0 2.573 1.066c1.543 -.94 3.31 .826 2.37 2.37a1.724 1.724 0 0 0 1.065 2.572c1.756 .426 1.756 2.924 0 3.35a1.724 1.724 0 0 0 -1.066 2.573c.94 1.543 -.826 3.31 -2.37 2.37a1.724 1.724 0 0 0 -2.572 1.065c-.426 1.756 -2.924 1.756 -3.35 0a1.724 1.724 0 0 0 -2.573 -1.066c-1.543 .94 -3.31 -.826 -2.37 -2.37a1.724 1.724 0 0 0 -1.065 -2.572c-1.756 -.426 -1.756 -2.924 0 -3.35a1.724 1.724 0 0 0 1.066 -2.573c-.94 -1.543 .826 -3.31 2.37 -2.37c1 .608 2.296 .07 2.572 -1.065z" /><path d="M9 12a3 3 0 1 0 6 0a3 3 0 0 0 -6 0" /></svg>
                                             Configurar Demo
@@ -645,22 +684,22 @@
                                             <svg  xmlns="http://www.w3.org/2000/svg"  width="16"  height="16"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-chart-line me-2"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M4 19l16 0" /><path d="M4 15l4 -6l4 2l4 -5l4 4" /></svg>
                                             Estado de cuenta
                                         </el-dropdown-item>
-                                        
+
                                         <template v-if="!row.locked">
                                             <el-dropdown-item :command="{action: 'password', id: row.id}">
                                                 <svg  xmlns="http://www.w3.org/2000/svg"  width="16"  height="16"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-key me-2"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M16.555 3.843l3.602 3.602a2.877 2.877 0 0 1 0 4.069l-2.643 2.643a2.877 2.877 0 0 1 -4.069 0l-.301 -.301l-6.558 6.558a2 2 0 0 1 -1.239 .578l-.175 .008h-1.172a1 1 0 0 1 -.993 -.883l-.007 -.117v-1.172a2 2 0 0 1 .467 -1.284l.119 -.13l.414 -.414h2v-2h2v-2l2.144 -2.144l-.301 -.301a2.877 2.877 0 0 1 0 -4.069l2.643 -2.643a2.877 2.877 0 0 1 4.069 0z" /><path d="M15 9h.01" /></svg>
                                                 Restablecer contraseña
                                             </el-dropdown-item>
                                             <el-dropdown-item v-if="deletePermission == true" divided></el-dropdown-item>
-                                            <el-dropdown-item 
+                                            <el-dropdown-item
                                                 class="text-danger option-delete"
                                                 v-if="deletePermission == true"
                                                 :command="{action: 'delete', row: row}">
                                                 <svg  xmlns="http://www.w3.org/2000/svg"  width="16"  height="16"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-trash me-2"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M4 7l16 0" /><path d="M10 11l0 6" /><path d="M14 11l0 6" /><path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2 -2l1 -12" /><path d="M9 7v-3a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v3" /></svg>
                                                 Eliminar Cliente
                                             </el-dropdown-item>
-                                        </template>                                       
-                                    
+                                        </template>
+
                                     </el-dropdown-menu>
                                 </el-dropdown>
                             </td>
@@ -690,7 +729,7 @@
                             </td> -->
 
                         </tr>
-                        
+
                         <!-- Fila cuando no hay resultados -->
                         <tr v-if="filteredRecords.length === 0 && records.length > 0">
                             <td colspan="20" class="text-center py-4">
@@ -717,7 +756,7 @@
                         </tbody>
                     </table>
                 </div>
-                </div>                
+                </div>
             </div>
         </div>
 
@@ -817,6 +856,223 @@ th.sticky-column {
         margin-top: 1rem;
     }
 }
+
+/* ── shadcn KPI Cards ── */
+.shad-kpi {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 16px 18px 14px;
+    height: 100%;
+    transition: box-shadow .15s;
+}
+.shad-kpi:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.07); }
+.shad-kpi-danger { border-left: 3px solid #ef4444; }
+.shad-kpi-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+.shad-kpi-label { font-size: 12px; font-weight: 500; color: #64748b; }
+.shad-kpi-icon { color: #94a3b8; flex-shrink: 0; }
+.shad-kpi-value { font-size: 26px; font-weight: 700; color: #0f172a; line-height: 1; margin-bottom: 4px; }
+.shad-kpi-desc { font-size: 11px; color: #94a3b8; }
+.shad-kpi-green { color: #16a34a; font-weight: 600; }
+.shad-kpi-red { color: #ef4444; font-weight: 600; }
+
+/* ── Donut Charts ── */
+.donut-card-title { font-size: 13px; font-weight: 600; color: #0f172a; margin-bottom: 12px; }
+.donut-wrap { display: flex; align-items: center; gap: 16px; }
+.donut-svg-wrap { position: relative; flex-shrink: 0; }
+.donut-center {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+}
+.donut-center-num { font-size: 15px; font-weight: 700; color: #0f172a; line-height: 1; }
+.donut-center-lbl { font-size: 9px; color: #94a3b8; margin-top: 2px; text-transform: uppercase; letter-spacing: .04em; }
+.donut-legend { flex: 1; min-width: 0; }
+.donut-legend-row { display: flex; align-items: center; gap: 6px; margin-bottom: 7px; }
+.donut-legend-row:last-child { margin-bottom: 0; }
+.donut-legend-dot { width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0; }
+.donut-legend-name { font-size: 11.5px; color: #475569; flex: 1; min-width: 0; }
+.donut-legend-count { font-size: 11.5px; font-weight: 700; }
+.donut-legend-pct { font-size: 10.5px; color: #94a3b8; min-width: 34px; text-align: right; }
+
+/* env-dot kept for backwards compat */
+.env-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+/* Sistema cards */
+.sys-card {
+    background: #fff;
+    border-radius: 12px;
+    padding: 14px 16px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    border: 1px solid rgba(0,0,0,0.05);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    position: relative;
+    overflow: hidden;
+}
+.sys-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    color: #fff;
+}
+.sys-data { flex: 1; min-width: 0; }
+.sys-value { font-size: 17px; font-weight: 700; color: #2d2d4a; line-height: 1; }
+.sys-label { font-size: 10.5px; color: #999; margin-top: 2px; }
+.sys-action { font-size: 10px; color: #667eea; text-decoration: none; margin-top: 2px; display: block; }
+.sys-action:hover { text-decoration: underline; }
+.sys-ring { position: absolute; right: 10px; opacity: .5; }
+
+/* Onboarding */
+.onb-card {
+    border: none;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 20px rgba(102, 126, 234, 0.18);
+}
+.onb-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    padding: 18px 16px 14px;
+}
+.onb-header-top {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+.onb-header-icon {
+    width: 38px;
+    height: 38px;
+    background: rgba(255,255,255,0.2);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    flex-shrink: 0;
+}
+.onb-title {
+    color: #fff;
+    font-weight: 700;
+    font-size: 14px;
+    line-height: 1.2;
+}
+.onb-subtitle {
+    color: rgba(255,255,255,0.75);
+    font-size: 11px;
+    margin-top: 2px;
+}
+.onb-progress-wrap {
+    background: rgba(255,255,255,0.12);
+    border-radius: 8px;
+    padding: 8px 10px;
+}
+.onb-progress-labels {
+    display: flex;
+    justify-content: space-between;
+    color: rgba(255,255,255,0.8);
+    font-size: 11px;
+    margin-bottom: 5px;
+}
+.onb-progress-count {
+    color: #fff;
+    font-weight: 600;
+}
+.onb-progress-bar {
+    background: rgba(255,255,255,0.25);
+    border-radius: 10px;
+    height: 5px;
+}
+.onb-progress-fill {
+    background: #fff;
+    height: 100%;
+    border-radius: 10px;
+    transition: width 0.4s ease;
+}
+.onb-body {
+    padding: 16px 14px 12px;
+    background: #fff;
+}
+.onb-step {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+}
+.onb-step-last {
+    margin-bottom: 0;
+}
+.onb-step-left {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex-shrink: 0;
+}
+.onb-step-circle {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 700;
+    flex-shrink: 0;
+    transition: all 0.3s;
+}
+.onb-pending {
+    background: #f0f0f8;
+    color: #9b9bc4;
+    border: 2px solid #e0e0f0;
+}
+.onb-active {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: #fff;
+    border: 2px solid transparent;
+    box-shadow: 0 3px 10px rgba(102,126,234,0.4);
+}
+.onb-done {
+    background: #e6f9f0;
+    color: #2ecc71;
+    border: 2px solid #b8f0d8;
+}
+.onb-step-line {
+    width: 2px;
+    height: 28px;
+    background: linear-gradient(to bottom, #e0e0f0, #ebebf8);
+    margin: 3px 0;
+    border-radius: 2px;
+}
+.onb-step-content {
+    padding-bottom: 12px;
+    padding-top: 4px;
+}
+.onb-step-last .onb-step-content {
+    padding-bottom: 0;
+}
+.onb-step-title {
+    display: block;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: #3d3d6e;
+    line-height: 1.3;
+}
+.onb-step-desc {
+    display: block;
+    font-size: 10.5px;
+    color: #9999bb;
+    margin-top: 2px;
+    line-height: 1.4;
+}
 </style>
 <script>
 // import CompaniesForm from "./form.vue";
@@ -840,7 +1096,8 @@ export default {
         'discUsed',
         'iUsed',
         'storageSize',
-        'version'
+        'version',
+        'canCreateClients',
     ],
     components: {
         // CompaniesForm,
@@ -887,7 +1144,8 @@ export default {
             },
             showDialogDelete: false,
             record: {},
-            showDemoConfiguration:false,
+            showDemoConfiguration: false,
+            planColors: ['#667eea','#11c26d','#ffa726','#26c6da','#ff7043'],
             showLeftShadow: false,
             showRightShadow: false,
             isFiltersVisible: false,
@@ -957,7 +1215,7 @@ export default {
                     visible: false
                 },
                 total_pse: {
-                    title: 'Total (Comprobantes a PSE-GIOR)',
+                    title: 'Total (Comprobantes a PSE)',
                     visible: false
                 },
                 total_notas: {
@@ -990,21 +1248,16 @@ export default {
     async mounted() {
         this.loaded = false;
         this.chartDataLoaded = false;
-        
+
         try {
             const response = await this.$http.get(`/${this.resource}/charts`);
             let line = response.data.line;
-            
+
             if (line && line.labels && line.data) {
                 this.dataChartLine.labels = line.labels;
                 this.dataChartLine.datasets[0].data = line.data;
                 this.total_documents = response.data.total_documents || 0;
-                
-                // Mostrar advertencia si hubo errores en el servidor
-                if (response.data.error) {
-                    this.$message.warning(response.data.error);
-                }
-                
+
                 this.$nextTick(() => {
                     this.chartDataLoaded = true;
                 });
@@ -1017,21 +1270,12 @@ export default {
             }
         } catch (error) {
             console.error('Error loading chart data:', error);
-            
-            // Mostrar mensaje de error al usuario
-            if (error.response && error.response.status === 500) {
-                this.$message.error('Error al cargar los datos del gráfico. Por favor, contacte al administrador.');
-            } else {
-                this.$message.error('No se pudieron cargar los datos del gráfico.');
-            }
-            
-            // Inicializar con datos vacíos para que el gráfico se muestre
             this.dataChartLine.labels = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Set', 'Oct', 'Nov', 'Dic'];
             this.dataChartLine.datasets[0].data = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
             this.total_documents = 0;
             this.chartDataLoaded = true;
         }
-        
+
         this.loaded = true;
         this.initScrollShadow();
         this.$nextTick(() => {
@@ -1054,6 +1298,59 @@ export default {
         this.loadColumnVisibility();
     },
     computed: {
+        kpiActivos() { return this.records.filter(r => !r.locked_tenant).length; },
+        kpiBloqueados() { return this.records.filter(r => r.locked_tenant).length; },
+        kpiProduccion() { return this.records.filter(r => r.soap_type == '02').length; },
+        kpiDemo() { return this.records.filter(r => r.soap_type == '01').length; },
+        kpiInterno() { return this.records.filter(r => r.soap_type == '03').length; },
+        kpiPctProduccion() {
+            if (!this.records.length) return 0;
+            return Math.round(this.kpiProduccion / this.records.length * 100);
+        },
+        kpiDocsMes() {
+            return this.records.reduce((s, r) => s + (r.current_count_doc_month || 0), 0);
+        },
+        kpiAlertas() {
+            return this.records.filter(r => r.document_not_sent > 0 || r.document_to_be_regularized > 0 || r.document_to_be_canceled > 0).length;
+        },
+        topPlanes() {
+            const counts = {};
+            this.records.forEach(r => {
+                const p = r.plan || 'Sin plan';
+                counts[p] = (counts[p] || 0) + 1;
+            });
+            return Object.entries(counts)
+                .map(([plan, count]) => ({ plan, count }))
+                .sort((a, b) => b.count - a.count)
+                .slice(0, 5);
+        },
+        envDonutSegments() {
+            const total = this.records.length;
+            if (!total) return [];
+            const segs = [
+                { label: 'Producción', count: this.kpiProduccion, color: '#3b82f6' },
+                { label: 'Demo',       count: this.kpiDemo,       color: '#f59e0b' },
+                { label: 'Interno',    count: this.kpiInterno,    color: '#06b6d4' },
+            ];
+            let acc = 0;
+            return segs.filter(s => s.count > 0).map(s => {
+                const pct = parseFloat(((s.count / total) * 100).toFixed(2));
+                const offset = -(acc);
+                acc += pct;
+                return { ...s, pct, offset };
+            });
+        },
+        planDonutSegments() {
+            const total = this.records.length;
+            if (!total || !this.topPlanes.length) return [];
+            let acc = 0;
+            return this.topPlanes.map((item, idx) => {
+                const pct = parseFloat(((item.count / total) * 100).toFixed(2));
+                const offset = -(acc);
+                acc += pct;
+                return { ...item, pct, offset, color: this.planColors[idx % this.planColors.length] };
+            });
+        },
         filteredRecords() {
             let filtered = this.records;
 
@@ -1088,7 +1385,7 @@ export default {
             if (this.filters.bloqueo !== "") {
                 filtered = filtered.filter((row) => {
                     const isBlocked = Boolean(row.locked_tenant);
-                    
+
                     if (this.filters.bloqueo === "1") {
                         return isBlocked; // Bloqueados
                     } else if (this.filters.bloqueo === "0") {
@@ -1117,6 +1414,9 @@ export default {
         }
     },
     methods: {
+        formatNum(n) {
+            return (n || 0).toLocaleString('es-PE');
+        },
         checkLimit() {
             this.isLoading = true;
             this.$http.get('clients/confirm-limit-reseller')
@@ -1132,7 +1432,7 @@ export default {
             })
             .catch(error => {
                 console.error('Error al verificar el límite:', error);
-                this.checkLimitUsers = false;
+                this.checkLimitUsers = true;
             });
         },
         saveColumnVisibility() {
@@ -1146,11 +1446,11 @@ export default {
         },
         applyFilters() {
             console.log('Filtros aplicados:', this.filters);
-            
+
             this.$nextTick(() => {
                 const totalRecords = this.records.length;
                 const filteredCount = this.filteredRecords.length;
-                
+
                 if (this.filters.bloqueo !== "" && filteredCount === 0) {
                     const filterType = this.filters.bloqueo === "1" ? "bloqueados" : "activos";
                     console.log(`No se encontraron clientes ${filterType} de un total de ${totalRecords} registros`);
@@ -1213,24 +1513,24 @@ export default {
           this.$nextTick(() => {
             const container = this.$refs.scrollContainer;
             if (!container) return;
-        
+
             container.addEventListener('scroll', () => {
               const isScrolled = container.scrollLeft > 0;
-            
+
               const thSticky = container.querySelector('th.sticky-column');
               const tdStickies = container.querySelectorAll('tbody td.sticky-column');
-            
+
               if (thSticky) {
                 if (isScrolled) thSticky.classList.add('scroll-active');
                 else thSticky.classList.remove('scroll-active');
               }
-          
+
               tdStickies.forEach(td => {
                 if (isScrolled) td.classList.add('scroll-active');
                 else td.classList.remove('scroll-active');
               });
             });
-        
+
             container.dispatchEvent(new Event('scroll'));
           });
         },

@@ -188,12 +188,12 @@
             ])->first();
 
             if(empty($cols)){
-                // Se crea una nueva por que no existe
-                $cols =  new ColumnsToReport([
-                    'user_id'=>$user_id,
-                    'report'=>$report,
-                    'columns'=>$columns,
+                $systemConfig = \App\Models\System\ColumnVisibilityConfig::where('module', $report)->first();
 
+                $cols = new ColumnsToReport([
+                    'user_id' => $user_id,
+                    'report'  => $report,
+                    'columns' => $systemConfig ? $systemConfig->columns : $columns,
                 ]);
                 $cols->save();
             }

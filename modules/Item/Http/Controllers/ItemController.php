@@ -72,7 +72,7 @@ use Maatwebsite\Excel\Facades\Excel as FacadesExcel;
 
                 public function headings(): array
                 {
-                    $prices_label = PriceLabel::all();
+                    $prices_label = PriceLabel::active()->ordered()->get();
                     $enable_list_product = Configuration::first()->enable_list_product;
 
                     if ($enable_list_product) {

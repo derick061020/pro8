@@ -7,6 +7,8 @@ use App\Models\Tenant\Order;
 
 class StatusOrder extends ModelTenant
 {
+  protected $fillable = ['description'];
+  
   public function order()
   {
       return $this->hasMany(Order::class);

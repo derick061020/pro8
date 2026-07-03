@@ -16,12 +16,29 @@ class DownloadController extends Controller
     use StorageDocument;
 
     public function downloadExternal($model, $type, $external_id, $format = null) {
+        $document_type = $model;
         $model = "App\\Models\\Tenant\\".ucfirst($model);
         $document = $model::where('external_id', $external_id)->first();
 
-        if (!$document) throw new Exception("El código {$external_id} es inválido, no se encontro documento relacionado");
+        if (!$document) throw new Exception("El código {$external_id} es inválido, no se encontró documento relacionado");
 
-        if ($format != null) $this->reloadPDF($document, 'invoice', $format);
+        $type_pdf = $document_type;
+        if ($document_type == 'document') {
+             $type_pdf = 'invoice';
+             if($document->document_type_id === '07') $type_pdf = 'credit';
+             if($document->document_type_id === '08') $type_pdf = 'debit';
+        }
+
+        if ($format != null) {
+            $this->reloadPDF($document, $type_pdf, $format);
+        } else {
+            // Validar la existencia física del PDF. 
+            // Si el formato es null y no existe en disco, forzar 'a4' y regenerar preventivamente con el tipo correcto.
+            if (!$this->existFileInStorage($document->filename, 'pdf')) {
+                $format = 'a4';
+                $this->reloadPDF($document, $type_pdf, $format);
+            }
+        }
 
         // Cambio para que se refleje el qr_url de ose o sunat  dentro del pdf de gre ("a4") para el listado
         if(isset($document->document_type) && $document->document_type->id == '09' && $document->qr_url) $this->reloadPDF($document, 'dispatch', 'a4');

@@ -18,7 +18,7 @@
         <div class="col-6 col-md-4 mb-4">
             <div class="card card-dashboard card-reports">
                 <div class="card-body">
-                    <h6 class="card-title">General</h6>
+                    <h6 class="card-title">Reportes de Seguridad</h6>
                     <ul class="card-report-links">
                         <li>
                             <a href="{{route('system.report_login_lockout.index')}}">
@@ -28,6 +28,21 @@
                         <li>
                             <a href="{{route('system.user_not_change_password.index')}}">
                                 Usuarios con contraseña desactualizada
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-4 mb-4">
+            <div class="card card-dashboard card-reports">
+                <div class="card-body">
+                    <h6 class="card-title">Contabilidad</h6>
+                    <ul class="card-report-links">
+                        <li>
+                            {{-- Aquí asumimos que la ruta existe, si no, hay que validarla --}}
+                            <a href="/accounting"> 
+                                Vista Contable
                             </a>
                         </li>
                     </ul>

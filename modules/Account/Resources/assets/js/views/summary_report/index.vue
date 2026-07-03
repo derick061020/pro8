@@ -15,7 +15,7 @@
             </div> -->
             <div class="card-body">
 
-                <div class="row mt-2">
+                <div class="row mt-2 mx-0">
 
                         <div class="col-md-3">
                             <div class="form-group" :class="{'has-danger': errors.date_start}">

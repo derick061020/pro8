@@ -132,7 +132,7 @@
                             </div>
                             <div class="col-lg-6 col-md-6 form-group" style="padding-top: 29px;">
                                 <img v-if="preview" :src="preview" alt="Vista previa" class="img-fluid img-thumbnail mb-2">
-                                <input type="file" ref="inputFile" class="hidden" @change="onSelectImage" accept="image/png, image/jpeg, image/jpg">
+                                <input type="file" ref="inputFile" class="hidden" @change="onSelectImage" accept="image/png, image/jpeg, image/jpg, image/webp">
                                 <span class="text-muted">Se recomienda resoluciones 700x300</span>
                                 <el-button class="btn-add-logo" @click="onOpenFileLogo">Cambiar logo del sucursal</el-button>
                             </div>

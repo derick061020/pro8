@@ -126,4 +126,9 @@ class DocumentXmlService
     }
 
 
+    public function getTextWithoutEspecialCharacter(string $text)
+    {
+        return preg_replace('/[^\p{L}\p{N}\s.,\-]/u', '', $text);
+    }
+
 }

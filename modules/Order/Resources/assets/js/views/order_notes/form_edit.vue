@@ -223,16 +223,21 @@
                                                 <!--<td class="text-right">{{ currency_type.symbol }} {{ row.total_charge }}</td>-->
                                                 <td class="text-center">{{currency_type.symbol}} {{row.total}}</td>
                                                 <td class="text-center">
+                                                    <button
+                                                        class="btn waves-effect waves-light btn-xs btn-info"
+                                                        type="button"
+                                                        @click="clickEditItem(row, index)"
+                                                    >
+                                                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-edit"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M7 7h-1a2 2 0 0 0 -2 2v9a2 2 0 0 0 2 2h9a2 2 0 0 0 2 -2v-1" /><path d="M20.385 6.585a2.1 2.1 0 0 0 -2.97 -2.97l-8.415 8.385v3h3l8.385 -8.415" /><path d="M16 5l3 3" /></svg>
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        class="btn waves-effect waves-light btn-xs btn-danger ms-1"
+                                                        @click.prevent="clickRemoveItem(index)"
+                                                    >
+                                                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-trash"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M4 7l16 0" /><path d="M10 11l0 6" /><path d="M14 11l0 6" /><path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2 -2l1 -12" /><path d="M9 7v-3a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v3" /></svg>
+                                                    </button>
 
-                                                    <template v-if="row.id">
-                                                        <button type="button" class="btn waves-effect waves-light btn-xs btn-danger" @click.prevent="clickDeleteONItem(row.id, index)">x</button>
-                                                    </template>
-                                                    <template v-else-if="row.record_id">
-                                                        <button type="button" class="btn waves-effect waves-light btn-xs btn-danger" @click.prevent="clickDeleteONItem(row.record_id, index)">x</button>
-                                                    </template>
-                                                    <template v-else>
-                                                        <button type="button" class="btn waves-effect waves-light btn-xs btn-danger" @click.prevent="clickRemoveItem(index)">x</button>
-                                                    </template>
                                                 </td>
                                             </tr>
                                             <tr><td colspan="8"></td></tr>
@@ -284,6 +289,18 @@
             :customer-id="form.customer_id"
             @add="addRow"></order-note-form-item>
 
+        <order-note-form-item-edit
+            :configuration="configuration"
+            :currency-type-id-active="form.currency_type_id"
+            :exchange-rate-sale="form.exchange_rate_sale"
+            :showDialog.sync="showDialogEditItem"
+            :typeUser="typeUser"
+            :percentage-igv="percentage_igv"
+            :permissionEditItemPrices="authUser.permission_edit_item_prices"
+            :recordItem="recordItemEdit"
+            @update="updateRow">
+        </order-note-form-item-edit>
+
         <person-form :showDialog.sync="showDialogNewPerson"
                        type="customers"
                        :external="true"
@@ -300,6 +317,7 @@
 
 <script>
     import OrderNoteFormItem from './partials/item.vue'
+    import OrderNoteFormItemEdit from "./partials/item_edit.vue";
     import PersonForm from '@views/persons/form.vue'
     import OrderNoteOptions from './partials/options.vue'
     import {functions, exchangeRate} from '@mixins/functions'
@@ -307,7 +325,7 @@
     import Logo from '@views/companies/logo.vue'
 
     export default {
-        components: {OrderNoteFormItem, PersonForm, OrderNoteOptions, Logo},
+        components: {OrderNoteFormItem, OrderNoteFormItemEdit, PersonForm, OrderNoteOptions, Logo},
         props: {
             'resourceId': {
                 required: true,
@@ -347,7 +365,9 @@
                 orderNoteNewId: null,
                 payment_method_types: [],
                 activePanel: 0,
-                loading_search:false
+                loading_search:false,
+                showDialogEditItem: false,
+                recordItemEdit: null
             }
         },
         async created() {
@@ -382,6 +402,19 @@
         },
         methods: 
         {
+            clickEditItem(row, index) {
+                console.log('Abriendo modal de edición', row);
+                this.recordItemEdit = row;
+                this.currentEditIndex = index;
+                this.showDialogEditItem = true;
+                console.log('showDialogEditItem:', this.showDialogEditItem);
+            },
+            updateRow(updatedRow) {
+                // actualizar item en la tabla
+                this.$set(this.form.items, this.currentEditIndex, updatedRow);
+                this.showDialogEditItem = false;
+                this.$message.success('Producto actualizado');
+            },
             clickAddAdditionalData()
             {
                 this.form.additional_data.push({

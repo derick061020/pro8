@@ -65,9 +65,20 @@ class QuotationController extends Controller
     }
 
 
-    public function create($saleOpportunityId = null)
+    public function create($id = null, $type = null)
     {
-        return view('tenant.quotations.form', compact('saleOpportunityId'));
+        $resourceId = null;
+        $saleOpportunityId = null;
+
+        if ($id && is_numeric($id)) {
+            if ($type === 'sale_opportunity') {
+                $saleOpportunityId = (int) $id;
+            } elseif (Quotation::find($id)) {
+                $resourceId = (int) $id;
+            }
+        }
+
+        return view('tenant.quotations.form', compact('saleOpportunityId', 'resourceId'));
     }
 
     public function edit($id)

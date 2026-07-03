@@ -252,9 +252,15 @@ class CashController extends Controller
                 }
 
                 if(in_array($cash_document->sale_note->state_type_id, ['01','03','05','07','13'])){
+                    $balance = $cash_document->sale_note->payments()
+                    ->whereHas('cashDocumentPayments', function ($query) use ($id) {
+                        $query->where('cash_id', $id);
+                    })
+                    ->sum('payment');
+
                     $final_balance += ($cash_document->sale_note->currency_type_id == 'PEN')
-                    ? $cash_document->sale_note->total
-                    : ($cash_document->sale_note->total * $cash_document->sale_note->exchange_rate_sale);
+                    ? $balance
+                    : ($balance * $cash_document->sale_note->exchange_rate_sale);
                 }
 
                 // $final_balance += $cash_document->sale_note->total;
@@ -267,13 +273,36 @@ class CashController extends Controller
                     continue;
                 }
 
-                if(in_array($cash_document->document->state_type_id, ['01','03','05','07','13'])){
-                    $final_balance += ($cash_document->document->currency_type_id == 'PEN') 
-                        ? $cash_document->document->total 
-                        : ($cash_document->document->total * $cash_document->document->exchange_rate_sale);
+                $note = $cash_document->document->getNotes();
+
+                if (is_null($note) || count($note) === 0) {
+                    if(in_array($cash_document->document->state_type_id, ['01','03','05','07','13'])){
+                        $balance = $cash_document->document->payments()
+                        ->whereHas('cashDocumentPayments', function ($query) use ($id) {
+                            $query->where('cash_id', $id);
+                        })
+                        ->sum('payment');
+                        $final_balance += ($cash_document->document->currency_type_id == 'PEN')
+                            ? $balance
+                            : ($balance * $cash_document->document->exchange_rate_sale);
+                    }
+                } else {
+                    foreach ($note as $n) {
+                        $sum = $n->isDebit();
+                        if ($sum) {
+                            $final_balance += ($n->currency_type_id == 'PEN')
+                                ? $n->total
+                                : ($n->total * $n->exchange_rate_sale);
+                        } else {
+                            $final_balance -= ($n->currency_type_id == 'PEN')
+                                ? $n->total
+                                : ($n->total * $n->exchange_rate_sale);
+                        }
+                    }
+
                 }
 
-                // $final_balance += $cash_document->document->total;
+
 
             }
             else if($cash_document->expense_payment){
@@ -305,12 +334,6 @@ class CashController extends Controller
                     : 0;
             }
 
-            // else if($cash_document->purchase){
-            //     $final_balance -= $cash_document->purchase->total;
-            // }
-            // else if($cash_document->expense){
-            //     $final_balance -= $cash_document->expense->total;
-            // }
 
         }
 
@@ -318,6 +341,22 @@ class CashController extends Controller
         // a esta caja y aún no fueron facturados. Cuando se factura, el ingreso
         // lo aporta el comprobante (su cash_document) para no duplicar el monto.
         $final_balance += $cash->getHotelRentIncome();
+
+        $incomes=Income::where('user_id', $cash->user_id)->whereTypeUser();
+        $incomes=$incomes->whereBetween('date_of_issue',[$cash->date_opening,$cash->date_closed]);
+        $incomes=$incomes->whereBetween('time_of_issue',[$cash->time_opening,$cash->time_closed]);
+        $incomes=$incomes->get();
+
+        if (isset($incomes[0])) {
+            foreach ($incomes as $income) {
+                if (in_array($income->state_type_id, ['01','03','05','07','13'])) {
+                    $final_balance += ($income->currency_type_id == 'PEN')
+                        ? $income->total
+                        : ($income->total * $income->exchange_rate_sale);
+                }
+            }
+        }
+
 
         $cash->final_balance = round($final_balance + $cash->beginning_balance, 2);
         $cash->income = round($final_balance, 2);
@@ -356,11 +395,16 @@ class CashController extends Controller
         $document = $documentModel::findOrFail((int) $request->$documentField);
 
         $isCredit = $document->$paymentConditionField === $creditCondition;
-        $cashDocumentCredit = $isCredit ? CashDocumentCredit::create([
+        // Evitar duplicicdad si ya existe
+
+        $cashDocumentCredit = $isCredit ? CashDocumentCredit::updateOrCreate([
             'cash_id' => $cash->id,
             $documentField => $document->id,
         ]) : null;
         
+        // NOTA: Se esta colocando dentro de los eventos de los modelos para poder registrarlo en caja
+        // Gracias al updateOrCreate la información que primero se creo dentro de evento del modelo, no duplicara la información sino solo
+        // lo actualiza
         $cashDocument = $cash->cash_documents()->updateOrCreate([
             'document_id' => $request->document_id,
             'sale_note_id' => $request->sale_note_id,
@@ -368,7 +412,7 @@ class CashController extends Controller
         ]);
         
         $document->payments->each(function($payment) use($cash,$isDocument,$cashDocument){
-            CashDocumentPayment::create([
+            CashDocumentPayment::updateOrCreate([
                 'cash_id' => $cash->id,
                 $isDocument ? 'document_payment_id' : 'sale_note_payment_id' => $payment->id,
                 'cash_document_id' => optional($cashDocument)->id,

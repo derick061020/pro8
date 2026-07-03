@@ -1,5 +1,4 @@
-
- <template>
+<template>
   <div class="col-lg-6 col-md-12">
     <div class="card card-config">
       <div class="card-header bg-info">
@@ -22,7 +21,7 @@
                       :on-success="successUpload"
                       :on-error="errorUpload"
                     >
-                      <el-button type="primary" icon="el-icon-upload"></el-button>
+                      <el-button type="primary" icon="el-icon-upload">Subir Logo</el-button>
                     </el-upload>
                   </el-input>
                   <div class="sub-title text-danger">
@@ -40,6 +39,72 @@
     </div>
   </div>
 </template>
+
+<script>
+export default {
+  data() {
+    return {
+      loading_submit: false,
+      headers: {
+        'Authorization': 'Bearer ' + localStorage.getItem('token') // Ajusta tu token de autenticación
+      },
+      form: {
+        logo_store: null,
+      },
+      errors: {},
+    };
+  },
+  methods: {
+    async submit() {
+      this.loading_submit = true;
+      try {
+        // Realiza la lógica de guardar el logo
+        // Aquí puedes agregar la llamada a la API para guardar el logo si es necesario
+        console.log('Logo Guardado:', this.form.logo_store);
+        this.$message.success('Logo guardado correctamente');
+      } catch (error) {
+        console.error(error);
+        this.$message.error('Error al guardar el logo');
+      } finally {
+        this.loading_submit = false;
+      }
+    },
+
+    successUpload(response, file, fileList) {
+      if (response.success) {
+        this.form.logo_store = response.data.filename;
+        this.$message.success('Logo subido correctamente');
+      } else {
+        this.$message.error('Error al subir el logo');
+      }
+    },
+
+    errorUpload(response) {
+      console.error('Error al subir el archivo:', response);
+      this.$message.error('Error al intentar subir el archivo');
+    }
+  }
+};
+</script>
+
+<style scoped>
+.card-config {
+  margin-top: 20px;
+}
+
+.el-upload__input {
+  display: none;
+}
+
+.sub-title {
+  margin-top: 10px;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+</style>
 
 
 
@@ -112,4 +177,3 @@ export default {
   }
 };
 </script>
-

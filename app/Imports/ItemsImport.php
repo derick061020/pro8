@@ -38,7 +38,7 @@ class ItemsImport implements ToCollection
                 if ($isNullAll) continue;
                 $description = $row[0];
                 $item_type_id = '01';
-                $internal_id = ($row[1])?:null;
+                $internal_id = $this->normalizeInternalId($row[1] ?? null);
                 $model = ($row[2]) ? : null;
                 $item_code = ($row[3])?:null;
                 $unit_type_id = $row[4];
@@ -132,8 +132,7 @@ class ItemsImport implements ToCollection
 
 
                 if($internal_id) {
-                    $item = Item::where('internal_id', $internal_id)
-                                    ->first();
+                    $item = $this->findItemByInternalId($internal_id);
                 } else {
                     $item = null;
                 }
@@ -307,5 +306,29 @@ class ItemsImport implements ToCollection
     public function getData()
     {
         return $this->data;
+    }
+
+    private function normalizeInternalId($internal_id): ?string
+    {
+        if (is_null($internal_id)) {
+            return null;
+        }
+
+        $normalized = str_replace("\xC2\xA0", ' ', (string) $internal_id);
+        $withoutControlChars = preg_replace('/[\x00-\x1F\x7F]/u', '', $normalized);
+        $normalized = is_null($withoutControlChars) ? $normalized : $withoutControlChars;
+        $normalized = trim($normalized);
+
+        return $normalized === '' ? null : $normalized;
+    }
+
+    private function findItemByInternalId(string $internal_id): ?Item
+    {
+        return Item::query()
+            ->whereRaw(
+                "TRIM(REPLACE(REPLACE(REPLACE(internal_id, CHAR(9), ''), CHAR(10), ''), CHAR(13), '')) = ?",
+                [$internal_id]
+            )
+            ->first();
     }
 }

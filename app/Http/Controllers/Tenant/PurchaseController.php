@@ -66,9 +66,19 @@ use Modules\Purchase\Helpers\WeightedAverageCostHelper;
         }
 
 
+        /**
+         * Este $purchase_order_id puede ser de los modelos Purchase o PurchaseOrder.
+         */
         public function create($purchase_order_id = null)
         {
-            return view('tenant.purchases.form', compact('purchase_order_id'));
+
+            $_po = PurchaseOrder::find($purchase_order_id);
+            $purchase_order_id = optional($_po)->id;
+
+            $_p = Purchase::find($purchase_order_id);
+            $purchase_id = optional($_p)->id;
+
+            return view('tenant.purchases.form', compact('purchase_order_id', 'purchase_id'));
         }
 
         public function columns()
@@ -92,13 +102,13 @@ use Modules\Purchase\Helpers\WeightedAverageCostHelper;
 
         public function getRecords($request)
         {
-
             switch ($request->column) {
                 case 'name':
 
-                    $records = Purchase::whereHas('supplier', function ($query) use ($request) {
-                        return $query->where($request->column, 'like', "%{$request->value}%");
-                    })
+                    $records = Purchase::with(['items.warehouse', 'items.item', 'supplier', 'purchase_payments'])
+                        ->whereHas('supplier', function ($query) use ($request) {
+                            return $query->where($request->column, 'like', "%{$request->value}%");
+                        })
                         ->whereTypeUser()
                         ->latest();
 
@@ -106,9 +116,10 @@ use Modules\Purchase\Helpers\WeightedAverageCostHelper;
 
                 case 'date_of_payment':
 
-                    $records = Purchase::whereHas('purchase_payments', function ($query) use ($request) {
-                        return $query->where($request->column, 'like', "%{$request->value}%");
-                    })
+                    $records = Purchase::with(['items.warehouse', 'items.item', 'supplier', 'purchase_payments'])
+                        ->whereHas('purchase_payments', function ($query) use ($request) {
+                            return $query->where($request->column, 'like', "%{$request->value}%");
+                        })
                         ->whereTypeUser()
                         ->latest();
 
@@ -116,15 +127,22 @@ use Modules\Purchase\Helpers\WeightedAverageCostHelper;
 
                 default:
 
-                    $records = Purchase::where($request->column, 'like', "%{$request->value}%")
+                    $records = Purchase::with(['items.warehouse', 'items.item', 'supplier', 'purchase_payments'])
+                        ->where($request->column, 'like', "%{$request->value}%")
                         ->whereTypeUser()
                         ->latest();
 
                     break;
             }
 
-            return $records;
+            // Filtro por almacén
+            if ($request->warehouse_id && $request->warehouse_id !== 'all') {
+                $records->whereHas('items', function ($query) use ($request) {
+                    $query->where('warehouse_id', $request->warehouse_id);
+                });
+            }
 
+            return $records;
         }
 
         public function tables()
@@ -196,18 +214,8 @@ use Modules\Purchase\Helpers\WeightedAverageCostHelper;
                             'has_perception' => (bool)$row->has_perception,
                             'lots_enabled' => (bool)$row->lots_enabled,
                             'percentage_perception' => $row->percentage_perception,
-                            'item_unit_types' => collect($row->item_unit_types)->transform(function ($row) {
-                                return [
-                                    'id' => $row->id,
-                                    'description' => "{$row->description}",
-                                    'item_id' => $row->item_id,
-                                    'unit_type_id' => $row->unit_type_id,
-                                    'quantity_unit' => $row->quantity_unit,
-                                    'price1' => $row->price1,
-                                    'price2' => $row->price2,
-                                    'price3' => $row->price3,
-                                    'price_default' => $row->price_default,
-                                ];
+                            'item_unit_types' => $row->item_unit_types->transform(function ($iut) {
+                                return $iut->getCollectionData();
                             }),
                             'series_enabled' => (bool)$row->series_enabled,
 
@@ -349,21 +357,6 @@ use Modules\Purchase\Helpers\WeightedAverageCostHelper;
                                 ->update(['purchase_unit_price' => floatval($row['unit_price'])]);
                             // actualizacion de precios
                             $item = $row['item'];
-                            if (isset($item['item_unit_types'])) {
-                                $unit_type = $item['item_unit_types'];
-                                foreach ($unit_type as $value) {
-                                    $item_unit_type = ItemUnitType::firstOrNew(['id' => $value['id']]);
-                                    $item_unit_type->item_id = (int)$row['item_id'];
-                                    $item_unit_type->description = $value['description'];
-                                    $item_unit_type->unit_type_id = $value['unit_type_id'];
-                                    $item_unit_type->quantity_unit = $value['quantity_unit'];
-                                    $item_unit_type->price1 = $value['price1'];
-                                    $item_unit_type->price2 = $value['price2'];
-                                    $item_unit_type->price3 = $value['price3'];
-                                    $item_unit_type->price_default = $value['price_default'];
-                                    $item_unit_type->save();
-                                }
-                            }
                             if (isset($item['item_warehouse_prices'])) {
                                 $warehouse_prices = $item['item_warehouse_prices'];
                                 foreach ($warehouse_prices as $prices) {
@@ -643,7 +636,7 @@ use Modules\Purchase\Helpers\WeightedAverageCostHelper;
 
             $purchase = DB::connection('tenant')->transaction(function () use ($request) {
 
-                $doc = Purchase::firstOrNew(['id' => $request['id']]);
+                $doc = Purchase::findOrFail($request['id']);
                 $doc->fill($request->all());
                 $doc->supplier = PersonInput::set($request['supplier_id']);
                 $doc->group_id = ($request->document_type_id === '01') ? '01' : '02';
@@ -1339,9 +1332,16 @@ use Modules\Purchase\Helpers\WeightedAverageCostHelper;
 
         public function download($external_id, $format = 'a4')
         {
-            $purchase = SaleOpportunity::where('external_id', $external_id)->first();
+            // Corregido: Se reemplaza SaleOpportunity por \App\Models\Tenant\Purchase
+            $purchase = \App\Models\Tenant\Purchase::where('external_id', $external_id)->first();
 
             if (!$purchase) throw new Exception("El código {$external_id} es inválido, no se encontro el archivo relacionado");
+
+            // Validar existencia física del PDF de compra en storage.
+            // Si falta, se fuerza su regeneración en caliente
+            if (!$this->existFileInStorage($purchase->filename, 'purchase')) {
+                $this->createPdf($purchase, $format, $purchase->filename);
+            }
 
             return $this->downloadStorage($purchase->filename, 'purchase');
         }

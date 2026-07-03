@@ -147,17 +147,17 @@ export const editableRowItems = {
                 {
                     if (row.item.currency_type_id === 'PEN' && this.form.currency_type_id === 'USD') 
                     {
-                        row.item.unit_price = this.getFormatUnitPriceRow(row.unit_price * this.form.exchange_rate_sale)
+                        row.item.unit_price = this.getFormatUnitPriceRow(row.unit_price * this.form.exchange_rate_sale, row)
                     }
                     else 
                     {
-                        row.item.unit_price = this.getFormatUnitPriceRow(row.unit_price / this.form.exchange_rate_sale)
+                        row.item.unit_price = this.getFormatUnitPriceRow(row.unit_price / this.form.exchange_rate_sale, row)
                     }
 
                     return
                 }
 
-                row.item.unit_price = this.getFormatUnitPriceRow(row.unit_price)
+                row.item.unit_price = this.getFormatUnitPriceRow(row.unit_price, row)
             }
         },
         endRowCalculateTotal(row, total_value, total_base_igv, total_igv, total_taxes, total, total_plastic_bag_taxes)
@@ -182,7 +182,7 @@ export const editableRowItems = {
             if (row.input_has_plastic_bag_taxes) input_total -= row.total_plastic_bag_taxes 
 
             row.unit_price = parseFloat(input_total) / parseFloat(row.quantity)
-            row.unit_value = this.getFormatUnitPriceRow(this.getRowCalculatedUnitValue(row.affectation_igv_type_id, row.unit_price))
+            row.unit_value = this.getFormatUnitPriceRow(this.getRowCalculatedUnitValue(row.affectation_igv_type_id, row.unit_price), row)
             if(row.item.purchase_unit_price > row.unit_price){
                 let decimal_input_unit_price_value = parseFloat(row.input_unit_price_value);
                 row.unit_price = decimal_input_unit_price_value;
@@ -198,7 +198,7 @@ export const editableRowItems = {
         },
         changeRowTotalValue(row)
         {
-            row.unit_value = this.getFormatUnitPriceRow(parseFloat(row.total_value) / parseFloat(row.quantity))
+            row.unit_value = this.getFormatUnitPriceRow(parseFloat(row.total_value) / parseFloat(row.quantity), row)
             row.unit_price = this.getRowCalculatedUnitPrice(row.affectation_igv_type_id, row.unit_value)
 
             if(row.item.purchase_unit_price > row.unit_price){
@@ -226,7 +226,7 @@ export const editableRowItems = {
         },
         changeRowUnitPrice(row)
         {
-            row.unit_value = this.getFormatUnitPriceRow(this.getRowCalculatedUnitValue(row.affectation_igv_type_id, row.unit_price))
+            row.unit_value = this.getFormatUnitPriceRow(this.getRowCalculatedUnitValue(row.affectation_igv_type_id, row.unit_price), row)
             if(row.item.purchase_unit_price > row.unit_price){
                 let decimal_input_unit_price_value = parseFloat(row.input_unit_price_value);
                 row.unit_price = decimal_input_unit_price_value;

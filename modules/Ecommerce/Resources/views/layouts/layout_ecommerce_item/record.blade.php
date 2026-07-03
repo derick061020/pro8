@@ -4,19 +4,66 @@
 <!-- Mirrored from portotheme.com/html/porto_ecommerce/demo-6/product.html by HTTrack Website Copier/3.x [XR&CO'2014], Sat, 07 Sep 2019 03:39:58 GMT -->
 
 <head>
+    @php($pageCompany = $company ?? $vc_company ?? null)
+    @php($product = $record ?? null)
+    @php($pageTitle = data_get($pageCompany, 'title_web') ?: data_get($pageCompany, 'trade_name'))
+    @php($productName = data_get($product, 'description') ?: 'Producto')
+    @php($productDescription = data_get($product, 'name') ?: ($ecommerceDescription) ?: 'Descripción no disponible')
+    @php($productImage = data_get($product, 'image') ? asset('storage/uploads/items/'.data_get($product, 'image')) : asset('logo/tulogo.png'))
+    @php($productPrice = number_format(data_get($product, 'sale_unit_price', 0), 2, '.', ''))
+    @php($productCurrency = data_get($product, 'currency_type_symbol', 'S/'))
+    @php($productUrl = url()->current())
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 
-    <title>Ecommerce</title>
+    <title>{{ $pageTitle ? ($productName ? $pageTitle.' - '.$productName : $pageTitle) : ($productName ?: 'Ecommerce') }}</title>
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <meta name="keywords" content="Ecommerce, Tienda virtual" />
-    <meta name="description" content="Sistema para venta de productos">
+    <meta name="keywords" content="eCommerce, {{ $pageTitle }}, {{ $productName }}" />
+    <meta name="description" content="{{ strip_tags($productDescription) }}" />
     <meta name="author" content="SW-THEMES">
 
-    <!-- Favicon -->
-    <link rel="icon" type="image/x-icon" href="{{ asset('porto-ecommerce/assets/images/icons/favicon.ico') }}">
+    <!-- Open Graph Meta Tags -->
+    <meta property="og:title" content="{{ $productName }}" />
+    <meta property="og:description" content="{{ strip_tags($productDescription) }}" />
+    <meta property="og:type" content="product" />
+    <meta property="og:url" content="{{ $productUrl }}" />
+    <meta property="og:image" content="{{ $productImage }}" />
+    <meta property="og:site_name" content="{{ $pageTitle }}" />
+    <meta property="product:price:amount" content="{{ $productPrice }}" />
+    <meta property="product:price:currency" content="{{ $productCurrency }}" />
 
+    <!-- Twitter Card Meta Tags -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="{{ $productName }}" />
+    <meta name="twitter:description" content="{{ strip_tags($productDescription) }}" />
+    <meta name="twitter:image" content="{{ $productImage }}" />
+
+    <!-- Schema.org JSON-LD (Product) -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "Product",
+        "name": "{{ addslashes($productName) }}",
+        "image": "{{ $productImage }}",
+        "description": "{{ addslashes(strip_tags($productDescription)) }}",
+        "sku": "{{ data_get($product, 'internal_id') }}",
+        "brand": {
+            "@type": "Brand",
+            "name": "{{ $pageTitle }}"
+        },
+        "offers": {
+            "@type": "Offer",
+            "url": "{{ $productUrl }}",
+            "priceCurrency": "{{ $productCurrency }}",
+            "price": "{{ $productPrice }}",
+            "availability": "{{ data_get($product, 'stock', 0) > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock' }}"
+        }
+    }
+    </script>
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="{{ asset('porto-ecommerce/assets/images/icons/favicon.svg') }}">
 
     <!-- Plugins CSS File -->
     <link rel="stylesheet" href="{{ asset('porto-ecommerce/assets/css/bootstrap.min.css') }}">
@@ -29,17 +76,18 @@
 
     <!-- Fontawesome -->
     <link rel="stylesheet" href="{{ asset('porto-ecommerce/assets/font-awesome/css/fontawesome-all.min.css') }}">
-    
+
     <!-- Estilos personalizados -->
     <link rel="stylesheet" href="{{ asset('porto-light/css/styles_ecommerce.css') }}" />
 </head>
 
 <body>
+    @include('ecommerce::layouts.partials_ecommerce.announcement_bar')
     <div class="page-wrapper">
 
         @include('ecommerce::layouts.partials_ecommerce.header')
         @include('ecommerce::layouts.partials_ecommerce.header_bottom_sticky')
-        
+
 
 
         <main class="main">

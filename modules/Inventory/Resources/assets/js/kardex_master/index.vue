@@ -13,7 +13,7 @@
                 <h3 class="my-0">Consulta kardex</h3>
             </div> -->
             <div class="card-body">
-                <div class="invoice p-3">
+                <div class="invoice p-0">
                     <div class="row">
                         <div class="col-lg-12 col-md-12 col-sm-12  ">
                             <el-tabs v-model="activeName">

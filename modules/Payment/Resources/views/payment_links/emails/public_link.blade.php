@@ -15,8 +15,16 @@
 </head>
 <body>
 <p>Su link de pago ha sido generado correctamente, puede revisarlo en: {{ $user_payment_link}}</p>
+@php
+    use App\CoreFacturalo\Helpers\CompanyDocumentDisplay as PayLinkCo;
+@endphp
 <ul>
-    <li>Razon social: {{ $company->name }}</li>
+    @if(PayLinkCo::namesAreSame($company))
+    <li>Razón social: {{ PayLinkCo::commercialLine($company) }}</li>
+    @else
+    <li>Nombre comercial: {{ PayLinkCo::commercialLine($company) }}</li>
+    <li>Razón social: {{ $company->name }}</li>
+    @endif
     <li>RUC: {{ $company->number }}</li>
 </ul>
 </body>

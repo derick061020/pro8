@@ -31,12 +31,13 @@
             </ol>
             <div class="right-wrapper pull-right">
                 <form autocomplete="off" @submit.prevent="consultVoided">
-                    <el-button
+                    <button
                         class="btn btn-custom mt-2 me-2"
                         native-type="submit"
                         type="primary"
                         :loading="loading_submit_voided"
-                        >Consultar documentos</el-button
+                        >Consultar documentos
+                    </button
                     >
                 </form>
             </div>

@@ -1,0 +1,11 @@
+{
+    "name": "ItemFormLayout",
+    "alias": "itemformlayout",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\ItemFormLayout\\Providers\\ItemFormLayoutServiceProvider"
+    ],
+    "files": []
+}

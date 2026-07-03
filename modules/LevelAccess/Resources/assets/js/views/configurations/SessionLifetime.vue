@@ -1,27 +1,25 @@
 <template>
-    <div class="row" v-if="form.is_tenant_session_lifetime_enabled">
-        <div class="col-md-4 mt-4">
-            <label class="control-label">
-                Duración de la sesión 
-                <el-tooltip class="item"
-                    content="Cerrar sesión del usuario por inactividad (1 - 24 horas)"
-                    effect="dark"
-                    placement="top-start">
-                    <i class="fa fa-info-circle"></i>
-                </el-tooltip>
-            </label>
-            
-            <div :class="{'has-danger': errors.session_lifetime}" class="form-group">
-                <el-input-number 
-                    v-model="form.session_lifetime"
-                    :min="1"
-                    :max="24"
-                    :step="1"
-                    :precision="2"
-                    @change="submit">
-                </el-input-number>
-                <small v-if="errors.session_lifetime" class="form-control-feedback" v-text="errors.session_lifetime[0]"></small>
-            </div>
+    <div class="inputs-column" v-if="form.is_tenant_session_lifetime_enabled">
+        <label class="control-label">
+            Duración de la sesión 
+            <el-tooltip class="item"
+                content="Cerrar sesión del usuario por inactividad (1 - 24 horas)"
+                effect="dark"
+                placement="top-start">
+                <i class="fa fa-info-circle"></i>
+            </el-tooltip>
+        </label>
+
+        <div :class="{'has-danger': errors.session_lifetime}" class="form-group w-50">
+            <el-input-number 
+                v-model="form.session_lifetime"
+                :min="1"
+                :max="24"
+                :step="1"
+                :precision="2"
+                @change="submit">
+            </el-input-number>
+            <small v-if="errors.session_lifetime" class="form-control-feedback" v-text="errors.session_lifetime[0]"></small>
         </div>
     </div>
 </template>

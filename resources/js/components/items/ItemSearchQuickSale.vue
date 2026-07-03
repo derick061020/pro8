@@ -32,7 +32,7 @@
                             {{ itemOptionDescriptionView(row) }}<br>
                             <b class="custom-price pt-1 pb-1 text-primary">{{ row.currency_type_symbol }} {{ itemSetSaleUnitPrice(row) }}</b>
                     </div>
-                    <div class="col-4 text-right">
+                    <div class="col-4 text-end">
                         <b :class="{'text-danger': row.stock <= 0, 'text-success': row.stock > 0}" class="py-1 mx-3">
                                 <i class="fas fa-cube"></i> {{ parseStock(row.stock) }}
                             </b>
@@ -49,7 +49,7 @@
             </el-option>
         </el-select>
 
-        <div class="w-100 pl-0 pt-2">
+        <div class="w-100 ps-0 pt-2">
             <el-checkbox v-model="searchOnEnter" @change="changeSearchOnEnter" >Buscar solo al presionar Enter</el-checkbox>
             <el-checkbox ref="searchItemCheckbox" v-model="search_item_by_barcode" @change="focusInputSearch(); saveSearchByBarcodeSetting()">Buscar por código de barras</el-checkbox>
         </div>
@@ -141,6 +141,13 @@
             const storedSearchByBarcode = localStorage.getItem('search_item_by_barcode');
             if (storedSearchByBarcode !== null) {
                 this.search_item_by_barcode = JSON.parse(storedSearchByBarcode);
+            }
+            const storedSearchOnEnter = localStorage.getItem('search_on_enter');
+            if (storedSearchOnEnter !== null) {
+                this.searchOnEnter = JSON.parse(storedSearchOnEnter);
+                if (this.searchOnEnter) {
+                    this.items = [];
+                }
             }
         },
         methods:
@@ -319,6 +326,7 @@
                 }
             },
             changeSearchOnEnter() {
+                localStorage.setItem('search_on_enter', JSON.stringify(this.searchOnEnter));
                 if(this.searchOnEnter) {
                     this.items = []
                 }
@@ -376,7 +384,7 @@
     }
 
     .el-select-dropdown__item{
-        height: 72px !important
+        height: auto !important
     }
 
 li.el-select-dropdown__item.item-result {

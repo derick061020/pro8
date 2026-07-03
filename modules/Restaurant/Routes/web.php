@@ -14,7 +14,7 @@
 // Rutas públicas (no deben forzar login principal)
 Route::prefix('restaurant')->middleware(['locked.tenant'])->group(function() {
     Route::get('item_partial/{id}', 'RestaurantController@partialItem')->name('restaurant.item_partial');
-    Route::get('item/{id}/{promotion_id?}', 'RestaurantController@item')->name('restaurant.item');
+    Route::get('item/{slug}/{promotion_id?}', 'RestaurantController@item')->name('restaurant.item');
     Route::get('cart', 'RestaurantController@detailCart')->name('restaurant.detail.cart');
     Route::post('payment_cash', 'RestaurantController@paymentCash')->name('restaurant.payment.cash')->middleware('auth:ecommerce');
 });
@@ -78,6 +78,21 @@ Route::prefix('restaurant')->middleware(['auth','check.email.verified'])->group(
         Route::post('', 'PreparationAreaController@store');
         Route::put('{id}', 'PreparationAreaController@update');
         Route::delete('{id}', 'PreparationAreaController@destroy');
+    });
+
+    // Printers (configuración de impresoras BuhoPrinter)
+    Route::prefix('printers')->group(function () {
+        Route::get('config', 'PrinterController@getConfig');
+        Route::post('config', 'PrinterController@saveConfig');
+        Route::post('status', 'PrinterController@updateStatus');
+        Route::post('sync', 'PrinterController@syncPrinters');
+        Route::post('configure', 'PrinterController@configure');
+        Route::get('/', 'PrinterController@index');
+    });
+
+    // Print orders — consumidos por BuhoPrinter vía Redis (Observer)
+    Route::prefix('print-orders')->group(function () {
+        Route::post('/', 'PrintOrderController@store');
     });
 
     //Promotion

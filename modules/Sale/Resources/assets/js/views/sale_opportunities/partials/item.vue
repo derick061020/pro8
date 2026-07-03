@@ -11,7 +11,8 @@
             <div class="form-body">
                 <div class="row">
                     <div
-                        class="col-md-7 col-lg-7 col-xl-7 product-search-model"
+                        class="product-search-model"
+                        :class="{'col-md-7 col-lg-7 col-xl-7': affectation_igv_types.length > 1, 'col-12': affectation_igv_types.length <= 1}"
                     >
                         <el-tooltip
                             slot="append"
@@ -105,7 +106,7 @@
                             ></small>
                         </div>
                     </div>
-                    <div class="col-md-5">
+                    <div v-if="affectation_igv_types.length > 1" class="col-md-5">
                         <div
                             :class="{
                                 'has-danger': errors.affectation_igv_type_id

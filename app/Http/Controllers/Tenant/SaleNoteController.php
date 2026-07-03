@@ -62,7 +62,6 @@ use Mpdf\HTMLParserMode;
 use Mpdf\Mpdf;
 use App\Models\Tenant\DispatchSaleNote;
 use App\Http\Resources\Tenant\DispatchSaleNoteCollection;
-
 use Modules\Finance\Traits\FilePaymentTrait;
 // use App\Http\Resources\Tenant\SaleNoteGenerateDocumentResource;
 // use App\Models\Tenant\Warehouse;
@@ -516,6 +515,7 @@ class SaleNoteController extends Controller
                             ->whereType('customers')->orderBy('name')
                             ->whereIsEnabled()
                             ->get()->transform(function(Person $row) {
+                                return $row->getCollectionData();
                                 return [
                                     'id' => $row->id,
                                     'description' => $row->number.' - '.$row->name,
@@ -540,6 +540,7 @@ class SaleNoteController extends Controller
         $establishment_id =  $user->establishment_id;
         $userId =  $user->id;
         $customers = $this->table('customers');
+        logger()->info('sale-notes tables customer', ['customer' => $customers->first()]);
         $establishments = Establishment::where('id', auth()->user()->establishment_id)->get();
         $currency_types = CurrencyType::whereActive()->get();
         $discount_types = ChargeDiscountType::whereType('discount')->whereLevel('item')->get();
@@ -614,6 +615,23 @@ class SaleNoteController extends Controller
         $record = new SaleNoteResource2(SaleNote::findOrFail($id));
 
         return $record;
+    }
+
+    public function updateCustomFields(Request $request)
+    {
+        $request->validate([
+            'id' => 'required|integer',
+            'custom_fields_data' => 'nullable|array'
+        ]);
+
+        $saleNote = SaleNote::findOrFail($request->input('id'));
+        $saleNote->custom_fields_data = $request->input('custom_fields_data', []);
+        $saleNote->save();
+
+        return [
+            'success' => true,
+            'data' => $saleNote->custom_fields_data
+        ];
     }
 
     public function store(SaleNoteRequest $request)
@@ -1337,6 +1355,7 @@ class SaleNoteController extends Controller
 
                 $customers = Person::whereType('customers')
                     ->whereIsEnabled()->orderBy('name')->take(20)->get()->transform(function(Person$row) {
+                    return $row->getCollectionData();
                     return [
                         'id' => $row->id,
                         'description' => $row->number.' - '.$row->name,
@@ -1959,6 +1978,9 @@ class SaleNoteController extends Controller
         $this->sale_note->state_type_id = '01' ;
         $this->sale_note->number = SaleNote::getLastNumberByModel($obj) ;
         $this->sale_note->unique_filename = null;
+        $this->sale_note->date_of_issue = now()->toDateTimeString();
+        $this->sale_note->due_date = now()->toDateTimeString();
+        $this->sale_note->time_of_issue = now()->toTimeString();
 
         $this->sale_note->changed = false;
         $this->sale_note->document_id = null;

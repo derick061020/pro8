@@ -12,7 +12,7 @@
                                     name="first">
                             <span slot="label">General</span>
                             <div class="row">
-                                <div class="col-md-3">
+                                <div v-show="!globalIgvHandling" class="col-md-3">
                                     <div v-show="show_has_igv"
                                         class="">
                                         <div :class="{'has-danger': errors.has_igv}"
@@ -902,7 +902,7 @@
                                             v-text="errors.purchase_unit_price[0]"></small>
                                     </div>
                                 </div>
-                                <div v-show="purchase_show_has_igv"
+                                <div v-show="purchase_show_has_igv && !globalIgvHandling"
                                     class="col-md-4 center-el-checkbox pt-2">
                                     <div :class="{'has-danger': errors.purchase_has_igv}"
                                         class="form-group">
@@ -1167,6 +1167,13 @@ export default {
 
             return false
         },
+        globalIgvHandling()
+        {
+            if (this.config && this.config.global_igv_handling !== undefined) {
+                return !!this.config.global_igv_handling
+            }
+            return true
+        },
         ...mapState([
             'colors',
             'CatItemSize',
@@ -1349,8 +1356,9 @@ export default {
             this.form.sale_affectation_igv_type_id = (this.config) ? this.config.affectation_igv_type_id : '10'
 
             this.$http.get(`/configurations/record`).then(response => {
-                this.form.has_igv = response.data.data.include_igv
-                this.form.purchase_has_igv = response.data.data.include_igv
+                const isGlobal = response.data.data.global_igv_handling !== false
+                this.form.has_igv = isGlobal ? true : response.data.data.include_igv
+                this.form.purchase_has_igv = isGlobal ? true : response.data.data.include_igv
                 // this.$setStorage('configuration',response.data.data)
                 this.$store.commit('setConfiguration', response.data.data);
                 this.loadConfiguration()
@@ -1654,6 +1662,10 @@ this.activeName =  'first'
                 this.$http.get(`/${this.resource}/record/${this.recordId}`)
                     .then(response => {
                         this.form = response.data.data
+                        if (this.globalIgvHandling) {
+                            this.form.has_igv = true
+                            this.form.purchase_has_igv = true
+                        }
                         console.error(this.form.is_for_production)
                         this.changeAffectationIgvType()
                         this.changePurchaseAffectationIgvType()
@@ -1747,6 +1759,11 @@ this.activeName =  'first'
             if (this.form.purchase_has_isc) {
                 if (this.form.purchase_percentage_isc <= 0)
                     return this.$message.error('El porcentaje isc debe ser mayor a 0 (Compras)');
+            }
+
+            if (this.globalIgvHandling) {
+                this.form.has_igv = true
+                this.form.purchase_has_igv = true
             }
 
             this.loading_submit = true

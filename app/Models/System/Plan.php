@@ -13,27 +13,31 @@ class Plan extends Model
     protected $fillable = [
         'name',
         'pricing',
+        'is_popular',
         'limit_users',
         'limit_documents',
-        'plan_documents', 
-        'locked', 
-        'establishments_limit', 
-        'establishments_unlimited', 
-        
-        'sales_limit', 
-        'sales_unlimited', 
-        'include_sale_notes_sales_limit', 
-        'include_sale_notes_limit_documents', 
+        'plan_documents',
+        'locked',
+        'establishments_limit',
+        'establishments_unlimited',
+
+        'sales_limit',
+        'sales_unlimited',
+        'include_sale_notes_sales_limit',
+        'include_sale_notes_limit_documents',
+        'module_permissions',
     ];
 
 
     protected $casts = [
+        'is_popular' => 'boolean',
         'establishments_unlimited' => 'boolean',
         'establishments_limit' => 'int',
         'sales_unlimited' => 'boolean',
         'sales_limit' => 'float',
         'include_sale_notes_sales_limit' => 'boolean',
         'include_sale_notes_limit_documents' => 'boolean',
+        'module_permissions' => 'array',
     ];
 
 

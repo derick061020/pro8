@@ -30,12 +30,12 @@
         @if($company->logo)
             <td width="20%">
                 <div class="company_logo_box">
-                    <img src="data:{{mime_content_type(public_path("{$logo}"))}};base64, {{base64_encode(file_get_contents(public_path("{$logo}")))}}" alt="{{$company->name}}" class="company_logo" style="max-width: 150px;">
+                    <img src="data:{{mime_content_type(public_path("{$logo}"))}};base64, {{base64_encode(file_get_contents(public_path("{$logo}")))}}" alt="{{ \App\CoreFacturalo\Helpers\CompanyDocumentDisplay::logoAlt($company) }}" class="company_logo" style="max-width: 150px;">
                 </div>
             </td>
             <td width="50%" class="text-center">
                 <div class="text-left">
-                    <h4 class="">{{ $company->name }}</h4>
+                    @include('pdf.partials.company_document_header_names')
                     <h5>{{ 'RUC '.$company->number }}</h5>
                     <h6 style="text-transform: uppercase;">
                         {{ ($establishment->address !== '-')? $establishment->address : '' }}
@@ -54,7 +54,7 @@
         @else
             <td width="70%" class="pl-1">
                 <div class="text-left">
-                    <h4 class="">{{ $company->name }}</h4>
+                    @include('pdf.partials.company_document_header_names')
                     <h5>{{ 'RUC '.$company->number }}</h5>
                     <h6 style="text-transform: uppercase;">
                         {{ ($establishment->address !== '-')? $establishment->address : '' }}
@@ -358,10 +358,12 @@ foreach ($document->items as $row) {
                 <td class="text-left align-top">{{ $row->relation_item->brand->name ?? '' }}</td>
             @endif
             @inject('itemLotGroup', 'App\Services\ItemLotsGroupService')
-            @php
-                $lot = $itemLotGroup->getLote($row->item->IdLoteSelected);
-                $date_due = $itemLotGroup->getLotDateOfDue($row->item->IdLoteSelected);
-            @endphp
+            @if ($showLoteColumn)
+                @php
+                    $lot = $itemLotGroup->getLote($row->item->IdLoteSelected);
+                    $date_due = $itemLotGroup->getLotDateOfDue($row->item->IdLoteSelected);
+                @endphp
+            @endif
 
             @if($showLoteColumn)
                 <td class="text-center align-top">
@@ -435,10 +437,10 @@ foreach ($document->items as $row) {
                 <td class="text-right font-bold">{{ number_format($document->total_taxed, 2) }}</td>
             </tr>
         @endif --}}
-        @if($document->total_discount > 0)
+        @if($document->total_discount_with_igv > 0)
             <tr>
                 <td colspan="{{ $colspan_total }}" class="text-right font-bold">{{(($document->total_prepayment > 0) ? 'ANTICIPO':'DESCUENTO TOTAL')}}: {{ $document->currency_type->symbol }}</td>
-                <td class="text-right font-bold">{{ number_format($document->total_discount, 2) }}</td>
+                <td class="text-right font-bold">{{ number_format($document->total_discount_with_igv, 2) }}</td>
             </tr>
         @endif
         {{--<tr>
@@ -454,7 +456,8 @@ foreach ($document->items as $row) {
         @endif
 
         <tr>
-            <td colspan="{{ $colspan_total }}" class="text-right font-bold">TOTAL A PAGAR: {{ $document->currency_type->symbol }}</td>
+            <td colspan="{{ ceil(($colspan_total + 1) / 2) }}" class="text-left font-bold" style="white-space: nowrap;">Productos: {{ rtrim(rtrim(number_format(collect($document->items)->sum(function ($item) { return (float) data_get($item, 'quantity', 0); }), 2, '.', ''), '0'), '.') }}</td>
+            <td colspan="{{ floor(($colspan_total + 1) / 2) - 1 }}" class="text-right font-bold">TOTAL A PAGAR: {{ $document->currency_type->symbol }}</td>
             <td class="text-right font-bold">{{ number_format($document->total, 2) }}</td>
         </tr>
 

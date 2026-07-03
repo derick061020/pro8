@@ -1,7 +1,7 @@
 <template>
     <div class="garage container-fluid p-0">
         <span class="module-title-marker" data-page-title="Venta Rápida"></span>
-        <div class="row page-header pr-0 no-gutters" style="height:auto">
+        <div class="row page-header pr-0 no-gutters" style="min-height:48px">
             <Keypress
                 key-event="keyup"
                 :key-code="112"
@@ -25,8 +25,8 @@
                     ></el-switch>
                 </h2>
             </div>
-            <div class="col-md-4">
-                <h2>
+            <div class="col-md-4 d-flex justify-content-center align-items-center gap-2">
+                <h2 class="px-0">
                     <el-tooltip
                         class="item"
                         effect="dark"
@@ -36,13 +36,13 @@
                         <button
                             type="button"
                             @click="back()"
-                            class="btn btn-custom btn-sm  mt-2 mr-2 mr-sm-0"
+                            class="btn btn-custom btn-sm"
                         >
                             <i class="fa fa-border-all"></i>
                         </button>
                     </el-tooltip>
                 </h2>
-                <h2>
+                <h2 class="px-0">
                     <el-tooltip
                         class="item"
                         effect="dark"
@@ -53,13 +53,13 @@
                             type="button"
                             :disabled="place == 'cat2'"
                             @click="setView('cat2')"
-                            class="btn btn-custom btn-sm  mt-2 mr-2 mr-sm-0"
+                            class="btn btn-custom btn-sm"
                         >
                             <i class="fa fa-bars"></i>
                         </button>
                     </el-tooltip>
                 </h2>
-                <h2>
+                <h2 class="px-0">
                     <el-tooltip
                         class="item"
                         effect="dark"
@@ -70,13 +70,13 @@
                             type="button"
                             :disabled="place == 'cat3'"
                             @click="setView('cat3')"
-                            class="btn btn-custom btn-sm  mt-2 mr-2 mr-sm-0"
+                            class="btn btn-custom btn-sm"
                         >
                             <i class="fas fa-list-ul"></i>
                         </button>
                     </el-tooltip>
                 </h2>
-                <h2>
+                <h2 class="px-0">
                     <el-tooltip
                         class="item"
                         effect="dark"
@@ -87,16 +87,16 @@
                             type="button"
                             :disabled="place == 'cat'"
                             @click="back()"
-                            class="btn btn-custom btn-sm  mt-2 mr-2 mr-sm-0"
+                            class="btn btn-custom btn-sm"
                         >
                             <i class="fa fa-undo"></i>
                         </button>
                     </el-tooltip>
                 </h2>
             </div>
-            <div class="col-md-4">
-                <div class="pull-right">
-                    <p class="pr-3 pt-2 mb-2 exchange-currency">
+            <div class="col-md-4" v-if="currency_types.length > 1">
+                <div class="pull-right h-100 d-flex align-items-center">
+                    <p class="pr-3 m-0 exchange-currency">
                         T.C.
                         <span>S/ {{ form.exchange_rate_sale }}</span> Cambiar
                         Moneda
@@ -210,7 +210,11 @@
                     </template>
                 </div>
 
-                <div v-if="place == 'prod' || place == 'cat2'" class="row product-pos-container">
+                <div
+                    v-if="place == 'prod' || place == 'cat2'"
+                    class="product-pos-container"
+                    :class="layout_mode"
+                >
                     <template v-for="(item, index) in items">
                         <div :key="index">
                             <section class="card product-item">
@@ -283,21 +287,6 @@
                                         <h5
                                             class="font-weight-semibold text-center m-0"
                                         >
-                                            <button
-                                                v-if="
-                                                    configuration.options_pos &&
-                                                        edit_unit_price
-                                                "
-                                                type="button"
-                                                class="btn btn-xs btn-primary-pos"
-                                                @click="
-                                                    clickOpenInputEditUP(index)
-                                                "
-                                            >
-                                                <span style="font-size:16px;"
-                                                    >&#9998;</span
-                                                >
-                                            </button>
                                             {{ item.currency_type_symbol }}
                                             {{ item.sale_unit_price }}
                                         </h5>
@@ -573,7 +562,7 @@
                                             </el-tooltip>
                                         </el-col>
 
-                                        <el-col
+                                        <!-- <el-col
                                             :span="6"
                                             v-if="
                                                 allowedChangeAffectationExoneratedIgv(
@@ -627,7 +616,7 @@
                                                     </button>
                                                 </el-popover>
                                             </el-tooltip>
-                                        </el-col>
+                                        </el-col> -->
                                     </el-row>
                                 </div>
                             </section>
@@ -738,6 +727,15 @@
                                         <td>
                                             <p class="item-description">
                                                 {{ item.item.description }}
+                                                <template v-if="item.item.presentation &&
+                                                    item.item.presentation.hasOwnProperty(
+                                                        'description'
+                                                    )
+                                                " >
+                                                {{ item.item.presentation
+                                                            .description
+                                                }}
+                                                </template>
                                             </p>
                                             <small>
                                                 {{ nameSets(item.item_id) }}
@@ -758,15 +756,8 @@
                                                     @input="
                                                         calculateQuantity(index)
                                                     "
-                                                    @blur="
-                                                        blurCalculateQuantity(
-                                                            index
-                                                        )
-                                                    "
-                                                    :readonly="
-                                                        !item.item
-                                                            .calculate_quantity
-                                                    "
+                                                    @blur="changeRowTotalGarage(index)"
+                                                    :readonly="!edit_unit_price && !item.item.calculate_quantity"
                                                 >
                                                 </el-input>
                                             </template>
@@ -810,6 +801,8 @@
                                 ref="componentFastPaymentGarage"
                                 :configuration="configuration"
                                 :type-user="typeUser"
+                                :customer_email="customerEmail"
+                                :config="config"
                             ></fast-payment>
                         </template>
                     </div>
@@ -926,8 +919,26 @@
 }
 .product-pos-container {
     display: grid;
+}
+
+.product-pos-container.default {
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+    gap: 1rem;
+}
+
+.product-pos-container.comfortable {
     grid-template-columns: repeat(auto-fit, minmax(185px, 1fr));
     gap: 0.9rem;
+}
+
+.product-pos-container.compact {
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 0.5rem;
+}
+
+.product-pos-container.stacked {
+    grid-template-columns: repeat(auto-fit, minmax(135px, 1fr));
+    gap: 0.25rem;
 }
 
 .product-pos-container > * {
@@ -1002,6 +1013,7 @@ export default {
             affectation_igv_types: [],
             all_customers: [],
             establishment: null,
+            currency_types: [],
             currency_type: {},
             form_item: {},
             customer: {},
@@ -1042,6 +1054,22 @@ export default {
     },
 
     computed: {
+        layout_mode() {
+            const cols = parseInt(this.configuration.colums_grid_item, 10);
+            switch (cols) {
+                case 2:
+                    return "default";
+                case 3:
+                    return "comfortable";
+                case 4:
+                    return "compact";
+                case 5:
+                case 6:
+                    return "stacked";
+                default:
+                    return "default";
+            }
+        },
         getAffectationExoneratedIgv() {
             return _.filter(this.affectation_igv_types, row => {
                 return this.isExoneratedIgv(row.id);
@@ -1092,16 +1120,46 @@ export default {
             };
         },
         edit_unit_price() {
-            if (this.typeUser === "admin") {
-                return true;
-            }
-            if (this.typeUser === "seller") {
-                return this.configuration.allow_edit_unit_price_to_seller;
-            }
-            return false;
+            return this.user && this.user.permission_edit_item_prices;
+        },
+        customerEmail() {
+            const customer = _.find(this.all_customers, c => String(c.id) === String(this.form.customer_id));
+            return customer ? customer.email : null;
         }
     },
     methods: {
+        changeRowTotalGarage(index) {
+            const item = this.form.items[index];
+
+            if (item.item.calculate_quantity) {
+                this.blurCalculateQuantity(index);
+                return;
+            }
+
+            const quantity = parseFloat(item.quantity);
+            const newTotal = parseFloat(item.total);
+
+            if (isNaN(newTotal) || isNaN(quantity) || quantity <= 0) {
+                this.blurCalculateQuantity(index);
+                return;
+            }
+
+            // Precio unitario bruto (con IGV) desde el total
+            const newUnitPrice = newTotal / quantity;
+            item.item.unit_price = newUnitPrice;
+
+            // Guardar también en sale_unit_price para que cambiar la cantidad NO lo revierta
+            item.item.sale_unit_price = item.item.has_igv
+                ? newUnitPrice
+                : newUnitPrice / (1 + this.percentage_igv);
+
+            this.row = calculateRowItem(item, this.form.currency_type_id, 1, this.percentage_igv);
+            this.row["unit_type_id"] = item.unit_type_id;
+            this.form.items[index] = this.row;
+
+            this.calculateTotal();
+            this.setFormPosLocalStorage();
+        },
         enabledSearchItemByBarcode() {
             if (this.configuration.search_item_by_barcode) {
                 this.search_item_by_barcode = true;
@@ -1260,23 +1318,34 @@ export default {
                 });
         },
         getQueryParameters() {
-            return queryString.stringify({
-                garage: 1,
+            let p = {
                 page: this.pagination.current_page
                     ? this.pagination.current_page
                     : 1,
                 input_item: this.input_item,
                 cat: this.category_selected,
                 limit: this.limit
-            });
+            };
+            
+            if (this.businessTurns && [true, 1, "1"].includes(this.businessTurns.active)) {
+                p.garage = 1;
+            }
+            
+            return queryString.stringify(p);
         },
         getColor(i) {
             return this.colors[i % this.colors.length];
         },
         initCurrencyType() {
-            this.currency_type = _.find(this.currency_types, {
+            const exists = _.find(this.currency_types, {
                 id: this.form.currency_type_id
             });
+            if (!exists && this.currency_types.length > 0) {
+                this.form.currency_type_id = this.currency_types[0].id;
+                this.changeCurrencyType();
+                return;
+            }
+            this.currency_type = exists;
         },
         getFormPosLocalStorage() {
             let form_pos = localStorage.getItem("form_pos_garage");
@@ -1350,6 +1419,8 @@ export default {
 
             this.items[index].sale_unit_price = price.price;
             this.items[index].unit_type_id = price.unit_type_id;
+            this.items[index].presentation = price
+            
             this.$message.success("Precio seleccionado");
         },
         clickWarehouseDetail(item) {
@@ -1718,18 +1789,35 @@ export default {
                 return;
             }
 
-            this.loading = true;
+            let addingNotification = this.$notify({
+                title: "",
+                message: "Agregando...",
+                type: "info",
+                duration: 0
+            });
+
             let exchangeRateSale = this.form.exchange_rate_sale;
 
             // console.log(item.unit_type_id)
             // console.log(exist_item)
             // console.log(item)
+            let presentation = item.presentation
 
-            let exist_item = _.find(this.form.items, {
-                item_id: item.item_id,
-                unit_type_id: item.unit_type_id
-            });
-
+            let exist_item =  false 
+            if (presentation === undefined) {
+                exist_item = _.find(this.form.items, {
+                    item_id: item.item_id,
+                    unit_type_id: item.unit_type_id
+                });
+            } 
+            else {
+                // Se evalua si existe presentation de item
+                exist_item = _.find(this.form.items, {
+                    item_id: item.item_id,
+                    presentation: presentation,
+                    unit_type_id: item.unit_type_id
+                });
+            }
             // console.log(exist_item)
 
             let pos = this.form.items.indexOf(exist_item);
@@ -1744,6 +1832,7 @@ export default {
                     if (!response.success) {
                         item.item.aux_quantity = item.quantity;
                         this.loading = false;
+                        addingNotification.close();
                         return this.$message.error(response.message);
                     }
 
@@ -1755,6 +1844,7 @@ export default {
                     );
                     if (!response.success) {
                         this.loading = false;
+                        addingNotification.close();
                         return this.$message.error(response.message);
                     }
 
@@ -1790,6 +1880,9 @@ export default {
                     this.percentage_igv
                 );
 
+                console.log(this.row);
+                
+
                 this.row["unit_type_id"] = item.unit_type_id;
 
                 this.form.items[pos] = this.row;
@@ -1802,6 +1895,7 @@ export default {
                 );
                 if (!response.success) {
                     this.loading = false;
+                    addingNotification.close();
                     return this.$message.error(response.message);
                 }
 
@@ -1841,7 +1935,7 @@ export default {
                     exchangeRateSale,
                     this.percentage_igv
                 );
-                //console.log(this.row)
+                console.log(this.row)
 
                 // this.row['unit_type_id'] = item.presentation ? item.presentation.unit_type_id : 'NIU';
 
@@ -1855,11 +1949,13 @@ export default {
 
             // console.log("pos", this.row);
 
+            addingNotification.close();
+
             this.$notify({
                 title: "",
                 message: "Producto añadido!",
                 type: "success",
-                duration: 700
+                duration: 1000
             });
 
             this.cleanInput();
@@ -1871,7 +1967,6 @@ export default {
             // console.log(this.row)
             // console.log(this.form.items)
             await this.calculateTotal();
-            this.loading = false;
 
             await this.setFormPosLocalStorage();
 
@@ -2050,7 +2145,11 @@ export default {
                 this.loading = true;
                 let parameters = `input_item=${this.input_item}&cat=${
                     this.category_selected
-                }&garage=1`;
+                }`;
+                
+                if (this.businessTurns && [true, 1, "1"].includes(this.businessTurns.active)) {
+                    parameters += '&garage=1';
+                }
 
                 await this.$http
                     .get(`/${this.resource}/search_items_cat?${parameters}`)

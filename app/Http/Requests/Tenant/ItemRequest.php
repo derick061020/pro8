@@ -30,7 +30,7 @@ class ItemRequest extends FormRequest
                 'required', 'max:600'
             ],
             'name' => [
-                'max:600'
+                'max:1000'
             ],
             'second_name' => [
                 'max:600'
@@ -125,7 +125,7 @@ class ItemRequest extends FormRequest
     {
         return [
             'description.required' => 'El campo nombre es obligatorio.',
-            'name.max' => 'La descripción debe ser inferior a 600 caracteres.',
+            'name.max' => 'La descripción debe ser inferior a 1000 caracteres.',
             'sale_unit_price.gt' => 'El precio unitario de venta debe ser mayor que 0.',
         ];
     }

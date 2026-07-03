@@ -12,10 +12,12 @@ class VerifyGuestRegisterMail extends Mailable
 
     public $signed_url;
     public $username;
+    public $payment_url;
 
-    public function __construct($signed_url)
+    public function __construct($signed_url, $payment_url = null)
     {
         $this->signed_url = $signed_url;
+        $this->payment_url = $payment_url;
     }
 
     /**

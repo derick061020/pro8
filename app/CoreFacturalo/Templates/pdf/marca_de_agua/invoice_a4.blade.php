@@ -75,6 +75,7 @@
     }
     $configurationInPdf= App\CoreFacturalo\Helpers\Template\TemplateHelper::getConfigurationInPdf();
     $type = App\CoreFacturalo\Helpers\Template\TemplateHelper::getTypeSoap();
+    $total_pending_payment = $document->total_pending_payment;
 @endphp
 <html>
 <head>
@@ -103,7 +104,7 @@
     @if (isset($logo))
         <img 
             src="data:{{ mime_content_type(public_path("{$logo}")) }};base64,{{ base64_encode(file_get_contents(public_path("{$logo}"))) }}" 
-            alt="{{ $company->name }}" 
+            alt="{{ \App\CoreFacturalo\Helpers\CompanyDocumentDisplay::logoAlt($company) }}" 
             style="width: 100%; height: auto; object-fit: contain; opacity: 0.1;"
         >
     @endif
@@ -138,12 +139,12 @@
         @if($company->logo)
             <td width="20%">
                 <div class="company_logo_box">
-                    <img src="data:{{mime_content_type(public_path("{$logo}"))}};base64, {{base64_encode(file_get_contents(public_path("{$logo}")))}}" alt="{{$company->name}}" class="company_logo" style="max-width: 250px;">
+                    <img src="data:{{mime_content_type(public_path("{$logo}"))}};base64, {{base64_encode(file_get_contents(public_path("{$logo}")))}}" alt="{{ \App\CoreFacturalo\Helpers\CompanyDocumentDisplay::logoAlt($company) }}" class="company_logo" style="max-width: 250px;">
                 </div>
             </td>
             <td width="40%" class="text-center">
                 <div class="text-left">
-                    <h4 class="">{{ $company->name }}</h4>
+                    @include('pdf.partials.company_document_header_names')
                     <h5>{{ 'RUC '.$company->number }}</h5>
                     <h6 style="text-transform: uppercase;">
                         {{ ($establishment->address !== '-')? $establishment->address : '' }}
@@ -178,7 +179,7 @@
         @else
             <td width="40%" class="pl-1">
                 <div class="text-left">
-                    <h4 class="">{{ $company->name }}</h4>
+                    @include('pdf.partials.company_document_header_names')
                     <h5>{{ 'RUC '.$company->number }}</h5>
                     <h6 style="text-transform: uppercase;">
                         {{ ($establishment->address !== '-')? $establishment->address : '' }}
@@ -662,17 +663,26 @@
                         {{ $information }} <br>
                     @endif
                 @endforeach
+                @if ($document->retention || $document->detraction)
+                    @php
+                        $value_ob = $document->detraction ? $document->detraction : $document->retention;
+                        $total_pending_payment = $document->total_pending_payment - $value_ob->guarantee_fund;
+                    @endphp
+                @endif
                 @if($document->retention)
                     <span class="font-bold">Información de la retención</span>
                     <br><span class="">Valor total del comprobante: </span>{{$document->currency_type->symbol}}
                     {{ $document->currency_type->id == 'USD' ? number_format(($document->getRetentionTaxBase()/$document->exchange_rate_sale), 2) : $document->getRetentionTaxBase() }}
                     <br><span class="">Porcentaje de la retención: </span>{{ $document->retention->percentage * 100 }}%
                     <br><span class="">Monto de la retención {{ $document->currency_type->id == 'USD' ? 'soles' : '' }}:</span> 
+
                     S/ {{ $document->retention->amount_pen}}
                     @if ($document->currency_type->id == 'USD')
                         <br><span class="">Monto de la retención dólares:</span>
                         {{$document->currency_type->symbol}} {{ number_format(($document->retention->amount_pen/$document->exchange_rate_sale), 2)}}
                     @endif
+
+                    <br><span class=""> Fondo de garantía: </strong>{{ $document->currency_type->symbol }} {{ number_format($value_ob->guarantee_fund, 2) }}</span>
                 @endif
                 @if ($document->detraction)
                     <span class="font-bold">N. Cta. detracciones:</span> {{ $document->detraction->bank_account }}
@@ -713,7 +723,7 @@
             <td class="p-1 text-right align-top desc cell-solid font-bold" colspan="{{ $colspan_total }}">
                 TOTAL DCTOS. {{$document->currency_type->symbol}}
             </td>
-            <td class="p-1 text-right align-top desc cell-solid font-bold">{{ number_format($document->total_discount, 2) }}</td>
+            <td class="p-1 text-right align-top desc cell-solid font-bold">{{ number_format($document->total_discount_with_igv, 2) }}</td>
         </tr>
         <tr>
 
@@ -733,7 +743,7 @@
                 <td colspan="6" class="p-1 text-right align-top desc cell-solid font-bold">
                     M. PENDIENTE. {{ $document->currency_type->symbol }}
                 </td>
-                <td class="p-1 text-right align-top desc cell-solid font-bold">{{ number_format($document->total_pending_payment, 2) }}</td>
+                <td class="p-1 text-right align-top desc cell-solid font-bold">{{ number_format($total_pending_payment, 2) }}</td>
             </tr>
         @endif
     </tbody>

@@ -57,6 +57,7 @@
                 <button
                     class="btn btn-custom btn-sm  mt-2 me-2"
                     type="button"
+                    style="color: #fff;"
                     @click.prevent="clickExport()"
                 >
                     <i class="fa fa-download"></i> Exportar
@@ -64,6 +65,7 @@
                 <button
                     class="btn btn-custom btn-sm  mt-2 me-2"
                     type="button"
+                    style="color: #fff;"
                     @click.prevent="clickImport()"
                 >
                     <i class="fa fa-upload"></i> Importar
@@ -71,6 +73,7 @@
                 <button
                     class="btn btn-custom btn-sm  mt-2 me-2"
                     type="button"
+                    style="color: #fff;"
                     @click.prevent="clickCreate()"
                 >
                     <i class="fa fa-plus-circle"></i> Nuevo
@@ -573,3 +576,9 @@ export default {
     }
 };
 </script>
+
+<style scoped>
+.btn-custom, .btn-primary, .btn-danger {
+    color: #fff !important;
+}
+</style>

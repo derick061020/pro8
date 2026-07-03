@@ -175,5 +175,4 @@ class TemplatePdf
 
         return $bank_accounts->where('show_in_documents', true)->get();
     }
-    
 }

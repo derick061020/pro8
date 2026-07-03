@@ -2,7 +2,7 @@
 
     namespace Modules\Finance\Traits;
 
-    use App\Models\Tenant\{DocumentPayment, PurchasePayment, SaleNotePayment, PurchaseSettlementPayment};
+    use App\Models\Tenant\{Document, DocumentPayment, PurchasePayment, SaleNotePayment, PurchaseSettlementPayment, SaleNote};
     use App\Models\Tenant\BankAccount;
     use App\Models\Tenant\Cash;
     use App\Models\Tenant\Company;
@@ -22,7 +22,6 @@
     use App\Models\Tenant\CashDocumentCredit;
     use App\Models\Tenant\CashDocument;
     use Illuminate\Http\Exceptions\HttpResponseException;
-
 
     trait FinanceTrait
     {
@@ -97,6 +96,42 @@
             // }
 
             return null;
+
+        }
+
+        public function finance_cash_document($model, $id)
+        {
+            $cash = Cash::where([
+                ['user_id', auth()->id()],
+                ['state', true],
+            ])->firstOrFail();
+
+            $isDocument = $model instanceof Document;
+            $documentModel = $isDocument ? Document::class : SaleNote::class;
+            $documentField = $isDocument ? 'document_id' : 'sale_note_id';
+            $paymentConditionField = $isDocument ? 'payment_condition_id' : 'payment_method_type_id';
+            $creditCondition = $isDocument ? '02' : '09';
+
+            $document = $documentModel::findOrFail((int) $id);
+
+            $isCredit = $document->$paymentConditionField === $creditCondition;
+            $cashDocumentCredit = $isCredit ? CashDocumentCredit::updateOrCreate([
+                'cash_id' => $cash->id,
+                $documentField => $document->id,
+            ]) : null;
+            
+            $cashDocument = $cash->cash_documents()->updateOrCreate([
+                $documentField => $id
+            ]);
+
+            
+            $document->payments->each(function($payment) use($cash,$isDocument,$cashDocument){
+                CashDocumentPayment::updateOrCreate([
+                    'cash_id' => $cash->id,
+                    $isDocument ? 'document_payment_id' : 'sale_note_payment_id' => $payment->id,
+                    'cash_document_id' => optional($cashDocument)->id,
+                ]);
+            });
 
         }
 

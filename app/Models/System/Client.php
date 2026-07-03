@@ -6,7 +6,9 @@ use App\Mail\PaymentOrderEmail;
 use Carbon\Carbon;
 use Hyn\Tenancy\Models\Hostname;
 use Hyn\Tenancy\Traits\UsesSystemConnection;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Support\Facades\Config;
 use GuzzleHttp\Client as HttpClient;
 use Illuminate\Support\Facades\Log;
@@ -70,6 +72,7 @@ class Client extends Model
     protected $with = ['hostname','plan'];
 
     protected $fillable = [
+        'created_by_user_id',
         'hostname_id',
         'number',
         'name',
@@ -100,6 +103,32 @@ class Client extends Model
         'client_name',
         'contact_email',
     ];
+
+    protected static function booted()
+    {
+        static::addGlobalScope('reseller_subadmin_assigned_clients', function (Builder $builder) {
+            $user = auth('admin')->user();
+
+            // Subadministradores reseller: clientes asignados (pivot) o creados por el propio usuario.
+            // Quien tenga is_master en BD ignora la asignación y ve todas las empresas.
+            if ($user instanceof \App\Models\System\User && $user->reseller_id !== null && ! $user->isResellerSystemMasterAdministrator()) {
+                $uid = (int) $user->id;
+                $builder->where(function (Builder $q) use ($uid) {
+                    $q->whereExists(function ($sub) use ($uid) {
+                        $sub->selectRaw('1')
+                            ->from('reseller_admin_clients')
+                            ->whereColumn('reseller_admin_clients.client_id', 'clients.id')
+                            ->where('reseller_admin_clients.admin_user_id', $uid);
+                    })->orWhere('clients.created_by_user_id', $uid);
+                });
+            }
+        });
+    }
+
+    public function assignedResellerAdministrators(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'reseller_admin_clients', 'client_id', 'admin_user_id');
+    }
 
 
     protected $casts = [
@@ -318,7 +347,7 @@ class Client extends Model
         return isset($this->price) ? $this->price : $this->plan->pricing;
     }
 
-    public function createPayemtnOrder()
+    public function createPayemtnOrder($description = null, $created_by = 'Sistema')
     {
         $price = $this->getPricePlan();
 
@@ -328,11 +357,11 @@ class Client extends Model
             'amount' => $price,
             'order_state_id' => 1,
             'client_id' => $this->id,
-            'description' => null,
-            'created_by' => 'Sistema',
+            'description' => $description,
+            'created_by' => $created_by,
         ]);
 
-        return $payments_order->id;
+        return $payments_order;
 
     }
 

@@ -523,6 +523,7 @@
                                                 <th class="font-weight-bold">Unidad</th>
                                                 <th class="font-weight-bold" style="min-width: 200px;">Descripción</th>
                                                 <th class="text-end font-weight-bold" style="min-width: 100px;">Cantidad</th>
+                                                <th v-if="config.enable_weight_in_dispatches" class="text-end font-weight-bold" style="min-width: 100px;">Peso</th>
                                                 <th style="min-width: 100px;"></th>
                                             </tr>
                                         </template>
@@ -539,8 +540,8 @@
                                                         [Lotes]
                                                     </a>
                                                 </td>
-                                                <td class="text-end">S/{{ getFormatQuantity(row.unit_price) }}</td>
-                                                <td class="text-end">S/{{ getFormatQuantity(row.total) }}</td>
+                                                <td class="text-end">S/{{ getFormatQuantity(row.unit_price || row.item?.unit_price || 0) }}</td>
+                                                <td class="text-end">S/{{ getFormatQuantity(row.total || row.item?.total || 0) }}</td>
                                                 <td class="text-end">
                                                     <button class="btn waves-effect waves-light btn-xs btn-danger"
                                                         type="button" @click.prevent="clickRemoveItem(index)">x
@@ -558,6 +559,15 @@
                                                         href="#" @click.prevent="listLotGroupSelected(row.IdLoteSelected)">
                                                         [Lotes]
                                                     </a>
+                                                </td>
+                                                <td class="text-end" v-if="config.enable_weight_in_dispatches && parentId">
+                                                    <el-input-number v-if="parentId" style="width: 170px;" v-model="row.weight" :max="99999999"
+                                                                        :min="min_qty" :precision="3" :step="1"
+                                                                        placeholder="Cantidad"
+                                                                        ></el-input-number>
+                                                </td>
+                                                <td class="text-end" v-else-if="config.enable_weight_in_dispatches">
+                                                    {{ getFormatWeight(row.weight) }}
                                                 </td>
                                                 <td class="text-end">
                                                     <button class="btn waves-effect waves-light btn-xs btn-danger"
@@ -832,7 +842,7 @@
             <delivery-address-form :showDialog.sync="showDialogDeliveryAddressForm" title="Nuevo punto de llegada"
                 :person-id="form.customer_id" @success="successDeliveryAddress"></delivery-address-form>
 
-            <items :dialogVisible.sync="showDialogAddItems" @addItem="addItem"></items>
+            <items :showWeightInput="config.enable_weight_in_dispatches && true" :dialogVisible.sync="showDialogAddItems" @addItem="addItem"></items>
 
             <dispatch-finish :recordId="recordId" :showClose="false" :send-sunat="send_sunat"
                 :showDialog.sync="showDialogFinish"></dispatch-finish>
@@ -1091,6 +1101,11 @@ export default {
 
         if (this.parentId) {
             this.form = Object.assign({}, this.form, this.document);
+            this.form.items = this.form.items.map(row => ({
+                ...row,
+                unit_price: row.unit_price || row.item?.unit_price || 0,
+                total: row.total || row.item?.total || 0,
+            }));
             this.calculatePackagesFromItems();
             await this.reloadDataCustomers(this.form.customer_id);
             await this.getDeliveryAddresses(this.form.customer_id);
@@ -1185,7 +1200,7 @@ export default {
                 transshipment_indicator: false,
                 port_code: null,
                 unit_type_id: 'KGM',
-                total_weight: 1,
+                total_weight: 0,
                 packages_number: 0,
                 container_number: null,
                 dispatcher_id: null,
@@ -1288,6 +1303,9 @@ export default {
         },
         getFormatQuantity(quantity) {
             return _.round(quantity, 4)
+        },
+        getFormatWeight(quantity) {
+            return _.round(quantity, 2)
         },
         canCreateProduct() {
             if (this.config.typeUser === 'admin') {
@@ -1566,12 +1584,19 @@ export default {
         addItem(form) {
             let it = form.item;
             let qty = form.quantity;
+            let total_weight = 0
+
+            if (it.attributes && it.attributes.length > 0 ) {
+                it.attributes.forEach(attr => {
+                    if (attr.attribute_type_id === '5031') {
+                        total_weight += parseFloat(attr.value) * qty
+                    }
+                }); 
+            }
+            
+            this.form.total_weight += total_weight
             let exist = this.form.items.find((item) => item.id == it.id);
             let attributes = null
-            if (it.attributes) {
-                attributes = it.attributes
-                this.incrementValueAttr(form)
-            }
             if (exist) {
                 exist.quantity = (it.lots_enabled || it.series_enabled)? form.quantity : exist.quantity + form.quantity;
 
@@ -1607,7 +1632,13 @@ export default {
                 lots: it.lots || null,
                 unit_price: it.unit_price,
                 total: it.total,
+                weight: it.weight || 0
             });
+
+            if (this.config.enable_weight_in_dispatches) {
+                this.form.total_weight += (it.weight ? it.weight  : 0);
+            }
+
         },
         keyupCustomer() {
             if (this.input_person.number) {
@@ -1823,6 +1854,7 @@ export default {
 
             this.form.origin = _.find(this.origin_addresses, { 'id': this.form.origin_address_id });
             this.form.delivery = _.find(this.delivery_addresses, { 'id': this.form.delivery_address_id });
+            this.form.total_weight = _.round(this.form.total_weight, 2) > 0 ? _.round(this.form.total_weight, 2) : 1;
             // this.form.origin = this.origin;
 
             // if (this.form.origin.location_id.length !== 3 || this.form.delivery.location_id.length !== 3) {

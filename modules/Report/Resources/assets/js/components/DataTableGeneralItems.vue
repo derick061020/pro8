@@ -14,7 +14,7 @@
 
             <div class="col-md-12 col-lg-12 col-xl-12 " v-if="isVisible">
 
-                <div class="row mt-2">
+                <div class="row mt-2 mx-0">
                         <div class="col-md-2 form-group">
                             <label class="control-label">Tipo de usuario</label>
                             <el-select v-model="form.user_type" clearable
@@ -193,20 +193,20 @@
                                 </el-select>
                             </div>
                         </div>
-                        <div class="col-lg-7 col-md-7 col-md-7 col-sm-12" style="margin-top:29px">
+                        <div class="col-12 d-flex flex-wrap" style="margin-top:29px">
                             <el-button class="submit" type="primary" @click.prevent="getRecordsByFilter" :loading="loading_submit" icon="el-icon-search" >Buscar</el-button>
 
                             <template v-if="records.length>0">
 
-                                <el-button class="submit" type="success" @click.prevent="clickDownload('xlsx')"><i class="fa fa-file-excel" ></i>  Exportal Excel</el-button>
-                                <el-button class="submit" type="danger"  icon="el-icon-tickets" @click.prevent="clickDownload('pdf')" >Exportar PDF</el-button>
+                                <el-button class="submit ms-2" type="success" @click.prevent="clickDownload('xlsx')"><i class="fa fa-file-excel" ></i>  Exportal Excel</el-button>
+                                <el-button class="submit ms-2" type="danger"  icon="el-icon-tickets" @click.prevent="clickDownload('pdf')" >Exportar PDF</el-button>
 
                             </template>
 
                         </div>
                 </div>
             </div>
-            <div class="col-md-12">
+            <div class="col-md-12 position-relative">
                 <div class="scroll-shadow shadow-left" v-show="showLeftShadow"></div>
                 <div class="scroll-shadow shadow-right" v-show="showRightShadow"></div>
                 <div class="table-responsive" ref="scrollContainer">

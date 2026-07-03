@@ -3,11 +3,15 @@
 namespace App\Observers;
 
 use App\CoreFacturalo\Requests\Inputs\Functions;
+use App\Models\Tenant\Cash;
+use App\Models\Tenant\CashDocument;
 use App\Models\Tenant\Company;
 use App\Models\Tenant\Document;
+use Modules\Finance\Traits\FinanceTrait;
 
 class DocumentObserver
 {
+    use FinanceTrait;
     /**
      * Handle the document "creating" event.
      *
@@ -70,5 +74,20 @@ class DocumentObserver
     public function forceDeleted(Document $document)
     {
         //
+    }
+
+    public function created(Document $document)
+    {
+        // Esto nos verifica que es un documento generado desde el api
+        $cash = Cash::where([
+            ['user_id', auth()->id()],
+            ['state', true],
+        ])->firstOrFail();
+
+        $cash_document = CashDocument::where('cash_id', $cash->id)
+                    ->where('document_id', $document->id)->first();
+        if (!$cash_document) {
+            $this->finance_cash_document( $document, $document->id );
+        }
     }
 }

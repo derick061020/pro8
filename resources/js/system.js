@@ -1,4 +1,5 @@
 import './bootstrap';
+import Swal from 'sweetalert2';
 
 import 'bootstrap/dist/js/bootstrap.bundle.js'; // Incluye Popper
 import 'bootstrap/dist/css/bootstrap.min.css';
@@ -12,6 +13,10 @@ import locale from 'element-ui/lib/locale'
 
 import '../sass/element-ui.scss';
 import 'element-ui/lib/theme-chalk/index.css';
+import CheckoutIzipay from './components/checkouts/izipay.vue'
+import CheckoutCulqi from './components/checkouts/culqi.vue'
+import CheckoutAdmin from './components/checkouts/CheckoutAdmin.vue'
+import CheckoutGuest from './components/checkouts/CheckoutGuest.vue'
 
 
 // components
@@ -30,6 +35,7 @@ import SystemMassiveInvoiceIndex from './views/system/massive_invoice/index.vue'
 import SystemUpdateIndex from './views/system/update/index.vue';
 import SystemBackupIndex from './views/system/backup/index.vue';
 import SystemConfigurationCulqui from './views/system/configuration/culqi.vue';
+import SystemConfigurationIzipay from './views/system/configuration/izipay.vue';
 import SystemConfigurationApkUrl from './views/system/configuration/apk-url.vue';
 import SystemConfigurationTokenRucDni from './views/system/configuration/token_ruc_dni.vue';
 import SystemConfigurationPhpInfo from './views/system/configuration/php_info.vue';
@@ -37,17 +43,21 @@ import SystemConfigurationServerStatus from './views/system/configuration/server
 import SystemConfigurationLogin from './views/system/configuration/login.vue';
 import SystemConfigurationOtherConfiguration from './views/system/configuration/other_configuration.vue';
 import SystemConfigurationEmail from './views/system/configuration/emailConfiguration.vue';
+import PublicSearchBackgroundConfiguration from './views/shared/public_search_background.vue';
 import SystemReportLoginLockout from '@viewsModuleReport/system/report_login_lockout/index.vue';
 import SystemUserNotChangePassword from '@viewsModuleReport/system/user_not_change_password/index.vue';
 import SystemPlansIndex from './views/system/plans/index.vue';
 import SystemPlansForm from './views/system/plans/form.vue';
 import SystemConfigurationCronOrderPayments from './views/system/configuration/cronOrderPayments.vue';
 import SystemPaymentsIndex from './views/system/payments/index.vue';
+import SystemAdminResellerAdministratorsIndex from './views/system/admin_reseller/administrators/index.vue';
 
 import InputService from '../../modules/ApiPeruDev/Resources/assets/js/components/InputService.vue'// apiperu - porque cambiar el input si tiene el mismo contenido?
 import SystemGuestRegisterDisabled from  './views/system/guest-register/disabled.vue'
 import SystemGuestRegister from './views/system/guest-register/register.vue'
 import XImportServiceGuest from './../../modules/ApiPeruDev/Resources/assets/js/components/InputServiceGuest.vue'
+import SystemConfigurationThemes from './views/system/configuration/themes.vue'
+import SystemsVisibleColumns from './views/system/configuration/visibleColumns.vue'
 
 
 locale.use(lang)
@@ -62,6 +72,30 @@ export default ElementUI;
 
 Vue.use(ElementUI, { size: 'small' })
 Vue.prototype.$eventHub = new Vue()
+
+// Interceptor: sesión vencida por inactividad (419)
+let sessionExpiredShown = false;
+if (Vue.prototype.$http) {
+    Vue.prototype.$http.interceptors.response.use(
+        response => response,
+        error => {
+            if (error.response && error.response.status === 419 && !sessionExpiredShown) {
+                sessionExpiredShown = true;
+                Swal.fire({
+                    title: 'Sesión cerrada por inactividad',
+                    text: 'Por seguridad tu sesión expiró. Pulsa Continuar para recargar y seguir trabajando.',
+                    icon: 'warning',
+                    confirmButtonText: 'Continuar',
+                    confirmButtonColor: '#5b21b6',
+                    allowOutsideClick: false,
+                    allowEscapeKey: false
+                }).then(() => window.location.reload());
+                return new Promise(() => {});
+            }
+            return Promise.reject(error);
+        }
+    );
+}
 
 // System components only
 Vue.component('system-support-configuration', SystemSupportConfiguration);
@@ -85,6 +119,7 @@ Vue.component('system-massive-invoice-index', SystemMassiveInvoiceIndex);
 Vue.component('system-update', SystemUpdateIndex);
 Vue.component('system-backup', SystemBackupIndex);
 Vue.component('system-configuration-culqi', SystemConfigurationCulqui);
+Vue.component('system-configuration-izipay', SystemConfigurationIzipay);
 Vue.component('system-configuration-apk-url', SystemConfigurationApkUrl);
 Vue.component('system-configuration-token', SystemConfigurationTokenRucDni);
 Vue.component('system-php-configuration', SystemConfigurationPhpInfo);
@@ -94,6 +129,7 @@ Vue.component('system-server-status', SystemConfigurationServerStatus);
 Vue.component('system-login-settings', SystemConfigurationLogin);
 Vue.component('system-login-other-configuration', SystemConfigurationOtherConfiguration);
 Vue.component('system-email-configuration', SystemConfigurationEmail);
+Vue.component('system-public-search-configuration', PublicSearchBackgroundConfiguration);
 
 // Reports in system
 Vue.component('system-report-login-lockout-index', SystemReportLoginLockout);
@@ -109,10 +145,18 @@ Vue.component('x-input-service', InputService);
 //system payments
 Vue.component('system-payments-index', SystemPaymentsIndex);
 Vue.component('system-cron-order-configuration', SystemConfigurationCronOrderPayments);
+Vue.component('system-admin-reseller-administrators-index', SystemAdminResellerAdministratorsIndex);
 Vue.component('system-guest-register-register', SystemGuestRegister);
 Vue.component('system-guest-register-disabled', SystemGuestRegisterDisabled );
 Vue.component('x-input-service-guest', XImportServiceGuest);
 
+Vue.component('system-checkout-culqi', CheckoutCulqi)
+Vue.component('system-checkout-izipay', CheckoutIzipay)
+Vue.component('checkout-admin', CheckoutAdmin)
+Vue.component('checkout-guest', CheckoutGuest)
+
+Vue.component('system-configuration-themes', SystemConfigurationThemes)
+Vue.component('system-configuration-visible-columns', SystemsVisibleColumns)
 
 import VueClipboard from 'vue-clipboard2'
 Vue.use(VueClipboard)

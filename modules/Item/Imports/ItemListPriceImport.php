@@ -23,78 +23,82 @@ class ItemListPriceImport implements ToCollection
 
     public function collection(Collection $rows)
     {
-            $total = count($rows);
-            $registered = 0;
-            unset($rows[0]);
+        $total = count($rows);
+        $registered = 0;
+        unset($rows[0]); // quitar encabezado
 
-            $records = $rows;
-            $enable_list_product = Configuration::first()->enable_list_product;
+        $records = $rows;
+        $enable_list_product = Configuration::first()->enable_list_product;
 
-            if (!$enable_list_product) {
-                $records= $rows->unique(fn ($row) => $row[0]);
+        if (!$enable_list_product) {
+            $records = $rows->unique(fn ($row) => $row[0]);
+        }
+
+        $activeLabels = PriceLabel::active()->ordered()->get();
+
+        foreach ($records as $row) {
+            $internal_id = ($row[0]) ?: null;
+            if (!$internal_id) continue;
+
+            $item = Item::where('internal_id', $internal_id)->first();
+            if (!$item) continue;
+
+            if ($enable_list_product) {
+                $unit_type_id = $row[1];
+                $factor       = $row[2];
+                $description  = $row[3];
+                $prices       = $row->slice(4)->values();
+
+                // buscar la presentación existente; si no existe, crearla
+                $itemUnitType = $item->item_unit_types()
+                    ->where('description', $description)
+                    ->where('unit_type_id', $unit_type_id)
+                    ->first();
+
+                if (!$itemUnitType) {
+                    $itemUnitType = $item->item_unit_types()->create([
+                        'description'   => $description,
+                        'unit_type_id'  => $unit_type_id,
+                        'quantity_unit' => $factor,
+                        'price1' => 0, 'price2' => 0, 'price3' => 0,
+                    ]);
+                }
+            } else {
+                // modo simple: [codigo, precios...] → la presentación por defecto del producto
+                $prices = $row->slice(1)->values();
+
+                $itemUnitType = $item->item_unit_types()->first();
+
+                if (!$itemUnitType) {
+                    $itemUnitType = $item->item_unit_types()->create([
+                        'description'   => $item->unit_type->description,
+                        'unit_type_id'  => $item->unit_type_id,
+                        'quantity_unit' => 1,
+                        'price1' => 0, 'price2' => 0, 'price3' => 0,
+                    ]);
+                }
             }
 
+            // ACTUALIZAR (o crear) el precio de cada label activo
+            foreach ($prices as $index => $price) {
+                if (!isset($activeLabels[$index])) continue;
+                $label = $activeLabels[$index];
 
-            foreach ($records as $row)
-            {
-                $factor = 1;
-                $internal_id = null;
-                $unit_type_id = null;
-                $description = null;
-
-                $internal_id = ($row[0])?:null; // Codigo interno
-                if ($enable_list_product) {
-                    $prices = $row->slice(4)->values();
-                } else {
-                    $prices = $row->slice(1)->values();
-                }
-                $item = null;
-
-                if($internal_id) {
-                    $item = Item::where('internal_id', $internal_id)
-                                    ->first();
-                }
-                
-                if($item) {
-                    $item_unit_type = ItemUnitType::where('item_id', $item->id)
-                                                    ->first();
-                    if(!$item_unit_type || $enable_list_product){
-
-                        if (!$enable_list_product) {
-                            $description = $item->unit_type->description;
-                            $unit_type_id = $item->unit_type_id; // Unidad 
-
-                        } else {
-                            $unit_type_id = $row[1]; // Unidad 
-                            $factor = $row[2]; // Factor
-                            $description = $row[3]; // Descripción
-                        }
-
-                        $itemUnitType = $item->item_unit_types()->create([
-                            'description' => $description,
-                            'unit_type_id' => $unit_type_id,
-                            'quantity_unit' => $factor,
-                            'price1' => 0,
-                            'price2' => 0,
-                            'price3' => 0,
-                        ]);
-
-                        foreach ($prices as $index => $price) {
-                            $priceLabel = PriceLabel::where('position', ($index + 1));
-                            ItemUnitTypePrice::create([
-                                'item_unit_type_id' => $itemUnitType->id,
-                                'price' => is_numeric($price) ? $price : 0,
-                                'price_label_id' => $priceLabel->first()->id
-                            ]);
-                        }
-                    }
-
-                    $registered += 1;
-                } 
+                ItemUnitTypePrice::updateOrCreate(
+                    [
+                        'item_unit_type_id' => $itemUnitType->id,
+                        'price_label_id'    => $label->id,
+                    ],
+                    [
+                        'price' => is_numeric($price) ? $price : 0,
+                    ]
+                );
             }
 
-            $this->data = compact('total', 'registered');
+            $registered++;
+        }
 
+        $this->data = compact('total', 'registered');
     }
 
     public function getData()

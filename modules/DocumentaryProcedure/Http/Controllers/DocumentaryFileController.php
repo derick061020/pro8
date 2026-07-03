@@ -563,11 +563,11 @@
             $filenameOriginal = str_replace('.' . $ext, '', $file->getClientOriginalName());
             $name = $filenameOriginal . '-' . time() . '.' . $ext;
 
-            $allowed_file_types_images = ['image/jpg', 'image/jpeg', 'image/png', 'image/gif', 'image/svg'];
+            $allowed_file_types_images = ['image/jpg', 'image/jpeg', 'image/png', 'image/gif', 'image/svg', 'image/webp'];
             $is_image = UploadFileHelper::getIsImage($file->getPathName(), $allowed_file_types_images);
 
-            $allowed_file_types = ['image/jpg', 'image/jpeg', 'image/png', 'image/gif', 'image/svg', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
-            UploadFileHelper::checkIfValidFile($name, $file->getPathName(), $is_image, 'jpg,jpeg,png,gif,svg,docx,pdf,xlsx', $allowed_file_types);
+            $allowed_file_types = ['image/jpg', 'image/jpeg', 'image/png', 'image/gif', 'image/svg', 'image/webp', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+            UploadFileHelper::checkIfValidFile($name, $file->getPathName(), $is_image, 'jpg,jpeg,png,gif,svg,webp,docx,pdf,xlsx', $allowed_file_types);
 
             $path = 'storage/uploads/files/';
             $fullpath = $file->storeAs($path, $name);

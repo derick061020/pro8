@@ -4,7 +4,7 @@
         class="card mb-0 pt-2 pt-md-0"
         @click.self="toggleInformation" 
     >
-    <span class="module-title-marker" data-page-title="Nueva Cotización"></span>
+    <span class="module-title-marker" :data-page-title="resourceId ? 'Editar Cotización' : 'Nueva Cotización'"></span>
         <!-- <div class="card-header bg-info">
             <h3 class="my-0">Nuevo Comprobante</h3>
         </div> -->
@@ -60,6 +60,7 @@
                                     <el-date-picker
                                         v-model="form.date_of_issue"
                                         type="date"
+                                        :format="dpDateFormat"
                                         value-format="yyyy-MM-dd"
                                         :clearable="false"
                                         @change="changeDateOfIssue"
@@ -98,7 +99,7 @@
                 <form autocomplete="off" @submit.prevent="submit">
                     <div class="form-body m-3 m-md-4">
                         <div class="row mt-1">
-                            <div class="col-lg-6 pb-2">
+                            <div class="pb-2" :class="{'col-lg-6': currency_types.length > 1, 'col-lg-8': currency_types.length <= 1}">
                                 <div
                                     class="form-group position-relative"
                                     :class="{
@@ -108,7 +109,11 @@
                                     <label
                                         class="control-label font-weight-bold"
                                     >
-                                        Cliente
+                                        <el-badge type="success" :value="getCustomer.person_type" class="item">
+                                            <span>
+                                                Cliente
+                                            </span>
+                                        </el-badge>
                                         <!-- <a href="#" @click.prevent="showDialogNewPerson = true">[+ Nuevo]</a> -->
                                     </label>
                                     <el-select
@@ -148,9 +153,16 @@
                                             </div>
                                         </template>
                                     </el-select>
-                                    <span class="btn-add-new" @click.prevent="showDialogNewPerson = true" title="Agregar nuevo cliente">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-user-plus"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0" /><path d="M16 19h6" /><path d="M19 16v6" /><path d="M6 21v-2a4 4 0 0 1 4 -4h4" /></svg>
-                                    </span>
+                                    <template v-if="form.customer_id">
+                                        <span class="btn-add-new btn-edit-person btn-add-new-invoice" @click.prevent="showDialogNewPerson = true; editPerson = true" title="Editar cliente">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-user-edit"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0" /><path d="M6 21v-2a4 4 0 0 1 4 -4h3.5" /><path d="M18.42 15.61a2.1 2.1 0 0 1 2.97 2.97l-3.39 3.42h-3v-3l3.42 -3.39" /></svg>
+                                        </span>
+                                    </template>
+                                    <template>
+                                        <span class="btn-add-new btn-add-new-invoice" @click.prevent="showDialogNewPerson = true; editPerson = false" title="Agregar nuevo cliente">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-user-plus"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0" /><path d="M16 19h6" /><path d="M19 16v6" /><path d="M6 21v-2a4 4 0 0 1 4 -4h4" /></svg>
+                                        </span>
+                                    </template>
                                     <small
                                         class="form-control-feedback"
                                         v-if="errors.customer_id"
@@ -178,7 +190,7 @@
                                 </div>
                             </div>
 
-                            <div class="col-6 col-sm-4 col-lg-2">
+                            <div class="col-6 col-sm-4" :class="{'col-lg-2': currency_types.length > 1, 'col-lg-4': currency_types.length <= 1}">
                                 <div
                                     class="form-group"
                                     :class="{
@@ -213,14 +225,14 @@
                                 </div>
                             </div>
 
-                            <div class="col-6 col-sm-4 col-lg-2">
+                            <div v-if="currency_types.length > 1" class="col-6 col-sm-4 col-lg-2">
                                 <div
                                     class="form-group"
                                     :class="{
                                         'has-danger': errors.currency_type_id
                                     }"
                                 >
-                                    <label class="control-label">Moneda</label> 
+                                    <label class="control-label">Moneda</label>
                                     <el-select
                                         v-model="form.currency_type_id"
                                         @change="changeCurrencyType"
@@ -239,7 +251,7 @@
                                     ></small>
                                 </div>
                             </div>
-                            <div class="col-sm-4 col-lg-2">
+                            <div v-if="currency_types.length > 1" class="col-sm-4 col-lg-2">
                                 <div
                                     class="form-group"
                                     :class="{
@@ -1502,7 +1514,7 @@
                                                                                     :clearable="
                                                                                         false
                                                                                     "
-                                                                                    format="dd/MM/yyyy"
+                                                                                    :format="dpDateFormat"
                                                                                     type="date"
                                                                                     value-format="yyyy-MM-dd"
                                                                                     :readonly="
@@ -1549,7 +1561,7 @@
                             native-type="submit"
                             :loading="loading_submit"
                             v-if="form.items.length > 0"
-                            >Generar</el-button
+                            >{{ resourceId ? 'Actualizar' : 'Generar' }}</el-button
                         >
                     </div>
                 </form>
@@ -1568,6 +1580,7 @@
             :currency-types="currency_types"
             :show-option-change-currency="true"
             :permissionEditItemPrices="authUser.permission_edit_item_prices"
+            :displayDiscount="config.show_item_discounts_charges_attributes"
             ref="form_add_item"
             :selectedOptionPrice="selected_option_price"
             @add="addRow"
@@ -1579,6 +1592,7 @@
             :external="true"
             :input_person="personFormInput"
             :document_type_id="form.document_type_id"
+            :recordId="editPerson ? form.customer_id : null"
         ></person-form>
 
         <quotation-options
@@ -1695,7 +1709,7 @@ import ItemSearchQuickSale from "@components/items/ItemSearchQuickSale.vue";
 import PackItemDescription from "@components/items/PackItemDescription.vue";
 
 export default {
-    props: ["typeUser", "saleOpportunityId", "configuration", "authUser"],
+    props: ["typeUser", "saleOpportunityId", "resourceId", "configuration", "authUser"],
     components: {
         QuotationFormItem,
         PersonForm,
@@ -1708,6 +1722,7 @@ export default {
     mixins: [functions, exchangeRate, editableRowItems, fnItemSearchQuickSale],
     data() {
         return {
+            editPerson: false,
             sellers: [],
             input_person: {},
             resource: "quotations",
@@ -1741,31 +1756,15 @@ export default {
             recordItem: null,
             total_discount_no_base: 0,
             selected_option_price: null,
-            price_options: [
-                {
-                    id: 1,
-                    description: "Precio principal"
-                },
-                {
-                    id: "price1",
-                    description: "Precio 1"
-                },
-                {
-                    id: "price2",
-                    description: "Precio 2"
-                },
-                {
-                    id: "price3",
-                    description: "Precio 3"
-                }
-            ],
+            price_options: [],
             enabled_discount_global: false,
             is_amount: true,
             total_global_discount: 0,
             global_discount_types: [],
             global_discount_type: {},
             payment_condition: '01',
-            customerSearchTerm: ''
+            customerSearchTerm: '',
+            recordDiscountsGlobal: null
         };
     },
     watch: {
@@ -1776,17 +1775,11 @@ export default {
         }
     },
     async created() {
-        this.selected_option_price = this.price_options[0].id;
         this.loadConfiguration();
         this.$store.commit("setConfiguration", this.configuration);
-        
-        // Actualizar price_options con los labels personalizados
-        if (this.config) {
-            this.price_options[1].description = this.config.price1_label || 'Precio 1';
-            this.price_options[2].description = this.config.price2_label || 'Precio 2';
-            this.price_options[3].description = this.config.price3_label || 'Precio 3';
-        }
-        
+
+        await this.loadPriceOptions();
+
         await this.initForm();
         await this.$http.get(`/${this.resource}/tables`).then(response => {
             const data = response.data;
@@ -1797,9 +1790,11 @@ export default {
             this.charges_types = data.charges_types;
             this.company = data.company;
             
-            this.form.currency_type_id = this.config.currency_type_id || 
-                (this.currency_types.length > 0 ? this.currency_types[0].id : null);
-            
+            const configCurrencyAvailable = this.currency_types.some(c => c.id === this.config.currency_type_id);
+            this.form.currency_type_id = (this.config.currency_type_id && configCurrencyAvailable)
+                ? this.config.currency_type_id
+                : (this.currency_types.length > 0 ? this.currency_types[0].id : null);
+
             this.form.establishment_id =
                 this.establishments.length > 0
                     ? this.establishments[0].id
@@ -1831,8 +1826,20 @@ export default {
         });
 
         await this.createQuotationFromSO();
+        await this.initRecord();
     },
     computed: {
+        getCustomer(){
+            const customer = this.customers.find(
+                c => String(c.id) === String(this.form.customer_id)
+            );
+            console.log('getCustomer', {
+                customer_id: this.form.customer_id,
+                customers: this.customers,
+                customer
+            });
+            return customer || {};
+        },
         getCurrentLogo() {
             const isDarkMode = document.documentElement.classList.contains('dark');
         
@@ -2049,6 +2056,46 @@ export default {
             window.open(`/items/show-item-detail/${id}`);
         },
         ...mapActions(["loadConfiguration"]),
+        async loadPriceOptions() {
+            try {
+                const response = await this.$http.get('/price-labels/active');
+                const labels = response.data.data || [];
+
+                const mainLabel = (this.config && this.config.price1_label) ? this.config.price1_label : 'Precio principal';
+                this.price_options = [
+                    {
+                        id: 1,
+                        description: mainLabel,
+                        price_label_id: null
+                    }
+                ];
+
+                labels.forEach(label => {
+                    this.price_options.push({
+                        id: `price_label_${label.id}`,
+                        description: label.label,
+                        price_label_id: label.id
+                    });
+                });
+
+                const defaultLabel = labels.find(l => l.is_default);
+                if (defaultLabel) {
+                    this.selected_option_price = `price_label_${defaultLabel.id}`;
+                } else if (this.price_options.length > 0) {
+                    this.selected_option_price = this.price_options[0].id;
+                }
+            } catch (error) {
+                console.error('Error al cargar price_options:', error);
+                this.price_options = [
+                    {
+                        id: 1,
+                        description: "Precio principal",
+                        price_label_id: null
+                    }
+                ];
+                this.selected_option_price = 1;
+            }
+        },
         clickAddItem() {
             this.recordItem = null;
             this.showDialogAddItem = true;
@@ -2063,16 +2110,20 @@ export default {
             let customer = _.find(this.customers, {
                 id: this.form.customer_id
             });
-            this.customer_addresses = customer.addresses;
+            this.customer_addresses = customer.addresses || [];
 
             if (customer.address) {
-                if (_.find(this.customer_addresses, { id: null })) return;
-
-                this.customer_addresses.unshift({
-                    id: null,
-                    address: customer.address
-                });
+                if (!_.find(this.customer_addresses, { id: null })) {
+                    this.customer_addresses.unshift({
+                        id: null,
+                        address: customer.address
+                    });
+                }
             }
+
+            this.selected_option_price = customer?.price_label_id
+                ? `price_label_${customer.price_label_id}`
+                : 1;
         },
         changeTermsCondition() {
             if (this.form.active_terms_condition) {
@@ -2128,6 +2179,55 @@ export default {
         },
         clickCancel(index) {
             this.form.payments.splice(index, 1);
+        },
+        initRecord() {
+            if (!this.resourceId) return;
+
+            this.$http.get(`/${this.resource}/record/${this.resourceId}`)
+                .then(response => {
+                    let dato = response.data.data.quotation;
+                    this.form.id = dato.id;
+                    this.form.customer_id = dato.customer_id;
+                    this.customers = this.customers.filter(el => el.id !== this.form.customer_id)
+                    this.customers.push(response.data.data.customer)
+                    this.form.currency_type_id = dato.currency_type_id;
+                    this.form.payment_method_type_id = dato.payment_method_type_id;
+                    this.form.date_of_due = dato.date_of_due;
+                    this.form.date_of_issue = dato.date_of_issue;
+                    this.form.delivery_date = dato.delivery_date;
+                    this.form.exchange_rate_sale = dato.exchange_rate_sale;
+                    this.form.description = dato.description;
+                    this.form.shipping_address = dato.shipping_address;
+                    this.form.account_number = dato.account_number;
+                    this.form.terms_condition = dato.terms_condition;
+                    this.form.seller_id = dato.seller_id;
+                    this.form.active_terms_condition = dato.terms_condition ? true : false;
+                    this.form.items = this.onPrepareItems(dato.items);
+                    this.form.payments = dato.payments;
+                    this.form.referential_information = dato.referential_information;
+                    this.changeCustomer();
+                    this.form.customer_address_id = dato.customer.address_id;
+
+                    if (dato.discounts[0]) {
+                        this.recordDiscountsGlobal = dato.discounts[0];
+                        let discount_type_id = dato.discounts[0].discount_type_id;
+                        this.total_global_discount = discount_type_id !== '02'
+                            ? dato.total_discount
+                            : _.round(Number(dato.total_discount * 1.18).toFixed(3), 2);
+                    }
+                    this.calculateTotal();
+                });
+        },
+        onPrepareItems(items) {
+            return items.map(item => {
+                item.discounts = (item.discounts) ? Object.values(item.discounts) : [];
+                return calculateRowItem(
+                    item,
+                    this.form.currency_type_id,
+                    this.form.exchange_rate_sale,
+                    this.percentage_igv
+                );
+            });
         },
         async createQuotationFromSO() {
             if (this.saleOpportunityId) {
@@ -2190,6 +2290,10 @@ export default {
             } else {
                 this.allCustomers();
                 this.input_person.number = null;
+                if (this.form.customer_id) {
+                    this.form.customer_id = null;
+                    this.customer_addresses = [];
+                }
             }
         },
         initForm() {
@@ -2255,9 +2359,11 @@ export default {
             this.activePanel = 0;
             this.initForm();
 
-            this.form.currency_type_id = this.config.currency_type_id || 
-                (this.currency_types.length > 0 ? this.currency_types[0].id : null);
-    
+            const configCurrencyAvailable = this.currency_types.some(c => c.id === this.config.currency_type_id);
+            this.form.currency_type_id = (this.config.currency_type_id && configCurrencyAvailable)
+                ? this.config.currency_type_id
+                : (this.currency_types.length > 0 ? this.currency_types[0].id : null);
+
             this.form.establishment_id =
                 this.establishments.length > 0
                     ? this.establishments[0].id
@@ -2499,10 +2605,19 @@ export default {
 
             this.loading_submit = true;
 
+            const isEdit = this.form.id && this.form.id > 0;
+            const endpoint = isEdit ? `/${this.resource}/update` : `/${this.resource}`;
+
             await this.$http
-                .post(`/${this.resource}`, this.form)
+                .post(endpoint, this.form)
                 .then(response => {
                     if (response.data.success) {
+                        if (isEdit) {
+                            this.quotationNewId = response.data.data.id;
+                            this.showDialogOptions = true;
+                            return;
+                        }
+
                         this.resetForm();
                         this.quotationNewId = response.data.data.id;
                         this.saveCashDocument(this.quotationNewId);
@@ -2541,6 +2656,13 @@ export default {
                 .then(response => {
                     this.customers = response.data.customers;
                     this.form.customer_id = customer_id;
+                    let customer = this.customers.find(
+                        c => String(c.id) === String(customer_id)
+                    );
+
+                    this.selected_option_price = customer?.price_label_id
+                        ? `price_label_${customer.price_label_id}`
+                        : 1;
                 });
         },
         setDescriptionOfItem(item) {

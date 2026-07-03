@@ -294,6 +294,7 @@ function hexToHSL(hex) {
 }
 
 // Fetch a Laravel
+/*
 fetch('/ecommerce/color-ecommerce')
   .then(response => response.json())
   .then(data => {
@@ -309,7 +310,7 @@ fetch('/ecommerce/color-ecommerce')
 
   })
   .catch(error => console.error('Error obteniendo el color:', error));
-
+*/
 </script>
 @push('scripts')
 <script type="text/javascript">

@@ -45,12 +45,23 @@
             </div>
             <div class="row">
 
-                <div v-if="!locked_emission.success"
+                <template v-if="failsInSend">
+                    <div
                      class="col-lg-12 col-md-12 col-sm-12 text-center font-weight-bold">
-                    <el-alert :title="locked_emission.message"
+                        <el-alert :title="failsMessage"
                               show-icon
                               type="warning"></el-alert>
-                </div>
+                    </div>
+
+                </template>
+                <template v-else>
+                    <div v-if="!locked_emission.success"
+                     class="col-lg-12 col-md-12 col-sm-12 text-center font-weight-bold">
+                        <el-alert :title="locked_emission.message"
+                              show-icon
+                              type="warning"></el-alert>
+                    </div>
+                </template>
             </div>
 
             <div class="row" v-if="form.send_to_pse">
@@ -111,7 +122,7 @@
                                    class="btn btn-lg btn-info waves-effect waves-light w-100"
                                    type="button"
                                    @click="clickPrint('ticket_50')">
-                            50MM                     
+                            50MM
                         </el-button>
                     </el-popover>
                 </div>
@@ -139,7 +150,7 @@
                         <el-button slot="append"
                                    :loading="loading"
                                    icon="el-icon-message"
-                                   @click="clickSendEmail">Enviar 
+                                   @click="clickSendEmail">Enviar
                         </el-button>
                     </el-input>
                     <small v-if="errors.customer_email"
@@ -173,7 +184,7 @@
                     :wsFile="form.pdf_a4_filename"
                     :wsDocument="form.number"
                     :wsMessage="form.message_text"/>
-                    <QrApi 
+                    <QrApi
                         v-else-if="config.qr_api_enable_ws"
                         colClass="col-12"
                         :wsPhone="form.customer_telephone"
@@ -229,7 +240,7 @@ import QrApi from '@viewsModuleQrApi/QrApiTemplate.vue'
 import QrChatWsapp from '@viewsModuleQrChatBuho/ButtonSend.vue'
 
 export default {
-    props: ['showDialog', 'recordId', 'showClose', 'isContingency', 'generatDispatch', 'dispatchId', 'isUpdate', 'configuration', 'table'],
+    props: ['showDialog', 'recordId', 'showClose', 'isContingency', 'generatDispatch', 'dispatchId', 'isUpdate', 'configuration', 'table', 'failsInSend', 'failsMessage'],
     components: {
         Keypress,
         QrApi,
@@ -348,6 +359,10 @@ export default {
             }
         },
         async create() {
+
+            console.error(this.failsInSend);
+            console.error(this.failsMessage);
+
 
             await this.getCompany()
             await this.getRecord()

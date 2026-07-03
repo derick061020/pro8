@@ -255,7 +255,7 @@ class ItemController extends Controller
     public function uploadTempImage(Request $request)
     {
 
-        $validate_upload = UploadFileHelper::validateUploadFile($request, 'file', 'jpg,jpeg,png,svg');
+        $validate_upload = UploadFileHelper::validateUploadFile($request, 'file', 'jpg,jpeg,png,svg,webp');
         if(!$validate_upload['success']) return $validate_upload;
 
 

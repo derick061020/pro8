@@ -12,9 +12,12 @@ use App\Http\Resources\Tenant\EstablishmentResource;
 use App\Http\Resources\Tenant\EstablishmentCollection;
 use App\Models\Tenant\Warehouse;
 use App\Models\Tenant\Person;
+use App\Models\Tenant\User;
+use Illuminate\Http\Request;
 use Modules\Finance\Helpers\UploadFileHelper;
+use Illuminate\Support\Facades\Storage;
+use Intervention\Image\Facades\Image;
 use Exception;
-
 
 class EstablishmentController extends Controller
 {
@@ -71,18 +74,39 @@ class EstablishmentController extends Controller
             $addresses = ($request->input('addresses'))??[];
             $establishment = Establishment::firstOrNew(['id' => $id]);
             if ($request->hasFile('file') && $request->file('file')->isValid()) {
-                $request->validate(['file' => 'mimes:jpeg,png,jpg|max:1024']);
+                $request->validate(['file' => 'mimes:jpeg,png,jpg,webp|max:1024']);
                 $file = $request->file('file');
-                $ext = $file->getClientOriginalExtension();
-                $filename = time() . '.' . $ext;
+                $basename = (string) time();
+                $ext = strtolower($file->getClientOriginalExtension());
+                $filenameForCheck = $basename . '.' . $ext;
 
-                UploadFileHelper::checkIfValidFile($filename, $file->getPathName(), true);
+                UploadFileHelper::checkIfValidFile($filenameForCheck, $file->getRealPath(), true);
 
-                $file->storeAs('public/uploads/logos', $filename);
-                $path = 'storage/uploads/logos/' . $filename;
+                $image = Image::make($file->getRealPath());
+                $image->orientate();
+                $image->resize(450, null, function ($constraint) {
+                    $constraint->aspectRatio();
+                    $constraint->upsize();
+                });
+
+                if ($image->mime() === 'image/png') {
+                    $canvas = Image::canvas($image->width(), $image->height(), '#ffffff');
+                    $canvas->insert($image, 'top-left', 0, 0);
+                    $image = $canvas;
+                }
+
+                $outputFilename = $basename . '.jpg';
+                $binary = (string) $image->encode('jpg', 70);
+
+                Storage::put('public/uploads/logos/' . $outputFilename, $binary);
+                $path = 'storage/uploads/logos/' . $outputFilename;
                 $request->merge(['logo' => $path]);
             }
-            $establishment->fill($request->all());
+            if ($request->hasFile('file')) {
+                $establishment->fill($request->all());
+            } else {
+                $establishment->fill($request->except('logo'));
+            }
             $establishment->has_igv_31556 = $has_igv_31556;
             $establishment->email = $request->email;
             $establishment->save();
@@ -152,5 +176,21 @@ class EstablishmentController extends Controller
     {
         $establishments = Establishment::select('id', 'code')->get();
         return response()->json($establishments);
+    }
+
+    public function changeUserEstablishment(Request $request)
+    {
+        $request->validate([
+            'establishment_id' => ['required', 'integer', 'exists:tenant.establishments,id'],
+        ]);
+
+        $user = User::findOrFail(auth()->user()->id);
+        $user->establishment_id = $request->establishment_id;
+        $user->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Establecimiento actualizado con éxito',
+        ], 200);
     }
 }

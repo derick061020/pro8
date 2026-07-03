@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Cache;
 use Modules\MultiUser\Models\System\MultiUser;
 use App\Models\Tenant\User;
 use Exception;
-
+use Illuminate\Support\Facades\DB;
 
 class AutoLoginHelper
 {
@@ -109,6 +109,12 @@ class AutoLoginHelper
      */
     public function saveLoginRequest($fqdn, $data)
     {
+        $namespace = DB::table('hostnames')
+                        ->select('websites.uuid')
+                        ->join('websites', 'hostnames.website_id', '=', 'websites.id')
+                        ->where('fqdn', $fqdn)
+                        ->value('uuid');
+        Cache::setPrefix($namespace);
         Cache::put(self::CACHE_KEY."_{$fqdn}", json_encode($data), self::CACHE_TIME);
     } 
 

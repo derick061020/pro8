@@ -5,7 +5,6 @@
     use App\Models\Tenant\ModelTenant;
     use Illuminate\Database\Eloquent\Builder;
     use App\Models\Tenant\Establishment;
-    use App\Models\Tenant\HotelCleaning;
 
     /**
      * \Modules\Hotel\Models\HotelRoom
@@ -114,42 +113,7 @@
 
         public function establishment()
         {
-            return $this->belongsTo(Establishment::class)->select('id', 'description');
-        }
-
-        /**
-         * @return \Illuminate\Database\Eloquent\Relations\HasMany
-         */
-        public function rents()
-        {
-            return $this->hasMany(HotelRent::class, 'hotel_room_id');
-        }
-
-        /**
-         * @return \Illuminate\Database\Eloquent\Relations\HasOne
-         */
-        public function rent()
-        {
-            return $this->hasOne(HotelRent::class, 'hotel_room_id')
-                ->where('status', 'INICIADO');
-        }
-
-        /**
-         * @return \Illuminate\Database\Eloquent\Relations\HasMany
-         */
-        public function cleanings()
-        {
-            return $this->hasMany(HotelCleaning::class, 'hotel_room_id');
-        }
-
-        /**
-         * @return \Illuminate\Database\Eloquent\Relations\HasOne
-         */
-        public function activeCleaning()
-        {
-            return $this->hasOne(HotelCleaning::class, 'hotel_room_id')
-                ->whereIn('status', ['pending', 'in_progress'])
-                ->latest();
+            return $this->belongsTo(Establishment::class)->select('id', 'description');;
         }
 
     }

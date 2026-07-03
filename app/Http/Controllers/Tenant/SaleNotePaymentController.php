@@ -50,11 +50,8 @@ class SaleNotePaymentController extends Controller
         $total = $sale_note->total;
         $total_difference = round($total - $total_paid, 2);
 
-        if($total_difference < 1)
-        {
-            $sale_note->total_canceled = true;
-            $sale_note->save();
-        }
+        $sale_note->total_canceled = $total_difference <= 0;
+        $sale_note->save();
 
         return [
             'identifier' => $sale_note->identifier,
@@ -79,47 +76,43 @@ class SaleNotePaymentController extends Controller
             $record->save();
             $this->createGlobalPayment($record, $request->all());
             $this->saveFiles($record, $request, 'sale_notes');
-            $this->createCashDocumentPayment($record,false);
-        });
+            $this->createCashDocumentPayment($record, false);
 
-        if($request->paid == true)
-        {
             $sale_note = SaleNote::find($request->sale_note_id);
-            $sale_note->total_canceled = true;
+
+            $total_paid = round((float) $sale_note->payments()->sum('payment'), 2);
+            $total = round((float) $sale_note->total, 2);
+            $total_difference = round($total - $total_paid, 2);
+
+            $sale_note->total_canceled = $total_difference <= 0;
             $sale_note->save();
 
-            $credit = CashDocumentCredit::where([
-                ['status', 'PENDING'],
-                ['sale_note_id',  $sale_note->id]
-            ])->first();
-
-            if($credit) {
-
-                $cash = Cash::where([
-                    ['user_id', auth()->user()->id],
-                    ['state', true],
+            if ($sale_note->total_canceled) {
+                $credit = CashDocumentCredit::where([
+                    ['status', 'PENDING'],
+                    ['sale_note_id', $sale_note->id]
                 ])->first();
 
-                $credit->status = 'PROCESSED';
-                $credit->cash_id_processed = $cash->id;
-                $credit->save();
+                if ($credit) {
+                    $cash = Cash::where([
+                        ['user_id', auth()->user()->id],
+                        ['state', true],
+                    ])->first();
 
-                // $req = [
-                //     'document_id' => null,
-                //     'sale_note_id' => $sale_note->id
-                // ];
-
-                // $cash->cash_documents()->updateOrCreate($req);
-
+                    if ($cash) {
+                        $credit->status = 'PROCESSED';
+                        $credit->cash_id_processed = $cash->id;
+                        $credit->save();
+                    }
+                }
             }
-
-        }
+        });
 
         $this->createPdf($request->input('sale_note_id'));
 
         return [
             'success' => true,
-            'message' => ($id)?'Pago editado con éxito':'Pago registrado con éxito'
+            'message' => ($id) ? 'Pago editado con éxito' : 'Pago registrado con éxito'
         ];
     }
 

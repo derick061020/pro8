@@ -64,24 +64,30 @@
                                     <el-table-column width="220" property="description" label="Nombre"></el-table-column>
                                     <el-table-column width="90" property="quantity" label="Cantidad"></el-table-column>
                                 </el-table>
-                                <el-button slot="reference"> <i class="fa fa-eye"></i></el-button>
+                                <el-button slot="reference" class="btn btn-sm"> <i class="fa fa-eye"></i></el-button>
                             </el-popover>
 
                         </td>
 
                         <td class="text-center">{{ row.currency_type_id }}</td>
-                        <td v-if="columns.total_free.visible" class="text-end">{{row.currency_type_id === 'PEN' ? 'S/' : '$'}} {{ row.total_free }}</td>
-                        <td v-if="columns.total_unaffected.visible" class="text-end">{{row.currency_type_id === 'PEN' ? 'S/' : '$'}} {{ row.total_unaffected }}</td>
-                        <td v-if="columns.total_exonerated.visible" class="text-end">{{row.currency_type_id === 'PEN' ? 'S/' : '$'}} {{ row.total_exonerated }}</td>
-                        <td v-if="columns.total_taxed.visible" class="text-end">{{row.currency_type_id === 'PEN' ? 'S/' : '$'}} {{ row.total_taxed }}</td>
-                        <td v-if="columns.total_igv.visible" class="text-end">{{row.currency_type_id === 'PEN' ? 'S/' : '$'}} {{ row.total_igv }}</td>
+                        <td v-if="columns.total_free.visible" class="text-end">{{row.currency_type_id === 'PEN' ? 'S/' : '$'}} {{ formatDecimal(row.total_free) }}</td>
+                        <td v-if="columns.total_unaffected.visible" class="text-end">{{row.currency_type_id === 'PEN' ? 'S/' : '$'}} {{ formatDecimal(row.total_unaffected) }}</td>
+                        <td v-if="columns.total_exonerated.visible" class="text-end">{{row.currency_type_id === 'PEN' ? 'S/' : '$'}} {{ formatDecimal(row.total_exonerated) }}</td>
+                        <td v-if="columns.total_taxed.visible" class="text-end">{{row.currency_type_id === 'PEN' ? 'S/' : '$'}} {{ formatDecimal(row.total_taxed) }}</td>
+                        <td v-if="columns.total_igv.visible" class="text-end">{{row.currency_type_id === 'PEN' ? 'S/' : '$'}} {{ formatDecimal(row.total_igv) }}</td>
                         <!-- <td v-if="columns.total_perception.visible" class="text-end">{{ row.total_perception ? row.total_perception : 0 }}</td> -->
-                        <td class="text-end">{{row.currency_type_id === 'PEN' ? 'S/' : '$'}} {{ row.total   }}</td>
+                        <td class="text-end">{{row.currency_type_id === 'PEN' ? 'S/' : '$'}} {{ formatDecimal(row.total) }}</td>
                         <td class="text-end">
 
-                            <a v-if="row.state_type_id != '11'" :href="`/${resource}/create/${row.id}`" type="button" class="btn waves-effect waves-light btn-xs btn-info me-1">Editar</a>
-                            <button v-if="row.state_type_id != '11'" type="button" class="btn waves-effect waves-light btn-xs btn-danger me-1" @click.prevent="clickVoided(row.id)">Anular</button>
-                            <button v-if="row.state_type_id == '11'" type="button" class="btn waves-effect waves-light btn-xs btn-danger me-1" @click.prevent="clickDelete(row.id)">Eliminar</button>
+                            <a v-if="row.state_type_id != '11'" :href="`/${resource}/create/${row.id}`" type="button" class="btn btn-xs btn-info btn-shad me-1" title="Editar">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-edit"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M7 7h-1a2 2 0 0 0 -2 2v9a2 2 0 0 0 2 2h9a2 2 0 0 0 2 -2v-1" /><path d="M20.385 6.585a2.1 2.1 0 0 0 -2.97 -2.97l-8.415 8.385v3h3l8.385 -8.415" /><path d="M16 5l3 3" /></svg>
+                            </a>
+                            <button v-if="row.state_type_id != '11'" type="button" class="btn btn-xs btn-danger btn-shad me-1" title="Anular" @click.prevent="clickVoided(row.id)">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-circle-x"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0" /><path d="M10 10l4 4m0 -4l-4 4" /></svg>
+                            </button>
+                            <button v-if="row.state_type_id == '11'" type="button" class="btn btn-xs btn-danger btn-shad me-1" title="Eliminar" @click.prevent="clickDelete(row.id)">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-trash"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M4 7l16 0" /><path d="M10 11l0 6" /><path d="M14 11l0 6" /><path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2 -2l1 -12" /><path d="M9 7v-3a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v3" /></svg>
+                            </button>
                         </td>
 
                     </tr>
@@ -111,6 +117,7 @@
                 showDialogOptions: false,
                 showDialogPurchasePayments: false,
                 showImportDialog: false,
+                decimal_quantity: 2,
                 columns: {
                     date_of_due: {
                         title: 'F. Vencimiento',
@@ -145,9 +152,29 @@
             }
         },
         created() {
+            this.loadDecimalQuantity();
             this.loadColumnVisibility();
         },
         methods: { 
+            async loadDecimalQuantity() {
+                try {
+                    const response = await this.$http.get('/configurations/record')
+                    const decimalQuantity = response.data.data.decimal_quantity
+
+                    this.decimal_quantity = parseInt(decimalQuantity || 2)
+                } catch (error) {
+                    this.decimal_quantity = 2
+                }
+            },
+            formatDecimal(value) {
+                const number = parseFloat(value || 0)
+
+                if (isNaN(number)) {
+                    return Number(0).toFixed(this.decimal_quantity)
+                }
+
+                return number.toFixed(this.decimal_quantity)
+            },
             saveColumnVisibility() {
                 localStorage.setItem('columnVisibilityFixedpurchases', JSON.stringify(this.columns));
             },

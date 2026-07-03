@@ -61,7 +61,7 @@ if (!function_exists('func_get_locations')) {
                 foreach ($province->districts as $district) {
                     $children_districts[] = [
                         'value' => $district->id,
-                        'label' => func_str_to_upper_utf8($district->id . " - " . $district->description)
+                        'label' => func_str_to_upper_utf8($district->description . " (" . $district->id . ")")
                     ];
                 }
                 $children_provinces[] = [

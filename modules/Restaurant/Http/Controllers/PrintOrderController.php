@@ -2,133 +2,94 @@
 
 namespace Modules\Restaurant\Http\Controllers;
 
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Http\Response;
 use Illuminate\Routing\Controller;
 use Modules\Restaurant\Models\PrintOrder;
+use Modules\Restaurant\Models\Printer;
 use Modules\Restaurant\Models\RestaurantConfiguration;
-use App\Models\Tenant\User;
 
 class PrintOrderController extends Controller
 {
     /**
      * Registrar una nueva orden de impresión.
+     * El observer la publica en Redis automáticamente al persistir.
+     * Si no se proporciona nombre de impresora, se usa la impresora predeterminada.
+     * Si no hay ninguna impresora configurada, retorna error 422.
      */
-    public function store(Request $request)
+    public function store(Request $request): JsonResponse
     {
-        // Validación básica
         $data = $request->validate([
-            'name_printer' => 'required|string|max:255',
-            'pdf_b64' => 'nullable|string',
+            'name_printer'      => 'nullable|string|max:255',
+            'pdf_b64'           => 'nullable|string',
+            'client_public_ip'  => 'nullable|ip',
         ]);
-        $data['status'] = false;
+
+        // Validar impresión local: solo permite órdenes desde la misma red que BuhoPrinter
+        $config = RestaurantConfiguration::first();
+        if (
+            $config &&
+            $config->print_local_enabled &&
+            $config->printer_public_ip
+        ) {
+            $clientIp = $data['client_public_ip'] ?? null;
+
+            if ($clientIp !== $config->printer_public_ip) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Impresión local activa: esta terminal no está en la red del servicio de impresión.',
+                ], 403);
+            }
+        }
+
+        // Resolver impresora: usar la enviada o buscar la predeterminada
+        if (empty($data['name_printer'])) {
+            $defaultPrinter = Printer::where('active', true)
+                ->where('is_default', true)
+                ->first();
+
+            if (!$defaultPrinter) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No hay impresoras configuradas. Configure una impresora predeterminada en BuhoPrinter.',
+                ], 422);
+            }
+
+            $data['name_printer'] = $defaultPrinter->name;
+        }
+
+        $data['status'] = 0;
         $order = PrintOrder::create($data);
+
         return response()->json($order, 201);
     }
 
     /**
-     * Actualizar una orden de impresión existente.
+     * BuhoPrinter confirma el resultado de impresión.
      */
-    public function update(Request $request, $id)
+    public function update(Request $request, int $id): JsonResponse
     {
         $order = PrintOrder::findOrFail($id);
+
         $data = $request->validate([
             'status' => 'required|integer|in:0,1,2,3',
-            'pdf_b64' => 'nullable|string',
         ]);
+
         $order->update($data);
+
         return response()->json($order);
     }
 
     /**
-     * Emitir órdenes de impresión pendientes (status = false) vía SSE.
-     *
-     * IMPORTANTE: Para el correcto funcionamiento de SSE detrás de Nginx,
-     * es necesario modificar la configuración del archivo default.conf y reiniciar el proxy y el contenedor nginx.
-     *
-     * Configuración requerida:
-     *
-     * server {
-     *     ...
-     *     fastcgi_buffering off;
-     *     proxy_buffering off;
-     *     gzip off;
-     *     ...
-     *     location ~ \.php$ {
-     *         ...
-     *         fastcgi_read_timeout 3600;
-     *         fastcgi_send_timeout 3600;
-     *     }
-     * }
-     *
-     * @return \Illuminate\Http\Response
+     * Fallback: órdenes pendientes para BuhoPrinter al reconectar.
+     * Devuelve trabajos que llegaron mientras Redis estaba desconectado.
      */
-    public function streamPendingOrders(Request $request)
+    public function pending(): JsonResponse
     {
-        ini_set('output_buffering', 'off');
-        ini_set('zlib.output_compression', false);
-        set_time_limit(0);
+        $orders = PrintOrder::where('status', 0)
+            ->orderBy('created_at')
+            ->get();
 
-        $token = $request->query('token');
-        $user = User::where('api_token', $token)->first();
-
-        if (!$user) {
-            abort(401, 'Token inválido');
-        }
-
-        $config = RestaurantConfiguration::first();
-        if (!$config || !$config->enabled_server_print) {
-            abort(403, 'Impresión por servidor deshabilitada');
-        }
-
-        $includeFailed = $request->query('include_failed', false);
-
-        return response()->stream(function () use ($includeFailed) {
-            echo "data: " . json_encode(['init' => true, 'message' => 'Stream iniciado']) . "\n\n";
-            flush();
-
-            while (ob_get_level() > 0) {
-                ob_end_flush();
-            }
-
-            // retry SSE
-            echo "retry: 5000\n\n";
-
-            // evento init
-            echo "event: init\n";
-            echo "data: " . json_encode([
-                'init' => true,
-                'message' => 'Stream iniciado'
-            ]) . "\n\n";
-            flush();
-
-            // dar tiempo al cliente
-            usleep(300000);
-
-            while (true) {
-                // Consultar órdenes pendientes (status = 0) y fallidas (status = 2) si corresponde
-                $orders = $includeFailed
-                    ? PrintOrder::whereIn('status', [0, 2])->get()
-                    : PrintOrder::where('status', 0)->get();
-
-                foreach ($orders as $order) {
-                    // Marcar como procesando (1) solo si estaba pendiente
-                    if ($order->status === 0) {
-                        $order->status = 1;
-                        $order->save();
-                    }
-                    // Enviar el registro por SSE
-                    echo "data: " . json_encode($order->toArray()) . "\n\n";
-                    flush();
-                }
-
-                sleep(2);
-            }
-        }, 200, [
-            'Content-Type' => 'text/event-stream',
-            'Cache-Control' => 'no-cache',
-            'Connection' => 'keep-alive',
-            'X-Accel-Buffering' => 'no',
-        ]);
+        return response()->json($orders);
     }
 }

@@ -28,25 +28,3 @@
         :table-id="{{ json_encode($table_id ?? null) }}"
         :id-user="{{json_encode(Auth::user()->id)}}"></tenant-documents-invoice-generate>
 @endsection
-
-@push('scripts')
-<script type="text/javascript">
-	var count = 0;
-	$(document).on("click", "#card-click", function(event){
-		count = count + 1;
-		if (count == 1) {
-			$("#card-section").removeClass("card-collapsed");
-		}
-	});
-</script>
-
-    <!-- QZ -->
-    <script src="{{ asset('js/sha-256.min.js') }}"></script>
-    <script src="{{ asset('js/qz-tray.js') }}"></script>
-    <script src="{{ asset('js/rsvp-3.1.0.min.js') }}"></script>
-    <script src="{{ asset('js/jsrsasign-all-min.js') }}"></script>
-    <script src="{{ asset('js/sign-message.js') }}"></script>
-    <script src="{{ asset('js/function-qztray.js') }}"></script>
-    <!-- END QZ -->
-
-@endpush

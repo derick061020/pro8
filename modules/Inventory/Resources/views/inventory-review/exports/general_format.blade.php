@@ -60,7 +60,7 @@
         <td colspan="2"
             class="label">Empresa:
         </td>
-        <td>{{$company->name}}</td>
+        <td>@include('partials.report_company_header_plain')</td>
     </tr>
     <tr>
         <td colspan="2"

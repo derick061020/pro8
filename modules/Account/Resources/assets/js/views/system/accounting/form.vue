@@ -3,13 +3,21 @@
         <div class="form-body">
             <div class="row">
                 <div class="col-md-6">
-                    <label>Periodo</label>
-                    <el-date-picker v-model="form.month" type="month"
-                                    value-format="yyyy-MM" format="MM/yyyy" :clearable="false"></el-date-picker>
+                    <label class="control-label">Periodo</label>
+                    <div>
+                        <el-date-picker 
+                            v-model="form.month" 
+                            type="month"
+                            value-format="yyyy-MM" 
+                            format="MM/yyyy" 
+                            :clearable="false"
+                            style="width: 100%;">
+                        </el-date-picker>
+                    </div>
                 </div>
                 <div class="col-md-6">
-                    <label>Exportar a</label>
-                    <el-select v-model="form.type">
+                    <label class="control-label">Exportar a</label>
+                    <el-select v-model="form.type" style="width: 100%;">
                         <el-option key="concar" value="concar" label="CONCAR"></el-option>
                         <el-option key="siscont" value="siscont" label="SISCONT"></el-option>
                         <el-option key="foxcont" value="foxcont" label="FOXCONT"></el-option>

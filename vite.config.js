@@ -9,7 +9,7 @@ export default defineConfig({
     host: '127.0.0.1',
     port: 5173,
     cors: true,
-    origin: 'http://1.facturaloperu-pro7.oo',
+    origin: process.env.APP_URL,
     strictPort: true,
   },
   plugins: [
@@ -17,6 +17,8 @@ export default defineConfig({
       input: [
         'resources/js/system.js',
         'resources/js/app.js',
+        'modules/ClaimsBook/Resources/assets/js/app.js',
+        'modules/Ecommerce/Resources/assets/js/frontend/cart-app.js',
         // 'resources/sass/style.scss',
         // 'resources/sass/auth.scss'
       ],
@@ -60,7 +62,10 @@ export default defineConfig({
       '@viewsModuleQrChatBuho': path.resolve(__dirname, 'modules/QrChatBuho/Resources/assets/js/views'),
       '@viewsModuleQrApi' : path.resolve(__dirname, 'modules/QrApi/Resources/assets/js/views'),
       '@viewsModuleCustomField' : path.resolve(__dirname, 'modules/CustomField/Resources/assets/js'),
+      '@viewsModuleClaimsBook' : path.resolve(__dirname, 'modules/ClaimsBook/Resources/assets/js'),
       'vue': path.resolve(__dirname, 'node_modules/vue/dist/vue.esm.js'),
+      '@ckeditor/ckeditor5-build-classic': path.resolve(__dirname, 'resources/js/ckeditor-shim.js'),
+      '@viewsModuleRestaurant' : path.resolve(__dirname, 'modules/Restaurant/Resources/assets/js/views'),
     },
   },
 });

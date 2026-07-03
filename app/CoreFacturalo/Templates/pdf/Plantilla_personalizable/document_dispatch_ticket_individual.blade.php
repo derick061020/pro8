@@ -11,7 +11,7 @@
     <br>
     <table class="full-width" style="border: 1px solid #000;">
         <tr>
-            <td class="desc">{{ $company->name }}</td>
+            <td class="desc">@include('pdf.partials.company_document_header_names_plain')</td>
             <td class="text-right desc">Fecha: {{ $document->created_at->format('Y-m-d H:i') }}</td>
         </tr>
         <tr>

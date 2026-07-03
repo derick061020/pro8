@@ -45,22 +45,17 @@ class PaymentConfigurationController extends Controller
         $type = $request->type;
         $record = PaymentConfiguration::firstOrFail();
 
-        switch ($type)
-        {
-            case '01': //yape
-                $this->setDataYape($record, $request);
-                break;
-            case '02': //m pago
-                $this->setDataMP($record, $request);
-                break;
-        }
+        $response = match ($type) {
+            '01' => $this->setDataYape($record, $request),
+            '02' => $this->setDataMP($record, $request),
+            '03' => $this->setDataCulqi($record, $request),
+            '04' => $this->setDataIzipay($record, $request),
+            default => null,
+        };
 
         $record->save();
 
-        return [
-            'success' => true,
-            'message' => 'Configuración actualizada'
-        ];
+        return $response;
     }
 
 
@@ -79,8 +74,77 @@ class PaymentConfigurationController extends Controller
         {
             $record->access_token_mp = $request->access_token_mp;
         }
+
+        return [
+            'success' => true,
+            'message' => 'Configuración actualizada'
+        ];
     }
 
+    public function setDataCulqi(PaymentConfiguration &$record, $request)
+    {
+        if ($record->enabled_izipay === true &&  $request->enabled_culqi === true) {
+            return [
+                'success' => false,
+                'message' => 'No se puede habilitar Culqi si Izipay está habilitado'
+            ];
+        }
+
+        $record->enabled_culqi = $request->enabled_culqi;
+        if ($request->publickey_culqi) {
+            $record->publickey_culqi = $request->publickey_culqi;
+        }
+
+        if ($request->privatekey_culqi) {
+            $record->privatekey_culqi = $request->privatekey_culqi;
+        }
+
+        if ($request->idrsa_culqi) {
+            $record->idrsa_culqi = $request->idrsa_culqi;
+        }
+    
+        if ($request->rsa_culqi) {
+            $record->rsa_culqi = $request->rsa_culqi;
+        }
+
+        return [
+            'success' => true,
+            'message' => 'Configuración actualizada'
+        ];
+    }
+
+    public function setDataIzipay(PaymentConfiguration &$record, $request)
+    {
+        if ($record->enabled_culqi === true &&  $request->enabled_izipay === true) {
+            return [
+                'success' => false,
+                'message' => 'No se puede habilitar Izipay si Culqi está habilitado'
+            ];
+        }
+
+        $record->enabled_izipay = $request->enabled_izipay;
+
+        if ($request->username_izipay) {
+            $record->username_izipay = $request->username_izipay;
+        }
+
+        if ($request->password_izipay) {
+            $record->password_izipay = $request->password_izipay;
+        }
+
+        if ($request->publickey_izipay) {
+            $record->publickey_izipay = $request->publickey_izipay;
+        }
+
+        if ($request->sha256key_izipay) {
+            $record->sha256key_izipay = $request->sha256key_izipay;
+        }
+
+        return [
+            'success' => true,
+            'message' => 'Configuración actualizada'
+        ];
+    }
 
     /**
      *
@@ -111,7 +175,7 @@ class PaymentConfigurationController extends Controller
     public function uploadQrcodeYape(Request $request)
     {
 
-        $validate_upload = UploadFileHelper::validateUploadFile($request, 'file', 'jpg,jpeg,png,svg');
+        $validate_upload = UploadFileHelper::validateUploadFile($request, 'file', 'jpg,jpeg,png,svg,webp');
         if(!$validate_upload['success']) return $validate_upload;
 
         if ($request->hasFile('file'))

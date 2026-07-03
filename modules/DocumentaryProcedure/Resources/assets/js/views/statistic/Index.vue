@@ -113,11 +113,11 @@
                     </template>
 
 
-                    <div class="col-lg-7 col-md-7 col-md-7 col-sm-12"
+                    <div class="col-12 mt-3"
                          style="margin-top:29px">
                         <el-button
                             :loading="loading"
-                            class="submit"
+                            class="submit me-2"
                             icon="el-icon-search"
                             type="primary"
                             @click.prevent="onFilter">

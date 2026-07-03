@@ -1,8 +1,8 @@
 <template>
-    <el-dialog :title="title" :visible="showDialog" @close="close" @open="getData" width="80%">
+    <el-dialog :title="title || 'Cargando pagos...'" :visible="showDialog" @close="close" @open="getData" width="80%">
         <div class="form-body">
             <div class="row">
-                <div class="col-md-12" v-if="records.length > 0">
+                <div class="col-md-12" v-if="records && records.length >= 0">
                     <!--<div class="right-wrapper pull-right">
                         <button type="button" @click.prevent="clickDownloadReport()" class="btn btn-custom btn-sm  mt-2 mr-2"><i class="fas fa-money-bill-wave-alt"></i> Reporte</button>
                     </div>-->
@@ -224,7 +224,7 @@
                 </div>
                 <div class="col-md-12 text-center pt-2" v-if="showAddButton && (document.total_difference > 0)">
                     <template v-if="permissions.create_payment">
-                        <el-button type="primary" icon="el-icon-plus" @click="clickAddRow">Nuevo</el-button>
+                        <el-button :loading="loadingFetch" type="primary" icon="el-icon-plus" @click="clickAddRow">Nuevo</el-button>
                     </template>
                 </div>
             </div>
@@ -273,6 +273,7 @@
                 fileList: [],
                 payment_method_types: [],
                 showAddButton: true,
+                loadingFetch: false, 
                 document: {},
                 permissions: {},
                 index_file: null,
@@ -284,7 +285,6 @@
             }
         },
         async created() {
-            await this.initForm();
             await this.$http.get(`/${this.resource}/tables`)
                 .then(response => {
                     this.payment_method_types = response.data.payment_method_types;
@@ -295,6 +295,15 @@
             await this.events();
 
         },
+        // watch: 
+        // {
+        //     showDialog(val) {
+        //         if (val) {
+        //             this.initForm()
+        //             this.getData()
+        //         }
+        //     }
+        // },
         methods: {
             events(){
                 this.$eventHub.$on('reloadDataPayments', ()=>{
@@ -372,8 +381,14 @@
                 this.records = [];
                 this.fileList = [];
                 this.showAddButton = true;
+                this.document = {};
+                this.title = null;
             },
             async getData() {
+
+                if (this.records.some(r => !r.id)) return;
+
+                this.loadingFetch = true;
                 this.initForm();
                 await this.$http.get(`/${this.resource}/document/${this.documentId}`)
                     .then(response => {
@@ -385,7 +400,8 @@
                         this.records = response.data.data
                     });
 
-                this.$eventHub.$emit('reloadDataUnpaid')
+                // await this.$eventHub.$emit('reloadDataUnpaid')
+                this.loadingFetch = false;
 
             },
             clickAddRow() {
@@ -435,6 +451,7 @@
                     .then(response => {
                         if (response.data.success) {
                             this.$message.success(response.data.message);
+                            this.initForm();
                             this.getData();
                             // this.initDocumentTypes()
                             this.showAddButton = true;

@@ -67,7 +67,7 @@ export default {
             'loadConfiguration',
         ]),
         beforeUpload(file) {
-            const isIMG = ((file.type === 'image/jpeg') || (file.type === 'image/png') || (file.type === 'image/jpg'));
+            const isIMG = ((file.type === 'image/jpeg') || (file.type === 'image/png') || (file.type === 'image/jpg') || (file.type === 'image/webp'));
             const isLt2M = file.size / 1024 / 1024 < 2;
 
             if (!isIMG) this.$message.error('La imagen no es valida!');

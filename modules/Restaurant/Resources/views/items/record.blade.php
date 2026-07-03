@@ -113,7 +113,7 @@
                 }
                 ?>
                 </p>
-                    <p>{{ $record->name }}</p>
+                <p>{!! $record->name !!}</p>
                 </div><!-- End .product-desc -->
 
                 @foreach($record->attributes as $at)
@@ -187,7 +187,7 @@
             aria-labelledby="product-tab-desc">
             <div class="product-desc-content">
                 <p> {{ $record->description}} </p>
-                <p> {{ $record->name}} </p>
+                <div>{!! $record->name !!}</div>
             </div><!-- End .product-desc-content -->
         </div><!-- End .tab-pane -->
 

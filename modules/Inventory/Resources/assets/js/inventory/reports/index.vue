@@ -8,7 +8,7 @@
                 <li class="active"><span> Consulta de inventarios </span></li>
             </ol>
         </div>
-        <div class="row card-table-report">
+        <div class="row card-table-report mx-0">
             <div class="col-md-12">
                 <div
                      class="card card-primary tab-content-default row-new" v-loading="loading">

@@ -9,6 +9,61 @@
         Route::domain($current_hostname->fqdn)
             ->middleware(['redirect.level'])
             ->group(function () {
+                Route::middleware(['auth', 'locked.tenant', 'check.email.verified'])
+                    ->prefix('full-suscription')
+                    ->group(function () {
+
+                        /*
+                        |------------------------------------------------------
+                        | /full-suscription/payment-reminders
+                        |------------------------------------------------------
+                        */
+                        Route::prefix('payment-reminders')->group(function () {
+                            Route::get('/', 'PaymentRemindersFullSuscriptionController@index')
+                                ->name('tenant.full_suscription.payment-reminders.index');
+                            Route::get('/records', 'PaymentRemindersFullSuscriptionController@records');
+                            Route::post('/', 'PaymentRemindersFullSuscriptionController@store');
+                            Route::delete('/{id}', 'PaymentRemindersFullSuscriptionController@destroy');
+                            Route::post('/save-configuration', 'PaymentRemindersFullSuscriptionController@saveConfiguration');
+                            Route::get('/configuration', 'PaymentRemindersFullSuscriptionController@configuration');
+                        });
+
+                        /*
+                        |------------------------------------------------------
+                        | /full-suscription/pending-payments
+                        |------------------------------------------------------
+                        */
+                        Route::prefix('pending-payments')->group(function () {
+                            Route::get('/', 'PendingPaymentFullSuscriptionController@index')
+                                ->name('tenant.full_suscription.pending-payments.index');
+                            Route::get('/tables', 'PendingPaymentFullSuscriptionController@tables');
+                            Route::get('/get-message', 'PendingPaymentFullSuscriptionController@getMessage');
+                            Route::post('/save-message', 'PendingPaymentFullSuscriptionController@saveMessage');
+                            Route::post('/send-notify', 'PendingPaymentFullSuscriptionController@sendNotify');
+                            Route::post('/{id}/send-notify', 'PendingPaymentFullSuscriptionController@sendNotifyOne');
+                            Route::post('/{id}/change-status', 'PendingPaymentFullSuscriptionController@changeStatus');
+                            Route::post('/{id}/change-status-orders', 'PendingPaymentFullSuscriptionController@changeStatusOrders');
+                            Route::get('/order/{external_id}', 'PendingPaymentFullSuscriptionController@viewOrder')
+                                ->name('tenant.full_suscription.pending-payments.view-order')
+                                ->withoutMiddleware(['auth', 'locked.tenant', 'check.email.verified', 'redirect.level']);
+                        });
+
+                        /*
+                        |------------------------------------------------------
+                        | /full-suscription/receipts
+                        |------------------------------------------------------
+                        */
+                        Route::prefix('receipts')->group(function () {
+                            Route::get('/', 'PaymentReceiptFullSuscriptionController@index')
+                                ->name('tenant.full_suscription.receipts.index');
+                            Route::get('/records', 'PaymentReceiptFullSuscriptionController@Records');
+                            Route::get('/columns', 'PaymentReceiptFullSuscriptionController@Columns');
+                            Route::get('/statistics', 'PaymentReceiptFullSuscriptionController@statistics');
+                            Route::post('/{id}/generate-document', 'PaymentReceiptFullSuscriptionController@generate');
+                        });
+
+                    });
+
                 Route::middleware(['auth', 'locked.tenant','check.email.verified'])
                     ->prefix('full_suscription')
                     ->group(function () {
@@ -58,7 +113,14 @@
                             Route::post('/records', 'PlansFullSuscriptionController@Records');
                             Route::post('/tables', 'PlansFullSuscriptionController@Tables');
                             Route::post('/record', 'PlansFullSuscriptionController@Record');
+                            Route::post('create-suscription', 'PlansFullSuscriptionController@createSuscription' )
+                                ->withoutMiddleware(['auth', 'locked.tenant', 'check.email.verified', 'redirect.level']);
+                            Route::get('/{plan_id}', 'PlansFullSuscriptionController@plan_view_client')
+                                ->name('tenant.suscription.plans.client')
+                                ->withoutMiddleware(['auth', 'locked.tenant', 'check.email.verified', 'redirect.level']);
 
+
+                            Route::post('/{id}/status', 'PlansFullSuscriptionController@updateStatus');
                             Route::delete('/{id}', 'PlansFullSuscriptionController@destroy');
 
                         });
@@ -78,6 +140,9 @@
                             Route::post('/tables', 'PaymentsFullSuscriptionController@Tables');
                             Route::post('/record', 'PaymentsFullSuscriptionController@Record');
                             Route::post('/search/customers', 'PaymentsFullSuscriptionController@searchCustomer');
+                            Route::delete('/{id}', 'PaymentsFullSuscriptionController@destroy');
+                            Route::post('/{id}/change-status', 'PaymentsFullSuscriptionController@changeStatus');
+                            Route::get('/{id}/no-send-link', 'PaymentsFullSuscriptionController@noSendLink');
 
                         });
                         /**

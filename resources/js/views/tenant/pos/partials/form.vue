@@ -115,6 +115,52 @@
                                                         <small class="form-control-feedback" v-if="errors.stock_min" v-text="errors.stock_min[0]"></small>
                                                     </div>
                                                 </div>
+                                                <div class="short-div col-md-4">
+                                                    <div :class="{'has-danger': errors.category_id}"
+                                                         class="form-group">
+                                                        <label class="control-label">Categoría</label>
+                                                        <el-input v-if="form_category.add == true"
+                                                                  v-model="form_category.name"
+                                                                  dusk="item_code"
+                                                                  style="margin-bottom:1.5%;"></el-input>
+
+                                                        <el-select v-if="form_category.add == false"
+                                                                   v-model="form.category_id"
+                                                                   clearable
+                                                                   filterable
+                                                                   :filter-method="filterCategories"
+                                                                   @visible-change="onCategoryDropdownChange"
+                                                                   @keydown.enter.native.prevent="createCategoryFromSearch">
+                                                            <el-option v-for="option in filteredCategories"
+                                                                       :key="option.id"
+                                                                       :label="option.name"
+                                                                       :value="option.id"></el-option>
+                                                            <template slot="empty">
+                                                                <p v-if="loading_search" class="el-select-dropdown__empty">
+                                                                    Cargando...
+                                                                </p>
+                                                                <p v-else-if="categorySearchQuery" class="el-select-dropdown__empty">
+                                                                    No se encontraron resultados
+                                                                </p>
+
+                                                                <p v-else class="el-select-dropdown__empty">
+                                                                    No hay categorías. <br> Escriba el nombre y presione Enter para crear
+                                                                </p>
+
+                                                                <div
+                                                                    v-if="!loading_search && categorySearchQuery"
+                                                                    class="el-select-dropdown__item new-option"
+                                                                    @click.stop="createCategoryFromSearch"
+                                                                >
+                                                                    <span>Crear categoría "{{ categorySearchQuery }}"</span>
+                                                                </div>
+                                                            </template>
+                                                        </el-select>
+                                                        <small v-if="errors.category_id"
+                                                               class="form-control-feedback"
+                                                               v-text="errors.category_id[0]"></small>
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -133,8 +179,9 @@
 
                                     <div class="col-md-4">
                                         <div class="form-group" :class="{'has-danger': errors.sale_unit_price}">
-                                            <label class="control-label">Precio Unitario (Venta) <span class="text-danger">*</span></label>
+                                            <label class="control-label">Precio Unitario (Venta) <small v-if="form.has_igv">(con IGV)</small> <small v-else>(sin IGV)</small><span class="text-danger">*</span></label>
                                             <el-input v-model="form.sale_unit_price" dusk="sale_unit_price" @input="calculatePercentageOfProfitBySale"></el-input>
+                                            <small v-if="saleUnitPriceBreakdown" class="text-muted">{{ saleUnitPriceBreakdown }}</small>
                                             <small class="form-control-feedback" v-if="errors.sale_unit_price" v-text="errors.sale_unit_price[0]"></small>
                                         </div>
                                     </div>
@@ -162,7 +209,7 @@
                                             <small class="form-control-feedback" v-if="errors.calculate_quantity" v-text="errors.calculate_quantity[0]"></small>
                                         </div>
                                     </div>
-                                    <div class="col-md-4 center-el-checkbox" v-show="show_has_igv">
+                                    <div class="col-md-4 center-el-checkbox" v-show="show_has_igv && !globalIgvHandling">
                                         <div class="form-group" :class="{'has-danger': errors.has_igv}">
                                             <el-checkbox v-model="form.has_igv">Incluye Igv</el-checkbox><br>
                                             <small class="form-control-feedback" v-if="errors.has_igv" v-text="errors.has_igv[0]"></small>
@@ -184,8 +231,9 @@
                                     </div>
                                     <div class="col-md-4">
                                         <div class="form-group" :class="{'has-danger': errors.purchase_unit_price}">
-                                            <label class="control-label">Precio Unitario (Compra)</label>
+                                            <label class="control-label">Precio Unitario (Compra) <small v-if="form.has_igv">(con IGV)</small> <small v-else>(sin IGV)</small></label>
                                             <el-input v-model="form.purchase_unit_price" dusk="purchase_unit_price" @input="calculatePercentageOfProfitByPurchase"></el-input>
+                                            <small v-if="purchaseUnitPriceBreakdown" class="text-muted">{{ purchaseUnitPriceBreakdown }}</small>
                                             <small class="form-control-feedback" v-if="errors.purchase_unit_price" v-text="errors.purchase_unit_price[0]"></small>
                                         </div>
                                     </div>
@@ -236,8 +284,8 @@
 
 
             </div>
-            <div class="form-actions text-right mt-4">
-                <el-button class="second-buton" @click.prevent="close()">Cancelar</el-button>
+            <div class="form-actions text-end mt-4">
+                <el-button class="second-buton me-2" @click.prevent="close()">Cancelar</el-button>
                 <el-button type="primary" native-type="submit" :loading="loading_submit">Guardar</el-button>
             </div>
         </form>
@@ -254,10 +302,52 @@ import {mapActions, mapState} from "vuex/dist/vuex.mjs";
             ...mapState([
                 'config',
             ]),
+            globalIgvHandling() {
+                if (this.config && this.config.global_igv_handling !== undefined) {
+                    return !!this.config.global_igv_handling
+                }
+                return true
+            },
+            saleUnitPriceBreakdown() {
+                const price = parseFloat(this.form.sale_unit_price)
+                if (!price || price <= 0) return null
+                const IGV_RATE = 0.18
+                let base, igv, total
+                if (this.form.has_igv) {
+                    total = price
+                    base = price / (1 + IGV_RATE)
+                    igv = total - base
+                } else {
+                    base = price
+                    igv = price * IGV_RATE
+                    total = price + igv
+                }
+                return `${base.toFixed(2)} + ${igv.toFixed(2)} IGV = S/ ${total.toFixed(2)}`
+            },
+            purchaseUnitPriceBreakdown() {
+                const price = parseFloat(this.form.purchase_unit_price)
+                if (!price || price <= 0) return null
+                const IGV_RATE = 0.18
+                const hasIgv = (this.form.purchase_has_igv !== undefined && this.form.purchase_has_igv !== null)
+                    ? this.form.purchase_has_igv
+                    : this.form.has_igv
+                let base, igv, total
+                if (hasIgv) {
+                    total = price
+                    base = price / (1 + IGV_RATE)
+                    igv = total - base
+                } else {
+                    base = price
+                    igv = price * IGV_RATE
+                    total = price + igv
+                }
+                return `${base.toFixed(2)} + ${igv.toFixed(2)} IGV = S/ ${total.toFixed(2)}`
+            },
         },
         data() {
             return {
                 loading_submit: false,
+                loading_search: false,
                 headers: headers_token,
                 warehouse:{},
 
@@ -268,6 +358,10 @@ import {mapActions, mapState} from "vuex/dist/vuex.mjs";
                 unit_types: [],
                 currency_types: [],
                 system_isc_types: [],
+                categories: [],
+                filteredCategories: [],
+                categorySearchQuery: '',
+                form_category: {add: false, name: null, id: null},
                 activeName: 'first',
                 affectation_igv_types: [],
                 show_has_igv:true,
@@ -294,6 +388,8 @@ import {mapActions, mapState} from "vuex/dist/vuex.mjs";
                     this.currency_types = response.data.currency_types
                     this.system_isc_types = response.data.system_isc_types
                     this.affectation_igv_types = response.data.affectation_igv_types
+                    this.categories = response.data.categories || []
+                    this.filteredCategories = this.categories
                     this.warehouse = (response.data.warehouse) ? response.data.warehouse:{id:1, establishment_id:1, description:'Almacén Oficina Principal'}
 
                     this.form.sale_affectation_igv_type_id =  (this.config.affectation_igv_type_id) ? this.config.affectation_igv_type_id : (this.affectation_igv_types.length > 0)?this.affectation_igv_types[0].id:null
@@ -324,6 +420,7 @@ import {mapActions, mapState} from "vuex/dist/vuex.mjs";
                     description: null,
                     second_name:null,
                     name:null,
+                    category_id: null,
                     unit_type_id: 'NIU',
                     currency_type_id: 'PEN',
                     sale_unit_price: 0,
@@ -372,6 +469,9 @@ import {mapActions, mapState} from "vuex/dist/vuex.mjs";
                     this.$http.get(`/${this.resource}/record/${this.recordId}`)
                         .then(response => {
                             this.form = response.data.data
+                            if (this.globalIgvHandling) {
+                                this.form.has_igv = true
+                            }
                             this.changeAffectationIgvType()
                         })
                 }
@@ -408,6 +508,9 @@ import {mapActions, mapState} from "vuex/dist/vuex.mjs";
             },
             submit() {
                 this.loading_submit = true
+                if (this.globalIgvHandling) {
+                    this.form.has_igv = true
+                }
                 this.$http.post(`/${this.resource}`, this.form)
                     .then(response => {
                         if (response.data.success) {
@@ -446,6 +549,54 @@ import {mapActions, mapState} from "vuex/dist/vuex.mjs";
                 if (this.form.system_isc_type_id !== '03') {
                     this.form.suggested_price = 0
                 }
+            },
+            filterCategories(query) {
+                this.categorySearchQuery = query
+
+                if (query) {
+                    this.filteredCategories = this.categories.filter(category => {
+                        return category.name.toLowerCase().includes(query.toLowerCase())
+                    })
+                } else {
+                    this.filteredCategories = this.categories
+                }
+            },
+            onCategoryDropdownChange(visible) {
+                if (!visible) {
+                    this.categorySearchQuery = ''
+                } else {
+                    this.filteredCategories = this.categories
+                }
+            },
+            createCategoryFromSearch() {
+                const categoryName = this.categorySearchQuery
+
+                if (!categoryName || categoryName.trim() === '') {
+                    return
+                }
+
+                this.form_category.name = categoryName
+
+                this.$http.post(`/categories`, this.form_category)
+                    .then(response => {
+                        if (response.data.success) {
+                            this.$message.success(response.data.message)
+                            this.categories.push(response.data.data)
+                            this.filteredCategories = this.categories
+
+                            this.$nextTick(() => {
+                                this.form.category_id = response.data.data.id
+                            })
+
+                            this.form_category.name = null
+                            this.categorySearchQuery = ''
+                        } else {
+                            this.$message.error('No se guardaron los cambios')
+                        }
+                    })
+                    .catch(error => {
+                        this.$message.error('Error al crear la categoría')
+                    })
             }
         }
     }

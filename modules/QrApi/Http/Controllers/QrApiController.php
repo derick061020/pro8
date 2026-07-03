@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Http;
 
 class QrApiController extends Controller
 {
@@ -60,7 +61,40 @@ class QrApiController extends Controller
 
         // Se tiene que buscar el archivo dentro de storage
         $content_file = $this->getStorage($filename, 'pdf');
-       
+
         return base64_encode($content_file);
+    }
+
+    public function sendMessage(Request $request)
+    {
+        $request->validate([
+            'file' => 'required',
+            'number' => 'required',
+            'message' => 'required',
+            'filename' => 'required',
+        ]);
+
+        $config = Configuration::select(['qr_api_url', 'qr_api_apiKey'])->first();
+
+        if (!$config->qr_api_url || !$config->qr_api_apiKey) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No se ha configurado la URL o Api Key de QR Api'
+            ], 422);
+        }
+
+        $url = rtrim($config->qr_api_url, '/') . '/api/message/send/pdf';
+
+        $response = Http::withToken($config->qr_api_apiKey)
+            ->timeout(30)
+            ->post($url, [
+                'file' => $request->file,
+                'number' => $request->number,
+                'message' => $request->message,
+                'filename' => $request->filename,
+            ]);
+
+        return response()->json($response->json(), $response->status());
+
     }
 }

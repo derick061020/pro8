@@ -34,6 +34,7 @@
         'precio_unitario' => true,
         'descuento' => true,
         'total' => true,
+        'nro_producto' => false,
     ];
 
 @endphp
@@ -50,12 +51,12 @@
                 <div class="company_logo_box">
                     <img
                         src="data:{{mime_content_type(public_path("{$logo}"))}};base64, {{base64_encode(file_get_contents(public_path("{$logo}")))}}"
-                        alt="{{$company->name}}" class="company_logo" style="max-width: 150px;">
+                        alt="{{ \App\CoreFacturalo\Helpers\CompanyDocumentDisplay::logoAlt($company) }}" class="company_logo" style="max-width: 150px;">
                 </div>
             </td>
             <td width="50%" class="text-center">
                 <div class="text-left">
-                    <h4 class="">{{ $company->name }}</h4>
+                    @include('pdf.partials.company_document_header_names')
                     <h5>{{ 'RUC '.$company->number }}</h5>
                     <h6 style="text-transform: uppercase;">
                         {{ ($establishment->address !== '-')? $establishment->address : '' }}
@@ -74,7 +75,7 @@
         @else
             <td width="50%" class="pl-1">
                 <div class="text-left">
-                    <h4 class="">{{ $company->name }}</h4>
+                    @include('pdf.partials.company_document_header_names')
                     <h5>{{ 'RUC '.$company->number }}</h5>
                     <h6 style="text-transform: uppercase;">
                         {{ ($establishment->address !== '-')? $establishment->address : '' }}
@@ -407,10 +408,10 @@ foreach ($document->items as $row) {
                 <td class="text-right font-bold">{{ number_format($document->total_taxed, 2) }}</td>
             </tr>
         @endif --}}
-      @if($document->total_discount > 0)
+      @if($document->total_discount_with_igv > 0)
             <tr>
                 <td colspan="{{ $colspan_total - 1 }}" class="text-right font-bold">{{(($document->total_prepayment > 0) ? 'ANTICIPO':'DESCUENTO TOTAL')}}: {{ $document->currency_type->symbol }}</td>
-                <td class="text-right font-bold">{{ number_format($document->total_discount, 2) }}</td>
+                <td class="text-right font-bold">{{ number_format($document->total_discount_with_igv, 2) }}</td>
             </tr>
         @endif
         {{--<tr>
@@ -425,6 +426,10 @@ foreach ($document->items as $row) {
             </tr>
         @endif
 
+        {{-- <tr>
+            <td colspan="{{ $colspan_total - 1 }}" class="text-left font-bold" style="white-space: nowrap;">Productos: {{ rtrim(rtrim(number_format(collect($document->items)->sum(function ($item) { return (float) data_get($item, 'quantity', 0); }), 2, '.', ''), '0'), '.') }}</td>
+            <td class="text-right font-bold"></td>
+        </tr> --}}
         <tr>
             <td colspan="{{ $colspan_total - 1 }}" class="text-right font-bold">TOTAL A PAGAR: {{ $document->currency_type->symbol }}</td>
             <td class="text-right font-bold">{{ number_format($document->total, 2) }}</td>
@@ -443,8 +448,15 @@ foreach ($document->items as $row) {
 
     </tbody>
 </table>
-
+@if ($showColumns['nro_producto'] ?? false)
+<table>
+    <tr width="65%">
+        <td class="text-left py-1"><strong>N° DE PRODUCTOS</strong>: {{ $document->items->count() }}</td>
+    </tr>
+</table>
+@endif
 @if(isset($configurationInPdf) && $configurationInPdf->show_bank_accounts_in_pdf)
+<br>
     <table class="full-width">
         <tr>
             <td width="65%" style="text-align: top; vertical-align: top;">

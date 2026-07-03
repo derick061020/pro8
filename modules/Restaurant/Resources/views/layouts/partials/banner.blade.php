@@ -13,8 +13,11 @@
         @foreach ($banners as $item)
         <div class="home-slide">
             @php
+                $itemSlug = $item->item
+                    ? $item->item_id . '-' . \Illuminate\Support\Str::slug($item->item->description)
+                    : $item->item_id;
                 $bannerHref = !empty($item->item_id)
-                    ? url('/restaurant/item/'.$item->item_id.'/'.$item->id)
+                    ? url('/restaurant/item/' . $itemSlug . '/' . $item->id)
                     : null;
             @endphp
 
