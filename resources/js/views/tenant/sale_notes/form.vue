@@ -2751,7 +2751,31 @@ export default {
                         this.setDataUpdate();
                         this.changeCurrencyType();
                     });
+                // El listado de clientes (tables) solo trae 20 registros, por lo que el cliente
+                // del documento editado puede no estar en las opciones y el el-select mostraria
+                // el id (numero) en lugar del nombre. Se carga explicitamente el cliente por id.
+                await this.ensureCustomerLoaded(this.form.customer_id);
             }
+        },
+        async ensureCustomerLoaded(customer_id) {
+            if (!customer_id) return;
+            if (_.find(this.customers, { id: customer_id })) return;
+            await this.$http
+                .get(`/${this.resource}/search/customer/${customer_id}`)
+                .then(response => {
+                    const data_customer = response.data.customers || [];
+                    if (data_customer.length === 0) return;
+                    this.all_customers = _.unionBy(
+                        data_customer,
+                        this.all_customers,
+                        "id"
+                    );
+                    this.customers = _.unionBy(
+                        data_customer,
+                        this.customers,
+                        "id"
+                    );
+                });
         },
         setDataUpdate() {
             if (this.form.total_charge > 0)
