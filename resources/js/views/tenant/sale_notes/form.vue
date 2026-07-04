@@ -3470,14 +3470,6 @@ export default {
             }
 
             let validate = await this.validate_payments();
-            if (
-                _.round(validate.acum_total, 2) > _.round(parseFloat(this.form.total), 2) ||
-                validate.error_by_item > 0
-            ) {
-                return this.$message.error(
-                    "Los montos ingresados superan al monto a pagar o son incorrectos"
-                );
-            }
 
             if (this.form.type_period) {
                 if (this.form.quantity_period == 0) {
