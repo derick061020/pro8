@@ -51,6 +51,8 @@ class SaleNoteResource2 extends JsonResource
             'total' => $this->total,
             'operation_type_id' => $this->operation_type_id,
             'date_of_due' => $this->date_of_due,
+            'payment_condition_id' => $this->payment_condition_id ?? '01',
+            'fee' => self::getTransformFee($this->fee),
             'items' => $this->items,
             'payments' => self::getTransformPayments($this->payments),
             'charges' => $this->charges,
@@ -80,10 +82,28 @@ class SaleNoteResource2 extends JsonResource
                 'reference' => $row->reference, 
                 'payment' => $row->payment, 
                 'payment_method_type' => $row->payment_method_type, 
-                'payment_destination_id' => ($row->global_payment) ? ($row->global_payment->type_record == 'cash' ? 'cash':$row->global_payment->destination_id):null, 
-                'payment_filename' => ($row->payment_file) ? $row->payment_file->filename:null, 
+                'payment_destination_id' => ($row->global_payment) ? ($row->global_payment->type_record == 'cash' ? 'cash':$row->global_payment->destination_id):null,
+                'payment_filename' => ($row->payment_file) ? $row->payment_file->filename:null,
+                'payment_received' => true,
+                'filename' => null,
+                'temp_path' => null,
+                'file_list' => [],
             ];
-        }); 
+        });
+
+    }
+
+    public static function getTransformFee($fee){
+
+        return $fee->transform(function($row, $key){
+            return [
+                'id' => $row->id,
+                'date' => $row->date->format('Y-m-d'),
+                'currency_type_id' => $row->currency_type_id,
+                'amount' => $row->amount,
+                'payment_method_type_id' => $row->payment_method_type_id,
+            ];
+        });
 
     }
 }
