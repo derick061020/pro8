@@ -6,8 +6,12 @@ use App\Http\Controllers\Controller;
 use App\Models\Tenant\HotelCleaning;
 use App\Models\Tenant\HotelRoom;
 use App\Models\Tenant\User;
+use App\Models\Tenant\Company;
+use App\Models\Tenant\Establishment;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Modules\Hotel\Exports\HotelCleaningExport;
+use Carbon\Carbon;
 
 class HotelCleaningController extends Controller
 {
@@ -343,5 +347,72 @@ class HotelCleaningController extends Controller
             'success' => true,
             'cleanings' => $cleanings
         ]);
+    }
+
+    /**
+     * Reporte de limpiezas en Excel (mismo formato que el reporte de recepción)
+     */
+    public function report($start, $end, $establishment_id)
+    {
+        $user = auth()->user();
+        $establishment = $user->establishment;
+
+        $query = DB::connection('tenant')->table('hotel_cleanings')
+            ->join('hotel_rooms', 'hotel_rooms.id', '=', 'hotel_cleanings.hotel_room_id')
+            ->leftJoin('users', 'users.id', '=', 'hotel_cleanings.user_id')
+            ->leftJoin('hotel_categories', 'hotel_categories.id', '=', 'hotel_rooms.hotel_category_id')
+            ->whereBetween(DB::raw('DATE(hotel_cleanings.created_at)'), [$start, $end])
+            ->select(
+                'hotel_cleanings.*',
+                'hotel_rooms.name as room_name',
+                'hotel_rooms.establishment_id as establishment_id',
+                'hotel_categories.description as category',
+                'users.name as cleaner_name'
+            );
+
+        if ($establishment_id && $user->type === 'admin') {
+            $query->where('hotel_rooms.establishment_id', $establishment_id);
+            $establishment = Establishment::findOrFail($establishment_id);
+        }
+
+        if ($user->type != 'admin') {
+            $query->where('hotel_rooms.establishment_id', $user->establishment_id);
+        }
+
+        $cleanings = $query->orderBy('hotel_cleanings.created_at', 'desc')->get();
+
+        $statusLabels = [
+            'pending'     => 'Pendiente',
+            'in_progress' => 'En progreso',
+            'completed'   => 'Completada',
+        ];
+
+        $records = collect($cleanings)->transform(function ($row) use ($statusLabels) {
+            $duration = '';
+            if ($row->start_time && $row->end_time) {
+                $duration = Carbon::parse($row->start_time)->diffInMinutes(Carbon::parse($row->end_time));
+            }
+
+            return [
+                'id'           => $row->id,
+                'room_name'    => $row->room_name,
+                'category'     => $row->category,
+                'cleaner_name' => $row->cleaner_name,
+                'status'       => $statusLabels[$row->status] ?? $row->status,
+                'start_time'   => $row->start_time,
+                'end_time'     => $row->end_time,
+                'duration'     => $duration,
+                'notes'        => $row->notes,
+            ];
+        });
+
+        $filename = "Reporte_Limpieza";
+        $company = Company::first();
+
+        return (new HotelCleaningExport)
+            ->records($records)
+            ->company($company)
+            ->establishment($establishment)
+            ->download($filename . Carbon::now() . '.xlsx');
     }
 }

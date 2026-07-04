@@ -37,6 +37,11 @@
                             href="#"
                             @click.prevent="clickExport()"
                         >Reporte recepción</a>
+                        <a
+                            class="dropdown-item text-1"
+                            href="#"
+                            @click.prevent="clickExportCleaning()"
+                        >Reporte limpieza</a>
 
                     </div>
                 </div>
@@ -335,6 +340,12 @@
             :establishment-id="establishmentId"
         >
         </reception-export>
+        <cleaning-export
+            :showDialog.sync="showCleaningExportDialog"
+            :user-type="userType"
+            :establishment-id="establishmentId"
+        >
+        </cleaning-export>
         
         <!-- Modal para opciones de habitación ocupada -->
         <el-dialog
@@ -1818,6 +1829,7 @@
 import ExtendTimeRoom from './partials/ExtendTimeRoom.vue';
 import ModalRoomRates from "./RoomRates.vue";
 import ReceptionExport from './partials/ReceptionExport.vue';
+import CleaningExport from './partials/CleaningExport.vue';
 import RoomCountdown from './partials/RoomCountdown.vue';
 
 export default {
@@ -1825,6 +1837,7 @@ export default {
         ModalRoomRates,
         ExtendTimeRoom,
         ReceptionExport,
+        CleaningExport,
         RoomCountdown,
     },
     props: {
@@ -1866,6 +1879,7 @@ export default {
             roomToExtend: {},
             openDialogExtendTimeRoom: false,
             showExportDialog: false,
+            showCleaningExportDialog: false,
             showOccupiedOptionsModal: false,
             selectedRoom: null,
             showObservationsModal: false,
@@ -2366,6 +2380,9 @@ export default {
         },
         clickExport() {
             this.showExportDialog = true;
+        },
+        clickExportCleaning() {
+            this.showCleaningExportDialog = true;
         },
         clickChangeEstablishment(establishment_id){
             this.loading = true;
