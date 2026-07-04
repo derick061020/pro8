@@ -1832,6 +1832,9 @@ class SaleNoteController extends Controller
                     "reference" => $row['reference'],
                     "payment_destination_id" => isset($row['payment_destination_id']) ? $row['payment_destination_id'] : null,
                     "payment_filename" => isset($row['payment_filename']) ? $row['payment_filename'] : null,
+                    // Marcador de pago copiado desde la reserva del hotel; se
+                    // conserva para no volver a registrarlo en caja al guardar.
+                    "hotel_rent_item_payment_id" => isset($row['hotel_rent_item_payment_id']) ? $row['hotel_rent_item_payment_id'] : null,
                     "change" => $change,
                     "payment" => $payment
                 ];
@@ -1851,7 +1854,13 @@ class SaleNoteController extends Controller
 
             $record_payment = $sale_note->payments()->create($row);
 
-            if(isset($row['payment_destination_id'])){
+            // Los pagos copiados desde la reserva del hotel ya estan
+            // contabilizados en caja mediante el global_payment de la reserva.
+            // Se registran en la nota (para verlos/editarlos) pero NO se vuelven
+            // a crear en caja, evitando el doble conteo.
+            $from_hotel_rent = !empty($row['hotel_rent_item_payment_id']);
+
+            if(!$from_hotel_rent && isset($row['payment_destination_id'])){
                 $this->createGlobalPayment($record_payment, $row);
                 if($isUpdate){
                     $this->createCashDocumentPayment($record_payment,false);

@@ -54,7 +54,7 @@ class SaleNoteResource2 extends JsonResource
             'payment_condition_id' => $this->payment_condition_id ?? '01',
             'fee' => self::getTransformFee($this->fee),
             'items' => $this->items,
-            'payments' => self::getTransformPayments($this->payments),
+            'payments' => self::getPaymentsForForm($this->resource),
             'charges' => $this->charges,
             'discounts' => $this->discounts,
             'attributes' => $this->attributes,
@@ -68,7 +68,67 @@ class SaleNoteResource2 extends JsonResource
         ];
     }
 
-    
+    /**
+     * Pagos a mostrar en el formulario de edicion.
+     *
+     * Si la nota de venta no tiene pagos propios (caso tipico de comprobantes
+     * generados desde el checkout del Hotel, donde el pago quedo registrado en
+     * la reserva y no en la nota), se copian los pagos de la reserva para que
+     * aparezcan editables. Cada pago copiado lleva `hotel_rent_item_payment_id`
+     * como marcador: al guardar, savePayments NO vuelve a registrarlos en caja
+     * (ya estan contabilizados por la reserva) y asi se evita el doble conteo.
+     */
+    public static function getPaymentsForForm($saleNote){
+
+        $own = self::getTransformPayments($saleNote->payments);
+
+        if($own->isNotEmpty()){
+            return $own;
+        }
+
+        return self::getTransformHotelRentPayments($saleNote->id);
+    }
+
+    public static function getTransformHotelRentPayments($saleNoteId){
+
+        $itemModel    = '\Modules\Hotel\Models\HotelRentItem';
+        $paymentModel = '\Modules\Hotel\Models\HotelRentItemPayment';
+
+        if(!class_exists($itemModel) || !class_exists($paymentModel)){
+            return collect();
+        }
+
+        $itemIds = $itemModel::where('sale_note_id', $saleNoteId)->pluck('id');
+
+        if($itemIds->isEmpty()){
+            return collect();
+        }
+
+        $payments = $paymentModel::whereIn('hotel_rent_item_id', $itemIds)->get();
+
+        return $payments->transform(function($row){
+            return [
+                'id' => null,
+                'hotel_rent_item_payment_id' => $row->id,
+                'sale_note_id' => null,
+                'date_of_payment' => $row->date_of_payment ? $row->date_of_payment->format('Y-m-d') : now()->format('Y-m-d'),
+                'payment_method_type_id' => $row->payment_method_type_id,
+                'has_card' => 0,
+                'card_brand_id' => null,
+                'reference' => $row->reference,
+                'payment' => $row->payment,
+                'payment_method_type' => $row->payment_method_type,
+                'payment_destination_id' => ($row->global_payment) ? ($row->global_payment->type_record == 'cash' ? 'cash' : $row->global_payment->destination_id) : 'cash',
+                'payment_filename' => null,
+                'payment_received' => true,
+                'filename' => null,
+                'temp_path' => null,
+                'file_list' => [],
+                'from_hotel_rent' => true,
+            ];
+        });
+    }
+
     public static function getTransformPayments($payments){
         
         return $payments->transform(function($row, $key){ 
