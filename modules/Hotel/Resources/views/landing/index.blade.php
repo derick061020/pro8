@@ -123,8 +123,11 @@
   /* Buscador flotante sobre el hero */
   .hr-search { position:relative; z-index:5; }
   #reservation-form.hr-search { margin-top:-72px; margin-bottom:10px; }
-  .hr-search__card { background:#fff; border-radius:16px; box-shadow:0 18px 50px rgba(0,0,0,.18); padding:22px 26px; display:grid; grid-template-columns:1fr 1fr .85fr .85fr auto; gap:16px; align-items:end; }
+  .hr-search__card { background:#fff; border-radius:16px; box-shadow:0 18px 50px rgba(0,0,0,.18); padding:22px 26px; display:grid; grid-template-columns:1fr 1fr auto auto; gap:16px; align-items:end; }
   .hr-field { display:flex; flex-direction:column; min-width:0; }
+  /* Recuadro externo para huéspedes (adultos + niños) */
+  .hr-guests { display:flex; gap:14px; border:1px solid #e3e8ec; border-radius:12px; background:#fbfcfd; padding:12px 16px; }
+  .hr-guests .hr-field select { height:44px; background-color:#fff; min-width:96px; }
   .hr-field label { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.6px; color:#8a97a3; margin-bottom:7px; }
   .hr-field label i { color:#1abc9c; margin-right:5px; }
   .hr-field input, .hr-field select { width:100%; height:50px; border:1px solid #e3e8ec; border-radius:10px; padding:0 14px; font-size:15px; color:#2c3e50; background-color:#f8fafb; box-shadow:none; transition:border-color .2s, box-shadow .2s, background-color .2s; -webkit-appearance:none; -moz-appearance:none; appearance:none; }
@@ -211,17 +214,19 @@
         <label for="checkout_date"><i class="fa fa-calendar"></i> Salida</label>
         <input name="checkout" type="date" id="checkout_date" required>
       </div>
-      <div class="hr-field">
-        <label for="adults"><i class="fa fa-user"></i> Adultos</label>
-        <select name="adults" id="adults">
-          @for($i=1;$i<=8;$i++)<option value="{{ $i }}">{{ $i }}</option>@endfor
-        </select>
-      </div>
-      <div class="hr-field">
-        <label for="children"><i class="fa fa-child"></i> Niños</label>
-        <select name="children" id="children">
-          @for($i=0;$i<=6;$i++)<option value="{{ $i }}">{{ $i }}</option>@endfor
-        </select>
+      <div class="hr-guests">
+        <div class="hr-field">
+          <label for="adults"><i class="fa fa-user"></i> Adultos</label>
+          <select name="adults" id="adults">
+            @for($i=1;$i<=8;$i++)<option value="{{ $i }}">{{ $i }}</option>@endfor
+          </select>
+        </div>
+        <div class="hr-field">
+          <label for="children"><i class="fa fa-child"></i> Niños</label>
+          <select name="children" id="children">
+            @for($i=0;$i<=6;$i++)<option value="{{ $i }}">{{ $i }}</option>@endfor
+          </select>
+        </div>
       </div>
       <div class="hr-field hr-field--submit">
         <button type="submit" id="btn-search" class="hr-btn-search"><i class="fa fa-search"></i> Buscar</button>
@@ -235,21 +240,30 @@
   // Slideshow ligero del hero (crossfade). Reemplaza al Revolution Slider.
   var slides = document.querySelectorAll('.hr-slide');
   var dots   = document.querySelectorAll('.hr-dot');
-  if (slides.length < 2) return;
-  var idx = 0, timer;
-  function go(n) {
-    slides[idx].classList.remove('is-active');
-    if (dots[idx]) dots[idx].classList.remove('is-active');
-    idx = (n + slides.length) % slides.length;
-    slides[idx].classList.add('is-active');
-    if (dots[idx]) dots[idx].classList.add('is-active');
+  if (slides.length >= 2) {
+    var idx = 0, timer;
+    var go = function (n) {
+      slides[idx].classList.remove('is-active');
+      if (dots[idx]) dots[idx].classList.remove('is-active');
+      idx = (n + slides.length) % slides.length;
+      slides[idx].classList.add('is-active');
+      if (dots[idx]) dots[idx].classList.add('is-active');
+    };
+    var start = function () { timer = setInterval(function () { go(idx + 1); }, 6000); };
+    var reset = function () { clearInterval(timer); start(); };
+    for (var d = 0; d < dots.length; d++) {
+      dots[d].addEventListener('click', function () { go(parseInt(this.getAttribute('data-i'), 10)); reset(); });
+    }
+    start();
   }
-  function start() { timer = setInterval(function () { go(idx + 1); }, 6000); }
-  function reset() { clearInterval(timer); start(); }
-  for (var d = 0; d < dots.length; d++) {
-    dots[d].addEventListener('click', function () { go(parseInt(this.getAttribute('data-i'), 10)); reset(); });
+
+  // Abrir el calendario nativo al hacer click en cualquier parte del input de fecha.
+  var dateInputs = document.querySelectorAll('.hr-search__card input[type="date"]');
+  for (var k = 0; k < dateInputs.length; k++) {
+    var openPicker = function () { try { if (this.showPicker) this.showPicker(); } catch (e) {} };
+    dateInputs[k].addEventListener('click', openPicker);
+    dateInputs[k].addEventListener('focus', openPicker);
   }
-  start();
 })();
 </script>
 
