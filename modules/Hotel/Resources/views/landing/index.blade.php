@@ -79,6 +79,18 @@
   .loading-rooms { text-align:center; padding:40px 0; color:#95a5a6; }
   .empty-rooms { text-align:center; padding:40px 0; color:#7f8c8d; }
   .doc-feedback { font-size:12px; margin-top:4px; }
+  /* Blog */
+  .blog-card { background:#fff; border-radius:8px; overflow:hidden; box-shadow:0 4px 18px rgba(0,0,0,.08); margin-bottom:30px; transition:transform .2s, box-shadow .2s; }
+  .blog-card:hover { transform:translateY(-4px); box-shadow:0 10px 28px rgba(0,0,0,.15); }
+  .blog-card__img { display:block; height:200px; background:#eceff1 center/cover no-repeat; }
+  .blog-card__body { padding:18px 20px; }
+  .blog-card__date { color:#1abc9c; font-size:12px; text-transform:uppercase; letter-spacing:.5px; font-weight:600; margin-bottom:6px; }
+  .blog-card__date i { margin-right:4px; }
+  .blog-card__title { font-size:19px; font-weight:700; margin:0 0 10px; line-height:1.3; }
+  .blog-card__title a { color:#2c3e50; }
+  .blog-card__title a:hover { color:#1abc9c; }
+  .blog-card__excerpt { color:#666; font-size:14px; margin-bottom:12px; }
+  .blog-card__more { color:#1abc9c; font-weight:600; font-size:13px; text-transform:uppercase; }
 </style>
 </head>
 
@@ -126,6 +138,9 @@
           <li class="active"><a href="#top" class="nav-scroll">Inicio</a></li>
           <li><a href="#rooms-results" class="nav-scroll">Habitaciones</a></li>
           <li><a href="#gallery" class="nav-scroll">Galería</a></li>
+          @if(isset($blogPosts) && $blogPosts->count())
+          <li><a href="#blog" class="nav-scroll">Blog</a></li>
+          @endif
           <li><a href="#contacto" class="nav-scroll">Contacto</a></li>
           <li><a href="#reservation-form" class="nav-scroll text-uppercase" style="color:#1abc9c;font-weight:600;">Reservar</a></li>
         </ul>
@@ -404,6 +419,44 @@
     </section>
   </div>
 </div>
+
+@if(isset($blogPosts) && $blogPosts->count())
+<!-- Blog -->
+<section id="blog" class="blog-section mt100">
+  <div class="container">
+    <div class="row">
+      <div class="col-md-12">
+        <h2 class="lined-heading"><span>Nuestro blog</span></h2>
+        <p class="text-center text-muted" style="margin-top:-10px;margin-bottom:30px;">Novedades, consejos y noticias del hotel.</p>
+      </div>
+    </div>
+    <div class="row">
+      @foreach($blogPosts as $post)
+        @php
+          $postImage = $post->image_url ?: '/landing-reservas/images/gallery/800x504.gif';
+          $postDate  = optional($post->published_at)->format('d/m/Y');
+        @endphp
+        <div class="col-md-4 col-sm-6">
+          <div class="blog-card">
+            <a href="{{ url('reservas/blog/'.$post->slug) }}" class="blog-card__img" style="background-image:url('{{ $postImage }}');"></a>
+            <div class="blog-card__body">
+              @if($postDate)<div class="blog-card__date"><i class="fa fa-calendar"></i> {{ $postDate }}</div>@endif
+              <h3 class="blog-card__title"><a href="{{ url('reservas/blog/'.$post->slug) }}">{{ $post->title }}</a></h3>
+              <p class="blog-card__excerpt">{{ $post->excerpt ?: \Illuminate\Support\Str::limit(strip_tags($post->content), 120) }}</p>
+              <a href="{{ url('reservas/blog/'.$post->slug) }}" class="blog-card__more">Leer más <i class="fa fa-angle-right"></i></a>
+            </div>
+          </div>
+        </div>
+      @endforeach
+    </div>
+    <div class="row">
+      <div class="col-md-12 text-center" style="margin-top:10px;">
+        <a href="{{ url('reservas/blog') }}" class="btn btn-primary btn-lg">Ver todo el blog</a>
+      </div>
+    </div>
+  </div>
+</section>
+@endif
 
 <!-- Call To Action -->
 <section id="call-to-action" class="mt100">

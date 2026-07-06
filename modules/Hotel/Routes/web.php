@@ -15,6 +15,9 @@ if ($hostname) {
     Route::get('reservas/room/{id}', 'HotelLandingController@roomDetail');
     Route::get('reservas/document/{type}/{number}', 'HotelLandingController@documentLookup');
     Route::post('reservas/store', 'HotelLandingController@store');
+    // Blog público (sin autenticación).
+    Route::get('reservas/blog', 'HotelLandingController@blog')->name('tenant.hotels.blog');
+    Route::get('reservas/blog/{slug}', 'HotelLandingController@blogPost')->name('tenant.hotels.blog.post');
 
     Route::middleware(['auth', 'redirect.module', 'locked.tenant','check.email.verified'])
       ->prefix('hotels')
@@ -29,6 +32,11 @@ if ($hostname) {
         Route::post('categories/store', 'HotelCategoryController@store');
         Route::put('categories/{id}/update', 'HotelCategoryController@update');
         Route::delete('categories/{id}/delete', 'HotelCategoryController@destroy');
+        // Blog
+        Route::get('blog', 'HotelBlogController@index');
+        Route::post('blog/store', 'HotelBlogController@store');
+        Route::put('blog/{id}/update', 'HotelBlogController@update');
+        Route::delete('blog/{id}/delete', 'HotelBlogController@destroy');
         // Pisos
         Route::get('floors', 'HotelFloorController@index');
         Route::post('floors/store', 'HotelFloorController@store');

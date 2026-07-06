@@ -14,6 +14,7 @@ use Modules\Hotel\Models\HotelRoom;
 use Modules\Hotel\Models\HotelRent;
 use Modules\Hotel\Models\HotelRentOrder;
 use Modules\Hotel\Models\HotelRentItem;
+use Modules\Hotel\Models\HotelBlogPost;
 use Modules\Services\Data\DocumentApiResolver;
 
 /**
@@ -43,8 +44,57 @@ class HotelLandingController extends Controller
         $configuration = Configuration::first();
         $rooms         = $this->roomsCollection();
         $featured      = $rooms->where('featured', true)->values();
+        $blogPosts     = $this->publishedPosts()->take(3);
 
-        return view('hotel::landing.index', compact('establishment', 'configuration', 'rooms', 'featured'));
+        return view('hotel::landing.index', compact('establishment', 'configuration', 'rooms', 'featured', 'blogPosts'));
+    }
+
+    /**
+     * Página pública del blog: listado de todas las entradas publicadas.
+     */
+    public function blog()
+    {
+        $establishment = Establishment::first();
+        $posts         = $this->publishedPosts();
+
+        return view('hotel::landing.blog', compact('establishment', 'posts'));
+    }
+
+    /**
+     * Detalle público de una entrada del blog por su slug.
+     */
+    public function blogPost($slug)
+    {
+        $establishment = Establishment::first();
+
+        $post = HotelBlogPost::where('slug', $slug)
+            ->where('published', true)
+            ->first();
+
+        if (!$post) {
+            abort(404);
+        }
+
+        $recent = $this->publishedPosts()
+            ->where('id', '!=', $post->id)
+            ->take(4);
+
+        return view('hotel::landing.blog-post', compact('establishment', 'post', 'recent'));
+    }
+
+    /**
+     * Colección de entradas publicadas, ordenadas de la más reciente.
+     */
+    private function publishedPosts()
+    {
+        return HotelBlogPost::where('published', true)
+            ->where(function ($q) {
+                $q->whereNull('published_at')
+                  ->orWhere('published_at', '<=', Carbon::now());
+            })
+            ->orderByDesc('published_at')
+            ->orderByDesc('id')
+            ->get();
     }
 
     /**

@@ -262,6 +262,7 @@ import TenantMultiUsersChangeClient from '@viewsModuleMultiUser/tenant/multi-use
 // Hoteles
 import TenantHotelRates from '@viewsModuleHotel/rates/List.vue'
 import TenantHotelCategories from '@viewsModuleHotel/categories/List.vue'
+import TenantHotelBlog from '@viewsModuleHotel/blog/List.vue'
 import TenantHotelFloors from '@viewsModuleHotel/floors/List.vue'
 import TenantHotelRooms from '@viewsModuleHotel/rooms/List.vue'
 import TenantHotelReception from '@viewsModuleHotel/rooms/Reception.vue'
@@ -665,6 +666,7 @@ Vue.component('tenant-multi-users-change-client', TenantMultiUsersChangeClient)
 // Hoteles
 Vue.component('tenant-hotel-rates', TenantHotelRates)
 Vue.component('tenant-hotel-categories', TenantHotelCategories)
+Vue.component('tenant-hotel-blog', TenantHotelBlog)
 Vue.component('tenant-hotel-floors', TenantHotelFloors)
 Vue.component('tenant-hotel-rooms', TenantHotelRooms)
 Vue.component('tenant-hotel-reception', TenantHotelReception)
