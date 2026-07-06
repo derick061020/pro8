@@ -38,7 +38,11 @@
 <script type="text/javascript" src="/landing-reservas/js/custom.js"></script>
 
 <style>
-  .blog article .article-img { display:block; height:340px; background:#eceff1 center/cover no-repeat; border-radius:4px; overflow:hidden; }
+  .blog article .article-img { position:relative; display:block; height:340px; background:#eceff1 center/cover no-repeat; border-radius:4px; overflow:hidden; }
+  .article-img .play-badge, .news-thumb-img .play-badge { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); color:#fff; text-shadow:0 2px 6px rgba(0,0,0,.55); }
+  .article-img .play-badge { font-size:56px; }
+  .news-thumb-img { position:relative; }
+  .news-thumb-img .play-badge { font-size:20px; }
   .blog article .intro { margin-top:8px; }
   .news-thumb .news-thumb-img { display:block; width:65px; height:65px; background:#eceff1 center/cover no-repeat; border-radius:4px; }
   .blog-empty { text-align:center; padding:40px 0; color:#7f8c8d; }
@@ -77,13 +81,15 @@
       <div class="col-md-9">
         @forelse($posts as $post)
           @php
-            $postImage = $post->image_url;
+            $postImage = $post->cover_image;
             $pubDate   = $post->published_at ?: $post->created_at;
             $excerpt   = $post->excerpt ?: \Illuminate\Support\Str::limit(strip_tags($post->content), 220);
           @endphp
           <article>
             @if($postImage)
-              <a href="{{ url('reservas/blog/'.$post->slug) }}" class="article-img" style="background-image:url('{{ $postImage }}');"></a>
+              <a href="{{ url('reservas/blog/'.$post->slug) }}" class="article-img" style="background-image:url('{{ $postImage }}');">
+                @if($post->hasVideoCover())<i class="fa fa-play-circle play-badge"></i>@endif
+              </a>
             @endif
             <div class="row">
               <div class="col-sm-1 col-xs-2 meta">
@@ -126,13 +132,13 @@
             <ul class="list-unstyled">
               @foreach($posts->take(4) as $recent)
                 @php
-                  $rImg  = $recent->image_url;
+                  $rImg  = $recent->cover_image;
                   $rDate = $recent->published_at ?: $recent->created_at;
                 @endphp
                 <li>
                   <article>
                     <div class="news-thumb">
-                      <a href="{{ url('reservas/blog/'.$recent->slug) }}" class="news-thumb-img" @if($rImg)style="background-image:url('{{ $rImg }}');"@endif></a>
+                      <a href="{{ url('reservas/blog/'.$recent->slug) }}" class="news-thumb-img" @if($rImg)style="background-image:url('{{ $rImg }}');"@endif>@if($recent->hasVideoCover())<i class="fa fa-play-circle play-badge"></i>@endif</a>
                     </div>
                     <div class="news-content clearfix">
                       <h4><a href="{{ url('reservas/blog/'.$recent->slug) }}">{{ \Illuminate\Support\Str::limit($recent->title, 45) }}</a></h4>

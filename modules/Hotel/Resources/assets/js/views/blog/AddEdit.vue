@@ -4,8 +4,9 @@
     :visible="visible"
     @close="onClose"
     @open="onOpen"
-    top="5vh"
-    width="720px"
+    top="4vh"
+    width="860px"
+    custom-class="blog-editor-dialog"
   >
     <form autocomplete="off" @submit.prevent="onSubmit">
       <div class="form-body">
@@ -63,9 +64,16 @@
           </div>
         </div>
 
+        <!-- Portada: imagen o video -->
         <div class="form-group">
-          <label class="control-label">Imagen de portada</label>
-          <div class="blog-cover">
+          <label class="control-label">Portada</label>
+          <el-radio-group v-model="form.cover_type" size="small" class="mb-2">
+            <el-radio-button label="image"><i class="fa fa-image"></i> Imagen</el-radio-button>
+            <el-radio-button label="video"><i class="fa fa-youtube-play"></i> Video</el-radio-button>
+          </el-radio-group>
+
+          <!-- Portada tipo imagen -->
+          <div v-show="form.cover_type === 'image'" class="blog-cover">
             <div class="blog-cover__preview" :style="coverStyle">
               <span v-if="!coverUrl" class="text-muted"><i class="fa fa-image"></i> Sin imagen</span>
             </div>
@@ -83,6 +91,31 @@
               >
                 Quitar
               </button>
+            </div>
+          </div>
+
+          <!-- Portada tipo video -->
+          <div v-show="form.cover_type === 'video'">
+            <el-input
+              type="text"
+              v-model="form.video_url"
+              placeholder="Pega la URL del video (YouTube, Vimeo) o el código <iframe> del embed"
+            >
+              <template slot="prepend"><i class="fa fa-link"></i></template>
+            </el-input>
+            <p class="cover-hint">
+              Ej: https://www.youtube.com/watch?v=... · https://youtu.be/... · https://vimeo.com/...
+            </p>
+            <div v-if="videoEmbedUrl" class="video-embed">
+              <iframe
+                :src="videoEmbedUrl"
+                frameborder="0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowfullscreen
+              ></iframe>
+            </div>
+            <div v-else-if="form.video_url" class="video-embed video-embed--empty">
+              <span class="text-muted"><i class="fa fa-exclamation-circle"></i> No se pudo reconocer el video. Verifica la URL.</span>
             </div>
           </div>
         </div>
@@ -104,13 +137,18 @@
 
         <div class="form-group">
           <label class="control-label" for="content">Contenido</label>
-          <el-input
-            type="textarea"
-            id="content"
-            :rows="8"
-            v-model="form.content"
-            placeholder="Escribe aquí el contenido de la entrada. Puedes usar saltos de línea."
-          />
+          <div class="ckeditor-wrap">
+            <vue-ckeditor
+              v-if="visible"
+              :editors="editors"
+              type="classic"
+              v-model="form.content"
+              :config="editorConfig"
+            />
+          </div>
+          <p class="cover-hint">
+            Usa la barra de herramientas para dar formato: títulos, negritas, listas, enlaces, imágenes, tablas y más.
+          </p>
         </div>
 
         <div class="form-group">
@@ -118,11 +156,14 @@
           <el-switch v-model="form.published"></el-switch>
         </div>
 
-        <div class="row text-center">
-          <div class="col-6">
+        <div class="row text-center align-items-center">
+          <div class="col-4">
             <el-button class="btn-block second-buton" @click="onClose">Cancelar</el-button>
           </div>
-          <div class="col-6">
+          <div class="col-4">
+            <el-button class="btn-block" icon="el-icon-view" @click="openPreview">Previsualizar</el-button>
+          </div>
+          <div class="col-4">
             <el-button
               native-type="submit"
               :disabled="loading"
@@ -135,11 +176,52 @@
         </div>
       </div>
     </form>
+
+    <!-- Previsualización tal como se verá en la web -->
+    <el-dialog
+      title="Vista previa"
+      :visible.sync="previewVisible"
+      width="820px"
+      top="4vh"
+      append-to-body
+      custom-class="blog-preview-dialog"
+    >
+      <div class="blog-preview">
+        <div v-if="form.cover_type === 'video' && videoEmbedUrl" class="blog-preview__video">
+          <iframe
+            :src="videoEmbedUrl"
+            frameborder="0"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowfullscreen
+          ></iframe>
+        </div>
+        <div
+          v-else-if="coverUrl"
+          class="blog-preview__cover"
+          :style="{ backgroundImage: `url(${coverUrl})` }"
+        ></div>
+
+        <h1 class="blog-preview__title">{{ form.title || "Título de la entrada" }}</h1>
+        <div class="blog-preview__meta">
+          <span v-if="form.author"><i class="fa fa-user"></i> {{ form.author }}</span>
+          <span v-if="form.published_at"><i class="fa fa-calendar"></i> {{ formatDate(form.published_at) }}</span>
+        </div>
+        <p v-if="form.excerpt" class="blog-preview__lead">{{ form.excerpt }}</p>
+        <div class="blog-preview__content" v-html="form.content || '<p class=\'text-muted\'>Sin contenido todavía.</p>'"></div>
+      </div>
+    </el-dialog>
   </el-dialog>
 </template>
 
 <script>
+import "ckeditor5/ckeditor5.css";
+import ClassicEditor from "@ckeditor/ckeditor5-build-classic";
+import CKEditor from "vue-ckeditor5";
+
 export default {
+  components: {
+    "vue-ckeditor": CKEditor.component,
+  },
   props: {
     visible: {
       type: Boolean,
@@ -171,6 +253,40 @@ export default {
       errors: {},
       loading: false,
       uploadingImage: false,
+      previewVisible: false,
+      editors: {
+        classic: ClassicEditor,
+      },
+      editorConfig: {
+        licenseKey: "GPL",
+        toolbar: {
+          items: [
+            "heading",
+            "|",
+            "bold",
+            "italic",
+            "link",
+            "bulletedList",
+            "numberedList",
+            "|",
+            "outdent",
+            "indent",
+            "|",
+            "blockQuote",
+            "insertTable",
+            "mediaEmbed",
+            "|",
+            "undo",
+            "redo",
+            "|",
+            "sourceEditing",
+          ],
+          shouldNotGroupWhenFull: true,
+        },
+        table: {
+          contentToolbar: ["tableColumn", "tableRow", "mergeTableCells"],
+        },
+      },
     };
   },
   computed: {
@@ -183,17 +299,23 @@ export default {
     coverStyle() {
       return this.coverUrl ? { backgroundImage: `url(${this.coverUrl})` } : {};
     },
+    videoEmbedUrl() {
+      return this.toEmbedUrl(this.form.video_url);
+    },
   },
   methods: {
     onOpen() {
       this.errors = {};
+      this.previewVisible = false;
       if (this.post) {
         this.title = "Editar entrada";
         this.form = {
           title: this.post.title,
           author: this.post.author,
           excerpt: this.post.excerpt,
-          content: this.post.content,
+          content: this.post.content || "",
+          cover_type: this.post.cover_type || "image",
+          video_url: this.post.video_url || "",
           published: this.post.published,
           published_at: this.post.published_at,
           establishment_id: this.post.establishment_id || this.establishmentId,
@@ -208,6 +330,8 @@ export default {
           author: "",
           excerpt: "",
           content: "",
+          cover_type: "image",
+          video_url: "",
           published: true,
           published_at: this.today(),
           establishment_id: this.establishmentId,
@@ -222,6 +346,56 @@ export default {
       const m = String(d.getMonth() + 1).padStart(2, "0");
       const day = String(d.getDate()).padStart(2, "0");
       return `${d.getFullYear()}-${m}-${day}`;
+    },
+    formatDate(value) {
+      if (!value) return "";
+      const parts = String(value).split("-");
+      if (parts.length === 3) {
+        return `${parts[2]}/${parts[1]}/${parts[0]}`;
+      }
+      return value;
+    },
+    // Normaliza una URL de video a su forma incrustable (espejo de la lógica del modelo PHP).
+    toEmbedUrl(url) {
+      url = (url || "").trim();
+      if (!url) return null;
+
+      const iframeMatch = url.match(/<iframe[^>]*\ssrc=["']([^"']+)["']/i);
+      if (iframeMatch) {
+        url = iframeMatch[1];
+      }
+
+      const ytId = this.extractYoutubeId(url);
+      if (ytId) {
+        return `https://www.youtube.com/embed/${ytId}`;
+      }
+
+      const vimeo = url.match(/vimeo\.com\/(?:video\/)?(\d+)/i);
+      if (vimeo) {
+        return `https://player.vimeo.com/video/${vimeo[1]}`;
+      }
+
+      if (/^https?:\/\//i.test(url)) {
+        return url;
+      }
+      return null;
+    },
+    extractYoutubeId(url) {
+      const patterns = [
+        /youtube\.com\/watch\?(?:.*&)?v=([\w-]{11})/i,
+        /youtu\.be\/([\w-]{11})/i,
+        /youtube\.com\/embed\/([\w-]{11})/i,
+        /youtube\.com\/shorts\/([\w-]{11})/i,
+        /youtube\.com\/v\/([\w-]{11})/i,
+      ];
+      for (const p of patterns) {
+        const m = url.match(p);
+        if (m) return m[1];
+      }
+      return null;
+    },
+    openPreview() {
+      this.previewVisible = true;
     },
     onPickImage(event) {
       const file = (event.target.files || [])[0];
@@ -262,6 +436,8 @@ export default {
         author: this.form.author,
         excerpt: this.form.excerpt,
         content: this.form.content,
+        cover_type: this.form.cover_type || "image",
+        video_url: this.form.cover_type === "video" ? this.form.video_url : null,
         published: this.form.published,
         published_at: this.form.published_at,
         establishment_id: this.form.establishment_id,
@@ -349,5 +525,105 @@ export default {
   justify-content: center;
   border: 1px dashed #cfd8dc;
   flex-shrink: 0;
+}
+.cover-hint {
+  font-size: 12px;
+  color: #90a4ae;
+  margin: 6px 0 0;
+}
+.video-embed {
+  position: relative;
+  width: 100%;
+  max-width: 480px;
+  padding-top: 270px;
+  margin-top: 12px;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #000;
+}
+.video-embed iframe {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+.video-embed--empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-top: 0;
+  height: 120px;
+  background: #f5f7f8;
+  border: 1px dashed #cfd8dc;
+}
+.ckeditor-wrap :deep(.ck-editor__editable) {
+  min-height: 260px;
+}
+
+/* Vista previa */
+.blog-preview {
+  color: #3a4b57;
+}
+.blog-preview__video {
+  position: relative;
+  width: 100%;
+  padding-top: 56.25%;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #000;
+  margin-bottom: 22px;
+}
+.blog-preview__video iframe {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+.blog-preview__cover {
+  width: 100%;
+  height: 340px;
+  background: #eceff1 center/cover no-repeat;
+  border-radius: 8px;
+  margin-bottom: 22px;
+}
+.blog-preview__title {
+  font-size: 28px;
+  font-weight: 700;
+  margin: 0 0 10px;
+  color: #2c3e50;
+}
+.blog-preview__meta {
+  color: #90a4ae;
+  font-size: 13px;
+  margin-bottom: 18px;
+}
+.blog-preview__meta span {
+  margin-right: 16px;
+}
+.blog-preview__lead {
+  font-size: 18px;
+  font-weight: 600;
+  color: #55707f;
+  margin-bottom: 18px;
+}
+.blog-preview__content {
+  font-size: 16px;
+  line-height: 1.8;
+}
+.blog-preview__content :deep(img) {
+  max-width: 100%;
+  height: auto;
+  border-radius: 6px;
+}
+.blog-preview__content :deep(table) {
+  border-collapse: collapse;
+  width: 100%;
+}
+.blog-preview__content :deep(table td),
+.blog-preview__content :deep(table th) {
+  border: 1px solid #dbe2e6;
+  padding: 8px 10px;
 }
 </style>

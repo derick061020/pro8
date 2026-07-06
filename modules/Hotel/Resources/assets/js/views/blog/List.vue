@@ -66,13 +66,20 @@
             <tbody>
               <tr v-for="item in items" :key="item.id">
                 <td>
-                  <img
-                    v-if="item.image_url"
-                    :src="item.image_url"
-                    alt=""
-                    style="width:56px;height:42px;object-fit:cover;border-radius:5px;"
-                  />
-                  <span v-else class="text-muted"><i class="fa fa-image"></i></span>
+                  <div style="position:relative;width:56px;">
+                    <img
+                      v-if="item.cover_image || item.image_url"
+                      :src="item.cover_image || item.image_url"
+                      alt=""
+                      style="width:56px;height:42px;object-fit:cover;border-radius:5px;"
+                    />
+                    <span v-else class="text-muted"><i class="fa fa-image"></i></span>
+                    <i
+                      v-if="item.cover_type === 'video'"
+                      class="fa fa-play-circle"
+                      style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:#fff;font-size:18px;text-shadow:0 1px 3px rgba(0,0,0,.6);"
+                    ></i>
+                  </div>
                 </td>
                 <td>{{ item.title }}</td>
                 <td>{{ item.author || '—' }}</td>

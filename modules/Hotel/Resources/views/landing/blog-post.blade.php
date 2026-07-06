@@ -40,9 +40,21 @@
 
 <style>
   .post-featured { display:block; height:420px; background:#eceff1 center/cover no-repeat; border-radius:4px; margin-bottom:26px; }
+  .post-video { position:relative; width:100%; padding-top:56.25%; border-radius:4px; overflow:hidden; background:#000; margin-bottom:26px; }
+  .post-video iframe { position:absolute; top:0; left:0; width:100%; height:100%; border:0; }
   .post-content { color:#3a4b57; font-size:16px; line-height:1.8; }
   .post-content p { margin-bottom:18px; }
   .post-content img { max-width:100%; height:auto; border-radius:6px; }
+  .post-content h1, .post-content h2, .post-content h3, .post-content h4 { color:#2c3e50; margin:26px 0 12px; font-weight:700; }
+  .post-content ul, .post-content ol { margin:0 0 18px 22px; }
+  .post-content blockquote { border-left:4px solid #1abc9c; margin:0 0 18px; padding:6px 18px; color:#55707f; background:#f6fbfa; font-style:italic; }
+  .post-content a { color:#1abc9c; }
+  .post-content table { border-collapse:collapse; width:100%; margin-bottom:18px; }
+  .post-content table td, .post-content table th { border:1px solid #dbe2e6; padding:8px 10px; }
+  .post-content figure { max-width:100%; }
+  .post-content .media, .post-content iframe { max-width:100%; }
+  .post-content figure.media { position:relative; padding-top:56.25%; }
+  .post-content figure.media iframe { position:absolute; top:0; left:0; width:100%; height:100%; }
   .news-thumb .news-thumb-img { display:block; width:65px; height:65px; background:#eceff1 center/cover no-repeat; border-radius:4px; }
 </style>
 </head>
@@ -79,7 +91,11 @@
     <section class="blog mt50">
       <div class="col-md-9">
         <article>
-          @if($heroImage)
+          @if($post->hasVideoCover() && $post->video_embed_url)
+            <div class="post-video">
+              <iframe src="{{ $post->video_embed_url }}" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+            </div>
+          @elseif($heroImage)
             <span class="post-featured" style="background-image:url('{{ $heroImage }}');"></span>
           @endif
           <div class="row">
@@ -96,7 +112,15 @@
                 <p class="lead">{{ $post->excerpt }}</p>
               @endif
               <div class="post-content">
-                {!! nl2br(e($post->content)) !!}
+                @php
+                    // Contenido nuevo (CKEditor) es HTML; entradas antiguas eran texto plano.
+                    $isHtml = $post->content && $post->content !== strip_tags($post->content);
+                @endphp
+                @if($isHtml)
+                  {!! $post->content !!}
+                @else
+                  {!! nl2br(e($post->content)) !!}
+                @endif
               </div>
               <a href="/reservas/blog" class="btn btn-default mt30"><i class="fa fa-angle-left"></i> Volver al blog</a>
             </div>
@@ -114,7 +138,7 @@
             <ul class="list-unstyled">
               @foreach($recent as $r)
                 @php
-                  $rImg  = $r->image_url;
+                  $rImg  = $r->cover_image;
                   $rDate = $r->published_at ?: $r->created_at;
                 @endphp
                 <li>

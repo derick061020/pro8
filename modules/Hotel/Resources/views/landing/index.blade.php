@@ -93,7 +93,7 @@
   /* Blog */
   .blog-card { background:#fff; border-radius:8px; overflow:hidden; box-shadow:0 4px 18px rgba(0,0,0,.08); margin-bottom:30px; transition:transform .2s, box-shadow .2s; }
   .blog-card:hover { transform:translateY(-4px); box-shadow:0 10px 28px rgba(0,0,0,.15); }
-  .blog-card__img { display:block; height:200px; background:#eceff1 center/cover no-repeat; }
+  .blog-card__img { position:relative; display:block; height:200px; background:#eceff1 center/cover no-repeat; }
   .blog-card__body { padding:18px 20px; }
   .blog-card__date { color:#1abc9c; font-size:12px; text-transform:uppercase; letter-spacing:.5px; font-weight:600; margin-bottom:6px; }
   .blog-card__date i { margin-right:4px; }
@@ -465,12 +465,14 @@
     <div class="row">
       @foreach($blogPosts as $post)
         @php
-          $postImage = $post->image_url ?: '/landing-reservas/images/gallery/800x504.gif';
+          $postImage = $post->cover_image ?: '/landing-reservas/images/gallery/800x504.gif';
           $postDate  = optional($post->published_at)->format('d/m/Y');
         @endphp
         <div class="col-md-4 col-sm-6">
           <div class="blog-card">
-            <a href="{{ url('reservas/blog/'.$post->slug) }}" class="blog-card__img" style="background-image:url('{{ $postImage }}');"></a>
+            <a href="{{ url('reservas/blog/'.$post->slug) }}" class="blog-card__img" style="background-image:url('{{ $postImage }}');">
+              @if($post->hasVideoCover())<i class="fa fa-play-circle" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:#fff;font-size:46px;text-shadow:0 2px 6px rgba(0,0,0,.55);"></i>@endif
+            </a>
             <div class="blog-card__body">
               @if($postDate)<div class="blog-card__date"><i class="fa fa-calendar"></i> {{ $postDate }}</div>@endif
               <h3 class="blog-card__title"><a href="{{ url('reservas/blog/'.$post->slug) }}">{{ $post->title }}</a></h3>

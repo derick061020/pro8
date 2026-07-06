@@ -137,6 +137,8 @@ class HotelBlogController extends Controller
             'author'           => 'nullable|string|max:120',
             'excerpt'          => 'nullable|string|max:500',
             'content'          => 'nullable|string',
+            'cover_type'       => 'nullable|in:image,video',
+            'video_url'        => 'nullable|string|max:500',
             'published'        => 'nullable|boolean',
             'published_at'     => 'nullable|date',
             'establishment_id' => 'nullable|numeric',
@@ -165,6 +167,11 @@ class HotelBlogController extends Controller
         $post->excerpt   = $data['excerpt'] ?? null;
         $post->content   = $data['content'] ?? null;
         $post->published = (bool) ($request->input('published', true));
+
+        // Portada: imagen (por defecto) o video (YouTube/Vimeo/embed).
+        $coverType = $data['cover_type'] ?? 'image';
+        $post->cover_type = in_array($coverType, ['image', 'video'], true) ? $coverType : 'image';
+        $post->video_url  = $post->cover_type === 'video' ? ($data['video_url'] ?? null) : null;
 
         $publishedAt = $data['published_at'] ?? null;
         $post->published_at = $publishedAt ? Carbon::parse($publishedAt) : ($post->published_at ?: Carbon::now());
@@ -232,6 +239,10 @@ class HotelBlogController extends Controller
             'content'            => $post->content,
             'image'              => $post->image,
             'image_url'          => $post->image_url,
+            'cover_type'         => $post->cover_type ?: 'image',
+            'video_url'          => $post->video_url,
+            'video_embed_url'    => $post->video_embed_url,
+            'cover_image'        => $post->cover_image,
             'published'          => (bool) $post->published,
             'published_at'       => optional($post->published_at)->format('Y-m-d'),
             'establishment_id'   => $post->establishment_id,
