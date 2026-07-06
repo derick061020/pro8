@@ -470,7 +470,7 @@ export default {
       this.$http
         .post("/hotels/landing-settings/update", body)
         .then((res) => {
-          this.$message.success(res.data.message || "Web actualizada.");
+          this.$message({ type: "success", message: res.data.message || "Web actualizada." });
           this.form = this.normalize(res.data.config);
         })
         .catch((e) => this.axiosError(e))
