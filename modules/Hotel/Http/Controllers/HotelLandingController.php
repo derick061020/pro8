@@ -435,7 +435,11 @@ class HotelLandingController extends Controller
 
             $roomRate  = $room->rates->first();
             $nights    = max(1, $inDate->copy()->startOfDay()->diffInDays($outDate->copy()->startOfDay()));
-            $unitPrice = (float) ($roomRate->price ?? 0);
+            // El precio personalizado de la web tiene prioridad sobre la tarifa,
+            // para que el cobro coincida con el precio mostrado en la landing.
+            $unitPrice = $room->web_price > 0
+                ? (float) $room->web_price
+                : (float) ($roomRate->price ?? 0);
             $total     = round($unitPrice * $nights, 2);
 
             // Cliente: si hay documento, crea/reutiliza la ficha real; si no,

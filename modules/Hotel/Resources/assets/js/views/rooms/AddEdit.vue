@@ -118,6 +118,21 @@
           <el-input-number id="size" v-model="form.size" :min="1" :max="9999" controls-position="right" style="width:100%" />
         </div>
 
+        <div class="col-6 form-group mb-2">
+          <label class="control-label" for="web_price">Precio personalizado para la web (por noche)</label>
+          <el-input-number
+            id="web_price"
+            v-model="form.web_price"
+            :min="0"
+            :precision="2"
+            :step="1"
+            controls-position="right"
+            placeholder="Ej: 120.00"
+            style="width:100%"
+          />
+          <small class="text-muted">Opcional. Si lo defines, este precio reemplaza al de las tarifas en la web de reservas. Déjalo en 0 o vacío para usar la tarifa más baja.</small>
+        </div>
+
         <div class="col-12 form-group mb-2">
           <label class="control-label">Amenidades / Servicios</label>
           <el-select
@@ -381,6 +396,7 @@ export default {
           featured: !!this.room.featured,
           capacity: this.room.capacity || undefined,
           size: this.room.size || undefined,
+          web_price: this.room.web_price ? Number(this.room.web_price) : undefined,
           amenities: Array.isArray(this.room.amenities) ? [...this.room.amenities] : [],
           images: this.buildExistingImages(this.room),
         };

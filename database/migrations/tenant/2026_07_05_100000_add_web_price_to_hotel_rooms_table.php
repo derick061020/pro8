@@ -16,7 +16,7 @@ class AddWebPriceToHotelRoomsTable extends Migration
     {
         Schema::table('hotel_rooms', function (Blueprint $table) {
             if (!Schema::hasColumn('hotel_rooms', 'web_price')) {
-                $table->decimal('web_price', 12, 2)->nullable()->after('featured');
+                $table->decimal('web_price', 12, 2)->nullable();
             }
         });
     }
