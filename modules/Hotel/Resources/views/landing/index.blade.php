@@ -102,6 +102,53 @@
   .blog-card__title a:hover { color:#1abc9c; }
   .blog-card__excerpt { color:#666; font-size:14px; margin-bottom:12px; }
   .blog-card__more { color:#1abc9c; font-weight:600; font-size:13px; text-transform:uppercase; }
+
+  /* ===== Hero de reservas (moderno, sin plugin — fondo a pantalla completa, sin cortes) ===== */
+  .hr-hero { position:relative; background:#0f1720; }
+  .hr-slides { position:relative; height:74vh; min-height:480px; max-height:760px; overflow:hidden; }
+  .hr-slide { position:absolute; top:0; left:0; right:0; bottom:0; background-size:cover; background-position:center; opacity:0; transition:opacity 1.1s ease; }
+  .hr-slide.is-active { opacity:1; }
+  .hr-slide__overlay { position:absolute; top:0; left:0; right:0; bottom:0; background:linear-gradient(180deg, rgba(15,23,32,.40) 0%, rgba(15,23,32,.28) 45%, rgba(15,23,32,.70) 100%); }
+  .hr-slide__caption { position:absolute; top:0; left:0; right:0; bottom:0; display:flex; align-items:center; text-align:center; color:#fff; padding-bottom:60px; }
+  .hr-slide__caption .container { width:100%; }
+  .hr-stars { color:#f1c40f; font-size:18px; letter-spacing:4px; margin-bottom:14px; }
+  .hr-title { font-size:52px; font-weight:700; margin:0 0 14px; color:#fff; line-height:1.1; text-shadow:0 4px 24px rgba(0,0,0,.45); }
+  .hr-subtitle { font-size:20px; font-weight:300; max-width:720px; margin:0 auto 26px; text-shadow:0 2px 12px rgba(0,0,0,.4); }
+  .hr-btn { display:inline-block; background:#1abc9c; color:#fff; border:0; border-radius:40px; padding:13px 34px; font-weight:600; font-size:14px; text-transform:uppercase; letter-spacing:.5px; box-shadow:0 10px 26px rgba(26,188,156,.40); transition:transform .2s, box-shadow .2s, background .2s; }
+  .hr-btn:hover, .hr-btn:focus { background:#16a085; color:#fff; text-decoration:none; transform:translateY(-2px); box-shadow:0 14px 32px rgba(26,188,156,.5); }
+  .hr-dots { position:absolute; left:0; right:0; bottom:120px; display:flex; justify-content:center; gap:10px; z-index:3; }
+  .hr-dot { width:11px; height:11px; border-radius:50%; border:0; padding:0; background:rgba(255,255,255,.5); cursor:pointer; transition:background .2s, transform .2s; }
+  .hr-dot.is-active { background:#1abc9c; transform:scale(1.25); }
+
+  /* Buscador flotante sobre el hero */
+  .hr-search { position:relative; z-index:5; }
+  #reservation-form.hr-search { margin-top:-72px; margin-bottom:10px; }
+  .hr-search__card { background:#fff; border-radius:16px; box-shadow:0 18px 50px rgba(0,0,0,.18); padding:22px 26px; display:grid; grid-template-columns:1fr 1fr .85fr .85fr auto; gap:16px; align-items:end; }
+  .hr-field { display:flex; flex-direction:column; min-width:0; }
+  .hr-field label { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.6px; color:#8a97a3; margin-bottom:7px; }
+  .hr-field label i { color:#1abc9c; margin-right:5px; }
+  .hr-field input, .hr-field select { width:100%; height:50px; border:1px solid #e3e8ec; border-radius:10px; padding:0 14px; font-size:15px; color:#2c3e50; background-color:#f8fafb; box-shadow:none; transition:border-color .2s, box-shadow .2s, background-color .2s; -webkit-appearance:none; -moz-appearance:none; appearance:none; }
+  .hr-field input:focus, .hr-field select:focus { outline:none; border-color:#1abc9c; background-color:#fff; box-shadow:0 0 0 3px rgba(26,188,156,.15); }
+  .hr-field select { padding-right:36px; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%238a97a3' d='M6 8 0 2 1.5.5 6 5 10.5.5 12 2z'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 14px center; }
+  .hr-field input[type="date"]::-webkit-calendar-picker-indicator { cursor:pointer; opacity:.55; }
+  .hr-field input[type="date"]::-webkit-calendar-picker-indicator:hover { opacity:1; }
+  .hr-btn-search { height:50px; border:0; border-radius:10px; background:#1abc9c; color:#fff; font-weight:700; font-size:15px; padding:0 28px; cursor:pointer; white-space:nowrap; box-shadow:0 10px 24px rgba(26,188,156,.35); transition:background .2s, transform .2s, box-shadow .2s; }
+  .hr-btn-search:hover { background:#16a085; transform:translateY(-1px); box-shadow:0 14px 30px rgba(26,188,156,.45); }
+  .hr-btn-search:disabled { opacity:.7; cursor:default; transform:none; }
+  @media (max-width:991px) {
+    .hr-title { font-size:42px; }
+    .hr-search__card { grid-template-columns:1fr 1fr; }
+    .hr-field--submit { grid-column:1 / -1; }
+    .hr-btn-search { width:100%; }
+  }
+  @media (max-width:767px) {
+    .hr-slides { height:64vh; min-height:400px; }
+    .hr-title { font-size:32px; }
+    .hr-subtitle { font-size:16px; }
+    .hr-dots { bottom:96px; }
+    #reservation-form.hr-search { margin-top:-44px; }
+    .hr-search__card { grid-template-columns:1fr; padding:18px; }
+  }
 </style>
 </head>
 
