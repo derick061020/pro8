@@ -52,7 +52,12 @@
   .search-box { background:#fff; border-radius:6px; box-shadow:0 10px 30px rgba(0,0,0,.12); padding:18px; }
   .search-box label { font-weight:600; font-size:12px; text-transform:uppercase; color:#666; }
   .search-box .form-control { height:42px; }
-  .room-card { background:#fff; border-radius:8px; overflow:hidden; box-shadow:0 4px 18px rgba(0,0,0,.08); margin-bottom:30px; display:flex; flex-direction:column; height:calc(100% - 30px); transition:transform .2s, box-shadow .2s; }
+  /* Grid de habitaciones: fila flex para que todas las tarjetas de una fila
+     tengan la misma altura y no se "salten" espacios cuando el contenido varía. */
+  #rooms-grid > .row { display:flex; flex-wrap:wrap; }
+  #rooms-grid > .row:before, #rooms-grid > .row:after { content:none; display:none; }
+  #rooms-grid > .row > [class*="col-"] { display:flex; flex-direction:column; margin-bottom:30px; }
+  .room-card { background:#fff; border-radius:8px; overflow:hidden; box-shadow:0 4px 18px rgba(0,0,0,.08); display:flex; flex-direction:column; width:100%; height:100%; transition:transform .2s, box-shadow .2s; }
   .room-card:hover { transform:translateY(-4px); box-shadow:0 10px 28px rgba(0,0,0,.15); }
   .room-card__img { position:relative; height:210px; background:#eceff1 center/cover no-repeat; }
   .room-card__badge { position:absolute; top:12px; left:12px; background:#1abc9c; color:#fff; font-size:11px; font-weight:600; padding:4px 10px; border-radius:20px; text-transform:uppercase; }
