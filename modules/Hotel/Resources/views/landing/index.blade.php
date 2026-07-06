@@ -3,12 +3,18 @@
 <head>
 <meta charset="utf-8">
 @php
+    use Modules\Hotel\Models\HotelLandingSetting;
+
     $hotelName = $establishment->description ?? 'Hotel';
     $hotelPhone = $establishment->telephone ?? null;
     $hotelEmail = $establishment->email ?? null;
     $hotelAddress = $establishment->address ?? null;
     $hotelWeb = $establishment->web_address ?? null;
     $hotelLogo = (!empty($establishment->logo)) ? asset('storage/uploads/logos/'.$establishment->logo) : null;
+
+    // Configuración de personalización de la web (con valores por defecto).
+    $cfg = $settings ?? HotelLandingSetting::mergeDefaults([]);
+    $themeColor = in_array(($cfg['color'] ?? 'turquoise'), ['turquoise','blue','green','orange','purple','red','brown','black']) ? $cfg['color'] : 'turquoise';
 @endphp
 <title>{{ $hotelName }} · Reservas online</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -25,7 +31,7 @@
 <link rel="stylesheet" href="/landing-reservas/css/smoothness/jquery-ui-1.10.4.custom.min.css">
 <link rel="stylesheet" href="/landing-reservas/rs-plugin/css/settings.css">
 <link rel="stylesheet" href="/landing-reservas/css/theme.css">
-<link rel="stylesheet" href="/landing-reservas/css/colors/turquoise.css">
+<link rel="stylesheet" href="/landing-reservas/css/colors/{{ $themeColor }}.css">
 <link rel="stylesheet" href="/landing-reservas/css/responsive.css">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:400italic,600italic,400,600,700">
 
@@ -109,68 +115,32 @@
   <div class="bannercontainer">
     <div class="banner">
       <ul>
-        <!-- Slide 1 -->
-        <li data-transition="fade" data-slotamount="7" data-masterspeed="1500" >
-          <!-- Main Image -->
-          <img src="/landing-reservas/images/slides/1700x449.gif" style="opacity:0;" alt="slidebg1"  data-bgfit="cover" data-bgposition="left bottom" data-bgrepeat="no-repeat">
-          <!-- Layers -->
-          <!-- Layer 1 -->
-          <div class="caption sft revolution-starhotel bigtext"
-          				data-x="505"
-                        data-y="30"
-                        data-speed="700"
-                        data-start="1700"
-                        data-easing="easeOutBack">
-							<span><i class="fa fa-star-o"></i> <i class="fa fa-star-o"></i> <i class="fa fa-star-o"></i> <i class="fa fa-star-o"></i> <i class="fa fa-star-o"></i></span> {{ $hotelName }} <span><i class="fa fa-star-o"></i> <i class="fa fa-star-o"></i> <i class="fa fa-star-o"></i> <i class="fa fa-star-o"></i> <i class="fa fa-star-o"></i></span></div>
-          <!-- Layer 2 -->
-          <div class="caption sft revolution-starhotel smalltext"
-          				data-x="605"
-                        data-y="105"
-                        data-speed="800"
-                        data-start="1700"
-                        data-easing="easeOutBack">
-							<span>Reserva tu estancia con nosotros</span></div>
-        <!-- Layer 3 -->
-                  <div class="caption sft"
-          				data-x="775"
-                        data-y="175"
-                        data-speed="1000"
-                        data-start="1900"
-                        data-easing="easeOutBack">
-							<a href="#rooms-results" class="button btn btn-purple btn-lg nav-scroll">Ver habitaciones</a>
-                  </div>
-        </li>
-		<!-- Slide 2 -->
-        <li data-transition="boxfade" data-slotamount="7" data-masterspeed="1000" >
-          <!-- Main Image -->
-          <img src="/landing-reservas/images/slides/1700x449.gif"  alt="darkblurbg"  data-bgfit="cover" data-bgposition="left top" data-bgrepeat="no-repeat">
-          <!-- Layers -->
-          <!-- Layer 1 -->
-          <div class="caption sft revolution-starhotel bigtext"
-          				data-x="585"
-                        data-y="30"
-                        data-speed="700"
-                        data-start="1700"
-                        data-easing="easeOutBack">
-							<span><i class="fa fa-star-o"></i> <i class="fa fa-star-o"></i> <i class="fa fa-star-o"></i> <i class="fa fa-star-o"></i> <i class="fa fa-star-o"></i></span> Bienvenido <span><i class="fa fa-star-o"></i> <i class="fa fa-star-o"></i> <i class="fa fa-star-o"></i> <i class="fa fa-star-o"></i> <i class="fa fa-star-o"></i></span></div>
-          <!-- Layer 2 -->
-          <div class="caption sft revolution-starhotel smalltext"
-          				data-x="682"
-                        data-y="105"
-                        data-speed="800"
-                        data-start="1700"
-                        data-easing="easeOutBack">
-							<span>Disponibilidad en tiempo real</span></div>
-        <!-- Layer 3 -->
-                  <div class="caption sft"
-          				data-x="785"
-                        data-y="175"
-                        data-speed="1000"
-                        data-start="1900"
-                        data-easing="easeOutBack">
-							<a href="#reservation-form" class="button btn btn-purple btn-lg nav-scroll">Reservar ahora</a>
-                  </div>
-        </li>
+        @foreach($cfg['slides'] as $i => $slide)
+          @php
+            $slideImg   = HotelLandingSetting::imageUrl($slide['image'] ?? null, HotelLandingSetting::DEFAULT_SLIDE);
+            $slideTitle = trim($slide['title'] ?? '') !== '' ? $slide['title'] : $hotelName;
+            $showStars  = $slide['stars'] ?? true;
+            $stars      = str_repeat('<i class="fa fa-star-o"></i> ', 5);
+            $transition = $i % 2 === 0 ? 'fade' : 'boxfade';
+          @endphp
+          <li data-transition="{{ $transition }}" data-slotamount="7" data-masterspeed="1500">
+            <img src="{{ $slideImg }}" @if($i===0) style="opacity:0;" @endif alt="slide{{ $i }}" data-bgfit="cover" data-bgposition="left bottom" data-bgrepeat="no-repeat">
+            <div class="caption sft revolution-starhotel bigtext"
+                 data-x="center" data-hoffset="0" data-y="30" data-speed="700" data-start="1700" data-easing="easeOutBack">
+              @if($showStars)<span>{!! $stars !!}</span>@endif {{ $slideTitle }} @if($showStars)<span>{!! $stars !!}</span>@endif
+            </div>
+            <div class="caption sft revolution-starhotel smalltext"
+                 data-x="center" data-hoffset="0" data-y="105" data-speed="800" data-start="1700" data-easing="easeOutBack">
+              <span>{{ $slide['subtitle'] ?? '' }}</span>
+            </div>
+            @if(!empty($slide['button_text']))
+            <div class="caption sft"
+                 data-x="center" data-hoffset="0" data-y="175" data-speed="1000" data-start="1900" data-easing="easeOutBack">
+              <a href="{{ $slide['button_link'] ?: '#rooms-results' }}" class="button btn btn-purple btn-lg nav-scroll">{{ $slide['button_text'] }}</a>
+            </div>
+            @endif
+          </li>
+        @endforeach
       </ul>
     </div>
   </div>
@@ -227,152 +197,138 @@
   <div class="container">
     <div class="row">
       <div class="col-sm-12">
-        <h2 class="lined-heading"><span id="rooms-heading">Nuestras habitaciones</span></h2>
-        <p class="text-center text-muted" id="rooms-subheading" style="margin-top:-10px;margin-bottom:25px;">Selecciona fechas para ver disponibilidad y precios.</p>
+        <h2 class="lined-heading"><span id="rooms-heading">{{ $cfg['rooms_heading'] ?? 'Nuestras habitaciones' }}</span></h2>
+        <p class="text-center text-muted" id="rooms-subheading" style="margin-top:-10px;margin-bottom:25px;">{{ $cfg['rooms_subheading'] ?? 'Selecciona fechas para ver disponibilidad y precios.' }}</p>
       </div>
       <div class="col-sm-12" id="rooms-grid"></div>
     </div>
   </div>
 </section>
 
+@if(($cfg['show_features'] ?? true) && count($cfg['features'] ?? []))
 <!-- USP's -->
 <section class="usp mt100">
   <div class="container">
     <div class="row">
       <div class="col-sm-12">
-        <h2 class="lined-heading"><span>¿Por qué reservar con nosotros?</span></h2>
+        <h2 class="lined-heading"><span>{{ $cfg['features_heading'] ?? '¿Por qué reservar con nosotros?' }}</span></h2>
       </div>
-      <div class="col-sm-3 bounceIn appear" data-start="0">
-      <div class="box-icon">
-        <div class="circle"><i class="fa fa-calendar-check-o fa-lg"></i></div>
-        <h3>Reserva en línea</h3>
-        <p>Consulta disponibilidad en tiempo real y reserva tu habitación en pocos pasos, sin llamadas ni esperas.</p>
-        <a href="#reservation-form" class="nav-scroll">Reservar<i class="fa fa-angle-right"></i></a> </div>
+      @php $fCols = count($cfg['features']) >= 4 ? 3 : (12 / max(1, count($cfg['features']))); @endphp
+      @foreach($cfg['features'] as $fi => $feature)
+      <div class="col-sm-{{ $fCols }} bounceIn appear" data-start="{{ $fi * 400 }}">
+        <div class="box-icon">
+          <div class="circle"><i class="fa {{ $feature['icon'] ?? 'fa-star' }} fa-lg"></i></div>
+          <h3>{{ $feature['title'] ?? '' }}</h3>
+          <p>{{ $feature['text'] ?? '' }}</p>
+          @if(!empty($feature['link_text']))
+          <a href="{{ $feature['link'] ?? '#' }}" class="nav-scroll">{{ $feature['link_text'] }}<i class="fa fa-angle-right"></i></a>
+          @endif
         </div>
-      <div class="col-sm-3 bounceIn appear" data-start="400">
-      <div class="box-icon">
-        <div class="circle"><i class="fa fa-credit-card fa-lg"></i></div>
-        <h3>Confirmación rápida</h3>
-        <p>Recibe la confirmación de tu reserva y coordina el pago directamente con el hotel de forma segura.</p>
-        <a href="#reservation-form" class="nav-scroll">Reservar<i class="fa fa-angle-right"></i></a> </div>
-        </div>
-      <div class="col-sm-3 bounceIn appear" data-start="800">
-      <div class="box-icon">
-        <div class="circle"><i class="fa fa-bed fa-lg"></i></div>
-        <h3>Habitaciones cómodas</h3>
-        <p>Conoce el detalle, las fotos y los servicios de cada habitación antes de elegir la que más te conviene.</p>
-        <a href="#rooms-results" class="nav-scroll">Ver habitaciones<i class="fa fa-angle-right"></i></a> </div>
-        </div>
-      <div class="col-sm-3 bounceIn appear" data-start="1200">
-      <div class="box-icon">
-        <div class="circle"><i class="fa fa-headphones fa-lg"></i></div>
-        <h3>Atención dedicada</h3>
-        <p>Nuestro equipo te acompaña antes, durante y después de tu estancia para que todo sea perfecto.</p>
-        <a href="#contacto" class="nav-scroll">Contacto<i class="fa fa-angle-right"></i></a> </div>
-    </div>
+      </div>
+      @endforeach
     </div>
   </div>
 </section>
+@endif
 
 <!-- Parallax Effect -->
 <script type="text/javascript">$(document).ready(function(){$('#parallax-image').parallax("50%", -0.25);});</script>
 
+@if($cfg['show_parallax'] ?? true)
+@php $parallaxImg = HotelLandingSetting::imageUrl($cfg['parallax']['image'] ?? null, HotelLandingSetting::DEFAULT_PARALLAX); @endphp
 <section class="parallax-effect mt100">
-  <div id="parallax-image" style="background-image: url(/landing-reservas/images/parallax/1900x911.gif);">
+  <div id="parallax-image" style="background-image: url('{{ $parallaxImg }}');">
     <div class="color-overlay fadeIn appear" data-start="600">
       <div class="container">
         <div class="content">
           <h3 class="text-center"><i class="fa fa fa-star-o"></i> {{ $hotelName }}</h3>
-          <p class="text-center">Vive una experiencia inolvidable
+          <p class="text-center">{{ $cfg['parallax']['text'] ?? 'Vive una experiencia inolvidable' }}
 		  <br>
-		  <a href="#rooms-results" class="btn btn-default btn-lg mt30 nav-scroll">Ver habitaciones</a></p>
+		  @if(!empty($cfg['parallax']['button_text']))<a href="{{ $cfg['parallax']['button_link'] ?: '#rooms-results' }}" class="btn btn-default btn-lg mt30 nav-scroll">{{ $cfg['parallax']['button_text'] }}</a>@endif</p>
         </div>
       </div>
     </div>
   </div>
 </section>
+@endif
 
+@if(($cfg['show_gallery'] ?? true) && count($cfg['gallery'] ?? []))
 <!-- Gallery -->
 <section class="gallery-slider mt100" id="gallery">
   <div class="container">
     <div class="row">
       <div class="col-md-12">
-        <h2 class="lined-heading"><span>Galería</span></h2>
+        <h2 class="lined-heading"><span>{{ $cfg['gallery_heading'] ?? 'Galería' }}</span></h2>
       </div>
     </div>
   </div>
   <div id="owl-gallery" class="owl-carousel">
-    <div class="item"><a href="/landing-reservas/images/gallery/800x504.gif" data-rel="prettyPhoto[gallery1]"><img src="/landing-reservas/images/gallery/800x504.gif" alt="Image 1"><i class="fa fa-search"></i></a></div>
-    <div class="item"><a href="/landing-reservas/images/gallery/800x504.gif" data-rel="prettyPhoto[gallery1]"><img src="/landing-reservas/images/gallery/800x504.gif" alt="Image 2"><i class="fa fa-search"></i></a></div>
-    <div class="item"><a href="/landing-reservas/images/gallery/800x504.gif" data-rel="prettyPhoto[gallery1]"><img src="/landing-reservas/images/gallery/800x504.gif" alt="Image 3"><i class="fa fa-search"></i></a></div>
-    <div class="item"><a href="/landing-reservas/images/gallery/800x504.gif" data-rel="prettyPhoto[gallery1]"><img src="/landing-reservas/images/gallery/800x504.gif" alt="Image 4"><i class="fa fa-search"></i></a></div>
+    @foreach($cfg['gallery'] as $gi => $galleryImg)
+      @php $gImg = HotelLandingSetting::imageUrl($galleryImg, HotelLandingSetting::DEFAULT_GALLERY); @endphp
+      <div class="item"><a href="{{ $gImg }}" data-rel="prettyPhoto[gallery1]"><img src="{{ $gImg }}" alt="Imagen {{ $gi + 1 }}"><i class="fa fa-search"></i></a></div>
+    @endforeach
   </div>
 </section>
+@endif
 
+@php
+  $showTestimonials = ($cfg['show_testimonials'] ?? true) && count($cfg['testimonials'] ?? []);
+  $showAbout        = ($cfg['show_about'] ?? true) && count($cfg['about']['tabs'] ?? []);
+@endphp
+@if($showTestimonials || $showAbout)
 <div class="container">
   <div class="row">
+    @if($showTestimonials)
     <!-- Testimonials -->
     <section class="testimonials mt100">
       <div class="col-md-6">
-        <h2 class="lined-heading bounceInLeft appear" data-start="0"><span>Lo que opinan nuestros huéspedes</span></h2>
+        <h2 class="lined-heading bounceInLeft appear" data-start="0"><span>{{ $cfg['testimonials_heading'] ?? 'Lo que opinan nuestros huéspedes' }}</span></h2>
         <div id="owl-reviews" class="owl-carousel">
+          @foreach(collect($cfg['testimonials'])->chunk(2) as $pair)
           <div class="item">
-            <div class="row">
-              <div class="col-lg-3 col-md-4 col-sm-2 col-xs-12"> <img src="/landing-reservas/images/reviews/100x100.gif" alt="Review 1" class="img-circle" /></div>
-              <div class="col-lg-9 col-md-8 col-sm-10 col-xs-12">
-                <div class="text-balloon">Excelente atención y habitaciones impecables. Volveremos sin dudarlo. <span>María G., Habitación doble</span> </div>
+            @foreach($pair as $t)
+              @php $tImg = HotelLandingSetting::imageUrl($t['image'] ?? null, HotelLandingSetting::DEFAULT_REVIEW); @endphp
+              <div class="row">
+                <div class="col-lg-3 col-md-4 col-sm-2 col-xs-12"> <img src="{{ $tImg }}" alt="{{ $t['name'] ?? 'Huésped' }}" class="img-circle" /></div>
+                <div class="col-lg-9 col-md-8 col-sm-10 col-xs-12">
+                  <div class="text-balloon">{{ $t['text'] ?? '' }} <span>{{ $t['name'] ?? '' }}</span> </div>
+                </div>
               </div>
-            </div>
-            <div class="row">
-              <div class="col-lg-3 col-md-4 col-sm-2 col-xs-12"> <img src="/landing-reservas/images/reviews/100x100.gif" alt="Review 2" class="img-circle" /></div>
-              <div class="col-lg-9 col-md-8 col-sm-10 col-xs-12">
-                <div class="text-balloon">¡Un 5 de 5! Personal amable, limpio y muy cómodo. Totalmente recomendado. <span>Carlos D., Habitación simple</span> </div>
-              </div>
-            </div>
+            @endforeach
           </div>
-          <div class="item">
-            <div class="row">
-              <div class="col-lg-3 col-md-4 col-sm-2 col-xs-12"> <img src="/landing-reservas/images/reviews/100x100.gif" alt="Review 3" class="img-circle" /></div>
-              <div class="col-lg-9 col-md-8 col-sm-10 col-xs-12">
-                <div class="text-balloon">Un lugar encantador. La próxima vez reservaré una estancia más larga. <span>Rosa O., Habitación simple</span> </div>
-              </div>
-            </div>
-            <div class="row">
-              <div class="col-lg-3 col-md-4 col-sm-2 col-xs-12"> <img src="/landing-reservas/images/reviews/100x100.gif" alt="Review 4" class="img-circle" /></div>
-              <div class="col-lg-9 col-md-8 col-sm-10 col-xs-12">
-                <div class="text-balloon">¡El mejor hotel de la ciudad! Buena ubicación y un servicio inmejorable. <span>Luis A., Habitación simple</span> </div>
-              </div>
-            </div>
-          </div>
+          @endforeach
         </div>
       </div>
     </section>
+    @endif
 
+    @if($showAbout)
+    @php $aboutImg = HotelLandingSetting::imageUrl($cfg['about']['image'] ?? null, HotelLandingSetting::DEFAULT_ABOUT); @endphp
     <!-- About -->
     <section class="about mt100">
       <div class="col-md-6">
-        <h2 class="lined-heading bounceInRight appear" data-start="800"><span>Sobre el hotel</span></h2>
+        <h2 class="lined-heading bounceInRight appear" data-start="800"><span>{{ $cfg['about_heading'] ?? 'Sobre el hotel' }}</span></h2>
         <!-- Nav tabs -->
         <ul class="nav nav-tabs">
-          <li class="active"><a href="#hotel" data-toggle="tab">El hotel</a></li>
-          <li><a href="#events" data-toggle="tab">Eventos</a></li>
-          <li><a href="#kids" data-toggle="tab">Familias</a></li>
-          <li><a href="#business" data-toggle="tab">Negocios</a></li>
+          @foreach($cfg['about']['tabs'] as $ti => $aboutTab)
+            <li class="{{ $ti === 0 ? 'active' : '' }}"><a href="#about-tab-{{ $ti }}" data-toggle="tab">{{ $aboutTab['title'] ?? 'Pestaña' }}</a></li>
+          @endforeach
         </ul>
         <!-- Tab panes -->
         <div class="tab-content">
-          <div class="tab-pane fade in active" id="hotel">
-            <p>{{ $establishment->aditional_information ?? 'Te damos la bienvenida a un espacio pensado para tu descanso. Habitaciones cómodas, atención cercana y todo lo que necesitas para una estancia perfecta.' }}</p>
-            <p><img src="/landing-reservas/images/tab/197x147.gif" alt="hotel" class="pull-right"> Disfruta de nuestras instalaciones y servicios. Reserva en línea y asegura tu habitación al mejor precio, con confirmación directa del hotel.</p>
-          </div>
-          <div class="tab-pane fade" id="events">Organizamos y recibimos eventos. Consúltanos por disponibilidad de salas y servicios para tu celebración o reunión.</div>
-          <div class="tab-pane fade" id="kids">Un lugar ideal para venir en familia. Contamos con opciones pensadas para que grandes y pequeños se sientan como en casa.</div>
-          <div class="tab-pane fade" id="business">¿Viaje de negocios? Ofrecemos habitaciones equipadas, conexión y la comodidad que necesitas para trabajar y descansar.</div>
+          @foreach($cfg['about']['tabs'] as $ti => $aboutTab)
+            <div class="tab-pane fade {{ $ti === 0 ? 'in active' : '' }}" id="about-tab-{{ $ti }}">
+              @if($ti === 0 && $aboutImg)<img src="{{ $aboutImg }}" alt="{{ $cfg['about_heading'] ?? 'Hotel' }}" class="pull-right" style="max-width:200px;margin:0 0 10px 15px;">@endif
+              <p>{{ $aboutTab['content'] ?? '' }}</p>
+            </div>
+          @endforeach
         </div>
       </div>
     </section>
+    @endif
   </div>
 </div>
+@endif
 
 @if(isset($blogPosts) && $blogPosts->count())
 <!-- Blog -->
@@ -412,19 +368,21 @@
 </section>
 @endif
 
+@if($cfg['show_cta'] ?? true)
 <!-- Call To Action -->
 <section id="call-to-action" class="mt100">
   <div class="container">
     <div class="row">
       <div class="col-md-8 col-sm-8 col-xs-12">
-        <h2>¿Listo para tu próxima estancia? Reserva ahora en línea.</h2>
+        <h2>{{ $cfg['cta_text'] ?? '¿Listo para tu próxima estancia? Reserva ahora en línea.' }}</h2>
       </div>
       <div class="col-md-4 col-sm-4 col-xs-12">
-        <a href="#reservation-form" class="btn btn-default btn-lg pull-right nav-scroll">Ver disponibilidad</a>
+        <a href="#reservation-form" class="btn btn-default btn-lg pull-right nav-scroll">{{ $cfg['cta_button'] ?? 'Ver disponibilidad' }}</a>
       </div>
     </div>
   </div>
 </section>
+@endif
 
 @include('hotel::landing.partials.footer', ['onLanding' => true])
 

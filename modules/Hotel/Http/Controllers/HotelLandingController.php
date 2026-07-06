@@ -15,6 +15,7 @@ use Modules\Hotel\Models\HotelRent;
 use Modules\Hotel\Models\HotelRentOrder;
 use Modules\Hotel\Models\HotelRentItem;
 use Modules\Hotel\Models\HotelBlogPost;
+use Modules\Hotel\Models\HotelLandingSetting;
 use Modules\Services\Data\DocumentApiResolver;
 
 /**
@@ -45,8 +46,24 @@ class HotelLandingController extends Controller
         $rooms         = $this->roomsCollection();
         $featured      = $rooms->where('featured', true)->values();
         $blogPosts     = $this->publishedPosts()->take(3);
+        $settings      = $this->landingConfig($establishment);
 
-        return view('hotel::landing.index', compact('establishment', 'configuration', 'rooms', 'featured', 'blogPosts'));
+        return view('hotel::landing.index', compact('establishment', 'configuration', 'rooms', 'featured', 'blogPosts', 'settings'));
+    }
+
+    /**
+     * Configuración de personalización de la landing (fusionada con defaults),
+     * lista para la vista. Nunca falla: si la tabla no existe todavía devuelve
+     * los valores por defecto.
+     */
+    private function landingConfig($establishment = null)
+    {
+        try {
+            $setting = HotelLandingSetting::forEstablishment($establishment->id ?? null);
+            return HotelLandingSetting::mergeDefaults($setting && is_array($setting->data) ? $setting->data : []);
+        } catch (\Throwable $th) {
+            return HotelLandingSetting::mergeDefaults([]);
+        }
     }
 
     /**
@@ -56,8 +73,9 @@ class HotelLandingController extends Controller
     {
         $establishment = Establishment::first();
         $posts         = $this->publishedPosts();
+        $settings      = $this->landingConfig($establishment);
 
-        return view('hotel::landing.blog', compact('establishment', 'posts'));
+        return view('hotel::landing.blog', compact('establishment', 'posts', 'settings'));
     }
 
     /**
@@ -79,7 +97,9 @@ class HotelLandingController extends Controller
             ->where('id', '!=', $post->id)
             ->take(4);
 
-        return view('hotel::landing.blog-post', compact('establishment', 'post', 'recent'));
+        $settings = $this->landingConfig($establishment);
+
+        return view('hotel::landing.blog-post', compact('establishment', 'post', 'recent', 'settings'));
     }
 
     /**

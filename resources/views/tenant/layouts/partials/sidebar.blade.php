@@ -297,6 +297,10 @@ $showTransfer = collect($vc_module_levels)->intersect(['inventory', 'inventory_d
                                     class="{{ (($firstLevel === 'hotels') && ($secondLevel === 'blog')) ? 'nav-active' : '' }}">
                                     <a class="nav-link" href="{{ url('hotels/blog') }}">Blog</a>
                                 </li>
+                                <li
+                                    class="{{ (($firstLevel === 'hotels') && ($secondLevel === 'landing-settings')) ? 'nav-active' : '' }}">
+                                    <a class="nav-link" href="{{ url('hotels/landing-settings') }}">Personalizar web</a>
+                                </li>
 
                             </ul>
                         </li>

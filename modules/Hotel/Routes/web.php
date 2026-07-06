@@ -37,6 +37,10 @@ if ($hostname) {
         Route::post('blog/store', 'HotelBlogController@store');
         Route::put('blog/{id}/update', 'HotelBlogController@update');
         Route::delete('blog/{id}/delete', 'HotelBlogController@destroy');
+        // Personalización de la web pública (landing)
+        Route::get('landing-settings', 'HotelLandingSettingController@index');
+        Route::get('landing-settings/data', 'HotelLandingSettingController@get');
+        Route::post('landing-settings/update', 'HotelLandingSettingController@update');
         // Pisos
         Route::get('floors', 'HotelFloorController@index');
         Route::post('floors/store', 'HotelFloorController@store');

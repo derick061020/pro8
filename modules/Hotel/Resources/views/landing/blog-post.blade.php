@@ -6,6 +6,8 @@
     $hotelName = $establishment->description ?? 'Hotel';
     $pubDate   = $post->published_at ?: $post->created_at;
     $heroImage = $post->image_url;
+    $cfg = $settings ?? \Modules\Hotel\Models\HotelLandingSetting::mergeDefaults([]);
+    $themeColor = in_array(($cfg['color'] ?? 'turquoise'), ['turquoise','blue','green','orange','purple','red','brown','black']) ? $cfg['color'] : 'turquoise';
 @endphp
 <title>{{ $post->title }} · {{ $hotelName }}</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -22,7 +24,7 @@
 <link rel="stylesheet" href="/landing-reservas/css/smoothness/jquery-ui-1.10.4.custom.min.css">
 <link rel="stylesheet" href="/landing-reservas/rs-plugin/css/settings.css">
 <link rel="stylesheet" href="/landing-reservas/css/theme.css">
-<link rel="stylesheet" href="/landing-reservas/css/colors/turquoise.css">
+<link rel="stylesheet" href="/landing-reservas/css/colors/{{ $themeColor }}.css">
 <link rel="stylesheet" href="/landing-reservas/css/responsive.css">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:400italic,600italic,400,600,700">
 
