@@ -129,6 +129,13 @@ class HotelRoomController extends Controller
 		$room->size              = $request->input('size');
 		$room->featured          = (bool) $request->input('featured', false);
 
+		// Precio personalizado para la web de reservas. Si se envía vacío o <= 0
+		// se guarda nulo para que la landing use el mínimo de las tarifas.
+		$webPrice = $request->input('web_price');
+		$room->web_price = ($webPrice !== null && $webPrice !== '' && (float) $webPrice > 0)
+			? (float) $webPrice
+			: null;
+
 		$amenities = $request->input('amenities', []);
 		$room->amenities = is_array($amenities)
 			? array_values(array_filter(array_map('trim', $amenities)))

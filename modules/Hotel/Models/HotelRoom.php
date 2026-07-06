@@ -39,12 +39,14 @@
             'beds',
             'size',
             'featured',
+            'web_price',
         ];
 
         protected $casts = [
             'images'    => 'array',
             'amenities' => 'array',
             'featured'  => 'boolean',
+            'web_price' => 'float',
         ];
 
         /**

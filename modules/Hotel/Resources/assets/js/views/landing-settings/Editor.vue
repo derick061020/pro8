@@ -283,6 +283,21 @@
 
               <!-- ============ TEXTOS Y APARIENCIA ============ -->
               <el-tab-pane label="Textos y apariencia" name="general">
+                <h6 class="ls-subtitle">Visibilidad en la web</h6>
+                <div class="ls-branch-toggle" :class="{ 'ls-branch-toggle--off': !form.web_enabled }">
+                  <div>
+                    <strong>Mostrar esta sucursal en la web</strong>
+                    <p class="text-muted" style="margin:2px 0 0;">
+                      Si la desactivas, esta sucursal no aparecerá en el selector de la web
+                      y no se mostrarán sus habitaciones ni su blog al público.
+                    </p>
+                  </div>
+                  <el-switch v-model="form.web_enabled" active-color="#13ce66" inactive-color="#e74c3c"></el-switch>
+                </div>
+                <div v-if="!form.web_enabled" class="alert alert-warning" style="margin-top:10px;">
+                  <i class="fa fa-eye-slash"></i> Esta sucursal está <strong>oculta</strong> en la web pública.
+                </div>
+
                 <h6 class="ls-subtitle">Sección de habitaciones</h6>
                 <div class="row">
                   <div class="col-md-6 form-group">
@@ -494,5 +509,7 @@ export default {
 .ls-gallery__cell { width: 170px; }
 .ls-subtitle { margin: 18px 0 10px; font-weight: 700; color: #2c3e50; border-bottom: 1px solid #eceff1; padding-bottom: 6px; }
 .ls-color-dot { display: inline-block; width: 12px; height: 12px; border-radius: 50%; margin-right: 6px; vertical-align: middle; }
+.ls-branch-toggle { display: flex; align-items: center; justify-content: space-between; gap: 16px; border: 1px solid #e0e6e8; border-radius: 8px; padding: 14px 16px; background: #f6fbf9; }
+.ls-branch-toggle--off { background: #fdf3f2; border-color: #f3c9c4; }
 .form-group label { font-weight: 600; font-size: 13px; }
 </style>

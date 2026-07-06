@@ -64,19 +64,29 @@ class HotelLandingController extends Controller
     private function resolveEstablishment(Request $request = null)
     {
         $request = $request ?: request();
+        $enabled = $this->enabledEstablishmentIds();
         $id      = $request->query('sucursal', $request->input('establishment_id'));
 
-        if ($id && Establishment::where('id', $id)->exists()) {
+        $isEnabled = fn ($value) => $value && $enabled->contains((int) $value);
+
+        if ($isEnabled($id)) {
             session(['hotel_landing_establishment' => (int) $id]);
         } else {
             $id = session('hotel_landing_establishment');
-            if ($id && !Establishment::where('id', $id)->exists()) {
+            if (!$isEnabled($id)) {
                 session()->forget('hotel_landing_establishment');
                 $id = null;
             }
         }
 
-        $establishment = $id ? Establishment::find($id) : Establishment::first();
+        $establishment = $id ? Establishment::find($id) : null;
+
+        // Sin sucursal válida: primera habilitada; si todas están deshabilitadas
+        // (caso límite) se usa la primera existente para no romper la web.
+        if (!$establishment) {
+            $firstEnabled  = $enabled->first();
+            $establishment = $firstEnabled ? Establishment::find($firstEnabled) : Establishment::first();
+        }
 
         if ($establishment) {
             session(['hotel_landing_establishment' => $establishment->id]);
@@ -86,11 +96,37 @@ class HotelLandingController extends Controller
     }
 
     /**
-     * Lista de sucursales disponibles para el selector de la web.
+     * IDs de sucursales visibles en la web (todas menos las que se hayan
+     * desactivado en su configuración con `web_enabled = false`).
+     */
+    private function enabledEstablishmentIds()
+    {
+        $all = Establishment::pluck('id')->map(fn ($v) => (int) $v);
+
+        try {
+            $disabled = HotelLandingSetting::all(['establishment_id', 'data'])
+                ->filter(function ($s) {
+                    $data = is_array($s->data) ? $s->data : [];
+                    return array_key_exists('web_enabled', $data) && $data['web_enabled'] === false;
+                })
+                ->pluck('establishment_id')
+                ->filter()
+                ->map(fn ($v) => (int) $v)
+                ->all();
+        } catch (\Throwable $th) {
+            $disabled = [];
+        }
+
+        return $all->reject(fn ($id) => in_array($id, $disabled, true))->values();
+    }
+
+    /**
+     * Lista de sucursales visibles en la web para el selector.
      */
     private function branches()
     {
         return Establishment::select('id', 'description', 'address')
+            ->whereIn('id', $this->enabledEstablishmentIds()->all() ?: [0])
             ->orderBy('description')
             ->get();
     }
@@ -555,6 +591,12 @@ class HotelLandingController extends Controller
 
                 $images = $room->image_urls;
 
+                // Precio "desde" para la landing: el precio personalizado de la
+                // web tiene prioridad; si no está definido, se usa el mínimo de
+                // las tarifas asignadas.
+                $webPrice = $room->web_price ? (float) $room->web_price : null;
+                $minPrice = $webPrice ?? ($rates->min('price') ?? 0);
+
                 return [
                     'id'                => $room->id,
                     'name'              => $room->name,
@@ -571,7 +613,8 @@ class HotelLandingController extends Controller
                     'images'            => $images,
                     'main_image'        => count($images) ? $images[0] : null,
                     'rates'             => $rates,
-                    'min_price'         => $rates->min('price') ?? 0,
+                    'web_price'         => $webPrice,
+                    'min_price'         => $minPrice,
                 ];
             });
     }

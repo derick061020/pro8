@@ -193,6 +193,9 @@ class HotelLandingSetting extends ModelTenant
             'cta_text'   => '¿Listo para tu próxima estancia? Reserva ahora en línea.',
             'cta_button' => 'Ver disponibilidad',
 
+            // ---- Visibilidad de la sucursal en la web pública ----
+            'web_enabled'       => true,
+
             // ---- Apariencia / visibilidad de secciones ----
             'color'             => 'turquoise',
             'show_features'     => true,
