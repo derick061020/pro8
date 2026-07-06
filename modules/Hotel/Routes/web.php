@@ -10,6 +10,9 @@ if ($hostname) {
     // Landing pública de reservas (sin autenticación). Cada tenant resuelve
     // su propia base de datos por el dominio, así que la misma landing sirve a
     // todos los tenants mostrando sus propias habitaciones.
+    // La web de reservas es ahora el index (/) del tenant: los visitantes ven
+    // la landing y los usuarios autenticados se redirigen al dashboard.
+    Route::get('/', 'HotelLandingController@home')->name('tenant.hotels.home');
     Route::get('reservas', 'HotelLandingController@index')->name('tenant.hotels.landing');
     Route::post('reservas/search', 'HotelLandingController@searchAvailability');
     Route::get('reservas/room/{id}', 'HotelLandingController@roomDetail');

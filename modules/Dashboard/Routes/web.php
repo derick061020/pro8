@@ -6,7 +6,9 @@ if($current_hostname) {
     Route::domain($current_hostname->fqdn)->group(function () {
         Route::middleware(['auth', 'locked.tenant', 'check.email.verified'])->group(function () {
 
-            Route::redirect('/', '/dashboard');
+            // El index (/) del tenant lo sirve ahora la web de reservas del
+            // módulo Hotel (HotelLandingController@home): visitantes ven la
+            // landing y los usuarios autenticados se redirigen a /dashboard.
 
             Route::prefix('dashboard')->group(function () {
                 Route::get('/', 'DashboardController@index')->name('tenant.dashboard.index');

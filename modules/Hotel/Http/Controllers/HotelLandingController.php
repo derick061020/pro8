@@ -37,6 +37,22 @@ class HotelLandingController extends Controller
     const DEFAULT_OUTPUT_TIME = '12:00';
 
     /**
+     * Index (/) del tenant.
+     *
+     * La web de reservas es la portada pública del tenant. Los usuarios
+     * autenticados (administradores/recepción) se redirigen al panel para no
+     * perder el flujo de trabajo; los visitantes anónimos ven la landing.
+     */
+    public function home(Request $request)
+    {
+        if (auth()->check()) {
+            return redirect('/dashboard');
+        }
+
+        return $this->index($request);
+    }
+
+    /**
      * Render de la landing con las habitaciones reales del tenant.
      */
     public function index(Request $request)
