@@ -125,9 +125,20 @@
   #reservation-form.hr-search { margin-top:-72px; margin-bottom:10px; }
   .hr-search__card { background:#fff; border-radius:16px; box-shadow:0 18px 50px rgba(0,0,0,.18); padding:22px 26px; display:grid; grid-template-columns:1fr 1fr auto auto; gap:16px; align-items:end; }
   .hr-field { display:flex; flex-direction:column; min-width:0; }
-  /* Recuadro externo para huéspedes (adultos + niños) */
-  .hr-guests { display:flex; gap:14px; border:1px solid #e3e8ec; border-radius:12px; background:#fbfcfd; padding:12px 16px; }
-  .hr-guests .hr-field select { height:44px; background-color:#fff; min-width:96px; }
+  /* Selector de huéspedes tipo popover (adultos + niños + guardar) */
+  .hr-guests { position:relative; }
+  .hr-guests-box { height:50px; border:1px solid #e3e8ec; border-radius:10px; background:#f8fafb; padding:0 14px; display:flex; align-items:center; justify-content:space-between; gap:12px; cursor:pointer; font-size:15px; color:#2c3e50; min-width:160px; white-space:nowrap; transition:border-color .2s, box-shadow .2s, background-color .2s; }
+  .hr-guests-box:hover { border-color:#cfd8dd; }
+  .hr-guests-box.is-open { border-color:#1abc9c; background-color:#fff; box-shadow:0 0 0 3px rgba(26,188,156,.15); }
+  .hr-guests-box i { color:#8a97a3; }
+  .hr-guests-pop { position:absolute; left:0; bottom:calc(100% + 12px); width:270px; background:#fff; border-radius:12px; box-shadow:0 18px 50px rgba(0,0,0,.22); padding:20px; z-index:60; display:none; }
+  .hr-guests-pop.is-open { display:block; }
+  .hr-pop-field { margin-bottom:16px; }
+  .hr-pop-field > label { display:block; font-size:15px; font-weight:700; color:#3a4b57; margin-bottom:8px; text-transform:none; letter-spacing:0; }
+  .hr-pop-field select { width:100%; height:46px; border:1px solid #e3e8ec; border-radius:8px; padding:0 34px 0 14px; font-size:15px; color:#7a8791; background-color:#fff; -webkit-appearance:none; -moz-appearance:none; appearance:none; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%238a97a3' d='M6 8 0 2 1.5.5 6 5 10.5.5 12 2z'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 14px center; }
+  .hr-pop-field select:focus { outline:none; border-color:#1abc9c; box-shadow:0 0 0 3px rgba(26,188,156,.15); }
+  .hr-pop-save { width:100%; height:48px; border:1px solid #dce3e7; border-radius:8px; background:#fff; color:#1abc9c; font-weight:700; font-size:15px; letter-spacing:.5px; cursor:pointer; transition:background-color .2s; }
+  .hr-pop-save:hover { background-color:#f4f7f8; }
   .hr-field label { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.6px; color:#8a97a3; margin-bottom:7px; }
   .hr-field label i { color:#1abc9c; margin-right:5px; }
   .hr-field input, .hr-field select { width:100%; height:50px; border:1px solid #e3e8ec; border-radius:10px; padding:0 14px; font-size:15px; color:#2c3e50; background-color:#f8fafb; box-shadow:none; transition:border-color .2s, box-shadow .2s, background-color .2s; -webkit-appearance:none; -moz-appearance:none; appearance:none; }
@@ -214,18 +225,26 @@
         <label for="checkout_date"><i class="fa fa-calendar"></i> Salida</label>
         <input name="checkout" type="date" id="checkout_date" required>
       </div>
-      <div class="hr-guests">
-        <div class="hr-field">
-          <label for="adults"><i class="fa fa-user"></i> Adultos</label>
-          <select name="adults" id="adults">
-            @for($i=1;$i<=8;$i++)<option value="{{ $i }}">{{ $i }}</option>@endfor
-          </select>
+      <div class="hr-field hr-guests">
+        <label><i class="fa fa-users"></i> Huéspedes</label>
+        <div class="hr-guests-box" id="guestsToggle">
+          <span id="guestsSummary">2 adultos</span>
+          <i class="fa fa-angle-down"></i>
         </div>
-        <div class="hr-field">
-          <label for="children"><i class="fa fa-child"></i> Niños</label>
-          <select name="children" id="children">
-            @for($i=0;$i<=6;$i++)<option value="{{ $i }}">{{ $i }}</option>@endfor
-          </select>
+        <div class="hr-guests-pop" id="guestsPop">
+          <div class="hr-pop-field">
+            <label>Adultos</label>
+            <select name="adults" id="adults">
+              @for($i=1;$i<=8;$i++)<option value="{{ $i }}">{{ $i }} {{ $i === 1 ? 'adulto' : 'adultos' }}</option>@endfor
+            </select>
+          </div>
+          <div class="hr-pop-field">
+            <label>Niños</label>
+            <select name="children" id="children">
+              @for($i=0;$i<=6;$i++)<option value="{{ $i }}">{{ $i }} {{ $i === 1 ? 'niño' : 'niños' }}</option>@endfor
+            </select>
+          </div>
+          <button type="button" class="hr-pop-save" id="guestsSave">Guardar</button>
         </div>
       </div>
       <div class="hr-field hr-field--submit">
@@ -263,6 +282,34 @@
     var openPicker = function () { try { if (this.showPicker) this.showPicker(); } catch (e) {} };
     dateInputs[k].addEventListener('click', openPicker);
     dateInputs[k].addEventListener('focus', openPicker);
+  }
+
+  // Selector de huéspedes (popover Adultos/Niños + Guardar).
+  var gToggle  = document.getElementById('guestsToggle');
+  var gPop     = document.getElementById('guestsPop');
+  var gSave    = document.getElementById('guestsSave');
+  var gSummary = document.getElementById('guestsSummary');
+  var aSel     = document.getElementById('adults');
+  var cSel     = document.getElementById('children');
+  if (gToggle && gPop) {
+    var updateSummary = function () {
+      var a = parseInt(aSel.value, 10) || 0, c = parseInt(cSel.value, 10) || 0;
+      var parts = [a + (a === 1 ? ' adulto' : ' adultos')];
+      if (c > 0) parts.push(c + (c === 1 ? ' niño' : ' niños'));
+      gSummary.textContent = parts.join(', ');
+    };
+    var closePop = function () { gPop.classList.remove('is-open'); gToggle.classList.remove('is-open'); };
+    gToggle.addEventListener('click', function (e) {
+      e.stopPropagation();
+      gPop.classList.toggle('is-open');
+      gToggle.classList.toggle('is-open');
+    });
+    gPop.addEventListener('click', function (e) { e.stopPropagation(); });
+    document.addEventListener('click', closePop);
+    if (gSave) gSave.addEventListener('click', function () { updateSummary(); closePop(); });
+    aSel.addEventListener('change', updateSummary);
+    cSel.addEventListener('change', updateSummary);
+    updateSummary();
   }
 })();
 </script>
