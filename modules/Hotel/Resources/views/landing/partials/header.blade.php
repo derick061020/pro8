@@ -59,12 +59,30 @@
 </div>
 
 <style>
-  .th-branch { position: relative; }
-  .th-branch > .dropdown-toggle { cursor: pointer; font-weight: 600; }
-  .th-branch__menu { min-width: 230px; padding: 6px 0; }
-  .th-branch__menu > li > a { padding: 8px 16px; white-space: normal; }
+  /* El navbar sticky del tema usa z-index:9999; elevamos el top-header por
+     encima para que el menú de sucursales no quede detrás. */
+  #top-header { position: relative; z-index: 10001; }
+  .th-branch { position: relative; display: inline-block; }
+  .th-branch > .dropdown-toggle { cursor: pointer; font-weight: 600; color: #fff; }
+  .th-branch > .dropdown-toggle:hover { color: #1abc9c; }
+  .th-branch__menu {
+    position: absolute; right: 0; top: 100%; left: auto; margin-top: 6px;
+    z-index: 10002; min-width: 250px; padding: 6px 0;
+    background: #fff; border: 1px solid #e6e6e6; border-radius: 8px;
+    box-shadow: 0 12px 34px rgba(0,0,0,.20);
+  }
+  .th-branch__menu > li > a {
+    padding: 9px 16px; white-space: normal; display: block;
+    color: #2c3e50; font-size: 13px; line-height: 1.35;
+  }
+  .th-branch__menu > li > a:hover { background: #f4f7f8; color: #1abc9c; }
   .th-branch__menu > li.active > a { color: #1abc9c; font-weight: 600; }
-  .th-branch__menu .dropdown-header { padding: 4px 16px; text-transform: uppercase; font-size: 11px; letter-spacing: .5px; }
+  .th-branch__menu > li > a i { width: 16px; }
+  .th-branch__menu small { color: #95a5a6 !important; }
+  .th-branch__menu .dropdown-header {
+    padding: 6px 16px; text-transform: uppercase; font-size: 11px;
+    letter-spacing: .5px; color: #95a5a6;
+  }
 </style>
 
 <!-- Header -->
