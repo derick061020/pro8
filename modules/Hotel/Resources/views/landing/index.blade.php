@@ -96,58 +96,7 @@
 
 <body>
 
-<!-- Top header -->
-<div id="top-header">
-  <div class="container">
-    <div class="row">
-      <div class="col-xs-6">
-        <div class="th-text pull-left">
-          @if($hotelPhone)<div class="th-item"> <a href="tel:{{ $hotelPhone }}"><i class="fa fa-phone"></i> {{ $hotelPhone }}</a> </div>@endif
-          @if($hotelEmail)<div class="th-item"> <a href="mailto:{{ $hotelEmail }}"><i class="fa fa-envelope"></i> {{ $hotelEmail }} </a></div>@endif
-        </div>
-      </div>
-      <div class="col-xs-6">
-        <div class="th-text pull-right">
-          <div class="th-item">
-            <div class="social-icons">
-              @if($hotelWeb)<a href="{{ $hotelWeb }}" target="_blank"><i class="fa fa-globe"></i></a>@endif
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- Header -->
-<header>
-  <div class="navbar yamm navbar-default" id="sticky">
-    <div class="container">
-      <div class="navbar-header">
-        <button type="button" data-toggle="collapse" data-target="#navbar-collapse-grid" class="navbar-toggle"> <span class="icon-bar"></span> <span class="icon-bar"></span> <span class="icon-bar"></span> </button>
-        <a href="/reservas" class="navbar-brand">
-          @if($hotelLogo)
-            <div id="logo"><img src="{{ $hotelLogo }}" alt="{{ $hotelName }}" style="height:44px;"></div>
-          @else
-            <span style="font-size:22px;font-weight:700;color:#2c3e50;line-height:50px;">{{ $hotelName }}</span>
-          @endif
-        </a>
-      </div>
-      <div id="navbar-collapse-grid" class="navbar-collapse collapse">
-        <ul class="nav navbar-nav navbar-right">
-          <li class="active"><a href="#top" class="nav-scroll">Inicio</a></li>
-          <li><a href="#rooms-results" class="nav-scroll">Habitaciones</a></li>
-          <li><a href="#gallery" class="nav-scroll">Galería</a></li>
-          @if(isset($blogPosts) && $blogPosts->count())
-          <li><a href="#blog" class="nav-scroll">Blog</a></li>
-          @endif
-          <li><a href="#contacto" class="nav-scroll">Contacto</a></li>
-          <li><a href="#reservation-form" class="nav-scroll text-uppercase" style="color:#1abc9c;font-weight:600;">Reservar</a></li>
-        </ul>
-      </div>
-    </div>
-  </div>
-</header>
+@include('hotel::landing.partials.header', ['onLanding' => true, 'activeNav' => 'inicio'])
 
 <a id="top"></a>
 <!-- Revolution Slider -->
@@ -472,40 +421,7 @@
   </div>
 </section>
 
-<!-- Contacto / Footer -->
-<footer id="contacto" class="mt100">
-  <div class="container">
-    <div class="row">
-      <div class="col-md-4 col-sm-4">
-        <h4>{{ $hotelName }}</h4>
-        <p>{{ $establishment->aditional_information ?? 'Te damos la bienvenida. Reserva tu estancia con nosotros y disfruta de una experiencia inolvidable.' }}</p>
-      </div>
-      <div class="col-md-4 col-sm-4">
-        <h4>Contacto</h4>
-        <address>
-          @if($hotelAddress)<i class="fa fa-map-marker"></i> {{ $hotelAddress }}<br>@endif
-          @if($hotelPhone)<i class="fa fa-phone"></i> <a href="tel:{{ $hotelPhone }}">{{ $hotelPhone }}</a><br>@endif
-          @if($hotelEmail)<i class="fa fa-envelope"></i> <a href="mailto:{{ $hotelEmail }}">{{ $hotelEmail }}</a><br>@endif
-          @if($hotelWeb)<i class="fa fa-globe"></i> <a href="{{ $hotelWeb }}" target="_blank">{{ $hotelWeb }}</a>@endif
-        </address>
-      </div>
-      <div class="col-md-4 col-sm-4">
-        <h4>Reserva ahora</h4>
-        <p>Consulta disponibilidad en tiempo real y asegura tu habitación.</p>
-        <a href="#reservation-form" class="btn btn-primary btn-lg nav-scroll">Ver disponibilidad</a>
-      </div>
-    </div>
-  </div>
-  <div class="footer-bottom">
-    <div class="container">
-      <div class="row">
-        <div class="col-xs-12 text-center"> &copy; {{ date('Y') }} {{ $hotelName }}. Todos los derechos reservados. </div>
-      </div>
-    </div>
-  </div>
-</footer>
-
-<div id="go-top"><i class="fa fa-angle-up fa-2x"></i></div>
+@include('hotel::landing.partials.footer', ['onLanding' => true])
 
 <!-- ===================== Modal: Detalle de habitación ===================== -->
 <div class="modal fade" id="roomDetailModal" tabindex="-1" role="dialog">

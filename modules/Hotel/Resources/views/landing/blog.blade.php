@@ -4,121 +4,153 @@
 <meta charset="utf-8">
 @php
     $hotelName = $establishment->description ?? 'Hotel';
-    $hotelPhone = $establishment->telephone ?? null;
-    $hotelEmail = $establishment->email ?? null;
-    $hotelAddress = $establishment->address ?? null;
-    $hotelWeb = $establishment->web_address ?? null;
-    $hotelLogo = (!empty($establishment->logo)) ? asset('storage/uploads/logos/'.$establishment->logo) : null;
 @endphp
 <title>Blog · {{ $hotelName }}</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <link rel="shortcut icon" href="/landing-reservas/favicon.ico">
 
+<!-- Stylesheets -->
 <link rel="stylesheet" href="/landing-reservas/css/animate.css">
 <link rel="stylesheet" href="/landing-reservas/css/bootstrap.css">
 <link rel="stylesheet" href="/landing-reservas/css/font-awesome.min.css">
+<link rel="stylesheet" href="/landing-reservas/css/owl.carousel.css">
+<link rel="stylesheet" href="/landing-reservas/css/owl.theme.css">
+<link rel="stylesheet" href="/landing-reservas/css/prettyPhoto.css">
+<link rel="stylesheet" href="/landing-reservas/css/smoothness/jquery-ui-1.10.4.custom.min.css">
+<link rel="stylesheet" href="/landing-reservas/rs-plugin/css/settings.css">
 <link rel="stylesheet" href="/landing-reservas/css/theme.css">
 <link rel="stylesheet" href="/landing-reservas/css/colors/turquoise.css">
 <link rel="stylesheet" href="/landing-reservas/css/responsive.css">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:400italic,600italic,400,600,700">
 
+<!-- Javascripts -->
 <script type="text/javascript" src="/landing-reservas/js/jquery-1.11.0.min.js"></script>
 <script type="text/javascript" src="/landing-reservas/js/bootstrap.min.js"></script>
+<script type="text/javascript" src="/landing-reservas/js/bootstrap-hover-dropdown.min.js"></script>
+<script type="text/javascript" src="/landing-reservas/js/owl.carousel.min.js"></script>
+<script type="text/javascript" src="/landing-reservas/js/jquery.parallax-1.1.3.js"></script>
+<script type="text/javascript" src="/landing-reservas/js/jquery.nicescroll.js"></script>
+<script type="text/javascript" src="/landing-reservas/js/jquery.prettyPhoto.js"></script>
+<script type="text/javascript" src="/landing-reservas/js/jquery.sticky.js"></script>
+<script type="text/javascript" src="/landing-reservas/js/waypoints.min.js"></script>
+<script type="text/javascript" src="/landing-reservas/js/custom.js"></script>
 
 <style>
-  .blog-hero { background:#2c3e50 center/cover no-repeat; color:#fff; padding:70px 0 60px; text-align:center; }
-  .blog-hero h1 { color:#fff; font-weight:700; margin:0 0 8px; }
-  .blog-hero p { color:rgba(255,255,255,.85); font-size:16px; margin:0; }
-  .blog-list { padding:60px 0; }
-  .blog-card { background:#fff; border-radius:8px; overflow:hidden; box-shadow:0 4px 18px rgba(0,0,0,.08); margin-bottom:30px; transition:transform .2s, box-shadow .2s; }
-  .blog-card:hover { transform:translateY(-4px); box-shadow:0 10px 28px rgba(0,0,0,.15); }
-  .blog-card__img { display:block; height:200px; background:#eceff1 center/cover no-repeat; }
-  .blog-card__body { padding:18px 20px; }
-  .blog-card__date { color:#1abc9c; font-size:12px; text-transform:uppercase; letter-spacing:.5px; font-weight:600; margin-bottom:6px; }
-  .blog-card__date i { margin-right:4px; }
-  .blog-card__title { font-size:19px; font-weight:700; margin:0 0 10px; line-height:1.3; }
-  .blog-card__title a { color:#2c3e50; }
-  .blog-card__title a:hover { color:#1abc9c; }
-  .blog-card__excerpt { color:#666; font-size:14px; margin-bottom:12px; }
-  .blog-card__more { color:#1abc9c; font-weight:600; font-size:13px; text-transform:uppercase; }
-  .blog-empty { text-align:center; padding:60px 0; color:#7f8c8d; }
+  .blog article .article-img { display:block; height:340px; background:#eceff1 center/cover no-repeat; border-radius:4px; overflow:hidden; }
+  .blog article .intro { margin-top:8px; }
+  .news-thumb .news-thumb-img { display:block; width:65px; height:65px; background:#eceff1 center/cover no-repeat; border-radius:4px; }
+  .blog-empty { text-align:center; padding:40px 0; color:#7f8c8d; }
 </style>
 </head>
+
 <body>
 
-<!-- Header -->
-<header>
-  <div class="navbar yamm navbar-default" id="sticky">
-    <div class="container">
-      <div class="navbar-header">
-        <button type="button" data-toggle="collapse" data-target="#navbar-collapse-grid" class="navbar-toggle"> <span class="icon-bar"></span> <span class="icon-bar"></span> <span class="icon-bar"></span> </button>
-        <a href="/reservas" class="navbar-brand">
-          @if($hotelLogo)
-            <div id="logo"><img src="{{ $hotelLogo }}" alt="{{ $hotelName }}" style="height:44px;"></div>
-          @else
-            <span style="font-size:22px;font-weight:700;color:#2c3e50;line-height:50px;">{{ $hotelName }}</span>
-          @endif
-        </a>
-      </div>
-      <div id="navbar-collapse-grid" class="navbar-collapse collapse">
-        <ul class="nav navbar-nav navbar-right">
-          <li><a href="/reservas">Inicio</a></li>
-          <li><a href="/reservas#rooms-results">Habitaciones</a></li>
-          <li class="active"><a href="/reservas/blog">Blog</a></li>
-          <li><a href="/reservas#reservation-form" class="text-uppercase" style="color:#1abc9c;font-weight:600;">Reservar</a></li>
-        </ul>
+@include('hotel::landing.partials.header', ['onLanding' => false, 'activeNav' => 'blog'])
+
+<!-- Parallax Effect -->
+<script type="text/javascript">$(document).ready(function(){$('#parallax-pagetitle').parallax("50%", -0.55);});</script>
+
+<section class="parallax-effect">
+  <div id="parallax-pagetitle" style="background-image: url(/landing-reservas/images/parallax/1900x911.gif);">
+    <div class="color-overlay">
+      <div class="container">
+        <div class="row">
+          <div class="col-sm-12">
+            <ol class="breadcrumb">
+              <li><a href="/reservas">Inicio</a></li>
+              <li class="active">Blog</li>
+            </ol>
+            <h1>Blog</h1>
+          </div>
+        </div>
       </div>
     </div>
   </div>
-</header>
-
-<section class="blog-hero">
-  <div class="container">
-    <h1>Nuestro blog</h1>
-    <p>Novedades, consejos y noticias de {{ $hotelName }}</p>
-  </div>
 </section>
 
-<section class="blog-list">
-  <div class="container">
-    @if($posts->count())
-      <div class="row">
-        @foreach($posts as $post)
+<div class="container">
+  <div class="row">
+    <!-- Blog -->
+    <section class="blog mt50">
+      <div class="col-md-9">
+        @forelse($posts as $post)
           @php
-            $postImage = $post->image_url ?: '/landing-reservas/images/gallery/800x504.gif';
-            $postDate  = optional($post->published_at)->format('d/m/Y');
+            $postImage = $post->image_url;
+            $pubDate   = $post->published_at ?: $post->created_at;
+            $excerpt   = $post->excerpt ?: \Illuminate\Support\Str::limit(strip_tags($post->content), 220);
           @endphp
-          <div class="col-md-4 col-sm-6">
-            <div class="blog-card">
-              <a href="{{ url('reservas/blog/'.$post->slug) }}" class="blog-card__img" style="background-image:url('{{ $postImage }}');"></a>
-              <div class="blog-card__body">
-                @if($postDate)<div class="blog-card__date"><i class="fa fa-calendar"></i> {{ $postDate }}</div>@endif
-                <h3 class="blog-card__title"><a href="{{ url('reservas/blog/'.$post->slug) }}">{{ $post->title }}</a></h3>
-                <p class="blog-card__excerpt">{{ $post->excerpt ?: \Illuminate\Support\Str::limit(strip_tags($post->content), 120) }}</p>
-                <a href="{{ url('reservas/blog/'.$post->slug) }}" class="blog-card__more">Leer más <i class="fa fa-angle-right"></i></a>
+          <article>
+            @if($postImage)
+              <a href="{{ url('reservas/blog/'.$post->slug) }}" class="article-img" style="background-image:url('{{ $postImage }}');"></a>
+            @endif
+            <div class="row">
+              <div class="col-sm-1 col-xs-2 meta">
+                <div class="meta-date"><span>{{ $pubDate ? ucfirst($pubDate->translatedFormat('M')) : '' }}</span>{{ $pubDate ? $pubDate->format('d') : '' }}</div>
+              </div>
+              <div class="col-sm-11 col-xs-10 meta">
+                <h2><a href="{{ url('reservas/blog/'.$post->slug) }}">{{ $post->title }}</a></h2>
+                @if($post->author)<span class="meta-author"><i class="fa fa-user"></i> {{ $post->author }}</span>@endif
+                @if($pubDate)<span class="meta-category"><i class="fa fa-calendar"></i> {{ $pubDate->format('d/m/Y') }}</span>@endif
+                <p class="intro">{{ $excerpt }}</p>
+                <a href="{{ url('reservas/blog/'.$post->slug) }}" class="btn btn-primary pull-right">Leer más</a>
               </div>
             </div>
+          </article>
+        @empty
+          <div class="blog-empty">
+            <i class="fa fa-newspaper-o fa-3x" style="margin-bottom:15px;"></i>
+            <p>Todavía no hay entradas publicadas. Vuelve pronto.</p>
           </div>
-        @endforeach
-      </div>
-    @else
-      <div class="blog-empty">
-        <i class="fa fa-newspaper-o fa-3x" style="margin-bottom:15px;"></i>
-        <p>Todavía no hay entradas publicadas. Vuelve pronto.</p>
-      </div>
-    @endif
-  </div>
-</section>
+        @endforelse
 
-<footer id="contacto" class="mt100">
-  <div class="footer-bottom">
-    <div class="container">
-      <div class="row">
-        <div class="col-xs-12 text-center"> &copy; {{ date('Y') }} {{ $hotelName }}. Todos los derechos reservados. </div>
+        @if(method_exists($posts, 'hasPages') && $posts->hasPages())
+          <div class="text-center mt50">
+            {!! $posts->onEachSide(1)->links() !!}
+          </div>
+        @endif
       </div>
-    </div>
+    </section>
+
+    <!-- Aside -->
+    <aside class="mt50">
+      <div class="col-md-3">
+        <div class="widget">
+          <h3>Acerca del blog</h3>
+          <p>{{ $establishment->aditional_information ?? 'Novedades, consejos y noticias de '.$hotelName.'. Descubre todo lo que tenemos para tu próxima estancia.' }}</p>
+        </div>
+        @if($posts->count())
+          <div class="widget clearfix">
+            <h3>Últimas entradas</h3>
+            <ul class="list-unstyled">
+              @foreach($posts->take(4) as $recent)
+                @php
+                  $rImg  = $recent->image_url;
+                  $rDate = $recent->published_at ?: $recent->created_at;
+                @endphp
+                <li>
+                  <article>
+                    <div class="news-thumb">
+                      <a href="{{ url('reservas/blog/'.$recent->slug) }}" class="news-thumb-img" @if($rImg)style="background-image:url('{{ $rImg }}');"@endif></a>
+                    </div>
+                    <div class="news-content clearfix">
+                      <h4><a href="{{ url('reservas/blog/'.$recent->slug) }}">{{ \Illuminate\Support\Str::limit($recent->title, 45) }}</a></h4>
+                      <span>{{ $rDate ? $rDate->format('d/m/Y') : '' }}</span>
+                    </div>
+                  </article>
+                </li>
+              @endforeach
+            </ul>
+          </div>
+        @endif
+        <div class="widget">
+          <a href="{{ url('/reservas') }}#reservation-form" class="btn btn-primary btn-block">Reservar ahora</a>
+        </div>
+      </div>
+    </aside>
   </div>
-</footer>
+</div>
+
+@include('hotel::landing.partials.footer', ['onLanding' => false])
 
 </body>
 </html>
