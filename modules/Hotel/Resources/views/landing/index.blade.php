@@ -157,87 +157,101 @@
 @include('hotel::landing.partials.header', ['onLanding' => true, 'activeNav' => 'inicio'])
 
 <a id="top"></a>
-<!-- Revolution Slider -->
-<section class="revolution-slider">
-  <div class="bannercontainer">
-    <div class="banner">
-      <ul>
-        @foreach($cfg['slides'] as $i => $slide)
-          @php
-            $slideImg   = HotelLandingSetting::imageUrl($slide['image'] ?? null, HotelLandingSetting::DEFAULT_SLIDE);
-            $slideTitle = trim($slide['title'] ?? '') !== '' ? $slide['title'] : $hotelName;
-            $showStars  = $slide['stars'] ?? true;
-            $stars      = str_repeat('<i class="fa fa-star-o"></i> ', 5);
-            $transition = $i % 2 === 0 ? 'fade' : 'boxfade';
-          @endphp
-          <li data-transition="{{ $transition }}" data-slotamount="7" data-masterspeed="1500">
-            <img src="{{ $slideImg }}" @if($i===0) style="opacity:0;" @endif alt="slide{{ $i }}" data-bgfit="cover" data-bgposition="left bottom" data-bgrepeat="no-repeat">
-            <div class="caption sft revolution-starhotel bigtext"
-                 data-x="center" data-hoffset="0" data-y="30" data-speed="700" data-start="1700" data-easing="easeOutBack">
-              @if($showStars)<span>{!! $stars !!}</span>@endif {{ $slideTitle }} @if($showStars)<span>{!! $stars !!}</span>@endif
-            </div>
-            <div class="caption sft revolution-starhotel smalltext"
-                 data-x="center" data-hoffset="0" data-y="105" data-speed="800" data-start="1700" data-easing="easeOutBack">
-              <span>{{ $slide['subtitle'] ?? '' }}</span>
-            </div>
-            @if(!empty($slide['button_text']))
-            <div class="caption sft"
-                 data-x="center" data-hoffset="0" data-y="175" data-speed="1000" data-start="1900" data-easing="easeOutBack">
-              <a href="{{ $slide['button_link'] ?: '#rooms-results' }}" class="button btn btn-purple btn-lg nav-scroll">{{ $slide['button_text'] }}</a>
-            </div>
+@php
+  // Garantizamos al menos una diapositiva aunque el tenant guarde la lista vacía.
+  $slides = !empty($cfg['slides']) && is_array($cfg['slides'])
+    ? $cfg['slides']
+    : [['image' => null, 'title' => '', 'subtitle' => 'Reserva tu estancia con nosotros', 'button_text' => 'Ver habitaciones', 'button_link' => '#rooms-results', 'stars' => true]];
+@endphp
+<!-- Hero de reservas -->
+<section class="hr-hero" id="hero">
+  <div class="hr-slides">
+    @foreach($slides as $i => $slide)
+      @php
+        $slideImg   = HotelLandingSetting::imageUrl($slide['image'] ?? null, HotelLandingSetting::DEFAULT_SLIDE);
+        $slideTitle = trim($slide['title'] ?? '') !== '' ? $slide['title'] : $hotelName;
+        $showStars  = $slide['stars'] ?? true;
+      @endphp
+      <div class="hr-slide {{ $i === 0 ? 'is-active' : '' }}" style="background-image:url('{{ $slideImg }}');">
+        <div class="hr-slide__overlay"></div>
+        <div class="hr-slide__caption">
+          <div class="container">
+            @if($showStars)
+              <div class="hr-stars">@for($s=0;$s<5;$s++)<i class="fa fa-star"></i>@endfor</div>
             @endif
-          </li>
-        @endforeach
-      </ul>
+            <h1 class="hr-title">{{ $slideTitle }}</h1>
+            @if(!empty($slide['subtitle']))<p class="hr-subtitle">{{ $slide['subtitle'] }}</p>@endif
+            @if(!empty($slide['button_text']))
+              <a href="{{ $slide['button_link'] ?: '#rooms-results' }}" class="hr-btn nav-scroll">{{ $slide['button_text'] }}</a>
+            @endif
+          </div>
+        </div>
+      </div>
+    @endforeach
+  </div>
+
+  @if(count($slides) > 1)
+    <div class="hr-dots">
+      @foreach($slides as $i => $slide)
+        <button type="button" class="hr-dot {{ $i === 0 ? 'is-active' : '' }}" data-i="{{ $i }}" aria-label="Ir a la diapositiva {{ $i + 1 }}"></button>
+      @endforeach
     </div>
+  @endif
+</section>
+
+<!-- Buscador de disponibilidad (selector de fechas moderno) -->
+<section class="hr-search" id="reservation-form">
+  <div class="container">
+    <form class="hr-search__card" role="form" id="searchform" onsubmit="return false;">
+      <div class="hr-field">
+        <label for="checkin_date"><i class="fa fa-calendar"></i> Entrada</label>
+        <input name="checkin" type="date" id="checkin_date" required>
+      </div>
+      <div class="hr-field">
+        <label for="checkout_date"><i class="fa fa-calendar"></i> Salida</label>
+        <input name="checkout" type="date" id="checkout_date" required>
+      </div>
+      <div class="hr-field">
+        <label for="adults"><i class="fa fa-user"></i> Adultos</label>
+        <select name="adults" id="adults">
+          @for($i=1;$i<=8;$i++)<option value="{{ $i }}">{{ $i }}</option>@endfor
+        </select>
+      </div>
+      <div class="hr-field">
+        <label for="children"><i class="fa fa-child"></i> Niños</label>
+        <select name="children" id="children">
+          @for($i=0;$i<=6;$i++)<option value="{{ $i }}">{{ $i }}</option>@endfor
+        </select>
+      </div>
+      <div class="hr-field hr-field--submit">
+        <button type="submit" id="btn-search" class="hr-btn-search"><i class="fa fa-search"></i> Buscar</button>
+      </div>
+    </form>
   </div>
 </section>
 
-<!-- Buscador de disponibilidad -->
-<section id="reservation-form">
-  <div class="container">
-    <div class="search-box">
-      <form class="form" role="form" id="searchform" onsubmit="return false;">
-        <div class="row">
-          <div class="col-sm-3 col-xs-6">
-            <div class="form-group">
-              <label for="checkin_date"><i class="fa fa-calendar"></i> Entrada</label>
-              <input name="checkin" type="date" id="checkin_date" class="form-control" required>
-            </div>
-          </div>
-          <div class="col-sm-3 col-xs-6">
-            <div class="form-group">
-              <label for="checkout_date"><i class="fa fa-calendar"></i> Salida</label>
-              <input name="checkout" type="date" id="checkout_date" class="form-control" required>
-            </div>
-          </div>
-          <div class="col-sm-2 col-xs-6">
-            <div class="form-group">
-              <label for="adults"><i class="fa fa-user"></i> Adultos</label>
-              <select name="adults" id="adults" class="form-control">
-                @for($i=1;$i<=8;$i++)<option value="{{ $i }}">{{ $i }}</option>@endfor
-              </select>
-            </div>
-          </div>
-          <div class="col-sm-2 col-xs-6">
-            <div class="form-group">
-              <label for="children"><i class="fa fa-child"></i> Niños</label>
-              <select name="children" id="children" class="form-control">
-                @for($i=0;$i<=6;$i++)<option value="{{ $i }}">{{ $i }}</option>@endfor
-              </select>
-            </div>
-          </div>
-          <div class="col-sm-2 col-xs-12">
-            <div class="form-group">
-              <label>&nbsp;</label>
-              <button type="submit" id="btn-search" class="btn btn-primary btn-block" style="height:42px;"><i class="fa fa-search"></i> Buscar</button>
-            </div>
-          </div>
-        </div>
-      </form>
-    </div>
-  </div>
-</section>
+<script>
+(function () {
+  // Slideshow ligero del hero (crossfade). Reemplaza al Revolution Slider.
+  var slides = document.querySelectorAll('.hr-slide');
+  var dots   = document.querySelectorAll('.hr-dot');
+  if (slides.length < 2) return;
+  var idx = 0, timer;
+  function go(n) {
+    slides[idx].classList.remove('is-active');
+    if (dots[idx]) dots[idx].classList.remove('is-active');
+    idx = (n + slides.length) % slides.length;
+    slides[idx].classList.add('is-active');
+    if (dots[idx]) dots[idx].classList.add('is-active');
+  }
+  function start() { timer = setInterval(function () { go(idx + 1); }, 6000); }
+  function reset() { clearInterval(timer); start(); }
+  for (var d = 0; d < dots.length; d++) {
+    dots[d].addEventListener('click', function () { go(parseInt(this.getAttribute('data-i'), 10)); reset(); });
+  }
+  start();
+})();
+</script>
 
 <!-- Resultados / Habitaciones -->
 <section class="rooms mt50" id="rooms-results">
