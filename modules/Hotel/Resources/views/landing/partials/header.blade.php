@@ -11,6 +11,10 @@
     $hotelLogo   = (!empty($establishment->logo)) ? asset('storage/uploads/logos/'.$establishment->logo) : null;
     $base        = $onLanding ? '' : url('/reservas');
     $scroll      = $onLanding ? 'nav-scroll' : '';
+    $branches       = $establishments ?? collect();
+    $currentBranch  = $establishmentId ?? ($establishment->id ?? null);
+    $currentBranchName = optional($branches->firstWhere('id', $currentBranch))->description ?? $hotelName;
+    $hasBranches    = $branches instanceof \Illuminate\Support\Collection ? $branches->count() > 1 : false;
 @endphp
 
 <!-- Top header -->
@@ -25,6 +29,24 @@
       </div>
       <div class="col-xs-6">
         <div class="th-text pull-right">
+          @if($hasBranches)
+          <div class="th-item th-branch dropdown">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" title="Cambiar de sucursal">
+              <i class="fa fa-map-marker"></i> {{ $currentBranchName }} <i class="fa fa-angle-down"></i>
+            </a>
+            <ul class="dropdown-menu dropdown-menu-right th-branch__menu">
+              <li class="dropdown-header">Elige una sucursal</li>
+              @foreach($branches as $b)
+                <li class="{{ $b->id === $currentBranch ? 'active' : '' }}">
+                  <a href="{{ url('/reservas') }}?sucursal={{ $b->id }}">
+                    <i class="fa {{ $b->id === $currentBranch ? 'fa-check' : 'fa-building-o' }}"></i> {{ $b->description }}
+                    @if(!empty($b->address))<br><small class="text-muted" style="padding-left:20px;">{{ $b->address }}</small>@endif
+                  </a>
+                </li>
+              @endforeach
+            </ul>
+          </div>
+          @endif
           <div class="th-item">
             <div class="social-icons">
               @if($hotelWeb)<a href="{{ $hotelWeb }}" target="_blank"><i class="fa fa-globe"></i></a>@endif
@@ -35,6 +57,15 @@
     </div>
   </div>
 </div>
+
+<style>
+  .th-branch { position: relative; }
+  .th-branch > .dropdown-toggle { cursor: pointer; font-weight: 600; }
+  .th-branch__menu { min-width: 230px; padding: 6px 0; }
+  .th-branch__menu > li > a { padding: 8px 16px; white-space: normal; }
+  .th-branch__menu > li.active > a { color: #1abc9c; font-weight: 600; }
+  .th-branch__menu .dropdown-header { padding: 4px 16px; text-transform: uppercase; font-size: 11px; letter-spacing: .5px; }
+</style>
 
 <!-- Header -->
 <header>

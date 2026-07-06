@@ -477,6 +477,7 @@ jQuery(function ($) {
     $.ajaxSetup({ headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') } });
 
     var CURRENCY = 'S/';
+    var CURRENT_ESTABLISHMENT = {!! json_encode($establishmentId ?? null) !!};
     var DATA = {
         rooms: {!! json_encode($rooms, JSON_UNESCAPED_UNICODE) !!},
         featured: {!! json_encode($featured, JSON_UNESCAPED_UNICODE) !!}
@@ -577,7 +578,8 @@ jQuery(function ($) {
 
         $.post('/reservas/search', {
             checkin: checkin, checkout: checkout,
-            adults: $('#adults').val(), children: $('#children').val()
+            adults: $('#adults').val(), children: $('#children').val(),
+            establishment_id: CURRENT_ESTABLISHMENT
         }).done(function (res) {
             if (!res.success) { $('#rooms-grid').html('<div class="empty-rooms">' + esc(res.message || 'No se pudo buscar.') + '</div>'); return; }
             SEARCH = { checkin: checkin, checkout: checkout, adults: parseInt($('#adults').val(),10), children: parseInt($('#children').val(),10), active: true };
@@ -599,8 +601,8 @@ jQuery(function ($) {
         var id = $(this).data('id');
         $('#detail-body').html('<div class="loading-rooms"><i class="fa fa-spinner fa-spin fa-2x"></i></div>');
         $('#roomDetailModal').modal('show');
-        var url = '/reservas/room/' + id;
-        if (SEARCH.active) url += '?checkin=' + SEARCH.checkin + '&checkout=' + SEARCH.checkout;
+        var url = '/reservas/room/' + id + '?establishment_id=' + (CURRENT_ESTABLISHMENT || '');
+        if (SEARCH.active) url += '&checkin=' + SEARCH.checkin + '&checkout=' + SEARCH.checkout;
         $.get(url).done(function (res) {
             if (!res.success) { $('#detail-body').html('<p class="text-danger">No se pudo cargar el detalle.</p>'); return; }
             renderDetail(res.room);
@@ -723,7 +725,7 @@ jQuery(function ($) {
             return;
         }
         var $btn = $('#r-submit').prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Enviando...');
-        $.post('/reservas/store', $(this).serialize())
+        $.post('/reservas/store', $(this).serialize() + '&establishment_id=' + (CURRENT_ESTABLISHMENT || ''))
             .done(function (html) {
                 $('#reserve-message').html(html);
                 if (html.indexOf('alert-success') !== -1) {

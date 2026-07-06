@@ -39,16 +39,60 @@ class HotelLandingController extends Controller
     /**
      * Render de la landing con las habitaciones reales del tenant.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $establishment = Establishment::first();
-        $configuration = Configuration::first();
-        $rooms         = $this->roomsCollection();
-        $featured      = $rooms->where('featured', true)->values();
-        $blogPosts     = $this->publishedPosts()->take(3);
-        $settings      = $this->landingConfig($establishment);
+        $establishment   = $this->resolveEstablishment($request);
+        $establishmentId = $establishment->id ?? null;
+        $establishments  = $this->branches();
+        $configuration   = Configuration::first();
+        $rooms           = $this->roomsCollection($establishmentId);
+        $featured        = $rooms->where('featured', true)->values();
+        $blogPosts       = $this->publishedPosts($establishmentId)->take(3);
+        $settings        = $this->landingConfig($establishment);
 
-        return view('hotel::landing.index', compact('establishment', 'configuration', 'rooms', 'featured', 'blogPosts', 'settings'));
+        return view('hotel::landing.index', compact('establishment', 'establishments', 'establishmentId', 'configuration', 'rooms', 'featured', 'blogPosts', 'settings'));
+    }
+
+    /**
+     * Sucursal (establecimiento) activa de la web pública.
+     *
+     * Prioridad: parámetro `sucursal` (o `establishment_id`) de la petición ->
+     * sesión -> primer establecimiento. La elección se recuerda en sesión para
+     * que la navegación (blog, detalle) no mezcle sucursales. Un enlace con
+     * `?sucursal=ID` es compartible y fija esa sucursal.
+     */
+    private function resolveEstablishment(Request $request = null)
+    {
+        $request = $request ?: request();
+        $id      = $request->query('sucursal', $request->input('establishment_id'));
+
+        if ($id && Establishment::where('id', $id)->exists()) {
+            session(['hotel_landing_establishment' => (int) $id]);
+        } else {
+            $id = session('hotel_landing_establishment');
+            if ($id && !Establishment::where('id', $id)->exists()) {
+                session()->forget('hotel_landing_establishment');
+                $id = null;
+            }
+        }
+
+        $establishment = $id ? Establishment::find($id) : Establishment::first();
+
+        if ($establishment) {
+            session(['hotel_landing_establishment' => $establishment->id]);
+        }
+
+        return $establishment;
+    }
+
+    /**
+     * Lista de sucursales disponibles para el selector de la web.
+     */
+    private function branches()
+    {
+        return Establishment::select('id', 'description', 'address')
+            ->orderBy('description')
+            ->get();
     }
 
     /**
@@ -69,21 +113,23 @@ class HotelLandingController extends Controller
     /**
      * Página pública del blog: listado de todas las entradas publicadas.
      */
-    public function blog()
+    public function blog(Request $request)
     {
-        $establishment = Establishment::first();
-        $posts         = $this->publishedPosts();
-        $settings      = $this->landingConfig($establishment);
+        $establishment  = $this->resolveEstablishment($request);
+        $establishments = $this->branches();
+        $posts          = $this->publishedPosts($establishment->id ?? null);
+        $settings       = $this->landingConfig($establishment);
 
-        return view('hotel::landing.blog', compact('establishment', 'posts', 'settings'));
+        return view('hotel::landing.blog', compact('establishment', 'establishments', 'posts', 'settings'));
     }
 
     /**
      * Detalle público de una entrada del blog por su slug.
      */
-    public function blogPost($slug)
+    public function blogPost(Request $request, $slug)
     {
-        $establishment = Establishment::first();
+        $establishment  = $this->resolveEstablishment($request);
+        $establishments = $this->branches();
 
         $post = HotelBlogPost::where('slug', $slug)
             ->where('published', true)
@@ -93,21 +139,32 @@ class HotelLandingController extends Controller
             abort(404);
         }
 
-        $recent = $this->publishedPosts()
+        // Si la nota pertenece a otra sucursal, ajustar la sucursal activa a la
+        // suya para que el resto de la web quede coherente.
+        if ($post->establishment_id && $post->establishment_id !== ($establishment->id ?? null)) {
+            $branch = Establishment::find($post->establishment_id);
+            if ($branch) {
+                $establishment = $branch;
+                session(['hotel_landing_establishment' => $branch->id]);
+            }
+        }
+
+        $recent = $this->publishedPosts($establishment->id ?? null)
             ->where('id', '!=', $post->id)
             ->take(4);
 
         $settings = $this->landingConfig($establishment);
 
-        return view('hotel::landing.blog-post', compact('establishment', 'post', 'recent', 'settings'));
+        return view('hotel::landing.blog-post', compact('establishment', 'establishments', 'post', 'recent', 'settings'));
     }
 
     /**
      * Colección de entradas publicadas, ordenadas de la más reciente.
      */
-    private function publishedPosts()
+    private function publishedPosts($establishmentId = null)
     {
         return HotelBlogPost::where('published', true)
+            ->when($establishmentId, fn ($q) => $q->where('establishment_id', $establishmentId))
             ->where(function ($q) {
                 $q->whereNull('published_at')
                   ->orWhere('published_at', '<=', Carbon::now());
@@ -163,7 +220,9 @@ class HotelLandingController extends Controller
         $newStart = Carbon::parse($inDate->format('Y-m-d') . ' ' . self::DEFAULT_INPUT_TIME);
         $newEnd   = Carbon::parse($outDate->format('Y-m-d') . ' ' . self::DEFAULT_OUTPUT_TIME);
 
-        $available = $this->roomsCollection()
+        $establishment = $this->resolveEstablishment($request);
+
+        $available = $this->roomsCollection($establishment->id ?? null)
             ->filter(function ($room) use ($newStart, $newEnd, $guests) {
                 // Mantenimiento -> no reservable.
                 if ($room['status'] === 'MANTENIMIENTO') {
@@ -203,7 +262,8 @@ class HotelLandingController extends Controller
      */
     public function roomDetail(Request $request, $id)
     {
-        $room = $this->roomsCollection()->firstWhere('id', (int) $id);
+        $establishment = $this->resolveEstablishment($request);
+        $room = $this->roomsCollection($establishment->id ?? null)->firstWhere('id', (int) $id);
 
         if (!$room) {
             return response()->json([
@@ -477,10 +537,11 @@ class HotelLandingController extends Controller
     /**
      * Colección de habitaciones activas con su info de cara a la landing.
      */
-    private function roomsCollection()
+    private function roomsCollection($establishmentId = null)
     {
         return HotelRoom::with('category', 'floor', 'rates.rate')
             ->where('active', true)
+            ->when($establishmentId, fn ($q) => $q->where('establishment_id', $establishmentId))
             ->orderBy('name')
             ->get()
             ->map(function ($room) {
