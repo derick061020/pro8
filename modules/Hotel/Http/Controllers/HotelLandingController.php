@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\DB;
 use App\Models\Tenant\Establishment;
 use App\Models\Tenant\Configuration;
 use App\Models\Tenant\Person;
+use App\Models\Tenant\Catalogs\IdentityDocumentType;
 use Modules\Hotel\Models\HotelRoom;
 use Modules\Hotel\Models\HotelRent;
 use Modules\Hotel\Models\HotelRentOrder;
@@ -65,8 +66,9 @@ class HotelLandingController extends Controller
         $featured        = $rooms->where('featured', true)->values();
         $blogPosts       = $this->publishedPosts($establishmentId)->take(3);
         $settings        = $this->landingConfig($establishment);
+        $documentTypes   = $this->identityDocumentTypes();
 
-        return view('hotel::landing.index', compact('establishment', 'establishments', 'establishmentId', 'configuration', 'rooms', 'featured', 'blogPosts', 'settings'));
+        return view('hotel::landing.index', compact('establishment', 'establishments', 'establishmentId', 'configuration', 'rooms', 'featured', 'blogPosts', 'settings', 'documentTypes'));
     }
 
     /**
@@ -382,6 +384,49 @@ class HotelLandingController extends Controller
     }
 
     /**
+     * Tipos de documento de identidad disponibles para el formulario de reserva
+     * de la web. Son EXACTAMENTE los mismos que ofrece el sistema al registrar un
+     * cliente (DNI, RUC, Carnet de extranjería, Pasaporte, etc.). Si por cualquier
+     * motivo no se pueden leer del catálogo del tenant, se usa una lista mínima
+     * para no romper la web.
+     */
+    private function identityDocumentTypes()
+    {
+        try {
+            $types = IdentityDocumentType::whereActive()
+                ->get(['id', 'description'])
+                ->map(fn ($t) => ['id' => (string) $t->id, 'description' => $t->description])
+                ->values();
+
+            if ($types->isNotEmpty()) {
+                return $types;
+            }
+        } catch (\Throwable $th) {
+            // Catálogo no disponible: se usa el fallback de abajo.
+        }
+
+        return collect([
+            ['id' => '1', 'description' => 'DNI'],
+            ['id' => '6', 'description' => 'RUC'],
+            ['id' => '4', 'description' => 'Carnet de extranjería'],
+            ['id' => '7', 'description' => 'Pasaporte'],
+        ]);
+    }
+
+    /**
+     * Normaliza el tipo de documento recibido del formulario (que puede llegar
+     * como código del catálogo -1, 6, 4, 7...- o como los alias antiguos
+     * "dni"/"ruc") al id de identity_document_type usado por el sistema.
+     */
+    private function normalizeDocumentType($value)
+    {
+        $value = strtolower(trim((string) $value));
+        $map = ['dni' => '1', 'ruc' => '6', 'ce' => '4', 'pasaporte' => '7', 'passport' => '7'];
+
+        return $map[$value] ?? strtoupper((string) $value);
+    }
+
+    /**
      * Registrar una reserva enviada desde la landing.
      *
      * Crea (o reutiliza) la ficha de cliente cuando se envía documento, y genera
@@ -393,8 +438,8 @@ class HotelLandingController extends Controller
             'name'            => 'required|string|max:191',
             'email'           => 'nullable|email',
             'telephone'       => 'nullable|string|max:30',
-            'document_type'   => 'nullable|in:dni,ruc',
-            'document_number' => 'nullable|string|max:15',
+            'document_type'   => 'nullable|string|max:5',
+            'document_number' => 'nullable|string|max:20',
             'room'            => 'required|numeric',
             'checkin'         => 'required',
             'checkout'        => 'required',
@@ -471,6 +516,10 @@ class HotelLandingController extends Controller
                 'towels'           => 1,
                 'hotel_room_id'    => $room->id,
                 'hotel_rate_id'    => $roomRate->hotel_rate_id ?? null,
+                // Precio unitario (por noche) con el que se creó la reserva. Se
+                // guarda para que al editar/gestionar la reserva en recepción se
+                // muestre y conserve el precio real mostrado en la web.
+                'rental_price'     => $unitPrice,
                 'duration'         => $nights,
                 'quantity_persons' => $adults + $children,
                 'data_persons'     => null,
@@ -540,26 +589,38 @@ class HotelLandingController extends Controller
         $name      = trim($request->name);
         $email     = $request->email;
         $telephone = $request->telephone;
-        $docType   = strtolower((string) $request->document_type);
-        $number    = preg_replace('/\D/', '', (string) $request->document_number);
+        $identityTypeId = $this->normalizeDocumentType($request->document_type);
+        // DNI/RUC son numéricos; los demás documentos (pasaporte, carnet de
+        // extranjería, etc.) pueden ser alfanuméricos, así que no se les quita
+        // los caracteres no numéricos.
+        $isNumericDoc = in_array($identityTypeId, ['1', '6'], true);
+        $rawNumber = trim((string) $request->document_number);
+        $number    = $isNumericDoc ? preg_replace('/\D/', '', $rawNumber) : $rawNumber;
 
         $customerData = [
-            'name'      => $name,
-            'email'     => $email,
-            'telephone' => $telephone,
-            'number'    => $number ?: null,
-            'address'   => null,
+            'name'                      => $name,
+            'email'                     => $email,
+            'telephone'                 => $telephone,
+            'number'                    => $number ?: null,
+            'identity_document_type_id' => $identityTypeId,
+            'address'                   => null,
         ];
 
-        // Sin documento válido -> huésped externo sin ficha de cliente.
-        $validDoc = ($docType === 'dni' && strlen($number) === 8)
-            || ($docType === 'ruc' && strlen($number) === 11);
+        // Validación de longitud sólo para los documentos con formato fijo. El
+        // resto (pasaporte, carnet, etc.) sólo requiere que haya algún número.
+        $validDoc = false;
+        if ($identityTypeId === '1') {
+            $validDoc = strlen($number) === 8;
+        } elseif ($identityTypeId === '6') {
+            $validDoc = strlen($number) === 11;
+        } else {
+            $validDoc = strlen($number) >= 3;
+        }
 
+        // Sin documento válido -> huésped externo sin ficha de cliente.
         if (!$validDoc) {
             return [0, $customerData];
         }
-
-        $identityTypeId = $docType === 'ruc' ? 6 : 1;
 
         try {
             $person = Person::where('type', 'customers')
@@ -578,9 +639,14 @@ class HotelLandingController extends Controller
                 $person->save();
             }
 
-            $customerData['number']  = $person->number;
-            $customerData['name']    = $person->name ?: $name;
-            $customerData['address'] = $person->address;
+            $customerData['id']                        = $person->id;
+            $customerData['number']                    = $person->number;
+            $customerData['name']                      = $person->name ?: $name;
+            $customerData['address']                   = $person->address;
+            $customerData['identity_document_type_id'] = $person->identity_document_type_id;
+            // `description` es lo que muestra el selector de clientes en recepción.
+            $customerData['description']               = $person->description
+                ?? trim($person->number . ' - ' . ($person->name ?: $name), ' -');
 
             return [$person->id, $customerData];
         } catch (\Throwable $th) {

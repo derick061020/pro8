@@ -1365,10 +1365,23 @@ export default {
                 if (reservationData.rate?.hotel_rate_id || reservationData.hotel_rate_id) {
                     console.log('Cargando tarifa:', reservationData.rate?.hotel_rate_id || reservationData.hotel_rate_id);
                     console.log('Tarifas disponibles en room.rates:', this.room.rates);
-                    
+
                     // Asignar la tarifa directamente
                     this.form.hotel_rate_id = reservationData.rate?.hotel_rate_id || reservationData.hotel_rate_id;
                     this.onSelectedRate();
+                }
+
+                // Precio real de la reserva. Las reservas creadas desde la web
+                // pueden tener un precio propio (web_price) distinto de la tarifa;
+                // ese precio viaja en rate.unit_price. Si difiere de la tarifa se
+                // fija como precio personalizado para que el total al editar
+                // refleje exactamente lo que el huésped vio en la web.
+                var effUnit = parseFloat(reservationData.rate?.unit_price ?? reservationData.rate?.rental_price ?? 0);
+                var ratePrice = parseFloat(this.form.rate_price) || 0;
+                if (effUnit > 0 && Math.abs(effUnit - ratePrice) > 0.009) {
+                    this.form.rate_price = effUnit;
+                    this.form.rental_price = effUnit * (parseFloat(this.form.duration) || 1);
+                    this.recomputeTotal();
                 }
                 
                 // Cargar personas
@@ -1453,6 +1466,11 @@ export default {
                     license_plate: this.form.license_plate || null,
                     travel_reason: this.form.travel_reason || null,
                     notes: this.form.notes || null,
+                    // Precio unitario (por noche) real que se está mostrando. Se
+                    // envía siempre para que el item de la reserva conserve el
+                    // precio correcto (incluye el precio propio de la web) y no se
+                    // sobreescriba con la tarifa base al guardar.
+                    rental_price: parseFloat(this.form.rate_price) || 0,
                 };
 
                 console.log('Actualizando reserva con payload:', payload);

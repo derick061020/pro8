@@ -163,6 +163,43 @@
     #reservation-form.hr-search { margin-top:-44px; }
     .hr-search__card { grid-template-columns:1fr; padding:18px; }
   }
+
+  /* ===== Ajustes responsive propios de la web de reservas ===== */
+  @media (max-width:767px) {
+    /* Barra superior (teléfono / correo / sucursal): apilar y reducir para que
+       no se solape en pantallas pequeñas. */
+    #top-header .th-text { float:none !important; text-align:center; }
+    #top-header .th-item { display:inline-block; float:none; font-size:12px; margin:2px 6px; }
+    #top-header .col-xs-6 { width:100%; }
+
+    /* El popover de huéspedes ocupa el ancho disponible sin desbordar. */
+    .hr-guests-pop { width:100%; min-width:0; left:0; right:0; }
+
+    /* Espaciados grandes del tema reducidos en móvil. */
+    .mt100 { margin-top:50px !important; }
+    .mt50  { margin-top:30px !important; }
+
+    /* Tarjetas de habitación a una columna con separación cómoda. */
+    #rooms-grid > .row > [class*="col-"] { margin-bottom:22px; }
+    .room-card__actions { flex-direction:column; }
+
+    /* Galería del detalle de habitación: imagen principal más baja. */
+    .modal-gallery img { max-height:240px; }
+
+    /* Modal de reserva cómodo en móvil (ocupa casi toda la pantalla). */
+    #reserveModal .modal-dialog, #roomDetailModal .modal-dialog { margin:10px; }
+    #reserveModal .form-group, #roomDetailModal .form-group { margin-bottom:12px; }
+  }
+
+  @media (max-width:480px) {
+    .hr-title { font-size:26px; }
+    .hr-subtitle { font-size:15px; }
+    .room-card__title { font-size:17px; }
+    .room-card__price { font-size:20px; }
+    /* Los pares de columnas del formulario de reserva se apilan (col-sm ya lo
+       hace <768px; se refuerza el espaciado). */
+    #reserveModal .row > [class*="col-"] { margin-bottom:2px; }
+  }
 </style>
 </head>
 
@@ -546,10 +583,11 @@
           <div class="row">
             <div class="col-sm-4">
               <div class="form-group">
-                <label>Documento</label>
+                <label>Tipo de documento</label>
                 <select class="form-control" name="document_type" id="r-doctype">
-                  <option value="dni">DNI</option>
-                  <option value="ruc">RUC</option>
+                  @foreach(($documentTypes ?? []) as $dt)
+                    <option value="{{ $dt['id'] }}">{{ $dt['description'] }}</option>
+                  @endforeach
                 </select>
               </div>
             </div>
@@ -817,13 +855,24 @@ jQuery(function ($) {
         $('#reserveModal').modal('show');
     }
 
+    // Sólo DNI (1) y RUC (6) tienen consulta automática (RENIEC/SUNAT). El resto
+    // de documentos (carnet de extranjería, pasaporte, etc.) se ingresan a mano.
+    function docLookupType(id) {
+        id = String(id);
+        if (id === '1') return 'dni';
+        if (id === '6') return 'ruc';
+        return null;
+    }
+
     // Consulta de documento (autocompleta nombre)
     $('#r-doc-search').on('click', function () {
-        var type = $('#r-doctype').val(), num = $.trim($('#r-docnumber').val());
+        var lookup = docLookupType($('#r-doctype').val());
+        var num = $.trim($('#r-docnumber').val());
         var $fb = $('#r-doc-feedback').removeClass('text-danger text-success').addClass('text-muted');
+        if (!lookup) { $fb.text('Este tipo de documento se ingresa manualmente.'); return; }
         if (!num) { $fb.text('Ingresa el número de documento.'); return; }
         $fb.html('<i class="fa fa-spinner fa-spin"></i> Consultando...');
-        $.get('/reservas/document/' + type + '/' + num).done(function (res) {
+        $.get('/reservas/document/' + lookup + '/' + num).done(function (res) {
             if (res.success && res.data) {
                 var d = res.data;
                 if (d.name) $('#r-name').val(d.name);
@@ -838,8 +887,12 @@ jQuery(function ($) {
     });
 
     $('#r-doctype').on('change', function () {
-        $('#r-docnumber').attr('placeholder', $(this).val() === 'ruc' ? 'RUC (11 dígitos)' : 'DNI (8 dígitos)');
-    });
+        var id = String($(this).val());
+        var placeholders = { '1': 'DNI (8 dígitos)', '6': 'RUC (11 dígitos)', '7': 'Nº de pasaporte', '4': 'Nº de carnet de extranjería' };
+        $('#r-docnumber').attr('placeholder', placeholders[id] || 'Nº de documento');
+        // Mostrar el botón de consulta sólo para DNI/RUC.
+        $('#r-doc-search').toggle(!!docLookupType(id));
+    }).trigger('change');
 
     // Enviar reserva
     $('#reserveform').on('submit', function (e) {

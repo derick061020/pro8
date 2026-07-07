@@ -223,15 +223,41 @@ class HotelReservationCalendarController extends Controller
             }
         }
 
-        $customerData    = $reservation->customer;
+        // El cliente se guarda como JSON en la columna `customer`. Para reservas
+        // creadas desde la web pública ese JSON no siempre trae el `id` ni la
+        // `description` que el formulario de recepción necesita para mostrar el
+        // cliente en su selector. Cuando la reserva sí tiene un customer_id real,
+        // se completa con la ficha de Person para que la edición muestre y conserve
+        // el cliente correctamente.
+        $customerData = $reservation->customer;
+        $person = null;
+        $personId = $reservation->customer_id
+            ?: (is_object($customerData) ? ($customerData->id ?? null) : null);
+        if ($personId) {
+            $person = Person::withOut('department', 'province', 'district')->find($personId);
+        }
+
+        $jsonName   = is_object($customerData) ? ($customerData->name ?? null) : null;
+        $jsonNumber = is_object($customerData) ? ($customerData->number ?? null) : null;
+        $name       = $person->name ?? $jsonName ?? 'N/A';
+        $number     = $person->number ?? $jsonNumber ?? null;
+        // `description` es lo que muestra el <el-option> del selector de clientes
+        // en recepción (Rent.vue). Se arma con número + nombre como hace el sistema.
+        $description = $person->description
+            ?? (is_object($customerData) ? ($customerData->description ?? null) : null)
+            ?? trim(($number ? $number . ' - ' : '') . ($name ?: ''), ' -')
+            ?: $name;
+
         $customerDetails = [
-            'id'                        => is_object($customerData) ? ($customerData->id ?? null) : null,
-            'name'                      => is_object($customerData) ? ($customerData->name ?? 'N/A') : 'N/A',
-            'address'                   => is_object($customerData) ? ($customerData->address ?? null) : null,
-            'telephone'                 => is_object($customerData) ? ($customerData->telephone ?? null) : null,
-            'email'                     => is_object($customerData) ? ($customerData->email ?? null) : null,
-            'number'                    => is_object($customerData) ? ($customerData->number ?? null) : null,
-            'identity_document_type_id' => is_object($customerData) ? ($customerData->identity_document_type_id ?? null) : null,
+            'id'                        => $person->id ?? $personId ?? null,
+            'name'                      => $name,
+            'description'               => $description,
+            'address'                   => $person->address ?? (is_object($customerData) ? ($customerData->address ?? null) : null),
+            'telephone'                 => $person->telephone ?? (is_object($customerData) ? ($customerData->telephone ?? null) : null),
+            'email'                     => $person->email ?? (is_object($customerData) ? ($customerData->email ?? null) : null),
+            'number'                    => $number,
+            'identity_document_type_id' => $person->identity_document_type_id
+                ?? (is_object($customerData) ? ($customerData->identity_document_type_id ?? null) : null),
         ];
 
         $room        = isset($reservation->room) ? $reservation->room : null;
@@ -249,6 +275,22 @@ class HotelReservationCalendarController extends Controller
                 ];
             })->values() : [],
         ];
+
+        // Precio unitario efectivo de la estadía. Para reservas creadas desde la
+        // web el precio real vive en el item HAB (puede ser el web_price de la
+        // habitación) mientras que `rental_price` queda en 0. Se prioriza
+        // `rental_price` (edición manual) y, si no hay, el unitario del item HAB.
+        $habItem = $reservation->items->firstWhere('type', 'HAB') ?: $reservation->items->first();
+        $habUnitPrice = 0.0;
+        if ($habItem) {
+            $habJson = is_object($habItem->item) ? (array) $habItem->item : ($habItem->item ?: []);
+            $habUnitPrice = (float) $habItem->unit_price > 0
+                ? (float) $habItem->unit_price
+                : (float) ($habJson['unit_price'] ?? $habJson['unit_price_value'] ?? 0);
+        }
+        $effectiveUnitPrice = (float) $reservation->rental_price > 0
+            ? (float) $reservation->rental_price
+            : $habUnitPrice;
 
         $itemsOut = $reservation->items->map(function ($item) {
             $json = is_object($item->item) ? (array) $item->item : ($item->item ?: []);
@@ -280,7 +322,9 @@ class HotelReservationCalendarController extends Controller
             'rate'                => [
                 'hotel_rate_id'    => $reservation->hotel_rate_id,
                 'rate_description' => $reservation->rate ? $reservation->rate->description : null,
-                'rental_price'     => (float) $reservation->rental_price,
+                // Precio unitario efectivo (incluye el precio propio de la web).
+                'rental_price'     => $effectiveUnitPrice,
+                'unit_price'       => $effectiveUnitPrice,
             ],
             'totals'              => [
                 'total' => $this->computeReservationTotal($reservation),
@@ -533,6 +577,7 @@ class HotelReservationCalendarController extends Controller
             'towels'             => 'nullable|integer|min:0',
             'hotel_room_id'      => 'nullable|integer',
             'hotel_rate_id'      => 'nullable|integer',
+            'rental_price'       => 'nullable|numeric|min:0',
             'duration'           => 'nullable|integer|min:1',
             'quantity_persons'   => 'nullable|integer|min:1',
             'input_date'         => 'nullable|date_format:Y-m-d',
@@ -598,7 +643,7 @@ class HotelReservationCalendarController extends Controller
             $updatable = array_intersect_key($validated, array_flip([
                 'customer_id', 'customer', 'notes', 'license_plate', 'travel_reason',
                 'adults', 'children', 'towels', 'hotel_room_id', 'hotel_rate_id',
-                'duration', 'quantity_persons', 'input_date', 'input_time',
+                'rental_price', 'duration', 'quantity_persons', 'input_date', 'input_time',
                 'output_date', 'output_time', 'status',
             ]));
 
@@ -696,11 +741,22 @@ class HotelReservationCalendarController extends Controller
 
         $unitPrice = (float) $rent->rental_price;
         if ($unitPrice <= 0) {
-            // fallback: tarifa de room_rates
-            $rate = \Modules\Hotel\Models\HotelRoomRate::where('hotel_room_id', $room->id)
-                ->where('hotel_rate_id', $rent->hotel_rate_id)
-                ->first();
-            $unitPrice = $rate ? (float) $rate->price : 0;
+            // Preservar el precio propio ya guardado en el item (p. ej. el
+            // web_price de una reserva creada desde la web) antes de recurrir a
+            // la tarifa base, para no perder el precio real de la reserva.
+            $existingJson = is_object($item->item) ? (array) $item->item : ($item->item ?: []);
+            $existingUnit = (float) $item->unit_price > 0
+                ? (float) $item->unit_price
+                : (float) ($existingJson['unit_price'] ?? $existingJson['unit_price_value'] ?? 0);
+            if ($existingUnit > 0) {
+                $unitPrice = $existingUnit;
+            } else {
+                // fallback: tarifa de room_rates
+                $rate = \Modules\Hotel\Models\HotelRoomRate::where('hotel_room_id', $room->id)
+                    ->where('hotel_rate_id', $rent->hotel_rate_id)
+                    ->first();
+                $unitPrice = $rate ? (float) $rate->price : 0;
+            }
         }
 
         $quantity = max(1, (int) $rent->duration);
