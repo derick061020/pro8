@@ -451,7 +451,13 @@
                                     ></el-switch>
                                 </template>
                             </td>
-                            <td v-if="columns.nombre.visible" class="column-name table-cell">{{ row.name }}</td>
+                            <td v-if="columns.nombre.visible" class="column-name table-cell">
+                                {{ row.name }}
+                                <span v-if="row.id === mainWebClientId" class="main-web-badge" title="Web principal del sistema">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M12 17.75l-6.172 3.245l1.179 -6.873l-5 -4.867l6.9 -1l3.086 -6.253l3.086 6.253l6.9 1l-5 4.867l1.179 6.873z" /></svg>
+                                    Web principal
+                                </span>
+                            </td>
                             <td v-if="columns.ruc.visible">{{ row.number }}</td>
                             <td v-if="columns.plan.visible">{{ row.plan }}</td>
                             <td v-if="columns.correo.visible">{{ row.email }}</td>
@@ -668,6 +674,11 @@
                                             Acceso Maestro
                                         </el-dropdown-item>
 
+                                        <el-dropdown-item :command="{action: 'mainWeb', id: row.id}">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-star me-2"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 17.75l-6.172 3.245l1.179 -6.873l-5 -4.867l6.9 -1l3.086 -6.253l3.086 6.253l6.9 1l-5 4.867l1.179 6.873z" /></svg>
+                                            {{ row.id === mainWebClientId ? 'Quitar web principal' : 'Marcar como web principal' }}
+                                        </el-dropdown-item>
+
                                         <el-dropdown-item
                                             v-if="row.soap_type=='01'"
                                             :command="{action: 'demoConfig', id: row.id}">
@@ -784,6 +795,20 @@
 .table td {
     white-space: nowrap;
 }
+.main-web-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    margin-left: 6px;
+    padding: 1px 8px;
+    border-radius: 20px;
+    background: #eafaf4;
+    color: #16a085;
+    font-size: 11px;
+    font-weight: 600;
+    vertical-align: middle;
+}
+.main-web-badge svg { color: #f1c40f; }
 th.sticky-column,
 td.sticky-column {
     position: sticky;
@@ -1119,6 +1144,7 @@ export default {
             resource: "clients",
             recordId: null,
             records: [],
+            mainWebClientId: null,
             isLoading: true,
             checkLimitUsers: true,
             text_limit_doc: null,
@@ -1291,6 +1317,7 @@ export default {
             this.getData();
         });
         this.getData();
+        this.getMainWeb();
         this.checkLimit();
 
         this.text_limit_doc = "El límite de comprobantes fue superado";
@@ -1507,7 +1534,30 @@ export default {
                 case 'accountStatus':
                     this.clickAccountStatus(command.id);
                     break;
+                case 'mainWeb':
+                    this.setMainWeb(command.id);
+                    break;
             }
+        },
+        getMainWeb() {
+            this.$http.get(`/${this.resource}/main-web`).then(response => {
+                this.mainWebClientId = response.data.main_web_client_id;
+            }).catch(() => {});
+        },
+        setMainWeb(id) {
+            this.$http.post(`/${this.resource}/set-main-web`, { client_id: id }).then(response => {
+                if (response.data.success) {
+                    this.mainWebClientId = response.data.main_web_client_id;
+                    this.$message.success(response.data.message);
+                } else {
+                    this.$message.error(response.data.message || 'No se pudo actualizar la web principal.');
+                }
+            }).catch(error => {
+                const msg = (error.response && error.response.data && error.response.data.message)
+                    ? error.response.data.message
+                    : 'No se pudo actualizar la web principal.';
+                this.$message.error(msg);
+            });
         },
         initScrollShadow() {
           this.$nextTick(() => {

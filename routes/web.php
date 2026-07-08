@@ -856,6 +856,31 @@ if ($hostname) {
     $app_url = $prefix. env('APP_URL_BASE');
 
     Route::domain($app_url)->group(function () {
+        // Portada del dominio central. Si un cliente (tenant) fue marcado como
+        // "web principal" (despliegue de un solo hotel), la portada del sistema
+        // muestra su web de reservas redirigiendo a su dominio. Los admins
+        // autenticados siguen yendo a su panel; si no hay web principal, al login.
+        Route::get('/', function () {
+            if (auth('admin')->check()) {
+                return redirect()->route('system.dashboard');
+            }
+
+            try {
+                $clientId = optional(\App\Models\System\Configuration::first())->main_web_client_id;
+                if ($clientId) {
+                    $client = \App\Models\System\Client::with('hostname')->find($clientId);
+                    $fqdn   = optional(optional($client)->hostname)->fqdn;
+                    if ($fqdn) {
+                        return redirect()->away((request()->secure() ? 'https://' : 'http://') . $fqdn . '/');
+                    }
+                }
+            } catch (\Throwable $e) {
+                // Ante cualquier problema se cae al login para no romper la portada.
+            }
+
+            return redirect()->route('login');
+        })->name('system.root');
+
         Route::get('login', 'System\LoginController@showLoginForm')->name('login');
         Route::post('login', 'System\LoginController@login');
         Route::post('logout', 'System\LoginController@logout')->name('logout');
@@ -938,6 +963,9 @@ if ($hostname) {
             //Clients
             Route::get('clients', 'System\ClientController@index')->name('system.clients.index');
             Route::get('clients/records', 'System\ClientController@records');
+            // Web principal del sistema (elegir el hotel/tenant que se muestra en la portada central)
+            Route::get('clients/main-web', 'System\ClientController@mainWeb');
+            Route::post('clients/set-main-web', 'System\ClientController@setMainWeb');
             Route::get('clients/record/{client}', 'System\ClientController@record');
 
             // Admin Reseller - Administradores

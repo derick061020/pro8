@@ -5,7 +5,8 @@
     $hotelPhone   = $establishment->telephone ?? null;
     $hotelEmail   = $establishment->email ?? null;
     $hotelWeb     = $establishment->web_address ?? null;
-    $hotelAddress = $establishment->address ?? null;
+    // Dirección comercial del establecimiento (con fallback a la dirección fiscal).
+    $hotelAddress = ($establishment->trade_address ?? null) ?: ($establishment->address ?? null);
     $reserveHref  = $onLanding ? '#reservation-form' : url('/reservas').'#reservation-form';
     $reserveClass = $onLanding ? 'nav-scroll' : '';
 @endphp
@@ -44,3 +45,13 @@
 </footer>
 
 <div id="go-top"><i class="fa fa-angle-up fa-2x"></i></div>
+
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-HPFJJYLZ4Z"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-HPFJJYLZ4Z');
+</script>

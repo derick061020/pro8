@@ -12,6 +12,7 @@ class Configuration extends Model
 
     protected $fillable = [
         'locked_admin',
+        'main_web_client_id',
         'certificate',
         'soap_send_id',
         'soap_type_id',

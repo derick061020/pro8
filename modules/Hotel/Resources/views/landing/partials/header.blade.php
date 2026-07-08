@@ -39,8 +39,9 @@
               @foreach($branches as $b)
                 <li class="{{ $b->id === $currentBranch ? 'active' : '' }}">
                   <a href="{{ url('/reservas') }}?sucursal={{ $b->id }}">
+                    @php $branchAddress = $b->trade_address ?: $b->address; @endphp
                     <i class="fa {{ $b->id === $currentBranch ? 'fa-check' : 'fa-building-o' }}"></i> {{ $b->description }}
-                    @if(!empty($b->address))<br><small class="text-muted" style="padding-left:20px;">{{ $b->address }}</small>@endif
+                    @if(!empty($branchAddress))<br><small class="text-muted" style="padding-left:20px;">{{ $branchAddress }}</small>@endif
                   </a>
                 </li>
               @endforeach

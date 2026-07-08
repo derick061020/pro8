@@ -259,6 +259,54 @@
             return new ClientCollection($records);
         }
 
+        /**
+         * Cliente (tenant) marcado como "web principal": su web de reservas es
+         * la portada del dominio central del sistema.
+         */
+        public function mainWeb()
+        {
+            $config = Configuration::first();
+
+            return response()->json([
+                'main_web_client_id' => $config ? $config->main_web_client_id : null,
+            ]);
+        }
+
+        /**
+         * Marca (o desmarca, si ya lo estaba) un cliente como la web principal
+         * del sistema. Solo puede haber uno (despliegue de un solo hotel).
+         */
+        public function setMainWeb(Request $request)
+        {
+            $clientId = (int) $request->input('client_id');
+
+            $client = Client::with('hostname')->find($clientId);
+            if (!$client || !$client->hostname) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'El cliente no tiene un dominio válido.',
+                ], 422);
+            }
+
+            $config = Configuration::first();
+            if (!$config) {
+                $config = new Configuration();
+            }
+
+            // Toggle: si ya era la web principal, se desactiva.
+            $isCurrent = (int) $config->main_web_client_id === $clientId;
+            $config->main_web_client_id = $isCurrent ? null : $clientId;
+            $config->save();
+
+            return response()->json([
+                'success'            => true,
+                'main_web_client_id' => $config->main_web_client_id,
+                'message'            => $config->main_web_client_id
+                    ? 'Web principal actualizada: ahora la portada del sistema muestra este hotel.'
+                    : 'Web principal desactivada.',
+            ]);
+        }
+
 
         /**
          *

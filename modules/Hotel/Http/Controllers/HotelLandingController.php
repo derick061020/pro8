@@ -166,7 +166,7 @@ class HotelLandingController extends Controller
      */
     private function branches()
     {
-        return Establishment::select('id', 'description', 'address')
+        return Establishment::select('id', 'description', 'address', 'trade_address')
             ->whereIn('id', $this->enabledEstablishmentIds()->all() ?: [0])
             ->orderBy('description')
             ->get();
