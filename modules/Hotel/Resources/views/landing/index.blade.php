@@ -55,6 +55,9 @@
 
 <style>
   /* Ajustes propios de la web de reservas (no alteran el tema base) */
+  /* Evita el scroll/desborde horizontal en móvil (el hero se veía corrido). */
+  html, body { overflow-x:hidden; max-width:100%; }
+  .hr-hero, .hr-search, .hr-slide__caption .container { max-width:100%; }
   .search-box { background:#fff; border-radius:6px; box-shadow:0 10px 30px rgba(0,0,0,.12); padding:18px; }
   .search-box label { font-weight:600; font-size:12px; text-transform:uppercase; color:#666; }
   .search-box .form-control { height:42px; }
@@ -63,22 +66,42 @@
   #rooms-grid > .row { display:flex; flex-wrap:wrap; }
   #rooms-grid > .row:before, #rooms-grid > .row:after { content:none; display:none; }
   #rooms-grid > .row > [class*="col-"] { display:flex; flex-direction:column; margin-bottom:30px; }
-  .room-card { background:#fff; border-radius:8px; overflow:hidden; box-shadow:0 4px 18px rgba(0,0,0,.08); display:flex; flex-direction:column; width:100%; height:100%; transition:transform .2s, box-shadow .2s; }
-  .room-card:hover { transform:translateY(-4px); box-shadow:0 10px 28px rgba(0,0,0,.15); }
-  .room-card__img { position:relative; height:210px; background:#eceff1 center/cover no-repeat; }
-  .room-card__badge { position:absolute; top:12px; left:12px; background:#1abc9c; color:#fff; font-size:11px; font-weight:600; padding:4px 10px; border-radius:20px; text-transform:uppercase; }
-  .room-card__fav { position:absolute; top:12px; right:12px; background:#e67e22; color:#fff; font-size:11px; font-weight:600; padding:4px 10px; border-radius:20px; }
-  .room-card__body { padding:16px 18px; flex:1; display:flex; flex-direction:column; }
+  /* ===== Tarjeta de habitación con revelado al hover (estilo /landing-page) =====
+     La imagen ocupa toda la tarjeta; una barra inferior muestra siempre el
+     nombre y el precio, y al pasar el cursor sube un panel con toda la info. */
+  .room-card { position:relative; width:100%; height:340px; background:#eceff1; border-radius:10px; overflow:hidden; box-shadow:0 4px 18px rgba(0,0,0,.10); transition:box-shadow .25s ease; }
+  .room-card:hover { box-shadow:0 14px 34px rgba(0,0,0,.20); }
+  .room-card__media { position:absolute; top:0; left:0; right:0; bottom:0; background:#eceff1 center/cover no-repeat; transition:transform .55s ease; }
+  .room-card:hover .room-card__media { transform:scale(1.06); }
+  .room-card__badge { position:absolute; top:14px; left:14px; z-index:3; background:#1abc9c; color:#fff; font-size:11px; font-weight:600; padding:4px 12px; border-radius:20px; text-transform:uppercase; letter-spacing:.4px; box-shadow:0 4px 12px rgba(0,0,0,.20); }
+  .room-card__fav { position:absolute; top:14px; right:14px; z-index:3; background:#e67e22; color:#fff; font-size:11px; font-weight:600; padding:4px 12px; border-radius:20px; box-shadow:0 4px 12px rgba(0,0,0,.20); }
+  /* Barra inferior siempre visible */
+  .room-card__bar { position:absolute; left:0; right:0; bottom:0; z-index:2; padding:44px 18px 16px; color:#fff; background:linear-gradient(180deg, rgba(15,23,32,0) 0%, rgba(15,23,32,.55) 45%, rgba(15,23,32,.88) 100%); display:flex; align-items:flex-end; justify-content:space-between; gap:10px; transition:opacity .3s ease; }
+  .room-card__bar-title { font-size:18px; font-weight:700; line-height:1.2; text-shadow:0 2px 8px rgba(0,0,0,.5); }
+  .room-card__bar-price { font-size:16px; font-weight:700; white-space:nowrap; text-shadow:0 2px 8px rgba(0,0,0,.5); }
+  .room-card__bar-price small { font-weight:400; font-size:11px; opacity:.85; }
+  /* Panel revelado al hover */
+  .room-card__reveal { position:absolute; top:0; left:0; right:0; bottom:0; z-index:4; background:#fff; padding:20px; display:flex; flex-direction:column; transform:translateY(101%); transition:transform .42s cubic-bezier(.22,.61,.36,1); }
+  .room-card:hover .room-card__reveal { transform:translateY(0); }
+  .room-card:hover .room-card__bar { opacity:0; }
   .room-card__cat { color:#1abc9c; font-size:12px; text-transform:uppercase; letter-spacing:.5px; font-weight:600; }
   .room-card__title { font-size:19px; font-weight:700; margin:2px 0 6px; color:#2c3e50; }
   .room-card__meta { color:#7f8c8d; font-size:13px; margin-bottom:8px; }
   .room-card__meta i { color:#1abc9c; margin-right:3px; }
-  .room-card__desc { color:#666; font-size:13px; flex:1; }
-  .room-card__price { font-size:22px; font-weight:700; color:#2c3e50; }
+  .room-card__desc { color:#666; font-size:13px; flex:1; overflow:hidden; }
+  .room-card__price { font-size:22px; font-weight:700; color:#2c3e50; margin-top:8px; }
   .room-card__price small { font-size:12px; color:#95a5a6; font-weight:400; }
   .room-card__total { font-size:12px; color:#16a085; font-weight:600; }
   .room-card__actions { display:flex; gap:8px; margin-top:12px; }
   .room-card__actions .btn { flex:1; }
+  /* Dispositivos táctiles (sin hover, p.ej. móviles): se muestra toda la
+     información sin necesidad de hover, en formato de tarjeta apilada. */
+  @media (hover: none) {
+    .room-card { height:auto; }
+    .room-card__media { position:relative; height:200px; }
+    .room-card__bar { display:none; }
+    .room-card__reveal { position:relative; top:auto; left:auto; right:auto; bottom:auto; transform:none; }
+  }
   .amenity-pill { display:inline-block; background:#f0f3f5; color:#566573; border-radius:16px; padding:4px 12px; font-size:12px; margin:0 6px 6px 0; }
   .amenity-pill i { color:#1abc9c; margin-right:5px; }
   .modal-gallery img { width:100%; border-radius:6px; margin-bottom:10px; cursor:pointer; max-height:360px; object-fit:cover; }
@@ -157,11 +180,15 @@
   }
   @media (max-width:767px) {
     .hr-slides { height:64vh; min-height:400px; }
-    .hr-title { font-size:32px; }
+    .hr-title { font-size:32px; word-break:break-word; }
     .hr-subtitle { font-size:16px; }
     .hr-dots { bottom:96px; }
     #reservation-form.hr-search { margin-top:-44px; }
     .hr-search__card { grid-template-columns:1fr; padding:18px; }
+    /* Centrado robusto del contenido del hero en móvil (evita que el texto se
+       corra hacia un lado si algún ancho fuerza desborde). */
+    .hr-slide__caption { justify-content:center; padding-left:16px; padding-right:16px; }
+    .hr-slide__caption .container { width:100%; max-width:100%; padding-left:0; padding-right:0; margin:0 auto; }
   }
 
   /* ===== Ajustes responsive propios de la web de reservas ===== */
@@ -681,18 +708,27 @@ jQuery(function ($) {
         var desc = room.short_description || room.description || 'Habitación cómoda y equipada para tu estancia.';
         var fav = room.featured ? '<span class="room-card__fav"><i class="fa fa-star"></i> Destacada</span>' : '';
 
+        var barPrice = room.min_price > 0
+            ? money(room.min_price) + ' <small>/ noche</small>'
+            : '<small>Consultar</small>';
+
         return '' +
         '<div class="col-sm-6 col-md-4">' +
           '<div class="room-card">' +
-            '<div class="room-card__img" style="background-image:url(\'' + img + '\');">' +
-              '<span class="room-card__badge">' + esc(room.category) + '</span>' + fav +
+            '<div class="room-card__media" style="background-image:url(\'' + img + '\');"></div>' +
+            '<span class="room-card__badge">' + esc(room.category) + '</span>' + fav +
+            // Barra inferior siempre visible: nombre + precio.
+            '<div class="room-card__bar">' +
+              '<div class="room-card__bar-title">' + esc(room.name) + '</div>' +
+              '<div class="room-card__bar-price">' + barPrice + '</div>' +
             '</div>' +
-            '<div class="room-card__body">' +
+            // Panel que sube al hacer hover con toda la información.
+            '<div class="room-card__reveal">' +
               '<div class="room-card__cat">' + esc(room.category) + '</div>' +
               '<div class="room-card__title">' + esc(room.name) + '</div>' +
               (meta.length ? '<div class="room-card__meta">' + meta.join(' &nbsp; ') + '</div>' : '') +
               '<div class="room-card__desc">' + esc(desc) + '</div>' +
-              '<div style="margin-top:10px;">' + price + total + '</div>' +
+              '<div>' + price + total + '</div>' +
               '<div class="room-card__actions">' +
                 '<button class="btn btn-default btn-detail" data-id="' + room.id + '"><i class="fa fa-info-circle"></i> Detalle</button>' +
                 '<button class="btn btn-primary btn-reserve" data-id="' + room.id + '"><i class="fa fa-calendar-check-o"></i> Reservar</button>' +
