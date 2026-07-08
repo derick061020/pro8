@@ -50,7 +50,24 @@ class HotelLandingController extends Controller
             return redirect('/dashboard');
         }
 
+        // Web de reservas desactivada en TODAS las sucursales: no se muestra la
+        // landing (ni siquiera la principal). Se manda al login del sistema.
+        if (!$this->webEnabled()) {
+            return redirect('/login');
+        }
+
         return $this->index($request);
+    }
+
+    /**
+     * ¿Hay al menos una sucursal con la web de reservas habilitada?
+     *
+     * Si el administrador desactiva la web en todas las sucursales, la landing
+     * pública deja de mostrarse por completo.
+     */
+    private function webEnabled()
+    {
+        return $this->enabledEstablishmentIds()->isNotEmpty();
     }
 
     /**
@@ -58,6 +75,11 @@ class HotelLandingController extends Controller
      */
     public function index(Request $request)
     {
+        // Sin ninguna sucursal habilitada la web pública no existe.
+        if (!$this->webEnabled()) {
+            return redirect(auth()->check() ? '/dashboard' : '/login');
+        }
+
         $establishment   = $this->resolveEstablishment($request);
         $establishmentId = $establishment->id ?? null;
         $establishments  = $this->branches();
@@ -99,11 +121,12 @@ class HotelLandingController extends Controller
 
         $establishment = $id ? Establishment::find($id) : null;
 
-        // Sin sucursal válida: primera habilitada; si todas están deshabilitadas
-        // (caso límite) se usa la primera existente para no romper la web.
+        // Sin sucursal válida se usa la primera habilitada. Si todas están
+        // deshabilitadas se devuelve null: la web pública no debe mostrarse
+        // (los callers redirigen). No se hace fallback a la principal.
         if (!$establishment) {
             $firstEnabled  = $enabled->first();
-            $establishment = $firstEnabled ? Establishment::find($firstEnabled) : Establishment::first();
+            $establishment = $firstEnabled ? Establishment::find($firstEnabled) : null;
         }
 
         if ($establishment) {
@@ -169,6 +192,10 @@ class HotelLandingController extends Controller
      */
     public function blog(Request $request)
     {
+        if (!$this->webEnabled()) {
+            return redirect(auth()->check() ? '/dashboard' : '/login');
+        }
+
         $establishment  = $this->resolveEstablishment($request);
         $establishments = $this->branches();
         $posts          = $this->publishedPosts($establishment->id ?? null);
@@ -182,6 +209,10 @@ class HotelLandingController extends Controller
      */
     public function blogPost(Request $request, $slug)
     {
+        if (!$this->webEnabled()) {
+            return redirect(auth()->check() ? '/dashboard' : '/login');
+        }
+
         $establishment  = $this->resolveEstablishment($request);
         $establishments = $this->branches();
 
@@ -259,10 +290,19 @@ class HotelLandingController extends Controller
                 'message' => 'Las fechas no tienen un formato válido.',
             ], 422);
         }
-        if ($outDate->lte($inDate)) {
+
+        // Horas de entrada/salida (se permite reservar el mismo día siempre que
+        // la hora de salida sea posterior a la de entrada).
+        $inTime  = $this->parseTime($request->checkin_time, self::DEFAULT_INPUT_TIME);
+        $outTime = $this->parseTime($request->checkout_time, self::DEFAULT_OUTPUT_TIME);
+
+        $newStart = Carbon::parse($inDate->format('Y-m-d') . ' ' . $inTime);
+        $newEnd   = Carbon::parse($outDate->format('Y-m-d') . ' ' . $outTime);
+
+        if ($newEnd->lte($newStart)) {
             return response()->json([
                 'success' => false,
-                'message' => 'La fecha de salida debe ser posterior a la de entrada.',
+                'message' => 'La salida debe ser posterior a la entrada (revisa fecha y hora).',
             ], 422);
         }
 
@@ -270,9 +310,6 @@ class HotelLandingController extends Controller
         $children = (int) ($request->children ?? 0);
         $guests   = max(1, $adults + $children);
         $nights   = max(1, $inDate->copy()->startOfDay()->diffInDays($outDate->copy()->startOfDay()));
-
-        $newStart = Carbon::parse($inDate->format('Y-m-d') . ' ' . self::DEFAULT_INPUT_TIME);
-        $newEnd   = Carbon::parse($outDate->format('Y-m-d') . ' ' . self::DEFAULT_OUTPUT_TIME);
 
         $establishment = $this->resolveEstablishment($request);
 
@@ -298,14 +335,16 @@ class HotelLandingController extends Controller
             ->values();
 
         return response()->json([
-            'success'   => true,
-            'checkin'   => $inDate->format('d/m/Y'),
-            'checkout'  => $outDate->format('d/m/Y'),
-            'nights'    => $nights,
-            'adults'    => $adults,
-            'children'  => $children,
-            'count'     => $available->count(),
-            'rooms'     => $available,
+            'success'       => true,
+            'checkin'       => $inDate->format('d/m/Y'),
+            'checkout'      => $outDate->format('d/m/Y'),
+            'checkin_time'  => $inTime,
+            'checkout_time' => $outTime,
+            'nights'        => $nights,
+            'adults'        => $adults,
+            'children'      => $children,
+            'count'         => $available->count(),
+            'rooms'         => $available,
         ], 200);
     }
 
@@ -329,10 +368,14 @@ class HotelLandingController extends Controller
         $inDate  = $this->parseDate($request->query('checkin'));
         $outDate = $this->parseDate($request->query('checkout'));
 
-        if ($inDate && $outDate && $outDate->gt($inDate)) {
+        $inTime  = $this->parseTime($request->query('checkin_time'), self::DEFAULT_INPUT_TIME);
+        $outTime = $this->parseTime($request->query('checkout_time'), self::DEFAULT_OUTPUT_TIME);
+
+        $newStart = ($inDate && $outDate) ? Carbon::parse($inDate->format('Y-m-d') . ' ' . $inTime) : null;
+        $newEnd   = ($inDate && $outDate) ? Carbon::parse($outDate->format('Y-m-d') . ' ' . $outTime) : null;
+
+        if ($newStart && $newEnd && $newEnd->gt($newStart)) {
             $nights = max(1, $inDate->copy()->startOfDay()->diffInDays($outDate->copy()->startOfDay()));
-            $newStart = Carbon::parse($inDate->format('Y-m-d') . ' ' . self::DEFAULT_INPUT_TIME);
-            $newEnd   = Carbon::parse($outDate->format('Y-m-d') . ' ' . self::DEFAULT_OUTPUT_TIME);
 
             $room['nights']    = $nights;
             $room['total']     = round(($room['min_price'] ?? 0) * $nights, 2);
@@ -458,8 +501,16 @@ class HotelLandingController extends Controller
         if (!$inDate || !$outDate) {
             return $this->alert('danger', 'Las fechas no tienen un formato válido.');
         }
-        if ($outDate->lte($inDate)) {
-            return $this->alert('danger', 'La fecha de salida debe ser posterior a la de entrada.');
+
+        // Horas de entrada/salida elegidas por el huésped (se admite el mismo día).
+        $inTime  = $this->parseTime($request->checkin_time, self::DEFAULT_INPUT_TIME);
+        $outTime = $this->parseTime($request->checkout_time, self::DEFAULT_OUTPUT_TIME);
+
+        $newStart = Carbon::parse($inDate->format('Y-m-d') . ' ' . $inTime);
+        $newEnd   = Carbon::parse($outDate->format('Y-m-d') . ' ' . $outTime);
+
+        if ($newEnd->lte($newStart)) {
+            return $this->alert('danger', 'La salida debe ser posterior a la entrada (revisa fecha y hora).');
         }
 
         DB::connection('tenant')->beginTransaction();
@@ -474,9 +525,6 @@ class HotelLandingController extends Controller
                 DB::connection('tenant')->rollBack();
                 return $this->alert('danger', 'La habitación está en mantenimiento y no puede reservarse.');
             }
-
-            $newStart = Carbon::parse($inDate->format('Y-m-d') . ' ' . self::DEFAULT_INPUT_TIME);
-            $newEnd   = Carbon::parse($outDate->format('Y-m-d') . ' ' . self::DEFAULT_OUTPUT_TIME);
 
             $conflict = HotelRent::findOverlappingRent($room->id, $newStart, $newEnd);
             if ($conflict) {
@@ -525,9 +573,9 @@ class HotelLandingController extends Controller
                 'data_persons'     => null,
                 'payment_status'   => 'DEBT',
                 'input_date'       => $inDate->format('Y-m-d'),
-                'input_time'       => self::DEFAULT_INPUT_TIME,
+                'input_time'       => $inTime,
                 'output_date'      => $outDate->format('Y-m-d'),
-                'output_time'      => self::DEFAULT_OUTPUT_TIME,
+                'output_time'      => $outTime,
                 'is_reserve'       => true,
                 'status'           => 'ACTIVE',
                 'establishment_id' => $room->establishment_id,
@@ -725,6 +773,23 @@ class HotelLandingController extends Controller
             }
         }
         return null;
+    }
+
+    /**
+     * Normaliza una hora "HH:MM" recibida del formulario. Si no es válida se
+     * devuelve el valor por defecto (hora estándar de entrada/salida).
+     */
+    private function parseTime($value, $default)
+    {
+        if (preg_match('/^(\d{1,2}):(\d{2})$/', trim((string) $value), $m)) {
+            $h = (int) $m[1];
+            $min = (int) $m[2];
+            if ($h >= 0 && $h <= 23 && $min >= 0 && $min <= 59) {
+                return sprintf('%02d:%02d', $h, $min);
+            }
+        }
+
+        return $default;
     }
 
     /**

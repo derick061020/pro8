@@ -218,6 +218,17 @@
     #reserveModal .form-group, #roomDetailModal .form-group { margin-bottom:12px; }
   }
 
+  /* El header del tema (navbar sticky z-index:9999, top-header 10001) tapaba la
+     cabecera de los modales y su botón de cerrar. Elevamos los modales por
+     encima para que siempre se puedan cerrar. */
+  .modal { z-index: 10060 !important; }
+  .modal-backdrop { z-index: 10050 !important; }
+
+  /* Fecha + hora juntas dentro de un mismo campo del buscador. */
+  .hr-datetime { display:flex; gap:8px; }
+  .hr-datetime input[type="date"] { flex:1 1 62%; min-width:0; }
+  .hr-datetime input[type="time"] { flex:1 1 38%; min-width:0; padding:0 8px; }
+
   @media (max-width:480px) {
     .hr-title { font-size:26px; }
     .hr-subtitle { font-size:15px; }
@@ -283,11 +294,17 @@
     <form class="hr-search__card" role="form" id="searchform" onsubmit="return false;">
       <div class="hr-field">
         <label for="checkin_date"><i class="fa fa-calendar"></i> Entrada</label>
-        <input name="checkin" type="date" id="checkin_date" required>
+        <div class="hr-datetime">
+          <input name="checkin" type="date" id="checkin_date" required>
+          <input name="checkin_time" type="time" id="checkin_time" value="14:00" required aria-label="Hora de entrada">
+        </div>
       </div>
       <div class="hr-field">
         <label for="checkout_date"><i class="fa fa-calendar"></i> Salida</label>
-        <input name="checkout" type="date" id="checkout_date" required>
+        <div class="hr-datetime">
+          <input name="checkout" type="date" id="checkout_date" required>
+          <input name="checkout_time" type="time" id="checkout_time" value="12:00" required aria-label="Hora de salida">
+        </div>
       </div>
       <div class="hr-field hr-guests">
         <label><i class="fa fa-users"></i> Huéspedes</label>
@@ -604,6 +621,8 @@
           <input type="hidden" name="room" id="r-room">
           <input type="hidden" name="checkin" id="r-checkin">
           <input type="hidden" name="checkout" id="r-checkout">
+          <input type="hidden" name="checkin_time" id="r-checkin-time">
+          <input type="hidden" name="checkout_time" id="r-checkout-time">
           <input type="hidden" name="adults" id="r-adults">
           <input type="hidden" name="children" id="r-children">
 
@@ -672,7 +691,7 @@ jQuery(function ($) {
         featured: {!! json_encode($featured, JSON_UNESCAPED_UNICODE) !!}
     };
     // Estado de la búsqueda actual (para detalle y reserva)
-    var SEARCH = { checkin: null, checkout: null, adults: 1, children: 0, active: false };
+    var SEARCH = { checkin: null, checkout: null, checkin_time: '14:00', checkout_time: '12:00', adults: 1, children: 0, active: false };
     var PLACEHOLDER = '/landing-reservas/images/rooms/356x228.gif';
 
     // ---- utilidades ----
@@ -768,23 +787,29 @@ jQuery(function ($) {
     $('#searchform').on('submit', function (e) {
         e.preventDefault();
         var checkin = $('#checkin_date').val(), checkout = $('#checkout_date').val();
+        var checkinTime = $('#checkin_time').val() || '14:00', checkoutTime = $('#checkout_time').val() || '12:00';
         if (!checkin || !checkout) { alert('Selecciona las fechas de entrada y salida.'); return; }
-        if (checkout <= checkin) { alert('La fecha de salida debe ser posterior a la de entrada.'); return; }
+        // Se permite reservar el mismo día siempre que la salida (fecha + hora)
+        // sea posterior a la entrada.
+        if ((checkout + ' ' + checkoutTime) <= (checkin + ' ' + checkinTime)) {
+            alert('La salida debe ser posterior a la entrada (revisa la fecha y la hora).'); return;
+        }
 
         var $btn = $('#btn-search').prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Buscando...');
         $('#rooms-grid').html('<div class="loading-rooms"><i class="fa fa-spinner fa-spin fa-2x"></i><p>Buscando habitaciones disponibles...</p></div>');
 
         $.post('/reservas/search', {
             checkin: checkin, checkout: checkout,
+            checkin_time: checkinTime, checkout_time: checkoutTime,
             adults: $('#adults').val(), children: $('#children').val(),
             establishment_id: CURRENT_ESTABLISHMENT
         }).done(function (res) {
             if (!res.success) { $('#rooms-grid').html('<div class="empty-rooms">' + esc(res.message || 'No se pudo buscar.') + '</div>'); return; }
-            SEARCH = { checkin: checkin, checkout: checkout, adults: parseInt($('#adults').val(),10), children: parseInt($('#children').val(),10), active: true };
+            SEARCH = { checkin: checkin, checkout: checkout, checkin_time: checkinTime, checkout_time: checkoutTime, adults: parseInt($('#adults').val(),10), children: parseInt($('#children').val(),10), active: true };
             window.__lastList = res.rooms;
             renderRooms(res.rooms);
             $('#rooms-heading').text(res.count + ' habitación(es) disponible(s)');
-            $('#rooms-subheading').text('Del ' + res.checkin + ' al ' + res.checkout + ' · ' + res.nights + ' noche(s) · ' + res.adults + ' adulto(s)' + (res.children ? ', ' + res.children + ' niño(s)' : ''));
+            $('#rooms-subheading').text('Del ' + res.checkin + ' ' + res.checkin_time + ' al ' + res.checkout + ' ' + res.checkout_time + ' · ' + res.nights + ' noche(s) · ' + res.adults + ' adulto(s)' + (res.children ? ', ' + res.children + ' niño(s)' : ''));
             $('html,body').animate({ scrollTop: $('#rooms-results').offset().top - 70 }, 400);
         }).fail(function (xhr) {
             var m = (xhr.responseJSON && xhr.responseJSON.message) ? xhr.responseJSON.message : 'No se pudo realizar la búsqueda.';
@@ -800,7 +825,7 @@ jQuery(function ($) {
         $('#detail-body').html('<div class="loading-rooms"><i class="fa fa-spinner fa-spin fa-2x"></i></div>');
         $('#roomDetailModal').modal('show');
         var url = '/reservas/room/' + id + '?establishment_id=' + (CURRENT_ESTABLISHMENT || '');
-        if (SEARCH.active) url += '&checkin=' + SEARCH.checkin + '&checkout=' + SEARCH.checkout;
+        if (SEARCH.active) url += '&checkin=' + SEARCH.checkin + '&checkout=' + SEARCH.checkout + '&checkin_time=' + SEARCH.checkin_time + '&checkout_time=' + SEARCH.checkout_time;
         $.get(url).done(function (res) {
             if (!res.success) { $('#detail-body').html('<p class="text-danger">No se pudo cargar el detalle.</p>'); return; }
             renderDetail(res.room);
@@ -871,16 +896,20 @@ jQuery(function ($) {
         // Tomar fechas de la búsqueda si existe, si no del buscador
         var checkin = SEARCH.active ? SEARCH.checkin : $('#checkin_date').val();
         var checkout = SEARCH.active ? SEARCH.checkout : $('#checkout_date').val();
+        var checkinTime = SEARCH.active ? SEARCH.checkin_time : ($('#checkin_time').val() || '14:00');
+        var checkoutTime = SEARCH.active ? SEARCH.checkout_time : ($('#checkout_time').val() || '12:00');
         var adults = SEARCH.active ? SEARCH.adults : parseInt($('#adults').val(), 10);
         var children = SEARCH.active ? SEARCH.children : parseInt($('#children').val(), 10);
 
         $('#r-checkin').val(checkin || '');
         $('#r-checkout').val(checkout || '');
+        $('#r-checkin-time').val(checkinTime || '');
+        $('#r-checkout-time').val(checkoutTime || '');
         $('#r-adults').val(adults || 1);
         $('#r-children').val(children || 0);
 
         var datesTxt = (checkin && checkout)
-            ? 'Del <strong>' + checkin + '</strong> al <strong>' + checkout + '</strong>'
+            ? 'Del <strong>' + checkin + ' ' + checkinTime + '</strong> al <strong>' + checkout + ' ' + checkoutTime + '</strong>'
             : '<span class="text-danger">Selecciona fechas en el buscador antes de reservar.</span>';
         var priceTxt = room.min_price > 0 ? money(room.min_price) + ' / noche' : 'Consultar tarifa';
         $('#reserve-summary').html(
@@ -962,12 +991,24 @@ jQuery(function ($) {
 
     // ---- fechas mínimas ----
     (function initDates() {
-        var today = new Date().toISOString().split('T')[0];
+        // Fecha de HOY en horario LOCAL. Antes se usaba toISOString(), que
+        // devuelve la fecha en UTC: de noche en zonas con desfase negativo
+        // (Perú es UTC-5) ya era "mañana" en UTC, así que el mínimo saltaba a
+        // mañana y no dejaba reservar para hoy.
+        var localToday = function () {
+            var d = new Date();
+            var mm = ('0' + (d.getMonth() + 1)).slice(-2);
+            var dd = ('0' + d.getDate()).slice(-2);
+            return d.getFullYear() + '-' + mm + '-' + dd;
+        };
+        var today = localToday();
         $('#checkin_date').attr('min', today).on('change', function () {
-            var next = new Date($(this).val()); next.setDate(next.getDate() + 1);
-            $('#checkout_date').attr('min', next.toISOString().split('T')[0]);
-            if ($('#checkout_date').val() && $('#checkout_date').val() <= $(this).val()) {
-                $('#checkout_date').val(next.toISOString().split('T')[0]);
+            var v = $(this).val();
+            // La salida puede ser el MISMO día (day-use, la hora decide) o
+            // cualquier día posterior.
+            $('#checkout_date').attr('min', v || today);
+            if ($('#checkout_date').val() && $('#checkout_date').val() < v) {
+                $('#checkout_date').val(v);
             }
         });
         $('#checkout_date').attr('min', today);
