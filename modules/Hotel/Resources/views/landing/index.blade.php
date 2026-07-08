@@ -179,7 +179,7 @@
     .hr-btn-search { width:100%; }
   }
   @media (max-width:767px) {
-    .hr-slides { height:64vh; min-height:400px; }
+    .hr-slides { height:64vh; min-height:400px;     position: absolute;}
     .hr-title { font-size:32px; word-break:break-word; }
     .hr-subtitle { font-size:16px; }
     .hr-dots { bottom:96px; }
