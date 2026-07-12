@@ -94,8 +94,10 @@
     .hr-btn-search { width:100%; }
   }
   @media (max-width:640px) {
-    .hr-slides { height:70vh; min-height:440px; }
-    .hr-dots { bottom:120px; }
+    .hr-slides { height:74vh; min-height:460px; }
+    .hr-slide__caption { padding:76px 18px 96px; }
+    .hr-dots { bottom:118px; }
+    .hr-scroll { display:none; }
     #reservation-form.hr-search { margin-top:-46px; }
     .hr-search__card { grid-template-columns:1fr; padding:18px; }
     .hr-guests-box { min-width:0; }
@@ -595,38 +597,51 @@ jQuery(function ($) {
         return 'fa-check-circle';
     }
 
-    // ---- tarjeta de habitación ----
+    // ---- tarjeta de habitación (compacta, estilo unit card Makai) ----
+    // La card muestra sólo lo esencial (imagen, nombre, ubicación, precio y
+    // 3 datos clave). El resto de la información se ve en el modal de detalle.
     function roomCard(room) {
         var img = room.main_image || PLACEHOLDER;
+
         var priceHtml = room.min_price > 0
-            ? '<span class="text-xl font-display font-bold text-ink-900">' + money(room.min_price) + '</span><span class="text-[12px] text-ink-400"> / noche</span>'
-            : '<span class="text-[13px] font-semibold text-ink-500">Consultar tarifa</span>';
+            ? '<span class="rc-price">' + money(room.min_price) + '</span><small>/ noche</small>'
+            : '<span class="text-[14px] font-semibold text-ink-500">Consultar tarifa</span>';
         var total = (room.total && room.nights)
-            ? '<div class="text-[12px] font-semibold text-brand mt-0.5">' + room.nights + ' noche(s): ' + money(room.total) + '</div>' : '';
-        var meta = [];
-        if (room.capacity) meta.push('<span class="inline-flex items-center gap-1.5"><i class="fa fa-users text-brand"></i> ' + room.capacity + '</span>');
-        if (room.beds)     meta.push('<span class="inline-flex items-center gap-1.5"><i class="fa fa-bed text-brand"></i> ' + esc(room.beds) + '</span>');
-        if (room.size)     meta.push('<span class="inline-flex items-center gap-1.5"><i class="fa fa-expand text-brand"></i> ' + room.size + ' m²</span>');
-        var desc = room.short_description || room.description || 'Habitación cómoda y equipada para tu estancia.';
-        var fav  = room.featured ? '<span class="absolute top-3 right-3 z-10 inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-white/95 text-[11px] font-semibold text-warn-dark shadow"><i class="fa fa-star"></i> Destacada</span>' : '';
+            ? '<span class="rc-total">· ' + room.nights + ' noche(s): ' + money(room.total) + '</span>' : '';
+
+        // Subtítulo: categoría + piso (breve, como el subtitle de makai).
+        var subParts = [esc(room.category)];
+        if (room.floor) subParts.push(esc(room.floor));
+        var sub = subParts.join(' · ');
+
+        // Fila de estadísticas: sólo los datos disponibles.
+        var stats = [];
+        if (room.capacity) stats.push('<div class="rc-stat"><i class="fa fa-users"></i><span class="v">' + room.capacity + ' huésp.</span></div>');
+        if (room.beds)     stats.push('<div class="rc-stat"><i class="fa fa-bed"></i><span class="v">' + esc(room.beds) + '</span></div>');
+        if (room.size)     stats.push('<div class="rc-stat"><i class="fa fa-expand"></i><span class="v">' + room.size + ' m²</span></div>');
+        var statsHtml = stats.length ? '<div class="rc-stats">' + stats.join('') + '</div>' : '';
+
+        var fav = room.featured ? '<span class="rc-fav"><i class="fa fa-star"></i> Destacada</span>' : '<span></span>';
 
         return '' +
-        '<div class="reveal hb-card overflow-hidden group flex flex-col transition duration-300 ease-makai hover:shadow-hover hover:-translate-y-1">' +
-          '<div class="relative aspect-[16/11] bg-ink-100 overflow-hidden">' +
-            '<div class="absolute inset-0 bg-center bg-cover transition duration-500 group-hover:scale-105" style="background-image:url(\'' + img + '\');"></div>' +
-            '<span class="absolute top-3 left-3 z-10 inline-flex items-center px-2.5 py-1 rounded-full bg-brand text-white text-[11px] font-semibold shadow">' + esc(room.category) + '</span>' +
-            fav +
-          '</div>' +
-          '<div class="p-5 flex flex-col flex-1">' +
-            '<h3 class="font-display font-semibold text-lg text-ink-900 leading-snug">' + esc(room.name) + '</h3>' +
-            (meta.length ? '<div class="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-[13px] text-ink-500">' + meta.join('') + '</div>' : '') +
-            '<p class="text-[13.5px] text-ink-500 leading-relaxed mt-3 flex-1">' + esc(desc) + '</p>' +
-            '<div class="mt-4 pt-4 border-t border-ink-100 flex items-end justify-between gap-3">' +
-              '<div><div>' + priceHtml + '</div>' + total + '</div>' +
+        '<div class="reveal rc">' +
+          '<div class="rc-inner">' +
+            '<div class="rc-img btn-detail" data-id="' + room.id + '">' +
+              '<div class="bg" style="background-image:url(\'' + img + '\');"></div>' +
+              '<div class="rc-chips"><span class="rc-cat">' + esc(room.category) + '</span>' + fav + '</div>' +
             '</div>' +
-            '<div class="grid grid-cols-2 gap-2 mt-4">' +
-              '<button class="hb-btn hb-btn-ghost btn-detail" data-id="' + room.id + '"><i class="fa fa-info-circle"></i> Detalle</button>' +
-              '<button class="hb-btn hb-btn-primary btn-reserve" data-id="' + room.id + '"><i class="fa fa-calendar-check-o"></i> Reservar</button>' +
+          '</div>' +
+          '<div class="rc-body">' +
+            '<div class="rc-head">' +
+              '<div class="rc-title-row"><span class="rc-name">' + esc(room.name) + '</span></div>' +
+              '<div class="rc-sub">' + sub + '</div>' +
+              '<div class="rc-divider"></div>' +
+              '<div class="rc-price-row">' + priceHtml + total + '</div>' +
+            '</div>' +
+            statsHtml +
+            '<div class="rc-actions">' +
+              '<button class="rc-btn-info btn-detail" data-id="' + room.id + '">Detalle</button>' +
+              '<button class="rc-btn-cta btn-reserve" data-id="' + room.id + '"><i class="fa fa-calendar-check-o"></i> Reservar</button>' +
             '</div>' +
           '</div>' +
         '</div>';
