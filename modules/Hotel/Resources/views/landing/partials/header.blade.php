@@ -29,7 +29,7 @@
 
 <!-- Navbar flotante -->
 <div class="fixed top-0 left-0 right-0 z-[100] px-3 sm:px-6 pt-3 sm:pt-4 pb-2 flex justify-center pointer-events-none" id="siteHeader">
-  <div class="pointer-events-auto w-full max-w-6xl flex items-center justify-between gap-3 h-[60px] pl-3 pr-2 bg-white rounded-full shadow-float transition-all duration-300 ease-makai" id="navPill">
+  <div class="relative pointer-events-auto w-full max-w-6xl flex items-center justify-between gap-3 h-[60px] pl-3 pr-2 bg-white rounded-full shadow-float transition-all duration-300 ease-makai" id="navPill">
 
     <!-- Izquierda: logo + nombre + selector de sucursal -->
     <div class="flex items-center gap-2.5 min-w-0 shrink-0">
