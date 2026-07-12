@@ -64,7 +64,7 @@
   .hr-sky { position:absolute; top:0; left:-6%; width:112%; height:100%; max-width:none; object-fit:cover; object-position:center top; z-index:1; pointer-events:none; user-select:none; animation:hrCloudDrift 40s ease-in-out infinite alternate; }
   /* Wordmark en una sola línea que siempre cabe en la franja de cielo, por
      encima del edificio (evita que una 2ª línea quede tapada). */
-  .hr-wordmark2 { position:absolute; left:0; right:0; top:19%; z-index:3; margin:0 auto; text-align:center; font-family:'Inter Tight','Inter',sans-serif; font-weight:800; text-transform:uppercase; font-size:clamp(30px,7.3vw,112px); line-height:1; letter-spacing:.01em; white-space:nowrap;
+  .hr-wordmark2 { position:absolute; left:0; right:0; top:22%; z-index:3; margin:0 auto; padding:0 16px; max-width:11ch; text-align:center; font-family:'Inter Tight','Inter',sans-serif; font-weight:800; text-transform:uppercase; font-size:clamp(34px,8.4vw,128px); line-height:.96; letter-spacing:.01em; text-wrap:balance;
     background:linear-gradient(to bottom, rgba(255,255,255,.97) 20%, rgba(255,255,255,.66) 100%); -webkit-background-clip:text; background-clip:text; color:transparent; -webkit-text-fill-color:transparent; mix-blend-mode:luminosity; pointer-events:none; }
   /* El borde superior del edificio se funde con el cielo (elimina la costura
      entre SKY.png y MAKAI.png). */
@@ -84,7 +84,7 @@
   @keyframes hrCloudDrift { 0% { transform:translateX(-3%); } 100% { transform:translateX(3%); } }
 
   @media (max-width:640px) {
-    .hr-wordmark2 { top:17%; font-size:clamp(20px,8.2vw,60px); }
+    .hr-wordmark2 { top:19%; font-size:clamp(28px,12vw,72px); }
     .hr-building { width:200%; left:50%; margin-left:-100%; bottom:0; }
   }
 
