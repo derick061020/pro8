@@ -242,7 +242,7 @@
     </div>
     <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
       @foreach($cfg['features'] as $feature)
-      <div class="hb-card p-7 text-center transition hover:shadow-panel hover:-translate-y-1">
+      <div class="reveal hb-card p-7 text-center transition duration-300 ease-makai hover:shadow-panel hover:-translate-y-1" style="--reveal-i:{{ $loop->index }}">
         <div class="w-14 h-14 rounded-2xl bg-brand-tint text-brand flex items-center justify-center mx-auto mb-5">
           <i class="fa {{ $feature['icon'] ?? 'fa-star' }} text-2xl"></i>
         </div>
@@ -286,7 +286,7 @@
     <div class="grid gap-4 grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
       @foreach($cfg['gallery'] as $gi => $galleryImg)
         @php $gImg = HotelLandingSetting::imageUrl($galleryImg, HotelLandingSetting::DEFAULT_GALLERY); @endphp
-        <button type="button" class="group relative block aspect-[4/3] overflow-hidden rounded-2xl bg-ink-100 {{ $gi === 0 ? 'col-span-2 row-span-2 md:aspect-square' : '' }}" data-lightbox="{{ $gImg }}">
+        <button type="button" class="reveal group relative block aspect-[4/3] overflow-hidden rounded-2xl bg-ink-100 {{ $gi === 0 ? 'col-span-2 row-span-2 md:aspect-square' : '' }}" style="--reveal-i:{{ $gi }}" data-lightbox="{{ $gImg }}">
           <img src="{{ $gImg }}" alt="Imagen {{ $gi + 1 }}" class="w-full h-full object-cover transition duration-500 group-hover:scale-105">
           <span class="absolute inset-0 bg-ink-950/0 group-hover:bg-ink-950/30 transition flex items-center justify-center">
             <i class="fa fa-search-plus text-white text-2xl opacity-0 group-hover:opacity-100 transition"></i>
@@ -410,16 +410,20 @@
 
 @include('hotel::landing.partials.footer', ['onLanding' => true])
 
-<!-- ===== Modal: Detalle de habitación ===== -->
+<!-- ===== Modal: Detalle de habitación (estilo unit modal Makai) ===== -->
 <div class="hb-modal" id="roomDetailModal">
   <div class="hb-modal__backdrop" data-close></div>
-  <div class="hb-modal__dialog">
+  <div class="hb-modal__shell hb-modal__shell--tall">
     <div class="hb-modal__head">
-      <h4 class="hb-modal__title" id="detail-title">Detalle</h4>
-      <button type="button" class="hb-modal__close" data-close><i class="fa fa-times"></i></button>
+      <div class="hb-modal__head-left">
+        <span class="hb-modal__brand">{{ mb_strtoupper(mb_substr($hotelName,0,1)) }}</span>
+        <span class="hb-modal__unit" id="detail-unit">Habitación</span>
+        <span id="detail-badge"></span>
+      </div>
+      <button type="button" class="hb-modal__close" data-close aria-label="Cerrar"><i class="fa fa-times"></i></button>
     </div>
-    <div class="hb-modal__body" id="detail-body">
-      <div class="hb-spinner"><i class="fa fa-spinner fa-spin fa-2x"></i></div>
+    <div id="detail-content" style="flex:1;min-height:0;display:flex;flex-direction:column;">
+      <div class="hb-spinner" style="margin:auto;"><i class="fa fa-spinner fa-spin fa-2x"></i></div>
     </div>
   </div>
 </div>
@@ -427,12 +431,15 @@
 <!-- ===== Modal: Reservar ===== -->
 <div class="hb-modal" id="reserveModal">
   <div class="hb-modal__backdrop" data-close></div>
-  <div class="hb-modal__dialog hb-modal__dialog--sm">
+  <div class="hb-modal__shell hb-modal__shell--sm">
     <div class="hb-modal__head">
-      <h4 class="hb-modal__title">Completa tu reserva</h4>
-      <button type="button" class="hb-modal__close" data-close><i class="fa fa-times"></i></button>
+      <div class="hb-modal__head-left">
+        <span class="hb-modal__brand">{{ mb_strtoupper(mb_substr($hotelName,0,1)) }}</span>
+        <span class="hb-modal__title">Completa tu reserva</span>
+      </div>
+      <button type="button" class="hb-modal__close" data-close aria-label="Cerrar"><i class="fa fa-times"></i></button>
     </div>
-    <div class="hb-modal__body">
+    <div class="hb-modal__body" style="padding:22px 24px;">
       <div id="reserve-message"></div>
       <div class="rounded-xl bg-brand-tint border border-brand-soft px-4 py-3 mb-5 text-[13px] text-ink-700" id="reserve-summary"></div>
       <form id="reserveform" class="space-y-4">
@@ -506,9 +513,17 @@ jQuery(function ($) {
     var SEARCH = { checkin: null, checkout: null, checkin_time: '14:00', checkout_time: '12:00', adults: 1, children: 0, active: false };
     var PLACEHOLDER = '/landing-reservas/images/rooms/356x228.gif';
 
-    // ---- Helpers de modal (sustituyen a Bootstrap) ----
-    function openModal(id) { $('#' + id).addClass('is-open'); $('body').addClass('hb-modal-open'); }
-    function closeModal(el) { $(el).closest('.hb-modal').removeClass('is-open'); if (!$('.hb-modal.is-open').length) $('body').removeClass('hb-modal-open'); }
+    // ---- Helpers de modal (animación de entrada estilo Makai) ----
+    function openModal(id) {
+        var $m = $('#' + id).addClass('is-open');
+        $('body').addClass('hb-modal-open');
+        // Reproduce la animación de apertura (mismo patrón que la web makai).
+        var el = $m.get(0);
+        el.classList.remove('is-opening');
+        void el.offsetWidth;
+        el.classList.add('is-opening');
+    }
+    function closeModal(el) { $(el).closest('.hb-modal').removeClass('is-open is-opening'); if (!$('.hb-modal.is-open').length) $('body').removeClass('hb-modal-open'); }
     $(document).on('click', '[data-close]', function () { closeModal(this); });
     // Cerrar al pulsar fuera del diálogo (sobre el fondo del modal).
     $(document).on('click', '.hb-modal', function (e) { if (e.target === this) { $(this).removeClass('is-open'); if (!$('.hb-modal.is-open').length) $('body').removeClass('hb-modal-open'); } });
@@ -548,7 +563,7 @@ jQuery(function ($) {
         var fav  = room.featured ? '<span class="absolute top-3 right-3 z-10 inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-white/95 text-[11px] font-semibold text-warn-dark shadow"><i class="fa fa-star"></i> Destacada</span>' : '';
 
         return '' +
-        '<div class="hb-card overflow-hidden group flex flex-col transition hover:shadow-hover hover:-translate-y-1">' +
+        '<div class="reveal hb-card overflow-hidden group flex flex-col transition duration-300 ease-makai hover:shadow-hover hover:-translate-y-1">' +
           '<div class="relative aspect-[16/11] bg-ink-100 overflow-hidden">' +
             '<div class="absolute inset-0 bg-center bg-cover transition duration-500 group-hover:scale-105" style="background-image:url(\'' + img + '\');"></div>' +
             '<span class="absolute top-3 left-3 z-10 inline-flex items-center px-2.5 py-1 rounded-full bg-brand text-white text-[11px] font-semibold shadow">' + esc(room.category) + '</span>' +
@@ -576,6 +591,9 @@ jQuery(function ($) {
             return;
         }
         $grid.html('<div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">' + list.map(roomCard).join('') + '</div>');
+        // Asignar retardo escalonado y activar el revelado por scroll.
+        $grid.find('.reveal').each(function (i) { this.style.setProperty('--reveal-i', i % 6); });
+        if (window.hbInitReveal) window.hbInitReveal();
     }
 
     function findRoom(id) {
@@ -630,71 +648,95 @@ jQuery(function ($) {
     });
 
     // ---- Detalle ----
+    var DETAIL_SPINNER = '<div class="hb-spinner" style="margin:auto;"><i class="fa fa-spinner fa-spin fa-2x"></i></div>';
+
     $(document).on('click', '.btn-detail', function () {
         var id = $(this).data('id');
-        $('#detail-body').html('<div class="hb-spinner"><i class="fa fa-spinner fa-spin fa-2x"></i></div>');
+        $('#detail-unit').text('Habitación');
+        $('#detail-badge').html('');
+        $('#detail-content').html(DETAIL_SPINNER);
         openModal('roomDetailModal');
         var url = '/reservas/room/' + id + '?establishment_id=' + (CURRENT_ESTABLISHMENT || '');
         if (SEARCH.active) url += '&checkin=' + SEARCH.checkin + '&checkout=' + SEARCH.checkout + '&checkin_time=' + SEARCH.checkin_time + '&checkout_time=' + SEARCH.checkout_time;
         $.get(url).done(function (res) {
-            if (!res.success) { $('#detail-body').html('<p class="text-err">No se pudo cargar el detalle.</p>'); return; }
+            if (!res.success) { $('#detail-content').html('<p class="text-err" style="margin:auto;">No se pudo cargar el detalle.</p>'); return; }
             renderDetail(res.room);
         }).fail(function () {
-            $('#detail-body').html('<p class="text-err">No se pudo cargar el detalle.</p>');
+            $('#detail-content').html('<p class="text-err" style="margin:auto;">No se pudo cargar el detalle.</p>');
         });
     });
 
-    function renderDetail(room) {
-        $('#detail-title').text(room.category + ' · ' + room.name);
-        var images = (room.images && room.images.length) ? room.images : [PLACEHOLDER];
-        var gallery = '<img id="detail-main" src="' + images[0] + '" alt="' + esc(room.name) + '" class="w-full h-64 object-cover rounded-xl">';
-        var thumbs = images.length > 1
-            ? '<div class="flex gap-2 flex-wrap mt-3">' + images.map(function (u, i) { return '<img src="' + u + '" class="detail-thumb w-16 h-12 object-cover rounded-lg cursor-pointer border-2 ' + (i===0?'border-brand':'border-transparent') + '" data-src="' + u + '">'; }).join('') + '</div>'
-            : '';
-        var meta = [];
-        if (room.capacity) meta.push('<span class="hb-pill"><i class="fa fa-users"></i> ' + room.capacity + ' huésped(es)</span>');
-        if (room.beds)     meta.push('<span class="hb-pill"><i class="fa fa-bed"></i> ' + esc(room.beds) + '</span>');
-        if (room.size)     meta.push('<span class="hb-pill"><i class="fa fa-expand"></i> ' + room.size + ' m²</span>');
-        if (room.floor)    meta.push('<span class="hb-pill"><i class="fa fa-building"></i> ' + esc(room.floor) + '</span>');
-        var amenities = (room.amenities && room.amenities.length)
-            ? '<h5 class="font-semibold text-ink-900 mt-5 mb-2 text-[14px]">Servicios</h5><div class="flex flex-wrap gap-2">' + room.amenities.map(function (a) { return '<span class="hb-pill"><i class="fa ' + amenityIcon(a) + '"></i>' + esc(a) + '</span>'; }).join('') + '</div>'
-            : '';
-        var price = room.min_price > 0 ? '<span class="text-2xl font-display font-bold text-ink-900">' + money(room.min_price) + '</span><span class="text-ink-400 text-[13px]"> / noche</span>' : '<span class="text-ink-500">Consultar tarifa</span>';
-        var totalLine = (room.total && room.nights) ? '<div class="text-[13px] text-ink-600 mt-1">Total ' + room.nights + ' noche(s): <strong class="text-ink-900">' + money(room.total) + '</strong></div>' : '';
-        var availability = '';
-        if (typeof room.available !== 'undefined') {
-            availability = room.available
-                ? '<div class="alert alert-success mt-4">Disponible para las fechas seleccionadas.</div>'
-                : '<div class="alert alert-warning mt-4">No disponible en esas fechas.</div>';
-        }
-
-        var html =
-            '<div class="grid gap-6 md:grid-cols-2">' +
-              '<div>' + gallery + thumbs + '</div>' +
-              '<div>' +
-                '<div class="hb-eyebrow mb-2">' + esc(room.category) + '</div>' +
-                '<h3 class="font-display text-xl font-bold text-ink-900 mb-3">' + esc(room.name) + '</h3>' +
-                (meta.length ? '<div class="flex flex-wrap gap-2 mb-3">' + meta.join('') + '</div>' : '') +
-                '<p class="text-[14px] text-ink-600 leading-relaxed">' + esc(room.description || room.short_description || '') + '</p>' +
-                '<div class="mt-4">' + price + totalLine + '</div>' +
-                availability + amenities +
-                '<button class="hb-btn hb-btn-primary hb-btn-block hb-btn-lg btn-reserve mt-5" data-id="' + room.id + '"><i class="fa fa-calendar-check-o"></i> Reservar</button>' +
-              '</div>' +
-            '</div>';
-        $('#detail-body').html(html);
+    function statBox(icon, value, label) {
+        return '<div class="mt-stat"><div class="value"><i class="fa ' + icon + '"></i> ' + value + '</div><div class="label">' + label + '</div></div>';
     }
 
-    $(document).on('click', '.detail-thumb', function () {
+    function renderDetail(room) {
+        // Cabecera del modal (unidad + estado), igual que el unit modal de makai.
+        $('#detail-unit').text(room.category + ' · ' + room.name);
+        if (typeof room.available !== 'undefined') {
+            $('#detail-badge').html(room.available
+                ? '<span class="hb-badge hb-badge-ok"><span class="dot"></span> Disponible</span>'
+                : '<span class="hb-badge hb-badge-off"><span class="dot"></span> No disponible</span>');
+        } else if (room.status === 'MANTENIMIENTO') {
+            $('#detail-badge').html('<span class="hb-badge hb-badge-off"><span class="dot"></span> Mantenimiento</span>');
+        } else {
+            $('#detail-badge').html('');
+        }
+
+        var images = (room.images && room.images.length) ? room.images : [PLACEHOLDER];
+        var thumbs = images.length > 1
+            ? '<div class="mt-thumbs">' + images.map(function (u, i) { return '<img src="' + u + '" class="mt-thumb ' + (i===0?'active':'') + '" data-src="' + u + '">'; }).join('') + '</div>'
+            : '';
+
+        // Cajas de estadística (capacidad / camas / m² / piso).
+        var stats = [];
+        if (room.capacity) stats.push(statBox('fa-users', room.capacity, 'Huéspedes'));
+        if (room.beds)     stats.push(statBox('fa-bed', esc(room.beds), 'Camas'));
+        if (room.size)     stats.push(statBox('fa-expand', room.size + ' m²', 'Superficie'));
+        if (room.floor)    stats.push(statBox('fa-building', esc(room.floor), 'Piso'));
+        var statsHtml = stats.length ? '<div class="mt-stats">' + stats.join('') + '</div>' : '';
+
+        var amenities = (room.amenities && room.amenities.length)
+            ? '<div class="mt-divider"></div><h5 class="font-semibold text-ink-900 mb-2 text-[13px] uppercase tracking-wide">Servicios</h5><div class="flex flex-wrap gap-2">' + room.amenities.map(function (a) { return '<span class="hb-pill"><i class="fa ' + amenityIcon(a) + '"></i>' + esc(a) + '</span>'; }).join('') + '</div>'
+            : '';
+
+        var priceHtml = room.min_price > 0
+            ? '<span class="mt-price">' + money(room.min_price) + '</span> <small>/ noche</small>'
+            : '<span class="text-ink-500 font-semibold">Consultar tarifa</span>';
+        var totalLine = (room.total && room.nights) ? '<div class="text-[13px] text-ink-600 mt-2">Total ' + room.nights + ' noche(s): <strong class="text-ink-900">' + money(room.total) + '</strong></div>' : '';
+
+        var reserveDisabled = (typeof room.available !== 'undefined' && !room.available) || room.status === 'MANTENIMIENTO';
+
+        var html =
+            '<div class="hb-modal__grid" style="flex:1;">' +
+              '<div class="hb-modal__left"><div class="hb-modal__left-inner">' +
+                '<div class="hb-eyebrow mb-3">' + esc(room.category) + '</div>' +
+                '<h3 class="font-display text-2xl font-bold text-ink-900 mb-3">' + esc(room.name) + '</h3>' +
+                '<div class="mb-4">' + priceHtml + totalLine + '</div>' +
+                (room.description || room.short_description ? '<p class="text-[14px] text-ink-600 leading-relaxed mb-4">' + esc(room.description || room.short_description) + '</p>' : '') +
+                statsHtml +
+                amenities +
+                '<button class="hb-btn hb-btn-primary hb-btn-block hb-btn-lg btn-reserve mt-5" data-id="' + room.id + '"' + (reserveDisabled ? ' disabled' : '') + '><i class="fa fa-calendar-check-o"></i> ' + (reserveDisabled ? 'No disponible' : 'Reservar') + '</button>' +
+              '</div></div>' +
+              '<div class="hb-modal__right">' +
+                '<div class="mt-gallery"><img id="detail-main" src="' + images[0] + '" alt="' + esc(room.name) + '"></div>' +
+                thumbs +
+              '</div>' +
+            '</div>';
+        $('#detail-content').html(html);
+    }
+
+    $(document).on('click', '.mt-thumb', function () {
         $('#detail-main').attr('src', $(this).data('src'));
-        $('.detail-thumb').removeClass('border-brand').addClass('border-transparent');
-        $(this).addClass('border-brand').removeClass('border-transparent');
+        $('.mt-thumb').removeClass('active');
+        $(this).addClass('active');
     });
 
     // ---- Reservar ----
     $(document).on('click', '.btn-reserve', function () {
         var room = findRoom($(this).data('id'));
         if (!room) return;
-        $('#roomDetailModal').removeClass('is-open');
+        $('#roomDetailModal').removeClass('is-open is-opening');
         openReserve(room);
     });
 
