@@ -69,7 +69,7 @@
   /* El borde superior del edificio se funde con el cielo (elimina la costura
      entre SKY.png y MAKAI.png). */
   .hr-building { position:absolute; left:0; bottom:-2%; width:100%; height:auto; z-index:4; pointer-events:none; user-select:none; filter:drop-shadow(0 20px 40px rgba(0,0,0,.18));
-    -webkit-mask-image:linear-gradient(to bottom, transparent 0%, #000 12%); mask-image:linear-gradient(to bottom, transparent 0%, #000 12%); }
+    -webkit-mask-image:linear-gradient(to bottom, transparent 0%, #000 24%); mask-image:linear-gradient(to bottom, transparent 0%, #000 24%); }
   /* Fundido inferior del edificio hacia el fondo de la página / buscador. */
   .hr-hero-makai::after { content:""; position:absolute; left:0; right:0; bottom:-1px; height:16%; z-index:5; pointer-events:none; background:linear-gradient(to top, #f4f4f4 0%, rgba(244,244,244,.65) 42%, rgba(244,244,244,0) 100%); }
 
@@ -179,7 +179,8 @@
   /* ---- Móvil ---- */
   @media (max-width:640px) {
     .hr-stage { height:auto; min-height:0; }
-    .hr-cell { min-height:82vh; }
+    .hr-cell { min-height:64vh; }
+    .hr-cell--hero { min-height:58vh; }
     .hr-cell-caption { padding:112px 20px 108px; }
     .hr-chip { margin-bottom:16px; }
     .hr-title { font-size:clamp(29px,8.5vw,40px); margin-bottom:14px; }
