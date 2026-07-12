@@ -11,30 +11,77 @@
 @include('hotel::landing.partials.head', ['pageTitle' => $hotelName.' · Reservas online', 'pageDesc' => 'Reserva tu habitación en '.$hotelName.'. Disponibilidad y precios en tiempo real.'])
 
 <style>
-  /* ===== Hero ===== */
-  .hr-hero { position:relative; background:#171717; }
-  .hr-slides { position:relative; height:min(88vh, 860px); min-height:600px; overflow:hidden; }
-  .hr-slide { position:absolute; inset:0; background-size:cover; background-position:center; opacity:0; transform:scale(1.06); transition:opacity 1.3s ease, transform 8s ease; }
-  .hr-slide.is-active { opacity:1; transform:scale(1); }
-  /* Degradado en dos capas: oscurece arriba (legibilidad del nav flotante) y
-     abajo (fusión con el buscador), con una viñeta suave que centra la vista. */
-  .hr-slide__overlay { position:absolute; inset:0; background:
-      linear-gradient(180deg, rgba(20,22,20,.58) 0%, rgba(20,22,20,.12) 30%, rgba(20,22,20,.28) 62%, rgba(20,22,20,.80) 100%),
-      radial-gradient(130% 90% at 50% 32%, rgba(20,22,20,0) 42%, rgba(20,22,20,.32) 100%); }
-  .hr-slide__caption { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; text-align:center; color:#fff; padding:96px 22px 150px; }
-  .hr-caption-inner { width:100%; max-width:760px; }
-  .hr-slide.is-active .hr-caption-inner { animation:heroUp 1s cubic-bezier(.16,1,.3,1) both; }
-  @keyframes heroUp { from { opacity:0; transform:translateY(26px); } to { opacity:1; transform:none; } }
+  /* ===== Hero (patrón home Makai: intro imagen+texto + slider horizontal) ===== */
+  .hr-stage { position:relative; background:#12140f; height:min(88vh, 880px); min-height:600px; overflow:hidden; }
+  .hr-track { display:flex; height:100%; transform:translateX(0); transition:transform .85s cubic-bezier(.22,1,.36,1); will-change:transform; }
+  .hr-cell { position:relative; flex:0 0 100%; width:100%; height:100%; overflow:hidden; }
+  .hr-photo { position:absolute; inset:0; background-size:cover; background-position:center; transform:scale(1.08); transition:transform 7.5s ease; }
+  .hr-cell.is-active .hr-photo { transform:scale(1); }
+  /* Degradado en dos capas + viñeta: legible bajo el nav flotante y fundido abajo. */
+  .hr-overlay { position:absolute; inset:0; z-index:1; background:
+      linear-gradient(180deg, rgba(18,20,15,.56) 0%, rgba(18,20,15,.12) 30%, rgba(18,20,15,.30) 62%, rgba(18,20,15,.82) 100%),
+      radial-gradient(130% 90% at 50% 32%, rgba(18,20,15,0) 42%, rgba(18,20,15,.34) 100%); }
+  .hr-cell-caption { position:absolute; inset:0; z-index:3; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; color:#fff; padding:96px 22px 150px; }
+  .hr-caption-inner { width:100%; max-width:840px; }
+
+  /* Chip / título / subtítulo (compartidos por las celdas de imagen). */
   .hr-chip { display:inline-flex; align-items:center; gap:9px; padding:7px 15px; margin-bottom:22px; border-radius:999px; background:rgba(255,255,255,.12); border:1px solid rgba(255,255,255,.24); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px); font-size:12.5px; font-weight:600; letter-spacing:.03em; color:#fff; }
   .hr-chip .stars { color:#f4c542; letter-spacing:1.5px; font-size:11px; }
   .hr-title { font-family:'Inter Tight','Inter',sans-serif; font-size:clamp(33px,5.6vw,62px); font-weight:700; line-height:1.06; letter-spacing:-.025em; margin:0 auto 18px; max-width:14ch; text-shadow:0 4px 40px rgba(0,0,0,.4); }
   .hr-subtitle { font-size:clamp(15px,2vw,20px); font-weight:400; max-width:600px; margin:0 auto; color:rgba(255,255,255,.9); text-shadow:0 2px 18px rgba(0,0,0,.4); line-height:1.55; }
-  .hr-dots { position:absolute; left:0; right:0; bottom:150px; display:flex; justify-content:center; gap:8px; z-index:3; }
-  .hr-dot { width:8px; height:8px; border-radius:999px; border:0; padding:0; background:rgba(255,255,255,.4); cursor:pointer; transition:all .35s cubic-bezier(.16,1,.3,1); }
-  .hr-dot.is-active { background:#fff; width:26px; }
-  .hr-scroll { position:absolute; left:50%; bottom:92px; transform:translateX(-50%); z-index:3; width:38px; height:38px; border-radius:999px; border:1px solid rgba(255,255,255,.3); background:rgba(255,255,255,.08); backdrop-filter:blur(6px); color:rgba(255,255,255,.85); display:flex; align-items:center; justify-content:center; font-size:16px; animation:heroBounce 2.2s ease-in-out infinite; }
+
+  /* Wordmark gigante de la celda intro ("imagen con texto" makai). */
+  .hr-wordmark { display:block; font-family:'Inter Tight','Inter',sans-serif; font-weight:800; text-transform:uppercase; font-size:clamp(42px,10.5vw,138px); line-height:.9; letter-spacing:-.01em; max-width:13ch; margin:0 auto 8px; text-wrap:balance;
+    background:linear-gradient(180deg, rgba(255,255,255,.97) 32%, rgba(255,255,255,.55) 100%); -webkit-background-clip:text; background-clip:text; color:transparent; -webkit-text-fill-color:transparent;
+    filter:drop-shadow(0 8px 34px rgba(0,0,0,.4)); }
+
+  /* Entrada: el wordmark cae desde arriba; el resto sube desde abajo (staggered). */
+  .hr-anim-down { opacity:0; transform:translateY(-135%); }
+  .hr-anim-up   { opacity:0; transform:translateY(38px); }
+  #hero.is-revealed .hr-cell--hero .hr-anim-down { animation:hrDrop 1.5s cubic-bezier(.22,1,.36,1) .12s both; }
+  #hero.is-revealed .hr-cell--hero .hr-anim-up.d1 { animation:hrRise 1.1s cubic-bezier(.22,1,.36,1) .28s both; }
+  #hero.is-revealed .hr-cell--hero .hr-anim-up.d2 { animation:hrRise 1.1s cubic-bezier(.22,1,.36,1) .5s both; }
+  @keyframes hrDrop { 0% { opacity:0; transform:translateY(-135%); } 58% { opacity:1; } 100% { opacity:1; transform:translateY(0); } }
+  @keyframes hrRise { 0% { opacity:0; transform:translateY(38px); } 100% { opacity:1; transform:translateY(0); } }
+
+  /* Celdas de imagen (slides): su caption aparece al activarse. */
+  .hr-cell--img .hr-caption-inner { opacity:0; transform:translateY(28px); transition:opacity .8s cubic-bezier(.16,1,.3,1), transform .8s cubic-bezier(.16,1,.3,1); }
+  .hr-cell--img.is-active .hr-caption-inner { opacity:1; transform:none; transition-delay:.25s; }
+
+  /* Indicador de píldora (segmentos con relleno temporizado, como makai). */
+  .hr-nav { position:absolute; left:50%; bottom:132px; transform:translateX(-50%); z-index:4; display:flex; align-items:center; gap:8px; padding:9px 14px; border-radius:999px; background:rgba(255,255,255,.12); border:1px solid rgba(255,255,255,.22); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px); }
+  .hr-seg { position:relative; width:26px; height:4px; border-radius:999px; background:rgba(255,255,255,.32); border:0; padding:0; cursor:pointer; overflow:hidden; transition:width .4s cubic-bezier(.22,1,.36,1); }
+  .hr-seg.is-active { width:44px; }
+  .hr-seg-fill { position:absolute; inset:0 auto 0 0; width:0; background:#fff; border-radius:999px; }
+  .hr-seg.is-active .hr-seg-fill { width:100%; transition:width var(--seg-dur,5200ms) linear; }
+  .hr-scroll { position:absolute; left:50%; bottom:88px; transform:translateX(-50%); z-index:4; width:38px; height:38px; border-radius:999px; border:1px solid rgba(255,255,255,.3); background:rgba(255,255,255,.08); backdrop-filter:blur(6px); color:rgba(255,255,255,.85); display:flex; align-items:center; justify-content:center; font-size:16px; animation:heroBounce 2.2s ease-in-out infinite; }
   .hr-scroll:hover { background:rgba(255,255,255,.18); color:#fff; }
   @keyframes heroBounce { 0%,100% { transform:translate(-50%,0); } 50% { transform:translate(-50%,7px); } }
+
+  /* ===== Loader de marca (intro tipo Makai) ===== */
+  #hbLoader { position:fixed; inset:0; z-index:2000; display:flex; align-items:center; justify-content:center; background:#f4f4f4; transition:opacity .6s ease, visibility .6s ease; }
+  #hbLoader.is-hidden { opacity:0; visibility:hidden; }
+  .ml-inner { display:flex; flex-direction:column; align-items:center; gap:24px; animation:ml-fade-in .7s ease both; }
+  .ml-rings { position:relative; width:118px; height:118px; }
+  .ml-ring { position:absolute; inset:0; margin:auto; width:34px; height:34px; border-radius:50%; border:1.5px solid #5c7c68; transform:scale(.3); opacity:0; animation:ml-ripple 2.4s cubic-bezier(.22,.61,.36,1) infinite; }
+  .ml-ring:nth-child(2){ animation-delay:.6s; }
+  .ml-ring:nth-child(3){ animation-delay:1.2s; }
+  .ml-core { position:absolute; inset:0; margin:auto; width:44px; height:44px; border-radius:50%; background:#5c7c68; color:#fff; display:flex; align-items:center; justify-content:center; font-family:'Inter Tight',sans-serif; font-weight:800; font-size:20px; animation:ml-pulse 2.4s ease-in-out infinite; }
+  .ml-name { font-family:'Inter Tight',sans-serif; font-weight:700; font-size:15px; letter-spacing:.02em; color:#2b303b; }
+  .ml-bar { width:150px; height:3px; border-radius:99px; background:rgba(92,124,104,.15); overflow:hidden; }
+  .ml-bar span { display:block; height:100%; width:40%; border-radius:99px; background:linear-gradient(90deg, transparent, #5c7c68, transparent); animation:ml-slide 1.3s ease-in-out infinite; }
+  @keyframes ml-ripple { 0% { transform:scale(.3); opacity:0; } 15% { opacity:.55; } 100% { transform:scale(3.2); opacity:0; } }
+  @keyframes ml-pulse { 0%,100% { transform:scale(1); } 50% { transform:scale(.92); } }
+  @keyframes ml-slide { 0% { transform:translateX(-120%); } 100% { transform:translateX(330%); } }
+  @keyframes ml-fade-in { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:none; } }
+
+  /* Accesibilidad: sin movimiento, todo el contenido del hero visible al instante. */
+  @media (prefers-reduced-motion: reduce) {
+    .hr-anim-down, .hr-anim-up, .hr-cell--img .hr-caption-inner { opacity:1 !important; transform:none !important; animation:none !important; transition:none !important; }
+    .hr-photo, .hr-track { transition:none !important; }
+    .ml-ring { animation:none; } .ml-ring:first-child { opacity:.35; transform:scale(2.2); }
+    .ml-bar span { animation:none; width:100%; }
+  }
 
   /* ===== Tarjeta de habitación (estilo unit card Makai) ===== */
   .rc { position:relative; display:flex; flex-direction:column; background:#fff; border:1px solid #eaecf0; border-radius:24px; overflow:hidden; transition:box-shadow .35s cubic-bezier(.16,1,.3,1), transform .35s cubic-bezier(.16,1,.3,1); }
@@ -91,9 +138,10 @@
 
   /* ---- Tablet ---- */
   @media (max-width:991px) {
-    .hr-slides { height:74vh; min-height:540px; }
-    .hr-slide__caption { padding:104px 24px 140px; }
-    .hr-dots { bottom:140px; }
+    .hr-stage { height:74vh; min-height:540px; }
+    .hr-cell-caption { padding:104px 24px 140px; }
+    .hr-nav { bottom:118px; }
+    .hr-scroll { bottom:74px; }
     .hr-search__card { grid-template-columns:1fr 1fr; }
     .hr-field--guests, .hr-field--submit { grid-column:auto; }
     .hr-field--submit { grid-column:1 / -1; }
@@ -101,15 +149,14 @@
   }
   /* ---- Móvil ---- */
   @media (max-width:640px) {
-    .hr-slides { height:auto; min-height:0; }
-    .hr-slide { position:relative; height:auto; }
-    .hr-slide:not(.is-active) { display:none; }
-    .hr-slide { opacity:1; transform:none; transition:none; }
-    .hr-slide__caption { position:relative; min-height:80vh; padding:110px 20px 118px; }
+    .hr-stage { height:auto; min-height:0; }
+    .hr-cell { min-height:82vh; }
+    .hr-cell-caption { padding:112px 20px 108px; }
     .hr-chip { margin-bottom:16px; }
     .hr-title { font-size:clamp(29px,8.5vw,40px); margin-bottom:14px; }
-    .hr-subtitle { font-size:16px; margin-bottom:26px; }
-    .hr-dots { position:absolute; bottom:74px; }
+    .hr-subtitle { font-size:16px; }
+    .hr-wordmark { font-size:clamp(40px,15vw,72px); }
+    .hr-nav { bottom:64px; }
     .hr-scroll { display:none; }
     #reservation-form.hr-search { margin-top:-40px; }
     .hr-search__card { grid-template-columns:1fr; padding:16px; gap:14px; border-radius:18px; }
@@ -118,7 +165,7 @@
   }
   @media (max-width:380px) {
     .hr-title { font-size:26px; }
-    .hr-slide__caption { min-height:78vh; }
+    .hr-cell { min-height:80vh; }
   }
 
   /* ===== Galería lightbox ===== */
@@ -134,52 +181,160 @@
 
 <body>
 
+{{-- Loader de marca (intro tipo home Makai): se muestra un instante y, al
+     levantarse, revela y reproduce la animación de entrada del hero. --}}
+<div id="hbLoader" aria-hidden="true">
+  <div class="ml-inner">
+    <div class="ml-rings">
+      <span class="ml-ring"></span><span class="ml-ring"></span><span class="ml-ring"></span>
+      <span class="ml-core">{{ mb_strtoupper(mb_substr($hotelName, 0, 1)) }}</span>
+    </div>
+    <div class="ml-name">{{ $hotelName }}</div>
+    <div class="ml-bar"><span></span></div>
+  </div>
+</div>
+{{-- Sin JS: no ocultar contenido animado ni bloquear con el loader. --}}
+<noscript><style>.hr-anim-down,.hr-anim-up,.hr-cell--img .hr-caption-inner{opacity:1!important;transform:none!important}#hbLoader{display:none!important}</style></noscript>
+
 @include('hotel::landing.partials.header', ['onLanding' => true, 'activeNav' => 'inicio'])
 
 @php
   // Garantizamos al menos una diapositiva aunque el tenant guarde la lista vacía.
   $slides = !empty($cfg['slides']) && is_array($cfg['slides'])
     ? $cfg['slides']
-    : [['image' => null, 'title' => '', 'subtitle' => 'Reserva tu estancia con nosotros', 'button_text' => 'Ver habitaciones', 'button_link' => '#rooms-results', 'stars' => true]];
+    : [['image' => null, 'title' => '', 'subtitle' => 'Reserva tu estancia con nosotros', 'stars' => true]];
+
+  // La primera "slide" es la portada intro (imagen + wordmark del hotel);
+  // las siguientes continúan como slides normales.
+  $firstSlide = $slides[0];
+  $introImg   = HotelLandingSetting::imageUrl($firstSlide['image'] ?? null, HotelLandingSetting::DEFAULT_SLIDE);
+  $introSub   = trim($firstSlide['subtitle'] ?? '') !== '' ? $firstSlide['subtitle'] : 'Reserva tu estancia con nosotros';
+  $introStars = $firstSlide['stars'] ?? true;
+  $restSlides = array_slice($slides, 1);
+  $cellCount  = 1 + count($restSlides);
 @endphp
 
 <!-- ===== Hero ===== -->
-<section class="hr-hero" id="hero">
-  <div class="hr-slides">
-    @foreach($slides as $i => $slide)
+<section class="hr-stage {{ $cellCount > 1 ? 'has-slider' : '' }}" id="hero">
+  <div class="hr-track" id="hrTrack">
+
+    <!-- Celda 0: portada intro (imagen con texto) -->
+    <div class="hr-cell hr-cell--hero is-active">
+      <div class="hr-photo" style="background-image:url('{{ $introImg }}');"></div>
+      <div class="hr-overlay"></div>
+      <div class="hr-cell-caption">
+        <div class="hr-caption-inner">
+          <span class="hr-chip hr-anim-up d1">
+            @if($introStars)<span class="stars">@for($s=0;$s<5;$s++)★@endfor</span>@endif
+            Reservas online
+          </span>
+          <h1 class="hr-wordmark hr-anim-down">{{ $hotelName }}</h1>
+          <p class="hr-subtitle hr-anim-up d2">{{ $introSub }}</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Celdas 1..n: slides -->
+    @foreach($restSlides as $slide)
       @php
         $slideImg   = HotelLandingSetting::imageUrl($slide['image'] ?? null, HotelLandingSetting::DEFAULT_SLIDE);
         $slideTitle = trim($slide['title'] ?? '') !== '' ? $slide['title'] : $hotelName;
         $showStars  = $slide['stars'] ?? true;
       @endphp
-      <div class="hr-slide {{ $i === 0 ? 'is-active' : '' }}" style="background-image:url('{{ $slideImg }}');">
-        <div class="hr-slide__overlay"></div>
-        <div class="hr-slide__caption">
-          <div class="hr-caption-inner max-w-3xl mx-auto">
+      <div class="hr-cell hr-cell--img">
+        <div class="hr-photo" style="background-image:url('{{ $slideImg }}');"></div>
+        <div class="hr-overlay"></div>
+        <div class="hr-cell-caption">
+          <div class="hr-caption-inner">
             <span class="hr-chip">
               @if($showStars)<span class="stars">@for($s=0;$s<5;$s++)★@endfor</span>@endif
               {{ $hotelName }}
             </span>
-            <h1 class="hr-title">{{ $slideTitle }}</h1>
+            <h2 class="hr-title">{{ $slideTitle }}</h2>
             @if(!empty($slide['subtitle']))<p class="hr-subtitle">{{ $slide['subtitle'] }}</p>@endif
-            {{-- Sin botón en el hero: el buscador de disponibilidad, justo debajo,
-                 es la única llamada a la acción de esta zona. --}}
           </div>
         </div>
       </div>
     @endforeach
   </div>
 
-  @if(count($slides) > 1)
-    <div class="hr-dots">
-      @foreach($slides as $i => $slide)
-        <button type="button" class="hr-dot {{ $i === 0 ? 'is-active' : '' }}" data-i="{{ $i }}" aria-label="Ir a la diapositiva {{ $i + 1 }}"></button>
-      @endforeach
+  @if($cellCount > 1)
+    <div class="hr-nav" id="hrNav" role="tablist" aria-label="Portada">
+      @for($s = 0; $s < $cellCount; $s++)
+        <button type="button" class="hr-seg {{ $s === 0 ? 'is-active' : '' }}" data-i="{{ $s }}" aria-label="Ir a la vista {{ $s + 1 }}"><span class="hr-seg-fill"></span></button>
+      @endfor
     </div>
   @endif
 
   <a href="#rooms-results" class="hr-scroll nav-scroll" aria-label="Desplázate"><i class="fa fa-angle-down"></i></a>
 </section>
+
+<script>
+(function () {
+  // Controlador del hero: track horizontal (celda intro + slides) con
+  // indicador de píldora, arrancado tras la revelación del loader.
+  var hero  = document.getElementById('hero');
+  var track = document.getElementById('hrTrack');
+  var nav   = document.getElementById('hrNav');
+  if (!hero || !track) return;
+  var cells = track.children, count = cells.length;
+  var segs  = nav ? nav.querySelectorAll('.hr-seg') : [];
+  var INTRO_MS = 6200, SLIDE_MS = 5200;
+  var idx = 0, timer = null, revealed = false;
+
+  function fill(seg, active, dur) {
+    var f = seg.querySelector('.hr-seg-fill');
+    if (!f) return;
+    if (active) {
+      f.style.transition = 'none'; f.style.width = '0'; void f.offsetWidth;
+      f.style.transition = 'width ' + dur + 'ms linear'; f.style.width = '100%';
+    } else { f.style.transition = 'none'; f.style.width = '0'; }
+  }
+  function activate(n) {
+    idx = (n + count) % count;
+    track.style.transform = 'translateX(' + (-idx * 100) + '%)';
+    for (var i = 0; i < count; i++) cells[i].classList.toggle('is-active', i === idx);
+    var dur = idx === 0 ? INTRO_MS : SLIDE_MS;
+    for (var k = 0; k < segs.length; k++) {
+      segs[k].classList.toggle('is-active', k === idx);
+      fill(segs[k], k === idx, dur);
+    }
+  }
+  function schedule() {
+    if (count < 2) return;
+    clearTimeout(timer);
+    timer = setTimeout(function () { activate(idx + 1); schedule(); }, idx === 0 ? INTRO_MS : SLIDE_MS);
+  }
+  for (var k = 0; k < segs.length; k++) {
+    segs[k].addEventListener('click', function () { activate(parseInt(this.getAttribute('data-i'), 10)); schedule(); });
+  }
+
+  window.hbHeroReveal = function () {
+    if (revealed) return; revealed = true;
+    hero.classList.add('is-revealed');
+    activate(0);
+    schedule();
+  };
+  // Salvaguarda por si el loader no dispara la revelación.
+  setTimeout(function () { window.hbHeroReveal(); }, 2600);
+})();
+
+(function () {
+  // Loader de marca: mínimo visible, luego revela el hero.
+  var loader = document.getElementById('hbLoader');
+  if (!loader) { if (window.hbHeroReveal) window.hbHeroReveal(); return; }
+  var start = Date.now(), MIN = 1300, done = false;
+  function hide() {
+    if (done) return; done = true;
+    if (window.hbHeroReveal) window.hbHeroReveal();
+    loader.classList.add('is-hidden');
+    setTimeout(function () { if (loader.parentNode) loader.parentNode.removeChild(loader); }, 650);
+  }
+  if (document.readyState === 'complete') { setTimeout(hide, MIN); }
+  else { window.addEventListener('load', function () { var r = MIN - (Date.now() - start); setTimeout(hide, r > 0 ? r : 0); }); }
+  setTimeout(hide, 6000); // nunca bloquear más de 6s
+})();
+</script>
 
 <!-- ===== Buscador de disponibilidad ===== -->
 <section class="hr-search" id="reservation-form">
@@ -230,26 +385,6 @@
 
 <script>
 (function () {
-  // Slideshow del hero (crossfade).
-  var slides = document.querySelectorAll('.hr-slide');
-  var dots   = document.querySelectorAll('.hr-dot');
-  if (slides.length >= 2) {
-    var idx = 0, timer;
-    var go = function (n) {
-      slides[idx].classList.remove('is-active');
-      if (dots[idx]) dots[idx].classList.remove('is-active');
-      idx = (n + slides.length) % slides.length;
-      slides[idx].classList.add('is-active');
-      if (dots[idx]) dots[idx].classList.add('is-active');
-    };
-    var start = function () { timer = setInterval(function () { go(idx + 1); }, 6500); };
-    var reset = function () { clearInterval(timer); start(); };
-    for (var d = 0; d < dots.length; d++) {
-      dots[d].addEventListener('click', function () { go(parseInt(this.getAttribute('data-i'), 10)); reset(); });
-    }
-    start();
-  }
-
   // Abrir el calendario nativo al pulsar el campo de fecha.
   var dateInputs = document.querySelectorAll('.hr-search__card input[type="date"]');
   for (var k = 0; k < dateInputs.length; k++) {
