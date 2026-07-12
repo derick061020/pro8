@@ -60,16 +60,17 @@
 
   /* ===== Celda intro: composición por capas de Makai (cielo · nubes · texto · edificio) ===== */
   .hr-hero-makai { background:#cfe7f5; }
-  .hr-sky { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; z-index:1; pointer-events:none; user-select:none; }
-  .hr-clouds { position:absolute; top:6%; left:-12%; width:124%; max-width:none; z-index:2; opacity:.9; pointer-events:none; user-select:none; animation:hrCloudDrift 26s ease-in-out infinite alternate; }
+  /* Cielo: SKY.png ya trae nubes; una deriva lenta las mueve sin costuras. */
+  .hr-sky { position:absolute; top:0; left:-6%; width:112%; height:100%; max-width:none; object-fit:cover; object-position:center top; z-index:1; pointer-events:none; user-select:none; animation:hrCloudDrift 40s ease-in-out infinite alternate; }
   /* Wordmark en una sola línea que siempre cabe en la franja de cielo, por
      encima del edificio (evita que una 2ª línea quede tapada). */
   .hr-wordmark2 { position:absolute; left:0; right:0; top:12%; z-index:3; margin:0 auto; text-align:center; font-family:'Inter Tight','Inter',sans-serif; font-weight:800; text-transform:uppercase; font-size:clamp(26px,6.3vw,92px); line-height:1; letter-spacing:.01em; white-space:nowrap;
     background:linear-gradient(to bottom, rgba(255,255,255,.97) 20%, rgba(255,255,255,.66) 100%); -webkit-background-clip:text; background-clip:text; color:transparent; -webkit-text-fill-color:transparent; mix-blend-mode:luminosity; pointer-events:none; }
   /* El borde superior del edificio se funde con el cielo (elimina la costura
      entre SKY.png y MAKAI.png). */
-  .hr-building { position:absolute; left:0; bottom:-2%; width:100%; height:auto; z-index:4; pointer-events:none; user-select:none; filter:drop-shadow(0 20px 40px rgba(0,0,0,.18));
-    -webkit-mask-image:linear-gradient(to bottom, transparent 0%, #000 24%); mask-image:linear-gradient(to bottom, transparent 0%, #000 24%); }
+  /* Edificio: PNG con fondo transparente (sin cielo propio) → se compone limpio
+     sobre SKY.png, sin ninguna costura. */
+  .hr-building { position:absolute; left:0; bottom:-2%; width:100%; height:auto; z-index:4; pointer-events:none; user-select:none; filter:drop-shadow(0 24px 44px rgba(0,0,0,.20)); }
   /* Fundido inferior del edificio hacia el fondo de la página / buscador. */
   .hr-hero-makai::after { content:""; position:absolute; left:0; right:0; bottom:-1px; height:16%; z-index:5; pointer-events:none; background:linear-gradient(to top, #f4f4f4 0%, rgba(244,244,244,.65) 42%, rgba(244,244,244,0) 100%); }
 
@@ -252,7 +253,6 @@
          (cielo · nubes · wordmark que cae · edificio que sube) -->
     <div class="hr-cell hr-cell--hero hr-hero-makai is-active">
       <img class="hr-sky" src="/landing-reservas/images/hero/SKY.png" alt="" aria-hidden="true">
-      <img class="hr-clouds" src="/landing-reservas/images/hero/clouds.png" alt="" aria-hidden="true">
       <h1 class="hr-wordmark2">{{ $hotelName }}</h1>
       <img class="hr-building" src="/landing-reservas/images/hero/MAKAI.png" alt="{{ $hotelName }}">
     </div>
