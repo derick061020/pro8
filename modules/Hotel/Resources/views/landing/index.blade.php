@@ -254,7 +254,7 @@
     <div class="hr-cell hr-cell--hero hr-hero-makai is-active">
       <img class="hr-sky" src="/landing-reservas/images/hero/SKY.png" alt="" aria-hidden="true">
       <h1 class="hr-wordmark2">{{ $hotelName }}</h1>
-      <img class="hr-building" src="/landing-reservas/images/hero/MAKAI.png" alt="{{ $hotelName }}">
+      <img class="hr-building" src="/landing-reservas/images/hero/catedral.png" alt="{{ $hotelName }}">
     </div>
 
     <!-- Celdas 1..n: slides -->
