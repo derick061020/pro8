@@ -15,101 +15,128 @@
     $currentBranch  = $establishmentId ?? ($establishment->id ?? null);
     $currentBranchName = optional($branches->firstWhere('id', $currentBranch))->description ?? $hotelName;
     $hasBranches    = $branches instanceof \Illuminate\Support\Collection ? $branches->count() > 1 : false;
+
+    $navLinks = [
+        ['label' => 'Inicio',       'href' => $onLanding ? '#top' : $base,          'active' => $activeNav === 'inicio'],
+        ['label' => 'Habitaciones', 'href' => $base.'#rooms-results',               'active' => false],
+        ['label' => 'Galería',      'href' => $base.'#gallery',                     'active' => false],
+        ['label' => 'Blog',         'href' => url('/reservas/blog'),                'active' => $activeNav === 'blog'],
+        ['label' => 'Contacto',     'href' => $base.'#contacto',                    'active' => false],
+    ];
 @endphp
 
-<!-- Top header -->
-<div id="top-header">
-  <div class="container">
-    <div class="row">
-      <div class="col-xs-6">
-        <div class="th-text pull-left">
-          @if($hotelPhone)<div class="th-item"> <a href="tel:{{ $hotelPhone }}"><i class="fa fa-phone"></i> {{ $hotelPhone }}</a> </div>@endif
-          @if($hotelEmail)<div class="th-item"> <a href="mailto:{{ $hotelEmail }}"><i class="fa fa-envelope"></i> {{ $hotelEmail }} </a></div>@endif
-        </div>
-      </div>
-      <div class="col-xs-6">
-        <div class="th-text pull-right">
-          @if($hasBranches)
-          <div class="th-item th-branch dropdown">
-            <a href="#" class="dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" title="Cambiar de sucursal">
-              <i class="fa fa-map-marker"></i> {{ $currentBranchName }} <i class="fa fa-angle-down"></i>
+<a id="top"></a>
+
+<!-- Barra de contacto superior -->
+<div class="hidden md:block bg-ink-950 text-ink-300 text-[12.5px]">
+  <div class="max-w-7xl mx-auto px-6 h-10 flex items-center justify-between">
+    <div class="flex items-center gap-5">
+      @if($hotelPhone)<a href="tel:{{ $hotelPhone }}" class="inline-flex items-center gap-2 hover:text-white transition"><i class="fa fa-phone text-brand"></i> {{ $hotelPhone }}</a>@endif
+      @if($hotelEmail)<a href="mailto:{{ $hotelEmail }}" class="inline-flex items-center gap-2 hover:text-white transition"><i class="fa fa-envelope text-brand"></i> {{ $hotelEmail }}</a>@endif
+    </div>
+    <div class="flex items-center gap-4">
+      @if($hasBranches)
+      <div class="relative" id="branchDropdown">
+        <button type="button" class="inline-flex items-center gap-2 hover:text-white transition font-medium" data-branch-toggle>
+          <i class="fa fa-map-marker text-brand"></i> {{ $currentBranchName }} <i class="fa fa-angle-down text-[10px]"></i>
+        </button>
+        <div class="absolute right-0 top-full mt-2 w-72 bg-white rounded-xl shadow-hover border border-ink-200 py-2 hidden z-[60]" data-branch-menu>
+          <div class="px-4 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-ink-400">Elige una sucursal</div>
+          @foreach($branches as $b)
+            @php $branchAddress = $b->trade_address ?: $b->address; @endphp
+            <a href="{{ url('/reservas') }}?sucursal={{ $b->id }}" class="flex items-start gap-2.5 px-4 py-2.5 hover:bg-ink-50 transition {{ $b->id === $currentBranch ? 'bg-brand-tint' : '' }}">
+              <i class="fa {{ $b->id === $currentBranch ? 'fa-check text-brand' : 'fa-building-o text-ink-400' }} mt-0.5 w-4 text-center"></i>
+              <span class="min-w-0">
+                <span class="block text-[13px] font-medium {{ $b->id === $currentBranch ? 'text-brand-dark' : 'text-ink-900' }}">{{ $b->description }}</span>
+                @if(!empty($branchAddress))<span class="block text-[11px] text-ink-400 leading-snug">{{ $branchAddress }}</span>@endif
+              </span>
             </a>
-            <ul class="dropdown-menu dropdown-menu-right th-branch__menu">
-              <li class="dropdown-header">Elige una sucursal</li>
-              @foreach($branches as $b)
-                <li class="{{ $b->id === $currentBranch ? 'active' : '' }}">
-                  <a href="{{ url('/reservas') }}?sucursal={{ $b->id }}">
-                    @php $branchAddress = $b->trade_address ?: $b->address; @endphp
-                    <i class="fa {{ $b->id === $currentBranch ? 'fa-check' : 'fa-building-o' }}"></i> {{ $b->description }}
-                    @if(!empty($branchAddress))<br><small class="text-muted" style="padding-left:20px;">{{ $branchAddress }}</small>@endif
-                  </a>
-                </li>
-              @endforeach
-            </ul>
-          </div>
-          @endif
-          <div class="th-item">
-            <div class="social-icons">
-              @if($hotelWeb)<a href="{{ $hotelWeb }}" target="_blank"><i class="fa fa-globe"></i></a>@endif
-            </div>
-          </div>
+          @endforeach
         </div>
       </div>
+      @endif
+      @if($hotelWeb)<a href="{{ $hotelWeb }}" target="_blank" class="hover:text-white transition" title="Sitio web"><i class="fa fa-globe"></i></a>@endif
     </div>
   </div>
 </div>
 
-<style>
-  /* El navbar sticky del tema usa z-index:9999; elevamos el top-header por
-     encima para que el menú de sucursales no quede detrás. */
-  #top-header { position: relative; z-index: 10001; }
-  .th-branch { position: relative; display: inline-block; }
-  .th-branch > .dropdown-toggle { cursor: pointer; font-weight: 600; color: #fff; }
-  .th-branch > .dropdown-toggle:hover { color: #1abc9c; }
-  .th-branch__menu {
-    position: absolute; right: 0; top: 100%; left: auto; margin-top: 6px;
-    z-index: 10002; min-width: 250px; padding: 6px 0;
-    background: #fff; border: 1px solid #e6e6e6; border-radius: 8px;
-    box-shadow: 0 12px 34px rgba(0,0,0,.20);
-  }
-  .th-branch__menu > li > a {
-    padding: 9px 16px; white-space: normal; display: block;
-    color: #2c3e50; font-size: 13px; line-height: 1.35;
-  }
-  .th-branch__menu > li > a:hover { background: #f4f7f8; color: #1abc9c; }
-  .th-branch__menu > li.active > a { color: #1abc9c; font-weight: 600; }
-  .th-branch__menu > li > a i { width: 16px; }
-  .th-branch__menu small { color: #95a5a6 !important; }
-  .th-branch__menu .dropdown-header {
-    padding: 6px 16px; text-transform: uppercase; font-size: 11px;
-    letter-spacing: .5px; color: #95a5a6;
-  }
-</style>
+<!-- Navbar principal -->
+<header id="siteHeader" class="sticky top-0 z-50 bg-white/95 backdrop-blur border-b border-ink-200 transition-shadow">
+  <div class="max-w-7xl mx-auto px-6">
+    <div class="h-[68px] flex items-center justify-between gap-6">
+      <a href="{{ url('/reservas') }}" class="flex items-center gap-3 shrink-0">
+        @if($hotelLogo)
+          <img src="{{ $hotelLogo }}" alt="{{ $hotelName }}" class="h-9 w-auto">
+        @else
+          <span class="w-9 h-9 rounded-xl bg-brand text-white flex items-center justify-center font-display font-bold text-lg">{{ mb_strtoupper(mb_substr($hotelName,0,1)) }}</span>
+        @endif
+        <span class="font-display text-lg font-bold text-ink-900 truncate max-w-[42vw] md:max-w-none">{{ $hotelName }}</span>
+      </a>
 
-<!-- Header -->
-<header>
-  <div class="navbar yamm navbar-default" id="sticky">
-    <div class="container">
-      <div class="navbar-header">
-        <button type="button" data-toggle="collapse" data-target="#navbar-collapse-grid" class="navbar-toggle"> <span class="icon-bar"></span> <span class="icon-bar"></span> <span class="icon-bar"></span> </button>
-        <a href="/reservas" class="navbar-brand">
-          @if($hotelLogo)
-            <div id="logo"><img src="{{ $hotelLogo }}" alt="{{ $hotelName }}" style="height:44px;"></div>
-          @else
-            <span style="font-size:22px;font-weight:700;color:#2c3e50;line-height:50px;">{{ $hotelName }}</span>
-          @endif
-        </a>
-      </div>
-      <div id="navbar-collapse-grid" class="navbar-collapse collapse">
-        <ul class="nav navbar-nav navbar-right">
-          <li class="{{ $activeNav === 'inicio' ? 'active' : '' }}"><a href="{{ $onLanding ? '#top' : $base }}" class="{{ $scroll }}">Inicio</a></li>
-          <li><a href="{{ $base }}#rooms-results" class="{{ $scroll }}">Habitaciones</a></li>
-          <li><a href="{{ $base }}#gallery" class="{{ $scroll }}">Galería</a></li>
-          <li class="{{ $activeNav === 'blog' ? 'active' : '' }}"><a href="{{ url('/reservas/blog') }}">Blog</a></li>
-          <li><a href="{{ $base }}#contacto" class="{{ $scroll }}">Contacto</a></li>
-          <li><a href="{{ $base }}#reservation-form" class="{{ $scroll }} text-uppercase" style="color:#1abc9c;font-weight:600;">Reservar</a></li>
-        </ul>
+      <nav class="hidden lg:flex items-center gap-1">
+        @foreach($navLinks as $link)
+          <a href="{{ $link['href'] }}" class="{{ $scroll }} px-3.5 py-2 rounded-lg text-[14px] font-medium transition {{ $link['active'] ? 'text-brand-dark' : 'text-ink-600 hover:text-ink-900 hover:bg-ink-50' }}">{{ $link['label'] }}</a>
+        @endforeach
+      </nav>
+
+      <div class="flex items-center gap-2">
+        <a href="{{ $base }}#reservation-form" class="{{ $scroll }} hb-btn hb-btn-primary hidden sm:inline-flex"><i class="fa fa-calendar-check-o"></i> Reservar</a>
+        <button type="button" class="lg:hidden w-11 h-11 rounded-xl border border-ink-200 text-ink-600 flex items-center justify-center" data-menu-toggle aria-label="Menú">
+          <i class="fa fa-bars"></i>
+        </button>
       </div>
     </div>
   </div>
+
+  <!-- Menú móvil -->
+  <div class="lg:hidden hidden border-t border-ink-100 bg-white" data-mobile-menu>
+    <nav class="max-w-7xl mx-auto px-6 py-3 flex flex-col">
+      @foreach($navLinks as $link)
+        <a href="{{ $link['href'] }}" class="{{ $scroll }} py-2.5 text-[15px] font-medium border-b border-ink-100 last:border-0 {{ $link['active'] ? 'text-brand-dark' : 'text-ink-700' }}">{{ $link['label'] }}</a>
+      @endforeach
+      <a href="{{ $base }}#reservation-form" class="{{ $scroll }} hb-btn hb-btn-primary mt-3"><i class="fa fa-calendar-check-o"></i> Reservar ahora</a>
+    </nav>
+  </div>
 </header>
+
+<script>
+(function () {
+  // Sombra del header al hacer scroll.
+  var header = document.getElementById('siteHeader');
+  var onScroll = function () {
+    if (!header) return;
+    header.classList.toggle('shadow-panel', window.scrollY > 8);
+  };
+  window.addEventListener('scroll', onScroll); onScroll();
+
+  // Menú móvil.
+  var mToggle = document.querySelector('[data-menu-toggle]');
+  var mMenu   = document.querySelector('[data-mobile-menu]');
+  if (mToggle && mMenu) {
+    mToggle.addEventListener('click', function () { mMenu.classList.toggle('hidden'); });
+    mMenu.addEventListener('click', function (e) { if (e.target.tagName === 'A') mMenu.classList.add('hidden'); });
+  }
+
+  // Selector de sucursal.
+  var bWrap = document.getElementById('branchDropdown');
+  if (bWrap) {
+    var bToggle = bWrap.querySelector('[data-branch-toggle]');
+    var bMenu   = bWrap.querySelector('[data-branch-menu]');
+    bToggle.addEventListener('click', function (e) { e.stopPropagation(); bMenu.classList.toggle('hidden'); });
+    document.addEventListener('click', function () { bMenu.classList.add('hidden'); });
+  }
+
+  // Scroll suave para anclas internas.
+  document.addEventListener('click', function (e) {
+    var a = e.target.closest('a.nav-scroll');
+    if (!a) return;
+    var href = a.getAttribute('href') || '';
+    var hash = href.charAt(0) === '#' ? href : (href.indexOf('#') > -1 ? href.slice(href.indexOf('#')) : '');
+    if (hash && hash.length > 1 && document.querySelector(hash)) {
+      e.preventDefault();
+      var top = document.querySelector(hash).getBoundingClientRect().top + window.scrollY - 76;
+      window.scrollTo({ top: top, behavior: 'smooth' });
+    }
+  });
+})();
+</script>

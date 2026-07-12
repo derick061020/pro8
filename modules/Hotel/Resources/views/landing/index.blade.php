@@ -1,243 +1,73 @@
 <!DOCTYPE HTML>
 <html lang="es">
 <head>
-<meta charset="utf-8">
 @php
     use Modules\Hotel\Models\HotelLandingSetting;
 
     $hotelName = $establishment->description ?? 'Hotel';
-    $hotelPhone = $establishment->telephone ?? null;
-    $hotelEmail = $establishment->email ?? null;
-    $hotelAddress = $establishment->address ?? null;
-    $hotelWeb = $establishment->web_address ?? null;
-    $hotelLogo = (!empty($establishment->logo)) ? asset('storage/uploads/logos/'.$establishment->logo) : null;
-
     // Configuración de personalización de la web (con valores por defecto).
     $cfg = $settings ?? HotelLandingSetting::mergeDefaults([]);
-    $themeColor = in_array(($cfg['color'] ?? 'turquoise'), ['turquoise','blue','green','orange','purple','red','brown','black']) ? $cfg['color'] : 'turquoise';
 @endphp
-<title>{{ $hotelName }} · Reservas online</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<meta name="csrf-token" content="{{ csrf_token() }}">
-<link rel="shortcut icon" href="/landing-reservas/favicon.ico">
-
-<!-- Stylesheets -->
-<link rel="stylesheet" href="/landing-reservas/css/animate.css">
-<link rel="stylesheet" href="/landing-reservas/css/bootstrap.css">
-<link rel="stylesheet" href="/landing-reservas/css/font-awesome.min.css">
-<link rel="stylesheet" href="/landing-reservas/css/owl.carousel.css">
-<link rel="stylesheet" href="/landing-reservas/css/owl.theme.css">
-<link rel="stylesheet" href="/landing-reservas/css/prettyPhoto.css">
-<link rel="stylesheet" href="/landing-reservas/css/smoothness/jquery-ui-1.10.4.custom.min.css">
-<link rel="stylesheet" href="/landing-reservas/rs-plugin/css/settings.css">
-<link rel="stylesheet" href="/landing-reservas/css/theme.css">
-<link rel="stylesheet" href="/landing-reservas/css/colors/{{ $themeColor }}.css">
-<link rel="stylesheet" href="/landing-reservas/css/responsive.css">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:400italic,600italic,400,600,700">
-
-<!-- Javascripts -->
-<script type="text/javascript" src="/landing-reservas/js/jquery-1.11.0.min.js"></script>
-<script type="text/javascript" src="/landing-reservas/js/bootstrap.min.js"></script>
-<script type="text/javascript" src="/landing-reservas/js/bootstrap-hover-dropdown.min.js"></script>
-<script type="text/javascript" src="/landing-reservas/js/owl.carousel.min.js"></script>
-<script type="text/javascript" src="/landing-reservas/js/jquery.parallax-1.1.3.js"></script>
-<script type="text/javascript" src="/landing-reservas/js/jquery.nicescroll.js"></script>
-<script type="text/javascript" src="/landing-reservas/js/jquery.prettyPhoto.js"></script>
-<script type="text/javascript" src="/landing-reservas/js/jquery-ui-1.10.4.custom.min.js"></script>
-<script type="text/javascript" src="/landing-reservas/js/jquery.forms.js"></script>
-<script type="text/javascript" src="/landing-reservas/js/jquery.sticky.js"></script>
-<script type="text/javascript" src="/landing-reservas/js/waypoints.min.js"></script>
-<script type="text/javascript" src="/landing-reservas/js/jquery.isotope.min.js"></script>
-<script type="text/javascript" src="/landing-reservas/js/jquery.gmap.min.js"></script>
-<script type="text/javascript" src="/landing-reservas/rs-plugin/js/jquery.themepunch.tools.min.js"></script>
-<script type="text/javascript" src="/landing-reservas/rs-plugin/js/jquery.themepunch.revolution.min.js"></script>
-<script type="text/javascript" src="/landing-reservas/js/custom.js"></script>
+@include('hotel::landing.partials.head', ['pageTitle' => $hotelName.' · Reservas online', 'pageDesc' => 'Reserva tu habitación en '.$hotelName.'. Disponibilidad y precios en tiempo real.'])
 
 <style>
-  /* Ajustes propios de la web de reservas (no alteran el tema base) */
-  /* Evita el scroll/desborde horizontal en móvil (el hero se veía corrido). */
-  html, body { overflow-x:hidden; max-width:100%; }
-  .hr-hero, .hr-search, .hr-slide__caption .container { max-width:100%; }
-  .search-box { background:#fff; border-radius:6px; box-shadow:0 10px 30px rgba(0,0,0,.12); padding:18px; }
-  .search-box label { font-weight:600; font-size:12px; text-transform:uppercase; color:#666; }
-  .search-box .form-control { height:42px; }
-  /* Grid de habitaciones: fila flex para que todas las tarjetas de una fila
-     tengan la misma altura y no se "salten" espacios cuando el contenido varía. */
-  #rooms-grid > .row { display:flex; flex-wrap:wrap; }
-  #rooms-grid > .row:before, #rooms-grid > .row:after { content:none; display:none; }
-  #rooms-grid > .row > [class*="col-"] { display:flex; flex-direction:column; margin-bottom:30px; }
-  /* ===== Tarjeta de habitación con revelado al hover (estilo /landing-page) =====
-     La imagen ocupa toda la tarjeta; una barra inferior muestra siempre el
-     nombre y el precio, y al pasar el cursor sube un panel con toda la info. */
-  .room-card { position:relative; width:100%; height:340px; background:#eceff1; border-radius:10px; overflow:hidden; box-shadow:0 4px 18px rgba(0,0,0,.10); transition:box-shadow .25s ease; }
-  .room-card:hover { box-shadow:0 14px 34px rgba(0,0,0,.20); }
-  .room-card__media { position:absolute; top:0; left:0; right:0; bottom:0; background:#eceff1 center/cover no-repeat; transition:transform .55s ease; }
-  .room-card:hover .room-card__media { transform:scale(1.06); }
-  .room-card__badge { position:absolute; top:14px; left:14px; z-index:3; background:#1abc9c; color:#fff; font-size:11px; font-weight:600; padding:4px 12px; border-radius:20px; text-transform:uppercase; letter-spacing:.4px; box-shadow:0 4px 12px rgba(0,0,0,.20); }
-  .room-card__fav { position:absolute; top:14px; right:14px; z-index:3; background:#e67e22; color:#fff; font-size:11px; font-weight:600; padding:4px 12px; border-radius:20px; box-shadow:0 4px 12px rgba(0,0,0,.20); }
-  /* Barra inferior siempre visible */
-  .room-card__bar { position:absolute; left:0; right:0; bottom:0; z-index:2; padding:44px 18px 16px; color:#fff; background:linear-gradient(180deg, rgba(15,23,32,0) 0%, rgba(15,23,32,.55) 45%, rgba(15,23,32,.88) 100%); display:flex; align-items:flex-end; justify-content:space-between; gap:10px; transition:opacity .3s ease; }
-  .room-card__bar-title { font-size:18px; font-weight:700; line-height:1.2; text-shadow:0 2px 8px rgba(0,0,0,.5); }
-  .room-card__bar-price { font-size:16px; font-weight:700; white-space:nowrap; text-shadow:0 2px 8px rgba(0,0,0,.5); }
-  .room-card__bar-price small { font-weight:400; font-size:11px; opacity:.85; }
-  /* Panel revelado al hover */
-  .room-card__reveal { position:absolute; top:0; left:0; right:0; bottom:0; z-index:4; background:#fff; padding:20px; display:flex; flex-direction:column; transform:translateY(101%); transition:transform .42s cubic-bezier(.22,.61,.36,1); }
-  .room-card:hover .room-card__reveal { transform:translateY(0); }
-  .room-card:hover .room-card__bar { opacity:0; }
-  .room-card__cat { color:#1abc9c; font-size:12px; text-transform:uppercase; letter-spacing:.5px; font-weight:600; }
-  .room-card__title { font-size:19px; font-weight:700; margin:2px 0 6px; color:#2c3e50; }
-  .room-card__meta { color:#7f8c8d; font-size:13px; margin-bottom:8px; }
-  .room-card__meta i { color:#1abc9c; margin-right:3px; }
-  .room-card__desc { color:#666; font-size:13px; flex:1; overflow:hidden; }
-  .room-card__price { font-size:22px; font-weight:700; color:#2c3e50; margin-top:8px; }
-  .room-card__price small { font-size:12px; color:#95a5a6; font-weight:400; }
-  .room-card__total { font-size:12px; color:#16a085; font-weight:600; }
-  .room-card__actions { display:flex; gap:8px; margin-top:12px; }
-  .room-card__actions .btn { flex:1; }
-  /* Dispositivos táctiles (sin hover, p.ej. móviles): se muestra toda la
-     información sin necesidad de hover, en formato de tarjeta apilada. */
-  @media (hover: none) {
-    .room-card { height:auto; }
-    .room-card__media { position:relative; height:200px; }
-    .room-card__bar { display:none; }
-    .room-card__reveal { position:relative; top:auto; left:auto; right:auto; bottom:auto; transform:none; }
-  }
-  .amenity-pill { display:inline-block; background:#f0f3f5; color:#566573; border-radius:16px; padding:4px 12px; font-size:12px; margin:0 6px 6px 0; }
-  .amenity-pill i { color:#1abc9c; margin-right:5px; }
-  .modal-gallery img { width:100%; border-radius:6px; margin-bottom:10px; cursor:pointer; max-height:360px; object-fit:cover; }
-  .modal-thumbs { display:flex; gap:8px; flex-wrap:wrap; }
-  .modal-thumbs img { width:70px; height:55px; object-fit:cover; border-radius:5px; border:2px solid transparent; cursor:pointer; }
-  .modal-thumbs img.active { border-color:#1abc9c; }
-  .summary-box { background:#f8fafb; border:1px solid #eceff1; border-radius:6px; padding:12px 14px; margin-bottom:14px; }
-  .summary-box strong { color:#2c3e50; }
-  .loading-rooms { text-align:center; padding:40px 0; color:#95a5a6; }
-  .empty-rooms { text-align:center; padding:40px 0; color:#7f8c8d; }
-  .doc-feedback { font-size:12px; margin-top:4px; }
-  /* Blog */
-  .blog-card { background:#fff; border-radius:8px; overflow:hidden; box-shadow:0 4px 18px rgba(0,0,0,.08); margin-bottom:30px; transition:transform .2s, box-shadow .2s; }
-  .blog-card:hover { transform:translateY(-4px); box-shadow:0 10px 28px rgba(0,0,0,.15); }
-  .blog-card__img { position:relative; display:block; height:200px; background:#eceff1 center/cover no-repeat; }
-  .blog-card__body { padding:18px 20px; }
-  .blog-card__date { color:#1abc9c; font-size:12px; text-transform:uppercase; letter-spacing:.5px; font-weight:600; margin-bottom:6px; }
-  .blog-card__date i { margin-right:4px; }
-  .blog-card__title { font-size:19px; font-weight:700; margin:0 0 10px; line-height:1.3; }
-  .blog-card__title a { color:#2c3e50; }
-  .blog-card__title a:hover { color:#1abc9c; }
-  .blog-card__excerpt { color:#666; font-size:14px; margin-bottom:12px; }
-  .blog-card__more { color:#1abc9c; font-weight:600; font-size:13px; text-transform:uppercase; }
+  /* ===== Hero ===== */
+  .hr-hero { position:relative; background:#171717; }
+  .hr-slides { position:relative; height:82vh; min-height:520px; max-height:820px; overflow:hidden; }
+  .hr-slide { position:absolute; inset:0; background-size:cover; background-position:center; opacity:0; transform:scale(1.04); transition:opacity 1.2s ease, transform 7s ease; }
+  .hr-slide.is-active { opacity:1; transform:scale(1); }
+  .hr-slide__overlay { position:absolute; inset:0; background:linear-gradient(180deg, rgba(23,23,23,.55) 0%, rgba(23,23,23,.30) 40%, rgba(23,23,23,.78) 100%); }
+  .hr-slide__caption { position:absolute; inset:0; display:flex; align-items:center; text-align:center; color:#fff; padding:0 20px 40px; }
+  .hr-eyebrow-stars { display:inline-flex; gap:5px; color:#f4c542; font-size:15px; margin-bottom:18px; letter-spacing:2px; }
+  .hr-title { font-family:'Inter Tight','Inter',sans-serif; font-size:clamp(34px,6vw,60px); font-weight:700; line-height:1.08; letter-spacing:-.02em; margin:0 0 16px; text-shadow:0 4px 30px rgba(0,0,0,.4); }
+  .hr-subtitle { font-size:clamp(16px,2.2vw,21px); font-weight:400; max-width:680px; margin:0 auto 30px; color:rgba(255,255,255,.9); text-shadow:0 2px 16px rgba(0,0,0,.35); }
+  .hr-dots { position:absolute; left:0; right:0; bottom:150px; display:flex; justify-content:center; gap:9px; z-index:3; }
+  .hr-dot { width:9px; height:9px; border-radius:999px; border:0; padding:0; background:rgba(255,255,255,.45); cursor:pointer; transition:all .25s; }
+  .hr-dot.is-active { background:#fff; width:26px; }
 
-  /* ===== Hero de reservas (moderno, sin plugin — fondo a pantalla completa, sin cortes) ===== */
-  .hr-hero { position:relative; background:#0f1720; }
-  .hr-slides { position:relative; height:74vh; min-height:480px; max-height:760px; overflow:hidden; }
-  .hr-slide { position:absolute; top:0; left:0; right:0; bottom:0; background-size:cover; background-position:center; opacity:0; transition:opacity 1.1s ease; }
-  .hr-slide.is-active { opacity:1; }
-  .hr-slide__overlay { position:absolute; top:0; left:0; right:0; bottom:0; background:linear-gradient(180deg, rgba(15,23,32,.40) 0%, rgba(15,23,32,.28) 45%, rgba(15,23,32,.70) 100%); }
-  .hr-slide__caption { position:absolute; top:0; left:0; right:0; bottom:0; display:flex; align-items:center; text-align:center; color:#fff; padding-bottom:60px; }
-  .hr-slide__caption .container { width:100%; }
-  .hr-stars { color:#f1c40f; font-size:18px; letter-spacing:4px; margin-bottom:14px; }
-  .hr-title { font-size:52px; font-weight:700; margin:0 0 14px; color:#fff; line-height:1.1; text-shadow:0 4px 24px rgba(0,0,0,.45); }
-  .hr-subtitle { font-size:20px; font-weight:300; max-width:720px; margin:0 auto 26px; text-shadow:0 2px 12px rgba(0,0,0,.4); }
-  .hr-btn { display:inline-block; background:#1abc9c; color:#fff; border:0; border-radius:40px; padding:13px 34px; font-weight:600; font-size:14px; text-transform:uppercase; letter-spacing:.5px; box-shadow:0 10px 26px rgba(26,188,156,.40); transition:transform .2s, box-shadow .2s, background .2s; }
-  .hr-btn:hover, .hr-btn:focus { background:#16a085; color:#fff; text-decoration:none; transform:translateY(-2px); box-shadow:0 14px 32px rgba(26,188,156,.5); }
-  .hr-dots { position:absolute; left:0; right:0; bottom:120px; display:flex; justify-content:center; gap:10px; z-index:3; }
-  .hr-dot { width:11px; height:11px; border-radius:50%; border:0; padding:0; background:rgba(255,255,255,.5); cursor:pointer; transition:background .2s, transform .2s; }
-  .hr-dot.is-active { background:#1abc9c; transform:scale(1.25); }
+  /* ===== Buscador flotante ===== */
+  .hr-search { position:relative; z-index:20; }
+  #reservation-form.hr-search { margin-top:-70px; }
+  .hr-search__card { display:grid; grid-template-columns:1fr 1fr auto auto; gap:16px; align-items:end; padding:22px; background:#fff; border:1px solid #eaecf0; border-radius:20px; box-shadow:0 24px 60px -20px rgba(10,13,20,.30); }
+  .hr-field { min-width:0; }
+  .hr-datetime { display:flex; gap:8px; }
+  .hr-datetime input[type="date"] { flex:1 1 60%; min-width:0; }
+  .hr-datetime input[type="time"] { flex:1 1 40%; min-width:0; padding:0 6px; text-align:center; }
 
-  /* Buscador flotante sobre el hero */
-  .hr-search { position:relative; z-index:5; }
-  #reservation-form.hr-search { margin-top:-72px; margin-bottom:10px; }
-  .hr-search__card { background:#fff; border-radius:16px; box-shadow:0 18px 50px rgba(0,0,0,.18); padding:22px 26px; display:grid; grid-template-columns:1fr 1fr auto auto; gap:16px; align-items:end; }
-  .hr-field { display:flex; flex-direction:column; min-width:0; }
-  /* Selector de huéspedes tipo popover (adultos + niños + guardar) */
+  /* Selector de huéspedes */
   .hr-guests { position:relative; }
-  .hr-guests-box { height:50px; border:1px solid #e3e8ec; border-radius:10px; background:#f8fafb; padding:0 14px; display:flex; align-items:center; justify-content:space-between; gap:12px; cursor:pointer; font-size:15px; color:#2c3e50; min-width:160px; white-space:nowrap; transition:border-color .2s, box-shadow .2s, background-color .2s; }
-  .hr-guests-box:hover { border-color:#cfd8dd; }
-  .hr-guests-box.is-open { border-color:#1abc9c; background-color:#fff; box-shadow:0 0 0 3px rgba(26,188,156,.15); }
-  .hr-guests-box i { color:#8a97a3; }
-  .hr-guests-pop { position:absolute; left:0; bottom:calc(100% + 12px); width:270px; background:#fff; border-radius:12px; box-shadow:0 18px 50px rgba(0,0,0,.22); padding:20px; z-index:60; display:none; }
+  .hr-guests-box { height:46px; border:1px solid #eaecf0; border-radius:10px; background:#fff; padding:0 14px; display:flex; align-items:center; justify-content:space-between; gap:12px; cursor:pointer; font-size:14px; color:#222530; min-width:170px; white-space:nowrap; transition:border-color .15s, box-shadow .15s; }
+  .hr-guests-box i { color:#99a0ae; }
+  .hr-guests-box.is-open { border-color:#5c7c68; box-shadow:0 0 0 3px rgba(92,124,104,.18); }
+  .hr-guests-pop { position:absolute; left:0; bottom:calc(100% + 10px); width:280px; background:#fff; border:1px solid #eaecf0; border-radius:14px; box-shadow:0 24px 60px -18px rgba(10,13,20,.30); padding:18px; z-index:60; display:none; }
   .hr-guests-pop.is-open { display:block; }
-  .hr-pop-field { margin-bottom:16px; }
-  .hr-pop-field > label { display:block; font-size:15px; font-weight:700; color:#3a4b57; margin-bottom:8px; text-transform:none; letter-spacing:0; }
-  .hr-pop-field select { width:100%; height:46px; border:1px solid #e3e8ec; border-radius:8px; padding:0 34px 0 14px; font-size:15px; color:#7a8791; background-color:#fff; -webkit-appearance:none; -moz-appearance:none; appearance:none; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%238a97a3' d='M6 8 0 2 1.5.5 6 5 10.5.5 12 2z'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 14px center; }
-  .hr-pop-field select:focus { outline:none; border-color:#1abc9c; box-shadow:0 0 0 3px rgba(26,188,156,.15); }
-  .hr-pop-save { width:100%; height:48px; border:1px solid #dce3e7; border-radius:8px; background:#fff; color:#1abc9c; font-weight:700; font-size:15px; letter-spacing:.5px; cursor:pointer; transition:background-color .2s; }
-  .hr-pop-save:hover { background-color:#f4f7f8; }
-  .hr-field label { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.6px; color:#8a97a3; margin-bottom:7px; }
-  .hr-field label i { color:#1abc9c; margin-right:5px; }
-  .hr-field input, .hr-field select { width:100%; height:50px; border:1px solid #e3e8ec; border-radius:10px; padding:0 14px; font-size:15px; color:#2c3e50; background-color:#f8fafb; box-shadow:none; transition:border-color .2s, box-shadow .2s, background-color .2s; -webkit-appearance:none; -moz-appearance:none; appearance:none; }
-  .hr-field input:focus, .hr-field select:focus { outline:none; border-color:#1abc9c; background-color:#fff; box-shadow:0 0 0 3px rgba(26,188,156,.15); }
-  .hr-field select { padding-right:36px; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%238a97a3' d='M6 8 0 2 1.5.5 6 5 10.5.5 12 2z'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 14px center; }
-  .hr-field input[type="date"]::-webkit-calendar-picker-indicator { cursor:pointer; opacity:.55; }
-  .hr-field input[type="date"]::-webkit-calendar-picker-indicator:hover { opacity:1; }
-  .hr-btn-search { height:50px; border:0; border-radius:10px; background:#1abc9c; color:#fff; font-weight:700; font-size:15px; padding:0 28px; cursor:pointer; white-space:nowrap; box-shadow:0 10px 24px rgba(26,188,156,.35); transition:background .2s, transform .2s, box-shadow .2s; }
-  .hr-btn-search:hover { background:#16a085; transform:translateY(-1px); box-shadow:0 14px 30px rgba(26,188,156,.45); }
-  .hr-btn-search:disabled { opacity:.7; cursor:default; transform:none; }
+  .hr-pop-field { margin-bottom:14px; }
+  .hr-pop-field > label { display:block; font-size:13px; font-weight:600; color:#2b303b; margin-bottom:7px; }
+  .hr-btn-search { height:46px; }
+
   @media (max-width:991px) {
-    .hr-title { font-size:42px; }
     .hr-search__card { grid-template-columns:1fr 1fr; }
+    .hr-field--guests, .hr-field--submit { grid-column:auto; }
     .hr-field--submit { grid-column:1 / -1; }
     .hr-btn-search { width:100%; }
   }
-  @media (max-width:767px) {
-    .hr-slides { height:64vh; min-height:400px;     position: static!important;}
-    .hr-title { font-size:32px; word-break:break-word; }
-    .hr-subtitle { font-size:16px; }
-    .hr-dots { bottom:96px; }
-    #reservation-form.hr-search { margin-top:-44px; }
+  @media (max-width:640px) {
+    .hr-slides { height:70vh; min-height:440px; }
+    .hr-dots { bottom:120px; }
+    #reservation-form.hr-search { margin-top:-46px; }
     .hr-search__card { grid-template-columns:1fr; padding:18px; }
-    /* Centrado robusto del contenido del hero en móvil (evita que el texto se
-       corra hacia un lado si algún ancho fuerza desborde). */
-    .hr-slide__caption { justify-content:center; padding-left:16px; padding-right:16px; }
-    .hr-slide__caption .container { width:100%; max-width:100%; padding-left:0; padding-right:0; margin:0 auto; }
+    .hr-guests-box { min-width:0; }
+    .hr-guests-pop { width:100%; }
   }
 
-  /* ===== Ajustes responsive propios de la web de reservas ===== */
-  @media (max-width:767px) {
-    /* Barra superior (teléfono / correo / sucursal): apilar y reducir para que
-       no se solape en pantallas pequeñas. */
-    #top-header .th-text { float:none !important; text-align:center; }
-    #top-header .th-item { display:inline-block; float:none; font-size:12px; margin:2px 6px; }
-    #top-header .col-xs-6 { width:100%; }
+  /* ===== Galería lightbox ===== */
+  .hb-lightbox { position:fixed; inset:0; z-index:1100; display:none; align-items:center; justify-content:center; background:rgba(23,23,23,.9); padding:24px; }
+  .hb-lightbox.is-open { display:flex; }
+  .hb-lightbox img { max-width:92vw; max-height:88vh; border-radius:12px; box-shadow:0 30px 80px rgba(0,0,0,.5); }
+  .hb-lightbox__close { position:absolute; top:22px; right:26px; color:#fff; font-size:30px; cursor:pointer; opacity:.8; }
+  .hb-lightbox__close:hover { opacity:1; }
 
-    /* El popover de huéspedes ocupa el ancho disponible sin desbordar. */
-    .hr-guests-pop { width:100%; min-width:0; left:0; right:0; }
-
-    /* Espaciados grandes del tema reducidos en móvil. */
-    .mt100 { margin-top:50px !important; }
-    .mt50  { margin-top:30px !important; }
-
-    /* Tarjetas de habitación a una columna con separación cómoda. */
-    #rooms-grid > .row > [class*="col-"] { margin-bottom:22px; }
-    .room-card__actions { flex-direction:column; }
-
-    /* Galería del detalle de habitación: imagen principal más baja. */
-    .modal-gallery img { max-height:240px; }
-
-    /* Modal de reserva cómodo en móvil (ocupa casi toda la pantalla). */
-    #reserveModal .modal-dialog, #roomDetailModal .modal-dialog { margin:10px; }
-    #reserveModal .form-group, #roomDetailModal .form-group { margin-bottom:12px; }
-  }
-
-  /* El header del tema (navbar sticky z-index:9999, top-header 10001) tapaba la
-     cabecera de los modales y su botón de cerrar. Elevamos los modales por
-     encima para que siempre se puedan cerrar. */
-  .modal { z-index: 10060 !important; }
-  .modal-backdrop { z-index: 10050 !important; }
-
-  /* Fecha + hora juntas dentro de un mismo campo del buscador. */
-  .hr-datetime { display:flex; gap:8px; }
-  .hr-datetime input[type="date"] { flex:1 1 62%; min-width:0; }
-  .hr-datetime input[type="time"] { flex:1 1 38%; min-width:0; padding:0 8px; }
-
-  @media (max-width:480px) {
-    .hr-title { font-size:26px; }
-    .hr-subtitle { font-size:15px; }
-    .room-card__title { font-size:17px; }
-    .room-card__price { font-size:20px; }
-    /* Los pares de columnas del formulario de reserva se apilan (col-sm ya lo
-       hace <768px; se refuerza el espaciado). */
-    #reserveModal .row > [class*="col-"] { margin-bottom:2px; }
-  }
+  .lined-title { position:relative; }
 </style>
 </head>
 
@@ -245,14 +75,14 @@
 
 @include('hotel::landing.partials.header', ['onLanding' => true, 'activeNav' => 'inicio'])
 
-<a id="top"></a>
 @php
   // Garantizamos al menos una diapositiva aunque el tenant guarde la lista vacía.
   $slides = !empty($cfg['slides']) && is_array($cfg['slides'])
     ? $cfg['slides']
     : [['image' => null, 'title' => '', 'subtitle' => 'Reserva tu estancia con nosotros', 'button_text' => 'Ver habitaciones', 'button_link' => '#rooms-results', 'stars' => true]];
 @endphp
-<!-- Hero de reservas -->
+
+<!-- ===== Hero ===== -->
 <section class="hr-hero" id="hero">
   <div class="hr-slides">
     @foreach($slides as $i => $slide)
@@ -264,14 +94,14 @@
       <div class="hr-slide {{ $i === 0 ? 'is-active' : '' }}" style="background-image:url('{{ $slideImg }}');">
         <div class="hr-slide__overlay"></div>
         <div class="hr-slide__caption">
-          <div class="container">
+          <div class="max-w-3xl mx-auto">
             @if($showStars)
-              <div class="hr-stars">@for($s=0;$s<5;$s++)<i class="fa fa-star"></i>@endfor</div>
+              <div class="hr-eyebrow-stars">@for($s=0;$s<5;$s++)<i class="fa fa-star"></i>@endfor</div>
             @endif
             <h1 class="hr-title">{{ $slideTitle }}</h1>
             @if(!empty($slide['subtitle']))<p class="hr-subtitle">{{ $slide['subtitle'] }}</p>@endif
             @if(!empty($slide['button_text']))
-              <a href="{{ $slide['button_link'] ?: '#rooms-results' }}" class="hr-btn nav-scroll">{{ $slide['button_text'] }}</a>
+              <a href="{{ $slide['button_link'] ?: '#rooms-results' }}" class="hb-btn hb-btn-primary hb-btn-lg nav-scroll">{{ $slide['button_text'] }} <i class="fa fa-angle-right"></i></a>
             @endif
           </div>
         </div>
@@ -288,26 +118,26 @@
   @endif
 </section>
 
-<!-- Buscador de disponibilidad (selector de fechas moderno) -->
+<!-- ===== Buscador de disponibilidad ===== -->
 <section class="hr-search" id="reservation-form">
-  <div class="container">
-    <form class="hr-search__card" role="form" id="searchform" onsubmit="return false;">
+  <div class="max-w-6xl mx-auto px-6">
+    <form class="hr-search__card" id="searchform" onsubmit="return false;">
       <div class="hr-field">
-        <label for="checkin_date"><i class="fa fa-calendar"></i> Entrada</label>
+        <label class="hb-label" for="checkin_date"><i class="fa fa-calendar"></i> Entrada</label>
         <div class="hr-datetime">
-          <input name="checkin" type="date" id="checkin_date" required>
-          <input name="checkin_time" type="time" id="checkin_time" value="14:00" required aria-label="Hora de entrada">
+          <input name="checkin" type="date" id="checkin_date" class="hb-input" required>
+          <input name="checkin_time" type="time" id="checkin_time" class="hb-input" value="14:00" required aria-label="Hora de entrada">
         </div>
       </div>
       <div class="hr-field">
-        <label for="checkout_date"><i class="fa fa-calendar"></i> Salida</label>
+        <label class="hb-label" for="checkout_date"><i class="fa fa-calendar"></i> Salida</label>
         <div class="hr-datetime">
-          <input name="checkout" type="date" id="checkout_date" required>
-          <input name="checkout_time" type="time" id="checkout_time" value="12:00" required aria-label="Hora de salida">
+          <input name="checkout" type="date" id="checkout_date" class="hb-input" required>
+          <input name="checkout_time" type="time" id="checkout_time" class="hb-input" value="12:00" required aria-label="Hora de salida">
         </div>
       </div>
-      <div class="hr-field hr-guests">
-        <label><i class="fa fa-users"></i> Huéspedes</label>
+      <div class="hr-field hr-field--guests hr-guests">
+        <label class="hb-label"><i class="fa fa-users"></i> Huéspedes</label>
         <div class="hr-guests-box" id="guestsToggle">
           <span id="guestsSummary">2 adultos</span>
           <i class="fa fa-angle-down"></i>
@@ -315,21 +145,21 @@
         <div class="hr-guests-pop" id="guestsPop">
           <div class="hr-pop-field">
             <label>Adultos</label>
-            <select name="adults" id="adults">
+            <select name="adults" id="adults" class="hb-select">
               @for($i=1;$i<=8;$i++)<option value="{{ $i }}">{{ $i }} {{ $i === 1 ? 'adulto' : 'adultos' }}</option>@endfor
             </select>
           </div>
           <div class="hr-pop-field">
             <label>Niños</label>
-            <select name="children" id="children">
+            <select name="children" id="children" class="hb-select">
               @for($i=0;$i<=6;$i++)<option value="{{ $i }}">{{ $i }} {{ $i === 1 ? 'niño' : 'niños' }}</option>@endfor
             </select>
           </div>
-          <button type="button" class="hr-pop-save" id="guestsSave">Guardar</button>
+          <button type="button" class="hb-btn hb-btn-ghost hb-btn-block" id="guestsSave">Guardar</button>
         </div>
       </div>
       <div class="hr-field hr-field--submit">
-        <button type="submit" id="btn-search" class="hr-btn-search"><i class="fa fa-search"></i> Buscar</button>
+        <button type="submit" id="btn-search" class="hb-btn hb-btn-primary hr-btn-search"><i class="fa fa-search"></i> Buscar</button>
       </div>
     </form>
   </div>
@@ -337,7 +167,7 @@
 
 <script>
 (function () {
-  // Slideshow ligero del hero (crossfade). Reemplaza al Revolution Slider.
+  // Slideshow del hero (crossfade).
   var slides = document.querySelectorAll('.hr-slide');
   var dots   = document.querySelectorAll('.hr-dot');
   if (slides.length >= 2) {
@@ -349,7 +179,7 @@
       slides[idx].classList.add('is-active');
       if (dots[idx]) dots[idx].classList.add('is-active');
     };
-    var start = function () { timer = setInterval(function () { go(idx + 1); }, 6000); };
+    var start = function () { timer = setInterval(function () { go(idx + 1); }, 6500); };
     var reset = function () { clearInterval(timer); start(); };
     for (var d = 0; d < dots.length; d++) {
       dots[d].addEventListener('click', function () { go(parseInt(this.getAttribute('data-i'), 10)); reset(); });
@@ -357,15 +187,14 @@
     start();
   }
 
-  // Abrir el calendario nativo al hacer click en cualquier parte del input de fecha.
+  // Abrir el calendario nativo al pulsar el campo de fecha.
   var dateInputs = document.querySelectorAll('.hr-search__card input[type="date"]');
   for (var k = 0; k < dateInputs.length; k++) {
     var openPicker = function () { try { if (this.showPicker) this.showPicker(); } catch (e) {} };
     dateInputs[k].addEventListener('click', openPicker);
-    dateInputs[k].addEventListener('focus', openPicker);
   }
 
-  // Selector de huéspedes (popover Adultos/Niños + Guardar).
+  // Selector de huéspedes.
   var gToggle  = document.getElementById('guestsToggle');
   var gPop     = document.getElementById('guestsPop');
   var gSave    = document.getElementById('guestsSave');
@@ -380,11 +209,7 @@
       gSummary.textContent = parts.join(', ');
     };
     var closePop = function () { gPop.classList.remove('is-open'); gToggle.classList.remove('is-open'); };
-    gToggle.addEventListener('click', function (e) {
-      e.stopPropagation();
-      gPop.classList.toggle('is-open');
-      gToggle.classList.toggle('is-open');
-    });
+    gToggle.addEventListener('click', function (e) { e.stopPropagation(); gPop.classList.toggle('is-open'); gToggle.classList.toggle('is-open'); });
     gPop.addEventListener('click', function (e) { e.stopPropagation(); });
     document.addEventListener('click', closePop);
     if (gSave) gSave.addEventListener('click', function () { updateSummary(); closePop(); });
@@ -395,38 +220,37 @@
 })();
 </script>
 
-<!-- Resultados / Habitaciones -->
-<section class="rooms mt50" id="rooms-results">
-  <div class="container">
-    <div class="row">
-      <div class="col-sm-12">
-        <h2 class="lined-heading"><span id="rooms-heading">{{ $cfg['rooms_heading'] ?? 'Nuestras habitaciones' }}</span></h2>
-        <p class="text-center text-muted" id="rooms-subheading" style="margin-top:-10px;margin-bottom:25px;">{{ $cfg['rooms_subheading'] ?? 'Selecciona fechas para ver disponibilidad y precios.' }}</p>
-      </div>
-      <div class="col-sm-12" id="rooms-grid"></div>
+<!-- ===== Habitaciones ===== -->
+<section class="hb-section pt-16" id="rooms-results">
+  <div class="max-w-7xl mx-auto px-6">
+    <div class="text-center max-w-2xl mx-auto mb-10">
+      <span class="hb-eyebrow mb-3">Alojamiento</span>
+      <h2 class="hb-h2" id="rooms-heading">{{ $cfg['rooms_heading'] ?? 'Nuestras habitaciones' }}</h2>
+      <p class="hb-sub" id="rooms-subheading">{{ $cfg['rooms_subheading'] ?? 'Selecciona fechas para ver disponibilidad y precios.' }}</p>
     </div>
+    <div id="rooms-grid"></div>
   </div>
 </section>
 
 @if(($cfg['show_features'] ?? true) && count($cfg['features'] ?? []))
-<!-- USP's -->
-<section class="usp mt100">
-  <div class="container">
-    <div class="row">
-      <div class="col-sm-12">
-        <h2 class="lined-heading"><span>{{ $cfg['features_heading'] ?? '¿Por qué reservar con nosotros?' }}</span></h2>
-      </div>
-      @php $fCols = count($cfg['features']) >= 4 ? 3 : (12 / max(1, count($cfg['features']))); @endphp
-      @foreach($cfg['features'] as $fi => $feature)
-      <div class="col-sm-{{ $fCols }} bounceIn appear" data-start="{{ $fi * 400 }}">
-        <div class="box-icon">
-          <div class="circle"><i class="fa {{ $feature['icon'] ?? 'fa-star' }} fa-lg"></i></div>
-          <h3>{{ $feature['title'] ?? '' }}</h3>
-          <p>{{ $feature['text'] ?? '' }}</p>
-          @if(!empty($feature['link_text']))
-          <a href="{{ $feature['link'] ?? '#' }}" class="nav-scroll">{{ $feature['link_text'] }}<i class="fa fa-angle-right"></i></a>
-          @endif
+<!-- ===== Ventajas ===== -->
+<section class="hb-section bg-white border-y border-ink-100">
+  <div class="max-w-7xl mx-auto px-6">
+    <div class="text-center max-w-2xl mx-auto mb-12">
+      <span class="hb-eyebrow mb-3">Ventajas</span>
+      <h2 class="hb-h2">{{ $cfg['features_heading'] ?? '¿Por qué reservar con nosotros?' }}</h2>
+    </div>
+    <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+      @foreach($cfg['features'] as $feature)
+      <div class="hb-card p-7 text-center transition hover:shadow-panel hover:-translate-y-1">
+        <div class="w-14 h-14 rounded-2xl bg-brand-tint text-brand flex items-center justify-center mx-auto mb-5">
+          <i class="fa {{ $feature['icon'] ?? 'fa-star' }} text-2xl"></i>
         </div>
+        <h3 class="font-display font-semibold text-lg text-ink-900 mb-2">{{ $feature['title'] ?? '' }}</h3>
+        <p class="text-[14px] text-ink-500 leading-relaxed">{{ $feature['text'] ?? '' }}</p>
+        @if(!empty($feature['link_text']))
+        <a href="{{ $feature['link'] ?? '#' }}" class="nav-scroll inline-flex items-center gap-1.5 mt-4 text-[13px] font-semibold text-brand hover:text-brand-dark">{{ $feature['link_text'] }} <i class="fa fa-angle-right"></i></a>
+        @endif
       </div>
       @endforeach
     </div>
@@ -434,42 +258,42 @@
 </section>
 @endif
 
-<!-- Parallax Effect -->
-<script type="text/javascript">$(document).ready(function(){$('#parallax-image').parallax("50%", -0.25);});</script>
-
 @if($cfg['show_parallax'] ?? true)
 @php $parallaxImg = HotelLandingSetting::imageUrl($cfg['parallax']['image'] ?? null, HotelLandingSetting::DEFAULT_PARALLAX); @endphp
-<section class="parallax-effect mt100">
-  <div id="parallax-image" style="background-image: url('{{ $parallaxImg }}');">
-    <div class="color-overlay fadeIn appear" data-start="600">
-      <div class="container">
-        <div class="content">
-          <h3 class="text-center"><i class="fa fa fa-star-o"></i> {{ $hotelName }}</h3>
-          <p class="text-center">{{ $cfg['parallax']['text'] ?? 'Vive una experiencia inolvidable' }}
-		  <br>
-		  @if(!empty($cfg['parallax']['button_text']))<a href="{{ $cfg['parallax']['button_link'] ?: '#rooms-results' }}" class="btn btn-default btn-lg mt30 nav-scroll">{{ $cfg['parallax']['button_text'] }}</a>@endif</p>
-        </div>
-      </div>
+<!-- ===== Parallax ===== -->
+<section class="relative bg-fixed bg-center bg-cover" style="background-image:url('{{ $parallaxImg }}');">
+  <div class="bg-ink-950/70">
+    <div class="max-w-3xl mx-auto px-6 py-28 text-center text-white">
+      <i class="fa fa-star-o text-brand text-3xl mb-5"></i>
+      <h3 class="font-display text-3xl md:text-4xl font-bold mb-4">{{ $hotelName }}</h3>
+      <p class="text-lg text-white/85">{{ $cfg['parallax']['text'] ?? 'Vive una experiencia inolvidable' }}</p>
+      @if(!empty($cfg['parallax']['button_text']))
+        <a href="{{ $cfg['parallax']['button_link'] ?: '#rooms-results' }}" class="nav-scroll hb-btn hb-btn-primary hb-btn-lg mt-8">{{ $cfg['parallax']['button_text'] }}</a>
+      @endif
     </div>
   </div>
 </section>
 @endif
 
 @if(($cfg['show_gallery'] ?? true) && count($cfg['gallery'] ?? []))
-<!-- Gallery -->
-<section class="gallery-slider mt100" id="gallery">
-  <div class="container">
-    <div class="row">
-      <div class="col-md-12">
-        <h2 class="lined-heading"><span>{{ $cfg['gallery_heading'] ?? 'Galería' }}</span></h2>
-      </div>
+<!-- ===== Galería ===== -->
+<section class="hb-section" id="gallery">
+  <div class="max-w-7xl mx-auto px-6">
+    <div class="text-center max-w-2xl mx-auto mb-10">
+      <span class="hb-eyebrow mb-3">Galería</span>
+      <h2 class="hb-h2">{{ $cfg['gallery_heading'] ?? 'Galería' }}</h2>
     </div>
-  </div>
-  <div id="owl-gallery" class="owl-carousel">
-    @foreach($cfg['gallery'] as $gi => $galleryImg)
-      @php $gImg = HotelLandingSetting::imageUrl($galleryImg, HotelLandingSetting::DEFAULT_GALLERY); @endphp
-      <div class="item"><a href="{{ $gImg }}" data-rel="prettyPhoto[gallery1]"><img src="{{ $gImg }}" alt="Imagen {{ $gi + 1 }}"><i class="fa fa-search"></i></a></div>
-    @endforeach
+    <div class="grid gap-4 grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+      @foreach($cfg['gallery'] as $gi => $galleryImg)
+        @php $gImg = HotelLandingSetting::imageUrl($galleryImg, HotelLandingSetting::DEFAULT_GALLERY); @endphp
+        <button type="button" class="group relative block aspect-[4/3] overflow-hidden rounded-2xl bg-ink-100 {{ $gi === 0 ? 'col-span-2 row-span-2 md:aspect-square' : '' }}" data-lightbox="{{ $gImg }}">
+          <img src="{{ $gImg }}" alt="Imagen {{ $gi + 1 }}" class="w-full h-full object-cover transition duration-500 group-hover:scale-105">
+          <span class="absolute inset-0 bg-ink-950/0 group-hover:bg-ink-950/30 transition flex items-center justify-center">
+            <i class="fa fa-search-plus text-white text-2xl opacity-0 group-hover:opacity-100 transition"></i>
+          </span>
+        </button>
+      @endforeach
+    </div>
   </div>
 </section>
 @endif
@@ -479,111 +303,106 @@
   $showAbout        = ($cfg['show_about'] ?? true) && count($cfg['about']['tabs'] ?? []);
 @endphp
 @if($showTestimonials || $showAbout)
-<div class="container">
-  <div class="row">
+<section class="hb-section bg-white border-y border-ink-100">
+  <div class="max-w-7xl mx-auto px-6 grid gap-14 lg:grid-cols-2">
     @if($showTestimonials)
-    <!-- Testimonials -->
-    <section class="testimonials mt100">
-      <div class="col-md-6">
-        <h2 class="lined-heading bounceInLeft appear" data-start="0"><span>{{ $cfg['testimonials_heading'] ?? 'Lo que opinan nuestros huéspedes' }}</span></h2>
-        <div id="owl-reviews" class="owl-carousel">
-          @foreach(collect($cfg['testimonials'])->chunk(2) as $pair)
-          <div class="item">
-            @foreach($pair as $t)
-              @php $tImg = HotelLandingSetting::imageUrl($t['image'] ?? null, HotelLandingSetting::DEFAULT_REVIEW); @endphp
-              <div class="row">
-                <div class="col-lg-3 col-md-4 col-sm-2 col-xs-12"> <img src="{{ $tImg }}" alt="{{ $t['name'] ?? 'Huésped' }}" class="img-circle" /></div>
-                <div class="col-lg-9 col-md-8 col-sm-10 col-xs-12">
-                  <div class="text-balloon">{{ $t['text'] ?? '' }} <span>{{ $t['name'] ?? '' }}</span> </div>
-                </div>
-              </div>
-            @endforeach
+    <div>
+      <span class="hb-eyebrow mb-3">Opiniones</span>
+      <h2 class="hb-h2 mb-8">{{ $cfg['testimonials_heading'] ?? 'Lo que opinan nuestros huéspedes' }}</h2>
+      <div class="space-y-4">
+        @foreach($cfg['testimonials'] as $t)
+          @php $tImg = HotelLandingSetting::imageUrl($t['image'] ?? null, HotelLandingSetting::DEFAULT_REVIEW); @endphp
+          <div class="hb-card p-6 flex gap-4">
+            <img src="{{ $tImg }}" alt="{{ $t['name'] ?? 'Huésped' }}" class="w-12 h-12 rounded-full object-cover shrink-0">
+            <div>
+              <div class="text-[#f4c542] text-sm mb-1.5">@for($s=0;$s<5;$s++)<i class="fa fa-star"></i>@endfor</div>
+              <p class="text-[14px] text-ink-700 leading-relaxed mb-2">“{{ $t['text'] ?? '' }}”</p>
+              <span class="text-[13px] font-semibold text-ink-900">{{ $t['name'] ?? '' }}</span>
+            </div>
           </div>
-          @endforeach
-        </div>
+        @endforeach
       </div>
-    </section>
+    </div>
     @endif
 
     @if($showAbout)
     @php $aboutImg = HotelLandingSetting::imageUrl($cfg['about']['image'] ?? null, HotelLandingSetting::DEFAULT_ABOUT); @endphp
-    <!-- About -->
-    <section class="about mt100">
-      <div class="col-md-6">
-        <h2 class="lined-heading bounceInRight appear" data-start="800"><span>{{ $cfg['about_heading'] ?? 'Sobre el hotel' }}</span></h2>
-        <!-- Nav tabs -->
-        <ul class="nav nav-tabs">
-          @foreach($cfg['about']['tabs'] as $ti => $aboutTab)
-            <li class="{{ $ti === 0 ? 'active' : '' }}"><a href="#about-tab-{{ $ti }}" data-toggle="tab">{{ $aboutTab['title'] ?? 'Pestaña' }}</a></li>
-          @endforeach
-        </ul>
-        <!-- Tab panes -->
-        <div class="tab-content">
-          @foreach($cfg['about']['tabs'] as $ti => $aboutTab)
-            <div class="tab-pane fade {{ $ti === 0 ? 'in active' : '' }}" id="about-tab-{{ $ti }}">
-              @if($ti === 0 && $aboutImg)<img src="{{ $aboutImg }}" alt="{{ $cfg['about_heading'] ?? 'Hotel' }}" class="pull-right" style="max-width:200px;margin:0 0 10px 15px;">@endif
-              <p>{{ $aboutTab['content'] ?? '' }}</p>
-            </div>
-          @endforeach
-        </div>
+    <div id="aboutTabs">
+      <span class="hb-eyebrow mb-3">El hotel</span>
+      <h2 class="hb-h2 mb-6">{{ $cfg['about_heading'] ?? 'Sobre el hotel' }}</h2>
+      <div class="flex flex-wrap gap-2 mb-5">
+        @foreach($cfg['about']['tabs'] as $ti => $aboutTab)
+          <button type="button" class="hb-tab px-4 py-2 rounded-full text-[13px] font-semibold transition {{ $ti === 0 ? 'bg-brand text-white' : 'bg-ink-100 text-ink-600 hover:bg-ink-200' }}" data-tab="{{ $ti }}">{{ $aboutTab['title'] ?? 'Pestaña' }}</button>
+        @endforeach
       </div>
-    </section>
+      @if($aboutImg)<img src="{{ $aboutImg }}" alt="{{ $cfg['about_heading'] ?? 'Hotel' }}" class="float-right ml-5 mb-3 w-40 rounded-2xl object-cover">@endif
+      @foreach($cfg['about']['tabs'] as $ti => $aboutTab)
+        <div class="hb-tab-pane text-[15px] text-ink-600 leading-relaxed {{ $ti === 0 ? '' : 'hidden' }}" data-pane="{{ $ti }}">{{ $aboutTab['content'] ?? '' }}</div>
+      @endforeach
+    </div>
     @endif
   </div>
-</div>
+</section>
+<script>
+(function () {
+  var wrap = document.getElementById('aboutTabs');
+  if (!wrap) return;
+  var tabs = wrap.querySelectorAll('.hb-tab');
+  var panes = wrap.querySelectorAll('.hb-tab-pane');
+  tabs.forEach(function (tab) {
+    tab.addEventListener('click', function () {
+      tabs.forEach(function (t) { t.classList.remove('bg-brand','text-white'); t.classList.add('bg-ink-100','text-ink-600'); });
+      tab.classList.add('bg-brand','text-white'); tab.classList.remove('bg-ink-100','text-ink-600');
+      panes.forEach(function (p) { p.classList.toggle('hidden', p.getAttribute('data-pane') !== tab.getAttribute('data-tab')); });
+    });
+  });
+})();
+</script>
 @endif
 
 @if(isset($blogPosts) && $blogPosts->count())
-<!-- Blog -->
-<section id="blog" class="blog-section mt100">
-  <div class="container">
-    <div class="row">
-      <div class="col-md-12">
-        <h2 class="lined-heading"><span>Nuestro blog</span></h2>
-        <p class="text-center text-muted" style="margin-top:-10px;margin-bottom:30px;">Novedades, consejos y noticias del hotel.</p>
-      </div>
+<!-- ===== Blog ===== -->
+<section class="hb-section" id="blog">
+  <div class="max-w-7xl mx-auto px-6">
+    <div class="text-center max-w-2xl mx-auto mb-10">
+      <span class="hb-eyebrow mb-3">Blog</span>
+      <h2 class="hb-h2">Nuestro blog</h2>
+      <p class="hb-sub">Novedades, consejos y noticias del hotel.</p>
     </div>
-    <div class="row">
+    <div class="grid gap-7 md:grid-cols-3">
       @foreach($blogPosts as $post)
         @php
-          $postImage = $post->cover_image ?: '/landing-reservas/images/gallery/800x504.gif';
+          $postImage = $post->cover_image ?: HotelLandingSetting::DEFAULT_GALLERY;
           $postDate  = optional($post->published_at)->format('d/m/Y');
         @endphp
-        <div class="col-md-4 col-sm-6">
-          <div class="blog-card">
-            <a href="{{ url('reservas/blog/'.$post->slug) }}" class="blog-card__img" style="background-image:url('{{ $postImage }}');">
-              @if($post->hasVideoCover())<i class="fa fa-play-circle" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:#fff;font-size:46px;text-shadow:0 2px 6px rgba(0,0,0,.55);"></i>@endif
-            </a>
-            <div class="blog-card__body">
-              @if($postDate)<div class="blog-card__date"><i class="fa fa-calendar"></i> {{ $postDate }}</div>@endif
-              <h3 class="blog-card__title"><a href="{{ url('reservas/blog/'.$post->slug) }}">{{ $post->title }}</a></h3>
-              <p class="blog-card__excerpt">{{ $post->excerpt ?: \Illuminate\Support\Str::limit(strip_tags($post->content), 120) }}</p>
-              <a href="{{ url('reservas/blog/'.$post->slug) }}" class="blog-card__more">Leer más <i class="fa fa-angle-right"></i></a>
-            </div>
+        <article class="hb-card overflow-hidden group transition hover:shadow-panel hover:-translate-y-1">
+          <a href="{{ url('reservas/blog/'.$post->slug) }}" class="relative block aspect-[16/10] bg-ink-100 overflow-hidden">
+            <span class="absolute inset-0 bg-center bg-cover transition duration-500 group-hover:scale-105" style="background-image:url('{{ $postImage }}');"></span>
+            @if($post->hasVideoCover())<i class="fa fa-play-circle absolute inset-0 m-auto w-max h-max text-white text-5xl drop-shadow-lg"></i>@endif
+          </a>
+          <div class="p-6">
+            @if($postDate)<div class="text-[12px] font-semibold text-brand uppercase tracking-wide mb-2"><i class="fa fa-calendar"></i> {{ $postDate }}</div>@endif
+            <h3 class="font-display font-semibold text-lg text-ink-900 leading-snug mb-2"><a href="{{ url('reservas/blog/'.$post->slug) }}" class="hover:text-brand transition">{{ $post->title }}</a></h3>
+            <p class="text-[14px] text-ink-500 leading-relaxed mb-3">{{ $post->excerpt ?: \Illuminate\Support\Str::limit(strip_tags($post->content), 110) }}</p>
+            <a href="{{ url('reservas/blog/'.$post->slug) }}" class="inline-flex items-center gap-1.5 text-[13px] font-semibold text-brand hover:text-brand-dark">Leer más <i class="fa fa-angle-right"></i></a>
           </div>
-        </div>
+        </article>
       @endforeach
     </div>
-    <div class="row">
-      <div class="col-md-12 text-center" style="margin-top:10px;">
-        <a href="{{ url('reservas/blog') }}" class="btn btn-primary btn-lg">Ver todo el blog</a>
-      </div>
+    <div class="text-center mt-10">
+      <a href="{{ url('reservas/blog') }}" class="hb-btn hb-btn-ghost hb-btn-lg">Ver todo el blog</a>
     </div>
   </div>
 </section>
 @endif
 
 @if($cfg['show_cta'] ?? true)
-<!-- Call To Action -->
-<section id="call-to-action" class="mt100">
-  <div class="container">
-    <div class="row">
-      <div class="col-md-8 col-sm-8 col-xs-12">
-        <h2>{{ $cfg['cta_text'] ?? '¿Listo para tu próxima estancia? Reserva ahora en línea.' }}</h2>
-      </div>
-      <div class="col-md-4 col-sm-4 col-xs-12">
-        <a href="#reservation-form" class="btn btn-default btn-lg pull-right nav-scroll">{{ $cfg['cta_button'] ?? 'Ver disponibilidad' }}</a>
-      </div>
+<!-- ===== Call to action ===== -->
+<section class="pb-4">
+  <div class="max-w-7xl mx-auto px-6">
+    <div class="rounded-3xl bg-brand text-white px-8 py-12 md:px-14 md:py-14 flex flex-col md:flex-row items-center gap-8 justify-between shadow-hover">
+      <h2 class="font-display text-2xl md:text-3xl font-bold leading-snug max-w-2xl text-center md:text-left">{{ $cfg['cta_text'] ?? '¿Listo para tu próxima estancia? Reserva ahora en línea.' }}</h2>
+      <a href="#reservation-form" class="nav-scroll hb-btn hb-btn-lg bg-white text-brand-dark hover:bg-ink-50 shrink-0">{{ $cfg['cta_button'] ?? 'Ver disponibilidad' }} <i class="fa fa-angle-right"></i></a>
     </div>
   </div>
 </section>
@@ -591,95 +410,89 @@
 
 @include('hotel::landing.partials.footer', ['onLanding' => true])
 
-<!-- ===================== Modal: Detalle de habitación ===================== -->
-<div class="modal fade" id="roomDetailModal" tabindex="-1" role="dialog">
-  <div class="modal-dialog modal-lg" role="document">
-    <div class="modal-content">
-      <div class="modal-header">
-        <button type="button" class="close" data-dismiss="modal">&times;</button>
-        <h4 class="modal-title" id="detail-title">Detalle</h4>
-      </div>
-      <div class="modal-body" id="detail-body">
-        <div class="loading-rooms"><i class="fa fa-spinner fa-spin fa-2x"></i></div>
-      </div>
+<!-- ===== Modal: Detalle de habitación ===== -->
+<div class="hb-modal" id="roomDetailModal">
+  <div class="hb-modal__backdrop" data-close></div>
+  <div class="hb-modal__dialog">
+    <div class="hb-modal__head">
+      <h4 class="hb-modal__title" id="detail-title">Detalle</h4>
+      <button type="button" class="hb-modal__close" data-close><i class="fa fa-times"></i></button>
+    </div>
+    <div class="hb-modal__body" id="detail-body">
+      <div class="hb-spinner"><i class="fa fa-spinner fa-spin fa-2x"></i></div>
     </div>
   </div>
 </div>
 
-<!-- ===================== Modal: Reservar ===================== -->
-<div class="modal fade" id="reserveModal" tabindex="-1" role="dialog">
-  <div class="modal-dialog" role="document">
-    <div class="modal-content">
-      <div class="modal-header">
-        <button type="button" class="close" data-dismiss="modal">&times;</button>
-        <h4 class="modal-title">Completa tu reserva</h4>
-      </div>
-      <div class="modal-body">
-        <div id="reserve-message"></div>
-        <div class="summary-box" id="reserve-summary"></div>
-        <form id="reserveform">
-          <input type="hidden" name="room" id="r-room">
-          <input type="hidden" name="checkin" id="r-checkin">
-          <input type="hidden" name="checkout" id="r-checkout">
-          <input type="hidden" name="checkin_time" id="r-checkin-time">
-          <input type="hidden" name="checkout_time" id="r-checkout-time">
-          <input type="hidden" name="adults" id="r-adults">
-          <input type="hidden" name="children" id="r-children">
+<!-- ===== Modal: Reservar ===== -->
+<div class="hb-modal" id="reserveModal">
+  <div class="hb-modal__backdrop" data-close></div>
+  <div class="hb-modal__dialog hb-modal__dialog--sm">
+    <div class="hb-modal__head">
+      <h4 class="hb-modal__title">Completa tu reserva</h4>
+      <button type="button" class="hb-modal__close" data-close><i class="fa fa-times"></i></button>
+    </div>
+    <div class="hb-modal__body">
+      <div id="reserve-message"></div>
+      <div class="rounded-xl bg-brand-tint border border-brand-soft px-4 py-3 mb-5 text-[13px] text-ink-700" id="reserve-summary"></div>
+      <form id="reserveform" class="space-y-4">
+        <input type="hidden" name="room" id="r-room">
+        <input type="hidden" name="checkin" id="r-checkin">
+        <input type="hidden" name="checkout" id="r-checkout">
+        <input type="hidden" name="checkin_time" id="r-checkin-time">
+        <input type="hidden" name="checkout_time" id="r-checkout-time">
+        <input type="hidden" name="adults" id="r-adults">
+        <input type="hidden" name="children" id="r-children">
 
-          <div class="row">
-            <div class="col-sm-4">
-              <div class="form-group">
-                <label>Tipo de documento</label>
-                <select class="form-control" name="document_type" id="r-doctype">
-                  @foreach(($documentTypes ?? []) as $dt)
-                    <option value="{{ $dt['id'] }}">{{ $dt['description'] }}</option>
-                  @endforeach
-                </select>
-              </div>
-            </div>
-            <div class="col-sm-8">
-              <div class="form-group">
-                <label>Número de documento</label>
-                <div class="input-group">
-                  <input type="text" class="form-control" name="document_number" id="r-docnumber" placeholder="Nº de documento">
-                  <span class="input-group-btn">
-                    <button class="btn btn-default" type="button" id="r-doc-search"><i class="fa fa-search"></i></button>
-                  </span>
-                </div>
-                <div class="doc-feedback text-muted" id="r-doc-feedback"></div>
-              </div>
-            </div>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div class="sm:col-span-1">
+            <label class="hb-label">Tipo doc.</label>
+            <select class="hb-select" name="document_type" id="r-doctype">
+              @foreach(($documentTypes ?? []) as $dt)
+                <option value="{{ $dt['id'] }}">{{ $dt['description'] }}</option>
+              @endforeach
+            </select>
           </div>
-          <div class="form-group">
-            <label>Nombre / Razón social <span class="text-danger">*</span></label>
-            <input type="text" class="form-control" name="name" id="r-name" required placeholder="Tu nombre completo">
-          </div>
-          <div class="row">
-            <div class="col-sm-6">
-              <div class="form-group">
-                <label>Teléfono</label>
-                <input type="text" class="form-control" name="telephone" id="r-telephone" placeholder="Celular / teléfono">
-              </div>
+          <div class="sm:col-span-2">
+            <label class="hb-label">Número de documento</label>
+            <div class="flex gap-2">
+              <input type="text" class="hb-input" name="document_number" id="r-docnumber" placeholder="Nº de documento">
+              <button class="hb-btn hb-btn-ghost shrink-0" type="button" id="r-doc-search"><i class="fa fa-search"></i></button>
             </div>
-            <div class="col-sm-6">
-              <div class="form-group">
-                <label>E-mail</label>
-                <input type="email" class="form-control" name="email" id="r-email" placeholder="correo@ejemplo.com">
-              </div>
-            </div>
+            <div class="text-[12px] mt-1.5 text-ink-500" id="r-doc-feedback"></div>
           </div>
-          <div class="form-group">
-            <label>Comentarios / solicitudes especiales</label>
-            <textarea class="form-control" name="notes" id="r-notes" rows="2" placeholder="Ej: llegada tardía, cuna, piso alto..."></textarea>
+        </div>
+        <div>
+          <label class="hb-label">Nombre / Razón social <span class="text-err">*</span></label>
+          <input type="text" class="hb-input" name="name" id="r-name" required placeholder="Tu nombre completo">
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="hb-label">Teléfono</label>
+            <input type="text" class="hb-input" name="telephone" id="r-telephone" placeholder="Celular / teléfono">
           </div>
-          <button type="submit" class="btn btn-primary btn-block btn-lg" id="r-submit">Confirmar reserva</button>
-        </form>
-      </div>
+          <div>
+            <label class="hb-label">E-mail</label>
+            <input type="email" class="hb-input" name="email" id="r-email" placeholder="correo@ejemplo.com">
+          </div>
+        </div>
+        <div>
+          <label class="hb-label">Comentarios / solicitudes especiales</label>
+          <textarea class="hb-input" name="notes" id="r-notes" rows="2" placeholder="Ej: llegada tardía, cuna, piso alto..."></textarea>
+        </div>
+        <button type="submit" class="hb-btn hb-btn-primary hb-btn-block hb-btn-lg" id="r-submit"><i class="fa fa-calendar-check-o"></i> Confirmar reserva</button>
+      </form>
     </div>
   </div>
 </div>
 
-<!-- ===================== Lógica de reservas ===================== -->
+<!-- Lightbox de galería -->
+<div class="hb-lightbox" id="hbLightbox">
+  <span class="hb-lightbox__close" data-lightbox-close>&times;</span>
+  <img src="" alt="">
+</div>
+
+<!-- ===== Lógica de reservas ===== -->
 <script type="text/javascript">
 jQuery(function ($) {
     $.ajaxSetup({ headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') } });
@@ -690,9 +503,16 @@ jQuery(function ($) {
         rooms: {!! json_encode($rooms, JSON_UNESCAPED_UNICODE) !!},
         featured: {!! json_encode($featured, JSON_UNESCAPED_UNICODE) !!}
     };
-    // Estado de la búsqueda actual (para detalle y reserva)
     var SEARCH = { checkin: null, checkout: null, checkin_time: '14:00', checkout_time: '12:00', adults: 1, children: 0, active: false };
     var PLACEHOLDER = '/landing-reservas/images/rooms/356x228.gif';
+
+    // ---- Helpers de modal (sustituyen a Bootstrap) ----
+    function openModal(id) { $('#' + id).addClass('is-open'); $('body').addClass('hb-modal-open'); }
+    function closeModal(el) { $(el).closest('.hb-modal').removeClass('is-open'); if (!$('.hb-modal.is-open').length) $('body').removeClass('hb-modal-open'); }
+    $(document).on('click', '[data-close]', function () { closeModal(this); });
+    // Cerrar al pulsar fuera del diálogo (sobre el fondo del modal).
+    $(document).on('click', '.hb-modal', function (e) { if (e.target === this) { $(this).removeClass('is-open'); if (!$('.hb-modal.is-open').length) $('body').removeClass('hb-modal-open'); } });
+    $(document).on('keydown', function (e) { if (e.key === 'Escape') { $('.hb-modal').removeClass('is-open'); $('body').removeClass('hb-modal-open'); } });
 
     // ---- utilidades ----
     function money(n) { return CURRENCY + ' ' + Number(n || 0).toLocaleString('es-PE', {minimumFractionDigits: 2, maximumFractionDigits: 2}); }
@@ -712,46 +532,38 @@ jQuery(function ($) {
         return 'fa-check-circle';
     }
 
-    // ---- render de tarjetas ----
+    // ---- tarjeta de habitación ----
     function roomCard(room) {
         var img = room.main_image || PLACEHOLDER;
-        var price = room.min_price > 0
-            ? '<div class="room-card__price">' + money(room.min_price) + ' <small>/ noche</small></div>'
-            : '<div class="room-card__price"><small>Consultar tarifa</small></div>';
+        var priceHtml = room.min_price > 0
+            ? '<span class="text-xl font-display font-bold text-ink-900">' + money(room.min_price) + '</span><span class="text-[12px] text-ink-400"> / noche</span>'
+            : '<span class="text-[13px] font-semibold text-ink-500">Consultar tarifa</span>';
         var total = (room.total && room.nights)
-            ? '<div class="room-card__total">' + room.nights + ' noche(s): ' + money(room.total) + '</div>' : '';
+            ? '<div class="text-[12px] font-semibold text-brand mt-0.5">' + room.nights + ' noche(s): ' + money(room.total) + '</div>' : '';
         var meta = [];
-        if (room.capacity) meta.push('<i class="fa fa-users"></i> ' + room.capacity);
-        if (room.beds) meta.push('<i class="fa fa-bed"></i> ' + esc(room.beds));
-        if (room.size) meta.push('<i class="fa fa-expand"></i> ' + room.size + ' m²');
+        if (room.capacity) meta.push('<span class="inline-flex items-center gap-1.5"><i class="fa fa-users text-brand"></i> ' + room.capacity + '</span>');
+        if (room.beds)     meta.push('<span class="inline-flex items-center gap-1.5"><i class="fa fa-bed text-brand"></i> ' + esc(room.beds) + '</span>');
+        if (room.size)     meta.push('<span class="inline-flex items-center gap-1.5"><i class="fa fa-expand text-brand"></i> ' + room.size + ' m²</span>');
         var desc = room.short_description || room.description || 'Habitación cómoda y equipada para tu estancia.';
-        var fav = room.featured ? '<span class="room-card__fav"><i class="fa fa-star"></i> Destacada</span>' : '';
-
-        var barPrice = room.min_price > 0
-            ? money(room.min_price) + ' <small>/ noche</small>'
-            : '<small>Consultar</small>';
+        var fav  = room.featured ? '<span class="absolute top-3 right-3 z-10 inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-white/95 text-[11px] font-semibold text-warn-dark shadow"><i class="fa fa-star"></i> Destacada</span>' : '';
 
         return '' +
-        '<div class="col-sm-6 col-md-4">' +
-          '<div class="room-card">' +
-            '<div class="room-card__media" style="background-image:url(\'' + img + '\');"></div>' +
-            '<span class="room-card__badge">' + esc(room.category) + '</span>' + fav +
-            // Barra inferior siempre visible: nombre + precio.
-            '<div class="room-card__bar">' +
-              '<div class="room-card__bar-title">' + esc(room.name) + '</div>' +
-              '<div class="room-card__bar-price">' + barPrice + '</div>' +
+        '<div class="hb-card overflow-hidden group flex flex-col transition hover:shadow-hover hover:-translate-y-1">' +
+          '<div class="relative aspect-[16/11] bg-ink-100 overflow-hidden">' +
+            '<div class="absolute inset-0 bg-center bg-cover transition duration-500 group-hover:scale-105" style="background-image:url(\'' + img + '\');"></div>' +
+            '<span class="absolute top-3 left-3 z-10 inline-flex items-center px-2.5 py-1 rounded-full bg-brand text-white text-[11px] font-semibold shadow">' + esc(room.category) + '</span>' +
+            fav +
+          '</div>' +
+          '<div class="p-5 flex flex-col flex-1">' +
+            '<h3 class="font-display font-semibold text-lg text-ink-900 leading-snug">' + esc(room.name) + '</h3>' +
+            (meta.length ? '<div class="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-[13px] text-ink-500">' + meta.join('') + '</div>' : '') +
+            '<p class="text-[13.5px] text-ink-500 leading-relaxed mt-3 flex-1">' + esc(desc) + '</p>' +
+            '<div class="mt-4 pt-4 border-t border-ink-100 flex items-end justify-between gap-3">' +
+              '<div><div>' + priceHtml + '</div>' + total + '</div>' +
             '</div>' +
-            // Panel que sube al hacer hover con toda la información.
-            '<div class="room-card__reveal">' +
-              '<div class="room-card__cat">' + esc(room.category) + '</div>' +
-              '<div class="room-card__title">' + esc(room.name) + '</div>' +
-              (meta.length ? '<div class="room-card__meta">' + meta.join(' &nbsp; ') + '</div>' : '') +
-              '<div class="room-card__desc">' + esc(desc) + '</div>' +
-              '<div>' + price + total + '</div>' +
-              '<div class="room-card__actions">' +
-                '<button class="btn btn-default btn-detail" data-id="' + room.id + '"><i class="fa fa-info-circle"></i> Detalle</button>' +
-                '<button class="btn btn-primary btn-reserve" data-id="' + room.id + '"><i class="fa fa-calendar-check-o"></i> Reservar</button>' +
-              '</div>' +
+            '<div class="grid grid-cols-2 gap-2 mt-4">' +
+              '<button class="hb-btn hb-btn-ghost btn-detail" data-id="' + room.id + '"><i class="fa fa-info-circle"></i> Detalle</button>' +
+              '<button class="hb-btn hb-btn-primary btn-reserve" data-id="' + room.id + '"><i class="fa fa-calendar-check-o"></i> Reservar</button>' +
             '</div>' +
           '</div>' +
         '</div>';
@@ -760,15 +572,14 @@ jQuery(function ($) {
     function renderRooms(list) {
         var $grid = $('#rooms-grid');
         if (!list || !list.length) {
-            $grid.html('<div class="empty-rooms"><i class="fa fa-bed fa-3x"></i><p style="margin-top:12px;">No hay habitaciones disponibles para los criterios seleccionados.</p></div>');
+            $grid.html('<div class="text-center py-16 text-ink-400"><i class="fa fa-bed fa-3x"></i><p class="mt-4 text-[15px]">No hay habitaciones disponibles para los criterios seleccionados.</p></div>');
             return;
         }
-        $grid.html('<div class="row">' + list.map(roomCard).join('') + '</div>');
+        $grid.html('<div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">' + list.map(roomCard).join('') + '</div>');
     }
 
     function findRoom(id) {
         id = parseInt(id, 10);
-        // Preferir la lista de la última búsqueda (trae nights/total)
         if (window.__lastList) {
             var r = window.__lastList.filter(function (x) { return x.id === id; })[0];
             if (r) return r;
@@ -789,14 +600,12 @@ jQuery(function ($) {
         var checkin = $('#checkin_date').val(), checkout = $('#checkout_date').val();
         var checkinTime = $('#checkin_time').val() || '14:00', checkoutTime = $('#checkout_time').val() || '12:00';
         if (!checkin || !checkout) { alert('Selecciona las fechas de entrada y salida.'); return; }
-        // Se permite reservar el mismo día siempre que la salida (fecha + hora)
-        // sea posterior a la entrada.
         if ((checkout + ' ' + checkoutTime) <= (checkin + ' ' + checkinTime)) {
             alert('La salida debe ser posterior a la entrada (revisa la fecha y la hora).'); return;
         }
 
         var $btn = $('#btn-search').prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Buscando...');
-        $('#rooms-grid').html('<div class="loading-rooms"><i class="fa fa-spinner fa-spin fa-2x"></i><p>Buscando habitaciones disponibles...</p></div>');
+        $('#rooms-grid').html('<div class="text-center py-16 text-ink-400"><i class="fa fa-spinner fa-spin fa-2x"></i><p class="mt-4">Buscando habitaciones disponibles...</p></div>');
 
         $.post('/reservas/search', {
             checkin: checkin, checkout: checkout,
@@ -804,16 +613,17 @@ jQuery(function ($) {
             adults: $('#adults').val(), children: $('#children').val(),
             establishment_id: CURRENT_ESTABLISHMENT
         }).done(function (res) {
-            if (!res.success) { $('#rooms-grid').html('<div class="empty-rooms">' + esc(res.message || 'No se pudo buscar.') + '</div>'); return; }
+            if (!res.success) { $('#rooms-grid').html('<div class="text-center py-16 text-ink-400">' + esc(res.message || 'No se pudo buscar.') + '</div>'); return; }
             SEARCH = { checkin: checkin, checkout: checkout, checkin_time: checkinTime, checkout_time: checkoutTime, adults: parseInt($('#adults').val(),10), children: parseInt($('#children').val(),10), active: true };
             window.__lastList = res.rooms;
             renderRooms(res.rooms);
             $('#rooms-heading').text(res.count + ' habitación(es) disponible(s)');
             $('#rooms-subheading').text('Del ' + res.checkin + ' ' + res.checkin_time + ' al ' + res.checkout + ' ' + res.checkout_time + ' · ' + res.nights + ' noche(s) · ' + res.adults + ' adulto(s)' + (res.children ? ', ' + res.children + ' niño(s)' : ''));
-            $('html,body').animate({ scrollTop: $('#rooms-results').offset().top - 70 }, 400);
+            var top = document.getElementById('rooms-results').getBoundingClientRect().top + window.scrollY - 76;
+            window.scrollTo({ top: top, behavior: 'smooth' });
         }).fail(function (xhr) {
             var m = (xhr.responseJSON && xhr.responseJSON.message) ? xhr.responseJSON.message : 'No se pudo realizar la búsqueda.';
-            $('#rooms-grid').html('<div class="empty-rooms">' + esc(m) + '</div>');
+            $('#rooms-grid').html('<div class="text-center py-16 text-ink-400">' + esc(m) + '</div>');
         }).always(function () {
             $btn.prop('disabled', false).html('<i class="fa fa-search"></i> Buscar');
         });
@@ -822,69 +632,69 @@ jQuery(function ($) {
     // ---- Detalle ----
     $(document).on('click', '.btn-detail', function () {
         var id = $(this).data('id');
-        $('#detail-body').html('<div class="loading-rooms"><i class="fa fa-spinner fa-spin fa-2x"></i></div>');
-        $('#roomDetailModal').modal('show');
+        $('#detail-body').html('<div class="hb-spinner"><i class="fa fa-spinner fa-spin fa-2x"></i></div>');
+        openModal('roomDetailModal');
         var url = '/reservas/room/' + id + '?establishment_id=' + (CURRENT_ESTABLISHMENT || '');
         if (SEARCH.active) url += '&checkin=' + SEARCH.checkin + '&checkout=' + SEARCH.checkout + '&checkin_time=' + SEARCH.checkin_time + '&checkout_time=' + SEARCH.checkout_time;
         $.get(url).done(function (res) {
-            if (!res.success) { $('#detail-body').html('<p class="text-danger">No se pudo cargar el detalle.</p>'); return; }
+            if (!res.success) { $('#detail-body').html('<p class="text-err">No se pudo cargar el detalle.</p>'); return; }
             renderDetail(res.room);
         }).fail(function () {
-            $('#detail-body').html('<p class="text-danger">No se pudo cargar el detalle.</p>');
+            $('#detail-body').html('<p class="text-err">No se pudo cargar el detalle.</p>');
         });
     });
 
     function renderDetail(room) {
         $('#detail-title').text(room.category + ' · ' + room.name);
         var images = (room.images && room.images.length) ? room.images : [PLACEHOLDER];
-        var gallery = '<div class="modal-gallery"><img id="detail-main" src="' + images[0] + '" alt="' + esc(room.name) + '"></div>';
+        var gallery = '<img id="detail-main" src="' + images[0] + '" alt="' + esc(room.name) + '" class="w-full h-64 object-cover rounded-xl">';
         var thumbs = images.length > 1
-            ? '<div class="modal-thumbs">' + images.map(function (u, i) { return '<img src="' + u + '" class="' + (i===0?'active':'') + '" data-src="' + u + '">'; }).join('') + '</div>'
+            ? '<div class="flex gap-2 flex-wrap mt-3">' + images.map(function (u, i) { return '<img src="' + u + '" class="detail-thumb w-16 h-12 object-cover rounded-lg cursor-pointer border-2 ' + (i===0?'border-brand':'border-transparent') + '" data-src="' + u + '">'; }).join('') + '</div>'
             : '';
         var meta = [];
-        if (room.capacity) meta.push('<i class="fa fa-users"></i> ' + room.capacity + ' huésped(es)');
-        if (room.beds) meta.push('<i class="fa fa-bed"></i> ' + esc(room.beds));
-        if (room.size) meta.push('<i class="fa fa-expand"></i> ' + room.size + ' m²');
-        if (room.floor) meta.push('<i class="fa fa-building"></i> ' + esc(room.floor));
+        if (room.capacity) meta.push('<span class="hb-pill"><i class="fa fa-users"></i> ' + room.capacity + ' huésped(es)</span>');
+        if (room.beds)     meta.push('<span class="hb-pill"><i class="fa fa-bed"></i> ' + esc(room.beds) + '</span>');
+        if (room.size)     meta.push('<span class="hb-pill"><i class="fa fa-expand"></i> ' + room.size + ' m²</span>');
+        if (room.floor)    meta.push('<span class="hb-pill"><i class="fa fa-building"></i> ' + esc(room.floor) + '</span>');
         var amenities = (room.amenities && room.amenities.length)
-            ? '<h5 style="margin-top:14px;">Servicios</h5>' + room.amenities.map(function (a) { return '<span class="amenity-pill"><i class="fa ' + amenityIcon(a) + '"></i>' + esc(a) + '</span>'; }).join('')
+            ? '<h5 class="font-semibold text-ink-900 mt-5 mb-2 text-[14px]">Servicios</h5><div class="flex flex-wrap gap-2">' + room.amenities.map(function (a) { return '<span class="hb-pill"><i class="fa ' + amenityIcon(a) + '"></i>' + esc(a) + '</span>'; }).join('') + '</div>'
             : '';
-        var price = room.min_price > 0 ? money(room.min_price) + ' <small class="text-muted">/ noche</small>' : 'Consultar tarifa';
-        var totalLine = (room.total && room.nights) ? '<div class="room-card__total" style="font-size:14px;">Total ' + room.nights + ' noche(s): <strong>' + money(room.total) + '</strong></div>' : '';
+        var price = room.min_price > 0 ? '<span class="text-2xl font-display font-bold text-ink-900">' + money(room.min_price) + '</span><span class="text-ink-400 text-[13px]"> / noche</span>' : '<span class="text-ink-500">Consultar tarifa</span>';
+        var totalLine = (room.total && room.nights) ? '<div class="text-[13px] text-ink-600 mt-1">Total ' + room.nights + ' noche(s): <strong class="text-ink-900">' + money(room.total) + '</strong></div>' : '';
         var availability = '';
         if (typeof room.available !== 'undefined') {
             availability = room.available
-                ? '<div class="alert alert-success" style="padding:8px 12px;">Disponible para las fechas seleccionadas.</div>'
-                : '<div class="alert alert-warning" style="padding:8px 12px;">No disponible en esas fechas.</div>';
+                ? '<div class="alert alert-success mt-4">Disponible para las fechas seleccionadas.</div>'
+                : '<div class="alert alert-warning mt-4">No disponible en esas fechas.</div>';
         }
 
         var html =
-            '<div class="row">' +
-              '<div class="col-sm-7">' + gallery + thumbs + '</div>' +
-              '<div class="col-sm-5">' +
-                '<div class="room-card__cat">' + esc(room.category) + '</div>' +
-                '<h3 style="margin-top:4px;">' + esc(room.name) + '</h3>' +
-                (meta.length ? '<p class="room-card__meta">' + meta.join(' &nbsp; ') + '</p>' : '') +
-                '<p>' + esc(room.description || room.short_description || '') + '</p>' +
-                '<div class="room-card__price" style="margin-top:10px;">' + price + '</div>' +
-                totalLine + availability + amenities +
-                '<button class="btn btn-primary btn-block btn-lg btn-reserve" data-id="' + room.id + '" style="margin-top:16px;"><i class="fa fa-calendar-check-o"></i> Reservar</button>' +
+            '<div class="grid gap-6 md:grid-cols-2">' +
+              '<div>' + gallery + thumbs + '</div>' +
+              '<div>' +
+                '<div class="hb-eyebrow mb-2">' + esc(room.category) + '</div>' +
+                '<h3 class="font-display text-xl font-bold text-ink-900 mb-3">' + esc(room.name) + '</h3>' +
+                (meta.length ? '<div class="flex flex-wrap gap-2 mb-3">' + meta.join('') + '</div>' : '') +
+                '<p class="text-[14px] text-ink-600 leading-relaxed">' + esc(room.description || room.short_description || '') + '</p>' +
+                '<div class="mt-4">' + price + totalLine + '</div>' +
+                availability + amenities +
+                '<button class="hb-btn hb-btn-primary hb-btn-block hb-btn-lg btn-reserve mt-5" data-id="' + room.id + '"><i class="fa fa-calendar-check-o"></i> Reservar</button>' +
               '</div>' +
             '</div>';
         $('#detail-body').html(html);
     }
 
-    $(document).on('click', '.modal-thumbs img', function () {
+    $(document).on('click', '.detail-thumb', function () {
         $('#detail-main').attr('src', $(this).data('src'));
-        $('.modal-thumbs img').removeClass('active');
-        $(this).addClass('active');
+        $('.detail-thumb').removeClass('border-brand').addClass('border-transparent');
+        $(this).addClass('border-brand').removeClass('border-transparent');
     });
 
     // ---- Reservar ----
     $(document).on('click', '.btn-reserve', function () {
         var room = findRoom($(this).data('id'));
         if (!room) return;
-        $('#roomDetailModal').modal('hide');
+        $('#roomDetailModal').removeClass('is-open');
         openReserve(room);
     });
 
@@ -893,7 +703,6 @@ jQuery(function ($) {
         $('#reserveform')[0].reset();
         $('#r-room').val(room.id);
 
-        // Tomar fechas de la búsqueda si existe, si no del buscador
         var checkin = SEARCH.active ? SEARCH.checkin : $('#checkin_date').val();
         var checkout = SEARCH.active ? SEARCH.checkout : $('#checkout_date').val();
         var checkinTime = SEARCH.active ? SEARCH.checkin_time : ($('#checkin_time').val() || '14:00');
@@ -910,18 +719,16 @@ jQuery(function ($) {
 
         var datesTxt = (checkin && checkout)
             ? 'Del <strong>' + checkin + ' ' + checkinTime + '</strong> al <strong>' + checkout + ' ' + checkoutTime + '</strong>'
-            : '<span class="text-danger">Selecciona fechas en el buscador antes de reservar.</span>';
+            : '<span class="text-err">Selecciona fechas en el buscador antes de reservar.</span>';
         var priceTxt = room.min_price > 0 ? money(room.min_price) + ' / noche' : 'Consultar tarifa';
         $('#reserve-summary').html(
-            '<div><strong>' + esc(room.category) + ' · ' + esc(room.name) + '</strong></div>' +
-            '<div>' + datesTxt + '</div>' +
-            '<div>' + (adults || 1) + ' adulto(s)' + (children ? ', ' + children + ' niño(s)' : '') + ' · ' + priceTxt + '</div>'
+            '<div class="font-semibold text-ink-900">' + esc(room.category) + ' · ' + esc(room.name) + '</div>' +
+            '<div class="mt-0.5">' + datesTxt + '</div>' +
+            '<div class="mt-0.5">' + (adults || 1) + ' adulto(s)' + (children ? ', ' + children + ' niño(s)' : '') + ' · ' + priceTxt + '</div>'
         );
-        $('#reserveModal').modal('show');
+        openModal('reserveModal');
     }
 
-    // Sólo DNI (1) y RUC (6) tienen consulta automática (RENIEC/SUNAT). El resto
-    // de documentos (carnet de extranjería, pasaporte, etc.) se ingresan a mano.
     function docLookupType(id) {
         id = String(id);
         if (id === '1') return 'dni';
@@ -929,11 +736,10 @@ jQuery(function ($) {
         return null;
     }
 
-    // Consulta de documento (autocompleta nombre)
     $('#r-doc-search').on('click', function () {
         var lookup = docLookupType($('#r-doctype').val());
         var num = $.trim($('#r-docnumber').val());
-        var $fb = $('#r-doc-feedback').removeClass('text-danger text-success').addClass('text-muted');
+        var $fb = $('#r-doc-feedback').removeClass('text-err text-ok').addClass('text-ink-500');
         if (!lookup) { $fb.text('Este tipo de documento se ingresa manualmente.'); return; }
         if (!num) { $fb.text('Ingresa el número de documento.'); return; }
         $fb.html('<i class="fa fa-spinner fa-spin"></i> Consultando...');
@@ -941,13 +747,13 @@ jQuery(function ($) {
             if (res.success && res.data) {
                 var d = res.data;
                 if (d.name) $('#r-name').val(d.name);
-                $fb.removeClass('text-muted').addClass('text-success').text('Datos encontrados.');
+                $fb.removeClass('text-ink-500').addClass('text-ok').text('Datos encontrados.');
             } else {
-                $fb.removeClass('text-muted').addClass('text-danger').text(res.message || 'No se encontraron datos.');
+                $fb.removeClass('text-ink-500').addClass('text-err').text(res.message || 'No se encontraron datos.');
             }
         }).fail(function (xhr) {
             var m = (xhr.responseJSON && xhr.responseJSON.message) ? xhr.responseJSON.message : 'No se pudo consultar.';
-            $fb.removeClass('text-muted').addClass('text-danger').text(m);
+            $fb.removeClass('text-ink-500').addClass('text-err').text(m);
         });
     });
 
@@ -955,11 +761,9 @@ jQuery(function ($) {
         var id = String($(this).val());
         var placeholders = { '1': 'DNI (8 dígitos)', '6': 'RUC (11 dígitos)', '7': 'Nº de pasaporte', '4': 'Nº de carnet de extranjería' };
         $('#r-docnumber').attr('placeholder', placeholders[id] || 'Nº de documento');
-        // Mostrar el botón de consulta sólo para DNI/RUC.
         $('#r-doc-search').toggle(!!docLookupType(id));
     }).trigger('change');
 
-    // Enviar reserva
     $('#reserveform').on('submit', function (e) {
         e.preventDefault();
         if (!$('#r-checkin').val() || !$('#r-checkout').val()) {
@@ -972,7 +776,6 @@ jQuery(function ($) {
                 $('#reserve-message').html(html);
                 if (html.indexOf('alert-success') !== -1) {
                     $('#reserveform')[0].reset();
-                    // Refrescar disponibilidad si había búsqueda activa
                     if (SEARCH.active) { $('#searchform').trigger('submit'); }
                 }
             })
@@ -982,19 +785,27 @@ jQuery(function ($) {
                         ? xhr.responseText
                         : alertHtml('danger', 'No se pudo registrar la reserva. Inténtalo de nuevo.'));
             })
-            .always(function () { $btn.prop('disabled', false).html('Confirmar reserva'); });
+            .always(function () { $btn.prop('disabled', false).html('<i class="fa fa-calendar-check-o"></i> Confirmar reserva'); });
     });
 
     function alertHtml(type, msg) {
-        return '<div class="alert alert-' + type + ' alert-dismissable"><button type="button" class="close" data-dismiss="alert">&times;</button>' + esc(msg) + '</div>';
+        return '<div class="alert alert-' + type + '"><button type="button" class="close" data-dismiss="alert">&times;</button>' + esc(msg) + '</div>';
     }
+    $(document).on('click', '.alert .close', function () { $(this).closest('.alert').remove(); });
+
+    // ---- Galería lightbox ----
+    $(document).on('click', '[data-lightbox]', function () {
+        $('#hbLightbox img').attr('src', $(this).data('lightbox'));
+        $('#hbLightbox').addClass('is-open'); $('body').addClass('hb-modal-open');
+    });
+    $(document).on('click', '[data-lightbox-close], #hbLightbox', function (e) {
+        if (e.target !== this) return;
+        $('#hbLightbox').removeClass('is-open'); $('body').removeClass('hb-modal-open');
+    });
+    $('[data-lightbox-close]').on('click', function () { $('#hbLightbox').removeClass('is-open'); $('body').removeClass('hb-modal-open'); });
 
     // ---- fechas mínimas ----
     (function initDates() {
-        // Fecha de HOY en horario LOCAL. Antes se usaba toISOString(), que
-        // devuelve la fecha en UTC: de noche en zonas con desfase negativo
-        // (Perú es UTC-5) ya era "mañana" en UTC, así que el mínimo saltaba a
-        // mañana y no dejaba reservar para hoy.
         var localToday = function () {
             var d = new Date();
             var mm = ('0' + (d.getMonth() + 1)).slice(-2);
@@ -1004,8 +815,6 @@ jQuery(function ($) {
         var today = localToday();
         $('#checkin_date').attr('min', today).on('change', function () {
             var v = $(this).val();
-            // La salida puede ser el MISMO día (day-use, la hora decide) o
-            // cualquier día posterior.
             $('#checkout_date').attr('min', v || today);
             if ($('#checkout_date').val() && $('#checkout_date').val() < v) {
                 $('#checkout_date').val(v);
@@ -1013,15 +822,6 @@ jQuery(function ($) {
         });
         $('#checkout_date').attr('min', today);
     })();
-
-    // Smooth scroll sólo para los enlaces de navegación internos (no rompe tabs/sliders)
-    $(document).on('click', 'a.nav-scroll', function (e) {
-        var target = $(this).attr('href');
-        if (target && target.charAt(0) === '#' && target.length > 1 && $(target).length) {
-            e.preventDefault();
-            $('html,body').animate({ scrollTop: $(target).offset().top - 70 }, 400);
-        }
-    });
 });
 </script>
 
