@@ -37,8 +37,7 @@
         @if($hotelLogo)
           <img src="{{ $hotelLogo }}" alt="{{ $hotelName }}" class="h-8 w-auto max-w-[130px] object-contain">
         @else
-          <span class="w-9 h-9 rounded-full bg-brand text-white flex items-center justify-center font-display font-bold text-base shrink-0">{{ mb_strtoupper(mb_substr($hotelName,0,1)) }}</span>
-          <span class="font-display text-[15px] font-bold text-ink-900 truncate max-w-[38vw] lg:max-w-[220px]">{{ $hotelName }}</span>
+          <span class="font-display text-[15px] font-bold text-ink-900 truncate max-w-[46vw] lg:max-w-[220px]">{{ $hotelName }}</span>
         @endif
       </a>
       @if($hasBranches)

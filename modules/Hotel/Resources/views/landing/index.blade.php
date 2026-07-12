@@ -365,17 +365,11 @@
     <form class="hr-search__card" id="searchform" onsubmit="return false;">
       <div class="hr-field">
         <label class="hb-label" for="checkin_date"><i class="fa fa-calendar"></i> Entrada</label>
-        <div class="hr-datetime">
-          <input name="checkin" type="date" id="checkin_date" class="hb-input" required>
-          <input name="checkin_time" type="time" id="checkin_time" class="hb-input" value="14:00" required aria-label="Hora de entrada">
-        </div>
+        <input name="checkin" type="date" id="checkin_date" class="hb-input" required>
       </div>
       <div class="hr-field">
         <label class="hb-label" for="checkout_date"><i class="fa fa-calendar"></i> Salida</label>
-        <div class="hr-datetime">
-          <input name="checkout" type="date" id="checkout_date" class="hb-input" required>
-          <input name="checkout_time" type="time" id="checkout_time" class="hb-input" value="12:00" required aria-label="Hora de salida">
-        </div>
+        <input name="checkout" type="date" id="checkout_date" class="hb-input" required>
       </div>
       <div class="hr-field hr-field--guests hr-guests">
         <label class="hb-label"><i class="fa fa-users"></i> Huéspedes</label>
@@ -671,6 +665,17 @@
         <input type="hidden" name="checkout_time" id="r-checkout-time">
         <input type="hidden" name="adults" id="r-adults">
         <input type="hidden" name="children" id="r-children">
+
+        <div id="reserve-dates" class="grid grid-cols-2 gap-4" style="display:none;">
+          <div>
+            <label class="hb-label" for="r-checkin-date"><i class="fa fa-calendar"></i> Entrada</label>
+            <input type="date" class="hb-input" id="r-checkin-date">
+          </div>
+          <div>
+            <label class="hb-label" for="r-checkout-date"><i class="fa fa-calendar"></i> Salida</label>
+            <input type="date" class="hb-input" id="r-checkout-date">
+          </div>
+        </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div class="sm:col-span-1">
@@ -974,6 +979,26 @@ jQuery(function ($) {
         openReserve(room);
     });
 
+    // Contexto de la reserva en curso (para poder refrescar el resumen cuando el
+    // usuario elige las fechas dentro del propio modal).
+    var RESERVE_CTX = { room: null, adults: 1, children: 0 };
+
+    function renderReserveSummary() {
+        var room = RESERVE_CTX.room; if (!room) return;
+        var checkin = $('#r-checkin').val(), checkout = $('#r-checkout').val();
+        var checkinTime = $('#r-checkin-time').val() || '14:00', checkoutTime = $('#r-checkout-time').val() || '12:00';
+        var adults = RESERVE_CTX.adults, children = RESERVE_CTX.children;
+        var datesTxt = (checkin && checkout)
+            ? 'Del <strong>' + checkin + ' ' + checkinTime + '</strong> al <strong>' + checkout + ' ' + checkoutTime + '</strong>'
+            : '<span class="text-err">Elige las fechas de tu estancia.</span>';
+        var priceTxt = room.min_price > 0 ? money(room.min_price) + ' / noche' : 'Consultar tarifa';
+        $('#reserve-summary').html(
+            '<div class="font-semibold text-ink-900">' + esc(room.category) + ' · ' + esc(room.name) + '</div>' +
+            '<div class="mt-0.5">' + datesTxt + '</div>' +
+            '<div class="mt-0.5">' + (adults || 1) + ' adulto(s)' + (children ? ', ' + children + ' niño(s)' : '') + ' · ' + priceTxt + '</div>'
+        );
+    }
+
     function openReserve(room) {
         $('#reserve-message').empty();
         $('#reserveform')[0].reset();
@@ -981,29 +1006,47 @@ jQuery(function ($) {
 
         var checkin = SEARCH.active ? SEARCH.checkin : $('#checkin_date').val();
         var checkout = SEARCH.active ? SEARCH.checkout : $('#checkout_date').val();
-        var checkinTime = SEARCH.active ? SEARCH.checkin_time : ($('#checkin_time').val() || '14:00');
-        var checkoutTime = SEARCH.active ? SEARCH.checkout_time : ($('#checkout_time').val() || '12:00');
+        var checkinTime = SEARCH.active ? SEARCH.checkin_time : '14:00';
+        var checkoutTime = SEARCH.active ? SEARCH.checkout_time : '12:00';
         var adults = SEARCH.active ? SEARCH.adults : parseInt($('#adults').val(), 10);
         var children = SEARCH.active ? SEARCH.children : parseInt($('#children').val(), 10);
 
         $('#r-checkin').val(checkin || '');
         $('#r-checkout').val(checkout || '');
-        $('#r-checkin-time').val(checkinTime || '');
-        $('#r-checkout-time').val(checkoutTime || '');
+        $('#r-checkin-time').val(checkinTime || '14:00');
+        $('#r-checkout-time').val(checkoutTime || '12:00');
         $('#r-adults').val(adults || 1);
         $('#r-children').val(children || 0);
 
-        var datesTxt = (checkin && checkout)
-            ? 'Del <strong>' + checkin + ' ' + checkinTime + '</strong> al <strong>' + checkout + ' ' + checkoutTime + '</strong>'
-            : '<span class="text-err">Selecciona fechas en el buscador antes de reservar.</span>';
-        var priceTxt = room.min_price > 0 ? money(room.min_price) + ' / noche' : 'Consultar tarifa';
-        $('#reserve-summary').html(
-            '<div class="font-semibold text-ink-900">' + esc(room.category) + ' · ' + esc(room.name) + '</div>' +
-            '<div class="mt-0.5">' + datesTxt + '</div>' +
-            '<div class="mt-0.5">' + (adults || 1) + ' adulto(s)' + (children ? ', ' + children + ' niño(s)' : '') + ' · ' + priceTxt + '</div>'
-        );
+        RESERVE_CTX = { room: room, adults: adults || 1, children: children || 0 };
+
+        // Si no llegaron fechas desde el buscador, se eligen aquí mismo.
+        var needDates = !(checkin && checkout);
+        var $dates = $('#reserve-dates');
+        var d = new Date(), today = d.getFullYear() + '-' + ('0'+(d.getMonth()+1)).slice(-2) + '-' + ('0'+d.getDate()).slice(-2);
+        $('#r-checkin-date').attr('min', today).val(checkin || '');
+        $('#r-checkout-date').attr('min', checkin || today).val(checkout || '');
+        if (needDates) { $dates.show(); } else { $dates.hide(); }
+
+        renderReserveSummary();
         openModal('reserveModal');
     }
+
+    // Sincroniza los selectores de fecha del modal con los campos ocultos.
+    $('#r-checkin-date').on('change', function () {
+        var v = $(this).val();
+        $('#r-checkin').val(v || '');
+        $('#r-checkout-date').attr('min', v || '');
+        if (v && $('#r-checkout-date').val() && $('#r-checkout-date').val() < v) {
+            $('#r-checkout-date').val('');
+            $('#r-checkout').val('');
+        }
+        renderReserveSummary();
+    });
+    $('#r-checkout-date').on('change', function () {
+        $('#r-checkout').val($(this).val() || '');
+        renderReserveSummary();
+    });
 
     function docLookupType(id) {
         id = String(id);
@@ -1042,8 +1085,14 @@ jQuery(function ($) {
 
     $('#reserveform').on('submit', function (e) {
         e.preventDefault();
-        if (!$('#r-checkin').val() || !$('#r-checkout').val()) {
-            $('#reserve-message').html(alertHtml('danger', 'Selecciona las fechas en el buscador antes de reservar.'));
+        var rCheckin = $('#r-checkin').val(), rCheckout = $('#r-checkout').val();
+        if (!rCheckin || !rCheckout) {
+            $('#reserve-dates').show();
+            $('#reserve-message').html(alertHtml('danger', 'Elige las fechas de entrada y salida.'));
+            return;
+        }
+        if (rCheckout <= rCheckin) {
+            $('#reserve-message').html(alertHtml('danger', 'La fecha de salida debe ser posterior a la de entrada.'));
             return;
         }
         var $btn = $('#r-submit').prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Enviando...');
