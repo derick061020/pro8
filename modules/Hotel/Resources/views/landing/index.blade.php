@@ -84,8 +84,8 @@
   @keyframes hrCloudDrift { 0% { transform:translateX(-3%); } 100% { transform:translateX(3%); } }
 
   @media (max-width:640px) {
-    .hr-wordmark2 { top:19%; font-size:clamp(28px,12vw,72px); }
-    .hr-building { width:200%; left:50%; margin-left:-100%; bottom:0; }
+    .hr-wordmark2 { top:35%;text-align: left!important;padding:0!important; font-size:clamp(28px,12vw,72px); }
+    .hr-building {         max-width: 250vw; width: 250vw !important; left:20%; margin-left:-100%; bottom:0; }
   }
 
   /* ===== Loader de marca (intro tipo Makai) ===== */
