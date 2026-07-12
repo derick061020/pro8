@@ -70,7 +70,7 @@
      entre SKY.png y MAKAI.png). */
   /* Edificio: PNG con fondo transparente (sin cielo propio) → se compone limpio
      sobre SKY.png, sin ninguna costura. */
-  .hr-building { position:absolute; left:0; bottom:-2%; width:100%; height:auto; z-index:4; pointer-events:none; user-select:none; filter:drop-shadow(0 24px 44px rgba(0,0,0,.20)); }
+  .hr-building { position:absolute; left:0; bottom:-1%; width:100%; height:auto; z-index:4; pointer-events:none; user-select:none; }
   /* Fundido inferior del edificio hacia el fondo de la página / buscador. */
   .hr-hero-makai::after { content:""; position:absolute; left:0; right:0; bottom:-1px; height:16%; z-index:5; pointer-events:none; background:linear-gradient(to top, #f4f4f4 0%, rgba(244,244,244,.65) 42%, rgba(244,244,244,0) 100%); }
 
