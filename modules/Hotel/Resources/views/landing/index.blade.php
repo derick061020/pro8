@@ -312,7 +312,7 @@
       <div class="space-y-4">
         @foreach($cfg['testimonials'] as $t)
           @php $tImg = HotelLandingSetting::imageUrl($t['image'] ?? null, HotelLandingSetting::DEFAULT_REVIEW); @endphp
-          <div class="hb-card p-6 flex gap-4">
+          <div class="reveal hb-card p-6 flex gap-4" style="--reveal-i:{{ $loop->index }}">
             <img src="{{ $tImg }}" alt="{{ $t['name'] ?? 'Huésped' }}" class="w-12 h-12 rounded-full object-cover shrink-0">
             <div>
               <div class="text-[#f4c542] text-sm mb-1.5">@for($s=0;$s<5;$s++)<i class="fa fa-star"></i>@endfor</div>
@@ -375,7 +375,7 @@
           $postImage = $post->cover_image ?: HotelLandingSetting::DEFAULT_GALLERY;
           $postDate  = optional($post->published_at)->format('d/m/Y');
         @endphp
-        <article class="hb-card overflow-hidden group transition hover:shadow-panel hover:-translate-y-1">
+        <article class="reveal hb-card overflow-hidden group transition duration-300 ease-makai hover:shadow-panel hover:-translate-y-1" style="--reveal-i:{{ $loop->index }}">
           <a href="{{ url('reservas/blog/'.$post->slug) }}" class="relative block aspect-[16/10] bg-ink-100 overflow-hidden">
             <span class="absolute inset-0 bg-center bg-cover transition duration-500 group-hover:scale-105" style="background-image:url('{{ $postImage }}');"></span>
             @if($post->hasVideoCover())<i class="fa fa-play-circle absolute inset-0 m-auto w-max h-max text-white text-5xl drop-shadow-lg"></i>@endif
