@@ -13,26 +13,28 @@
 <style>
   /* ===== Hero ===== */
   .hr-hero { position:relative; background:#171717; }
-  .hr-slides { position:relative; height:88vh; min-height:560px; max-height:880px; overflow:hidden; }
+  .hr-slides { position:relative; height:min(88vh, 860px); min-height:600px; overflow:hidden; }
   .hr-slide { position:absolute; inset:0; background-size:cover; background-position:center; opacity:0; transform:scale(1.06); transition:opacity 1.3s ease, transform 8s ease; }
   .hr-slide.is-active { opacity:1; transform:scale(1); }
-  /* Degradado en dos capas: oscurece arriba (legibilidad del nav) y abajo
-     (fusión con el buscador flotante), con una viñeta suave. */
+  /* Degradado en dos capas: oscurece arriba (legibilidad del nav flotante) y
+     abajo (fusión con el buscador), con una viñeta suave que centra la vista. */
   .hr-slide__overlay { position:absolute; inset:0; background:
-      linear-gradient(180deg, rgba(23,23,23,.60) 0%, rgba(23,23,23,.15) 34%, rgba(23,23,23,.20) 55%, rgba(23,23,23,.82) 100%),
-      radial-gradient(120% 80% at 50% 30%, rgba(23,23,23,0) 40%, rgba(23,23,23,.35) 100%); }
-  .hr-slide__caption { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; text-align:center; color:#fff; padding:80px 20px 120px; }
-  .hr-slide.is-active .hr-caption-inner { animation:heroUp .9s cubic-bezier(.16,1,.3,1) both; }
-  @keyframes heroUp { from { opacity:0; transform:translateY(24px); } to { opacity:1; transform:none; } }
-  .hr-chip { display:inline-flex; align-items:center; gap:8px; padding:7px 14px; margin-bottom:20px; border-radius:999px; background:rgba(255,255,255,.14); border:1px solid rgba(255,255,255,.28); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); font-size:12.5px; font-weight:600; letter-spacing:.02em; color:#fff; }
-  .hr-chip .stars { color:#f4c542; letter-spacing:1px; }
-  .hr-title { font-family:'Inter Tight','Inter',sans-serif; font-size:clamp(36px,6.2vw,66px); font-weight:800; line-height:1.05; letter-spacing:-.025em; margin:0 0 18px; text-shadow:0 4px 40px rgba(0,0,0,.45); }
-  .hr-subtitle { font-size:clamp(16px,2.2vw,21px); font-weight:400; max-width:660px; margin:0 auto 32px; color:rgba(255,255,255,.92); text-shadow:0 2px 18px rgba(0,0,0,.4); line-height:1.5; }
-  .hr-dots { position:absolute; left:0; right:0; bottom:172px; display:flex; justify-content:center; gap:9px; z-index:3; }
-  .hr-dot { width:9px; height:9px; border-radius:999px; border:0; padding:0; background:rgba(255,255,255,.45); cursor:pointer; transition:all .3s cubic-bezier(.16,1,.3,1); }
-  .hr-dot.is-active { background:#fff; width:28px; }
-  .hr-scroll { position:absolute; left:50%; bottom:96px; transform:translateX(-50%); z-index:3; color:rgba(255,255,255,.75); font-size:22px; animation:heroBounce 2s ease-in-out infinite; }
-  @keyframes heroBounce { 0%,100% { transform:translate(-50%,0); } 50% { transform:translate(-50%,8px); } }
+      linear-gradient(180deg, rgba(20,22,20,.58) 0%, rgba(20,22,20,.12) 30%, rgba(20,22,20,.28) 62%, rgba(20,22,20,.80) 100%),
+      radial-gradient(130% 90% at 50% 32%, rgba(20,22,20,0) 42%, rgba(20,22,20,.32) 100%); }
+  .hr-slide__caption { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; text-align:center; color:#fff; padding:96px 22px 150px; }
+  .hr-caption-inner { width:100%; max-width:760px; }
+  .hr-slide.is-active .hr-caption-inner { animation:heroUp 1s cubic-bezier(.16,1,.3,1) both; }
+  @keyframes heroUp { from { opacity:0; transform:translateY(26px); } to { opacity:1; transform:none; } }
+  .hr-chip { display:inline-flex; align-items:center; gap:9px; padding:7px 15px; margin-bottom:22px; border-radius:999px; background:rgba(255,255,255,.12); border:1px solid rgba(255,255,255,.24); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px); font-size:12.5px; font-weight:600; letter-spacing:.03em; color:#fff; }
+  .hr-chip .stars { color:#f4c542; letter-spacing:1.5px; font-size:11px; }
+  .hr-title { font-family:'Inter Tight','Inter',sans-serif; font-size:clamp(33px,5.6vw,62px); font-weight:700; line-height:1.06; letter-spacing:-.025em; margin:0 auto 18px; max-width:14ch; text-shadow:0 4px 40px rgba(0,0,0,.4); }
+  .hr-subtitle { font-size:clamp(15px,2vw,20px); font-weight:400; max-width:600px; margin:0 auto 34px; color:rgba(255,255,255,.9); text-shadow:0 2px 18px rgba(0,0,0,.4); line-height:1.55; }
+  .hr-dots { position:absolute; left:0; right:0; bottom:150px; display:flex; justify-content:center; gap:8px; z-index:3; }
+  .hr-dot { width:8px; height:8px; border-radius:999px; border:0; padding:0; background:rgba(255,255,255,.4); cursor:pointer; transition:all .35s cubic-bezier(.16,1,.3,1); }
+  .hr-dot.is-active { background:#fff; width:26px; }
+  .hr-scroll { position:absolute; left:50%; bottom:92px; transform:translateX(-50%); z-index:3; width:38px; height:38px; border-radius:999px; border:1px solid rgba(255,255,255,.3); background:rgba(255,255,255,.08); backdrop-filter:blur(6px); color:rgba(255,255,255,.85); display:flex; align-items:center; justify-content:center; font-size:16px; animation:heroBounce 2.2s ease-in-out infinite; }
+  .hr-scroll:hover { background:rgba(255,255,255,.18); color:#fff; }
+  @keyframes heroBounce { 0%,100% { transform:translate(-50%,0); } 50% { transform:translate(-50%,7px); } }
 
   /* ===== Tarjeta de habitación (estilo unit card Makai) ===== */
   .rc { position:relative; display:flex; flex-direction:column; background:#fff; border:1px solid #eaecf0; border-radius:24px; overflow:hidden; transition:box-shadow .35s cubic-bezier(.16,1,.3,1), transform .35s cubic-bezier(.16,1,.3,1); }
@@ -87,21 +89,36 @@
   .hr-pop-field > label { display:block; font-size:13px; font-weight:600; color:#2b303b; margin-bottom:7px; }
   .hr-btn-search { height:46px; }
 
+  /* ---- Tablet ---- */
   @media (max-width:991px) {
+    .hr-slides { height:74vh; min-height:540px; }
+    .hr-slide__caption { padding:104px 24px 140px; }
+    .hr-dots { bottom:140px; }
     .hr-search__card { grid-template-columns:1fr 1fr; }
     .hr-field--guests, .hr-field--submit { grid-column:auto; }
     .hr-field--submit { grid-column:1 / -1; }
     .hr-btn-search { width:100%; }
   }
+  /* ---- Móvil ---- */
   @media (max-width:640px) {
-    .hr-slides { height:74vh; min-height:460px; }
-    .hr-slide__caption { padding:76px 18px 96px; }
-    .hr-dots { bottom:118px; }
+    .hr-slides { height:auto; min-height:0; }
+    .hr-slide { position:relative; height:auto; }
+    .hr-slide:not(.is-active) { display:none; }
+    .hr-slide { opacity:1; transform:none; transition:none; }
+    .hr-slide__caption { position:relative; min-height:80vh; padding:110px 20px 118px; }
+    .hr-chip { margin-bottom:16px; }
+    .hr-title { font-size:clamp(29px,8.5vw,40px); margin-bottom:14px; }
+    .hr-subtitle { font-size:16px; margin-bottom:26px; }
+    .hr-dots { position:absolute; bottom:74px; }
     .hr-scroll { display:none; }
-    #reservation-form.hr-search { margin-top:-46px; }
-    .hr-search__card { grid-template-columns:1fr; padding:18px; }
+    #reservation-form.hr-search { margin-top:-40px; }
+    .hr-search__card { grid-template-columns:1fr; padding:16px; gap:14px; border-radius:18px; }
     .hr-guests-box { min-width:0; }
     .hr-guests-pop { width:100%; }
+  }
+  @media (max-width:380px) {
+    .hr-title { font-size:26px; }
+    .hr-slide__caption { min-height:78vh; }
   }
 
   /* ===== Galería lightbox ===== */
@@ -145,12 +162,13 @@
             </span>
             <h1 class="hr-title">{{ $slideTitle }}</h1>
             @if(!empty($slide['subtitle']))<p class="hr-subtitle">{{ $slide['subtitle'] }}</p>@endif
-            <div class="flex flex-wrap items-center justify-center gap-3">
-              @if(!empty($slide['button_text']))
-                <a href="{{ $slide['button_link'] ?: '#rooms-results' }}" class="hb-btn hb-btn-primary hb-btn-lg nav-scroll">{{ $slide['button_text'] }} <i class="fa fa-angle-right"></i></a>
-              @endif
-              <a href="#reservation-form" class="hb-btn hb-btn-light hb-btn-lg nav-scroll"><i class="fa fa-search"></i> Ver disponibilidad</a>
-            </div>
+            @php
+              // Un único CTA en el hero (evita saturar de botones). Si la slide
+              // define su propio botón se respeta; si no, lleva al buscador.
+              $heroBtnText = !empty($slide['button_text']) ? $slide['button_text'] : 'Ver disponibilidad';
+              $heroBtnLink = !empty($slide['button_text']) ? ($slide['button_link'] ?: '#rooms-results') : '#reservation-form';
+            @endphp
+            <a href="{{ $heroBtnLink }}" class="hb-btn hb-btn-primary hb-btn-lg nav-scroll">{{ $heroBtnText }} <i class="fa fa-angle-right"></i></a>
           </div>
         </div>
       </div>

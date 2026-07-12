@@ -60,11 +60,17 @@
 <script src="/landing-reservas/js/jquery-1.11.0.min.js"></script>
 
 <style>
-  html, body { font-family:'Inter', system-ui, sans-serif; background:#f4f4f4; color:#222530; scroll-behavior:smooth; overflow-x:hidden; max-width:100%; }
+  html, body { font-family:'Inter', system-ui, sans-serif; background:#f4f4f4; color:#222530; overflow-x:hidden; max-width:100%; }
+  /* El scroll suave lo maneja el momentum-scroll de JS; dejamos 'auto' para no
+     duplicar el easing en los saltos por ancla. */
+  html { scroll-behavior:auto; }
   .font-display { font-family:'Inter Tight','Inter',sans-serif; }
-  ::-webkit-scrollbar { width:9px; height:9px; }
-  ::-webkit-scrollbar-thumb { background:#cacfd8; border-radius:8px; }
+  /* Barra de scroll acorde a la marca (verde salvia, píldora flotante). */
+  html { scrollbar-width:thin; scrollbar-color:#bcc8c1 transparent; }
+  ::-webkit-scrollbar { width:11px; height:11px; }
   ::-webkit-scrollbar-track { background:transparent; }
+  ::-webkit-scrollbar-thumb { background:#c3cec7; border-radius:999px; border:3px solid #f4f4f4; background-clip:padding-box; }
+  ::-webkit-scrollbar-thumb:hover { background:#5c7c68; }
   a { text-decoration:none; }
 
   /* ===== Botones ===== */
@@ -210,4 +216,45 @@
     els.forEach(function (el) { io.observe(el); });
   };
   document.addEventListener('DOMContentLoaded', function () { window.hbInitReveal(); });
+
+  // ===== Scroll suave con inercia (estilo premium tipo Lenis) =====
+  // Sólo en escritorio con ratón; respeta prefers-reduced-motion y no interfiere
+  // con contenedores scrolleables (modales, popovers) ni con el touch.
+  (function () {
+    var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    var fine   = window.matchMedia('(hover:hover) and (pointer:fine)').matches;
+    if (reduce || !fine) return;
+
+    var current = window.scrollY, target = current, ease = 0.075, rafId = null, animating = false;
+    var maxScroll = function () { return Math.max(0, document.documentElement.scrollHeight - window.innerHeight); };
+
+    function loop() {
+      var diff = target - current;
+      current += diff * ease;
+      if (Math.abs(diff) < 0.4) { current = target; window.scrollTo(0, current); rafId = null; animating = false; return; }
+      window.scrollTo(0, current);
+      rafId = requestAnimationFrame(loop);
+    }
+
+    window.addEventListener('wheel', function (e) {
+      if (e.ctrlKey) return;                                   // zoom del navegador
+      if (document.body.classList.contains('hb-modal-open')) return; // modal abierto
+      // Deja pasar el scroll nativo dentro de contenedores con overflow propio.
+      var el = e.target;
+      while (el && el !== document.body && el.nodeType === 1) {
+        var oy = getComputedStyle(el).overflowY;
+        if ((oy === 'auto' || oy === 'scroll') && el.scrollHeight > el.clientHeight + 1) return;
+        el = el.parentElement;
+      }
+      e.preventDefault();
+      if (!animating) { current = window.scrollY; target = current; animating = true; }
+      var step = e.deltaY * (e.deltaMode === 1 ? 24 : (e.deltaMode === 2 ? window.innerHeight : 1));
+      target = Math.max(0, Math.min(target + step, maxScroll()));
+      if (!rafId) rafId = requestAnimationFrame(loop);
+    }, { passive: false });
+
+    // Si el usuario arrastra la barra o navega por teclado, resincroniza.
+    window.addEventListener('scroll', function () { if (!animating) { current = target = window.scrollY; } }, { passive: true });
+    window.addEventListener('resize', function () { target = Math.max(0, Math.min(target, maxScroll())); });
+  })();
 </script>
