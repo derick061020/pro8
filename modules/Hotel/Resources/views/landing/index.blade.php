@@ -13,17 +13,59 @@
 <style>
   /* ===== Hero ===== */
   .hr-hero { position:relative; background:#171717; }
-  .hr-slides { position:relative; height:82vh; min-height:520px; max-height:820px; overflow:hidden; }
-  .hr-slide { position:absolute; inset:0; background-size:cover; background-position:center; opacity:0; transform:scale(1.04); transition:opacity 1.2s ease, transform 7s ease; }
+  .hr-slides { position:relative; height:88vh; min-height:560px; max-height:880px; overflow:hidden; }
+  .hr-slide { position:absolute; inset:0; background-size:cover; background-position:center; opacity:0; transform:scale(1.06); transition:opacity 1.3s ease, transform 8s ease; }
   .hr-slide.is-active { opacity:1; transform:scale(1); }
-  .hr-slide__overlay { position:absolute; inset:0; background:linear-gradient(180deg, rgba(23,23,23,.55) 0%, rgba(23,23,23,.30) 40%, rgba(23,23,23,.78) 100%); }
-  .hr-slide__caption { position:absolute; inset:0; display:flex; align-items:center; text-align:center; color:#fff; padding:0 20px 40px; }
-  .hr-eyebrow-stars { display:inline-flex; gap:5px; color:#f4c542; font-size:15px; margin-bottom:18px; letter-spacing:2px; }
-  .hr-title { font-family:'Inter Tight','Inter',sans-serif; font-size:clamp(34px,6vw,60px); font-weight:700; line-height:1.08; letter-spacing:-.02em; margin:0 0 16px; text-shadow:0 4px 30px rgba(0,0,0,.4); }
-  .hr-subtitle { font-size:clamp(16px,2.2vw,21px); font-weight:400; max-width:680px; margin:0 auto 30px; color:rgba(255,255,255,.9); text-shadow:0 2px 16px rgba(0,0,0,.35); }
-  .hr-dots { position:absolute; left:0; right:0; bottom:150px; display:flex; justify-content:center; gap:9px; z-index:3; }
-  .hr-dot { width:9px; height:9px; border-radius:999px; border:0; padding:0; background:rgba(255,255,255,.45); cursor:pointer; transition:all .25s; }
-  .hr-dot.is-active { background:#fff; width:26px; }
+  /* Degradado en dos capas: oscurece arriba (legibilidad del nav) y abajo
+     (fusión con el buscador flotante), con una viñeta suave. */
+  .hr-slide__overlay { position:absolute; inset:0; background:
+      linear-gradient(180deg, rgba(23,23,23,.60) 0%, rgba(23,23,23,.15) 34%, rgba(23,23,23,.20) 55%, rgba(23,23,23,.82) 100%),
+      radial-gradient(120% 80% at 50% 30%, rgba(23,23,23,0) 40%, rgba(23,23,23,.35) 100%); }
+  .hr-slide__caption { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; text-align:center; color:#fff; padding:80px 20px 120px; }
+  .hr-slide.is-active .hr-caption-inner { animation:heroUp .9s cubic-bezier(.16,1,.3,1) both; }
+  @keyframes heroUp { from { opacity:0; transform:translateY(24px); } to { opacity:1; transform:none; } }
+  .hr-chip { display:inline-flex; align-items:center; gap:8px; padding:7px 14px; margin-bottom:20px; border-radius:999px; background:rgba(255,255,255,.14); border:1px solid rgba(255,255,255,.28); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); font-size:12.5px; font-weight:600; letter-spacing:.02em; color:#fff; }
+  .hr-chip .stars { color:#f4c542; letter-spacing:1px; }
+  .hr-title { font-family:'Inter Tight','Inter',sans-serif; font-size:clamp(36px,6.2vw,66px); font-weight:800; line-height:1.05; letter-spacing:-.025em; margin:0 0 18px; text-shadow:0 4px 40px rgba(0,0,0,.45); }
+  .hr-subtitle { font-size:clamp(16px,2.2vw,21px); font-weight:400; max-width:660px; margin:0 auto 32px; color:rgba(255,255,255,.92); text-shadow:0 2px 18px rgba(0,0,0,.4); line-height:1.5; }
+  .hr-dots { position:absolute; left:0; right:0; bottom:172px; display:flex; justify-content:center; gap:9px; z-index:3; }
+  .hr-dot { width:9px; height:9px; border-radius:999px; border:0; padding:0; background:rgba(255,255,255,.45); cursor:pointer; transition:all .3s cubic-bezier(.16,1,.3,1); }
+  .hr-dot.is-active { background:#fff; width:28px; }
+  .hr-scroll { position:absolute; left:50%; bottom:96px; transform:translateX(-50%); z-index:3; color:rgba(255,255,255,.75); font-size:22px; animation:heroBounce 2s ease-in-out infinite; }
+  @keyframes heroBounce { 0%,100% { transform:translate(-50%,0); } 50% { transform:translate(-50%,8px); } }
+
+  /* ===== Tarjeta de habitación (estilo unit card Makai) ===== */
+  .rc { position:relative; display:flex; flex-direction:column; background:#fff; border:1px solid #eaecf0; border-radius:24px; overflow:hidden; transition:box-shadow .35s cubic-bezier(.16,1,.3,1), transform .35s cubic-bezier(.16,1,.3,1); }
+  .rc:hover { box-shadow:0 22px 48px -14px rgba(10,13,20,.24); transform:translateY(-3px); }
+  .rc-inner { padding:6px 6px 0; }
+  .rc-img { position:relative; height:216px; border-radius:20px; overflow:hidden; background:#f2f5f8; cursor:pointer; }
+  .rc-img .bg { position:absolute; inset:0; background:center/cover no-repeat; transition:transform .6s cubic-bezier(.16,1,.3,1); }
+  .rc:hover .rc-img .bg { transform:scale(1.06); }
+  .rc-chips { position:absolute; top:0; left:0; right:0; display:flex; justify-content:space-between; align-items:flex-start; gap:8px; padding:10px; z-index:2; }
+  .rc-cat { display:inline-flex; align-items:center; padding:5px 12px; border-radius:100px; background:rgba(255,255,255,.92); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); color:#2b303b; font-size:11px; font-weight:600; box-shadow:0 2px 8px rgba(0,0,0,.10); }
+  .rc-fav { display:inline-flex; align-items:center; gap:5px; padding:5px 11px; border-radius:100px; background:rgba(255,255,255,.92); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); color:#b5540f; font-size:11px; font-weight:600; box-shadow:0 2px 8px rgba(0,0,0,.10); }
+  .rc-fav i { color:#f4a52b; }
+  .rc-body { display:flex; flex-direction:column; gap:14px; padding:12px 10px; }
+  .rc-head { display:flex; flex-direction:column; gap:3px; }
+  .rc-title-row { display:flex; align-items:flex-start; justify-content:space-between; gap:8px; }
+  .rc-name { font-family:'Inter Tight','Inter',sans-serif; font-weight:700; font-size:18px; color:#171717; line-height:1.25; }
+  .rc-sub { font-size:12.5px; color:#99a0ae; font-weight:500; }
+  .rc-divider { height:1px; background:#ebebeb; margin:3px 0; }
+  .rc-price-row { display:flex; align-items:flex-end; gap:8px; flex-wrap:wrap; }
+  .rc-price { font-family:'Inter Tight','Inter',sans-serif; font-weight:700; font-size:24px; color:#5c7c68; line-height:1; }
+  .rc-price small { font-size:12px; font-weight:500; color:#a3a3a3; }
+  .rc-total { font-size:12px; font-weight:600; color:#5c7c68; }
+  .rc-stats { display:flex; align-items:stretch; border:1px solid #f2f5f8; border-radius:12px; overflow:hidden; }
+  .rc-stat { flex:1 1 0; min-width:0; display:flex; flex-direction:column; align-items:center; gap:3px; padding:10px 4px; }
+  .rc-stat + .rc-stat { border-left:1px solid #f2f5f8; }
+  .rc-stat i { font-size:16px; color:#5c7c68; }
+  .rc-stat .v { font-size:11px; font-weight:600; color:#525866; letter-spacing:.2px; white-space:nowrap; }
+  .rc-actions { display:flex; gap:8px; }
+  .rc-btn-info { flex-shrink:0; display:inline-flex; align-items:center; justify-content:center; gap:6px; padding:11px 16px; background:#f2f5f8; border:0; border-radius:12px; font-weight:600; font-size:13.5px; color:#717784; cursor:pointer; transition:background .2s; }
+  .rc-btn-info:hover { background:#e7eaef; color:#525866; }
+  .rc-btn-cta { flex:1 1 0; min-width:0; display:inline-flex; align-items:center; justify-content:center; gap:6px; padding:11px 16px; border-radius:12px; background:#5c7c68; color:#fff; border:1px solid #5c7c68; font-weight:600; font-size:13.5px; cursor:pointer; box-shadow:0 1px 2px rgba(14,18,27,.2); transition:background .2s, transform .15s; }
+  .rc-btn-cta:hover { background:#4a6354; }
+  .rc-btn-cta:active { transform:scale(.98); }
 
   /* ===== Buscador flotante ===== */
   .hr-search { position:relative; z-index:20; }
@@ -94,15 +136,19 @@
       <div class="hr-slide {{ $i === 0 ? 'is-active' : '' }}" style="background-image:url('{{ $slideImg }}');">
         <div class="hr-slide__overlay"></div>
         <div class="hr-slide__caption">
-          <div class="max-w-3xl mx-auto">
-            @if($showStars)
-              <div class="hr-eyebrow-stars">@for($s=0;$s<5;$s++)<i class="fa fa-star"></i>@endfor</div>
-            @endif
+          <div class="hr-caption-inner max-w-3xl mx-auto">
+            <span class="hr-chip">
+              @if($showStars)<span class="stars">@for($s=0;$s<5;$s++)★@endfor</span>@endif
+              {{ $hotelName }}
+            </span>
             <h1 class="hr-title">{{ $slideTitle }}</h1>
             @if(!empty($slide['subtitle']))<p class="hr-subtitle">{{ $slide['subtitle'] }}</p>@endif
-            @if(!empty($slide['button_text']))
-              <a href="{{ $slide['button_link'] ?: '#rooms-results' }}" class="hb-btn hb-btn-primary hb-btn-lg nav-scroll">{{ $slide['button_text'] }} <i class="fa fa-angle-right"></i></a>
-            @endif
+            <div class="flex flex-wrap items-center justify-center gap-3">
+              @if(!empty($slide['button_text']))
+                <a href="{{ $slide['button_link'] ?: '#rooms-results' }}" class="hb-btn hb-btn-primary hb-btn-lg nav-scroll">{{ $slide['button_text'] }} <i class="fa fa-angle-right"></i></a>
+              @endif
+              <a href="#reservation-form" class="hb-btn hb-btn-light hb-btn-lg nav-scroll"><i class="fa fa-search"></i> Ver disponibilidad</a>
+            </div>
           </div>
         </div>
       </div>
@@ -116,6 +162,8 @@
       @endforeach
     </div>
   @endif
+
+  <a href="#rooms-results" class="hr-scroll nav-scroll" aria-label="Desplázate"><i class="fa fa-angle-down"></i></a>
 </section>
 
 <!-- ===== Buscador de disponibilidad ===== -->
