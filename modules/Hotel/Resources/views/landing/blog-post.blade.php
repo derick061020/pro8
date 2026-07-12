@@ -35,7 +35,7 @@
 <!-- Cabecera -->
 <section class="relative bg-cover bg-center" style="background-image:url('{{ $bannerImg }}');">
   <div class="bg-ink-950/72">
-    <div class="max-w-4xl mx-auto px-6 py-16 text-white">
+    <div class="max-w-4xl mx-auto px-6 pt-28 pb-16 text-white">
       <nav class="flex items-center gap-2 text-[13px] text-white/70 mb-4">
         <a href="/reservas" class="hover:text-white">Inicio</a>
         <i class="fa fa-angle-right text-[11px]"></i>

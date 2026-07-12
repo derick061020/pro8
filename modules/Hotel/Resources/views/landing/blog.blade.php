@@ -16,7 +16,7 @@
 <!-- Cabecera -->
 <section class="relative bg-cover bg-center" style="background-image:url('{{ $heroImg }}');">
   <div class="bg-ink-950/72">
-    <div class="max-w-7xl mx-auto px-6 py-20 text-white">
+    <div class="max-w-7xl mx-auto px-6 pt-28 pb-16 text-white">
       <nav class="flex items-center gap-2 text-[13px] text-white/70 mb-3">
         <a href="/reservas" class="hover:text-white">Inicio</a>
         <i class="fa fa-angle-right text-[11px]"></i>
