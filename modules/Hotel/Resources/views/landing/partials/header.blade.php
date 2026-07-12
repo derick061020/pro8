@@ -37,7 +37,8 @@
         @if($hotelLogo)
           <img src="{{ $hotelLogo }}" alt="{{ $hotelName }}" class="h-8 w-auto max-w-[130px] object-contain">
         @else
-          <span class="font-display text-[15px] font-bold text-ink-900 truncate max-w-[46vw] lg:max-w-[220px]">{{ $hotelName }}</span>
+          <span class="w-9 h-9 rounded-full bg-brand text-white flex items-center justify-center font-display font-bold text-base shrink-0">{{ mb_strtoupper(mb_substr($hotelName,0,1)) }}</span>
+          <span class="font-display text-[15px] font-bold text-ink-900 truncate max-w-[38vw] lg:max-w-[220px]">{{ $hotelName }}</span>
         @endif
       </a>
       @if($hasBranches)
@@ -74,7 +75,7 @@
       @if($hotelPhone)
         <a href="tel:{{ $hotelPhone }}" class="hidden xl:inline-flex items-center gap-2 pr-1 text-[13px] font-medium text-ink-600 hover:text-brand transition"><i class="fa fa-phone text-brand"></i> {{ $hotelPhone }}</a>
       @endif
-      <a href="{{ $base }}#reservation-form" class="{{ $scroll }} hb-btn hb-btn-primary h-[44px]"><i class="fa fa-calendar-check-o"></i> <span class="hidden sm:inline">Reservar</span></a>
+      <a href="{{ $base }}#reservation-form" class="{{ $scroll }} hb-btn hb-btn-primary h-[44px] !hidden sm:!inline-flex"><i class="fa fa-calendar-check-o"></i> <span>Reservar</span></a>
       <button type="button" class="lg:hidden w-11 h-11 rounded-full hover:bg-ink-100 text-ink-700 flex items-center justify-center transition" data-menu-toggle aria-label="Menú">
         <i class="fa fa-bars"></i>
       </button>
