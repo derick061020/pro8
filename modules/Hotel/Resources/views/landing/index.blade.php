@@ -49,14 +49,38 @@
   .hr-cell--img.is-active .hr-caption-inner { opacity:1; transform:none; transition-delay:.25s; }
 
   /* Indicador de píldora (segmentos con relleno temporizado, como makai). */
-  .hr-nav { position:absolute; left:50%; bottom:132px; transform:translateX(-50%); z-index:4; display:flex; align-items:center; gap:8px; padding:9px 14px; border-radius:999px; background:rgba(255,255,255,.12); border:1px solid rgba(255,255,255,.22); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px); }
-  .hr-seg { position:relative; width:26px; height:4px; border-radius:999px; background:rgba(255,255,255,.32); border:0; padding:0; cursor:pointer; overflow:hidden; transition:width .4s cubic-bezier(.22,1,.36,1); }
+  .hr-nav { position:absolute; left:50%; bottom:132px; transform:translateX(-50%); z-index:6; display:flex; align-items:center; gap:8px; padding:9px 14px; border-radius:999px; background:rgba(18,20,15,.30); border:1px solid rgba(255,255,255,.24); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px); box-shadow:0 6px 20px rgba(0,0,0,.18); }
+  .hr-seg { position:relative; width:26px; height:4px; border-radius:999px; background:rgba(255,255,255,.45); border:0; padding:0; cursor:pointer; overflow:hidden; transition:width .4s cubic-bezier(.22,1,.36,1); }
   .hr-seg.is-active { width:44px; }
   .hr-seg-fill { position:absolute; inset:0 auto 0 0; width:0; background:#fff; border-radius:999px; }
   .hr-seg.is-active .hr-seg-fill { width:100%; transition:width var(--seg-dur,5200ms) linear; }
-  .hr-scroll { position:absolute; left:50%; bottom:88px; transform:translateX(-50%); z-index:4; width:38px; height:38px; border-radius:999px; border:1px solid rgba(255,255,255,.3); background:rgba(255,255,255,.08); backdrop-filter:blur(6px); color:rgba(255,255,255,.85); display:flex; align-items:center; justify-content:center; font-size:16px; animation:heroBounce 2.2s ease-in-out infinite; }
-  .hr-scroll:hover { background:rgba(255,255,255,.18); color:#fff; }
+  .hr-scroll { position:absolute; left:50%; bottom:88px; transform:translateX(-50%); z-index:6; width:38px; height:38px; border-radius:999px; border:1px solid rgba(255,255,255,.35); background:rgba(18,20,15,.34); backdrop-filter:blur(6px); color:#fff; display:flex; align-items:center; justify-content:center; font-size:16px; animation:heroBounce 2.2s ease-in-out infinite; box-shadow:0 6px 18px rgba(0,0,0,.2); }
+  .hr-scroll:hover { background:rgba(18,20,15,.5); color:#fff; }
   @keyframes heroBounce { 0%,100% { transform:translate(-50%,0); } 50% { transform:translate(-50%,7px); } }
+
+  /* ===== Celda intro: composición por capas de Makai (cielo · nubes · texto · edificio) ===== */
+  .hr-hero-makai { background:#cfe7f5; }
+  .hr-sky { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; z-index:1; pointer-events:none; user-select:none; }
+  .hr-clouds { position:absolute; top:6%; left:-12%; width:124%; max-width:none; z-index:2; opacity:.9; pointer-events:none; user-select:none; animation:hrCloudDrift 26s ease-in-out infinite alternate; }
+  .hr-wordmark2 { position:absolute; left:0; right:0; top:19%; z-index:3; margin:0 auto; padding:0 4%; max-width:100%; text-align:center; font-family:'Inter Tight','Inter',sans-serif; font-weight:800; text-transform:uppercase; font-size:clamp(46px,13vw,190px); line-height:.92; letter-spacing:.04em; text-wrap:balance;
+    background:linear-gradient(to bottom, rgba(255,255,255,.97) 22%, rgba(255,255,255,.62) 100%); -webkit-background-clip:text; background-clip:text; color:transparent; -webkit-text-fill-color:transparent; mix-blend-mode:luminosity; pointer-events:none; }
+  .hr-building { position:absolute; left:0; bottom:-2%; width:100%; height:auto; z-index:4; pointer-events:none; user-select:none; filter:drop-shadow(0 20px 40px rgba(0,0,0,.18)); }
+  /* Fundido inferior del edificio hacia el fondo de la página / buscador. */
+  .hr-hero-makai::after { content:""; position:absolute; left:0; right:0; bottom:-1px; height:16%; z-index:5; pointer-events:none; background:linear-gradient(to top, #f4f4f4 0%, rgba(244,244,244,.65) 42%, rgba(244,244,244,0) 100%); }
+
+  /* Entradas exactas de Makai: el texto cae desde arriba, el edificio sube desde abajo. */
+  .hr-wordmark2 { opacity:0; transform:translateY(-180%); }
+  .hr-building  { opacity:0; transform:translateY(105%); }
+  #hero.is-revealed .hr-cell--hero .hr-wordmark2 { animation:mkTextEnter 1.6s cubic-bezier(.22,1,.36,1) .1s both; }
+  #hero.is-revealed .hr-cell--hero .hr-building  { animation:mkBuildEnter 1.6s cubic-bezier(.22,1,.36,1) .1s both; }
+  @keyframes mkTextEnter  { 0% { transform:translateY(-180%); opacity:0; } 60% { opacity:1; } 100% { transform:translateY(0); opacity:1; } }
+  @keyframes mkBuildEnter { 0% { transform:translateY(105%);  opacity:0; } 40% { opacity:1; } 100% { transform:translateY(0); opacity:1; } }
+  @keyframes hrCloudDrift { 0% { transform:translateX(-3%); } 100% { transform:translateX(3%); } }
+
+  @media (max-width:640px) {
+    .hr-wordmark2 { top:15%; font-size:clamp(42px,16vw,96px); }
+    .hr-building { width:200%; left:50%; margin-left:-100%; bottom:0; }
+  }
 
   /* ===== Loader de marca (intro tipo Makai) ===== */
   #hbLoader { position:fixed; inset:0; z-index:2000; display:flex; align-items:center; justify-content:center; background:#f4f4f4; transition:opacity .6s ease, visibility .6s ease; }
@@ -218,20 +242,13 @@
 <section class="hr-stage {{ $cellCount > 1 ? 'has-slider' : '' }}" id="hero">
   <div class="hr-track" id="hrTrack">
 
-    <!-- Celda 0: portada intro (imagen con texto) -->
-    <div class="hr-cell hr-cell--hero is-active">
-      <div class="hr-photo" style="background-image:url('{{ $introImg }}');"></div>
-      <div class="hr-overlay"></div>
-      <div class="hr-cell-caption">
-        <div class="hr-caption-inner">
-          <span class="hr-chip hr-anim-up d1">
-            @if($introStars)<span class="stars">@for($s=0;$s<5;$s++)★@endfor</span>@endif
-            Reservas online
-          </span>
-          <h1 class="hr-wordmark hr-anim-down">{{ $hotelName }}</h1>
-          <p class="hr-subtitle hr-anim-up d2">{{ $introSub }}</p>
-        </div>
-      </div>
+    <!-- Celda 0: portada intro — composición por capas de Makai
+         (cielo · nubes · wordmark que cae · edificio que sube) -->
+    <div class="hr-cell hr-cell--hero hr-hero-makai is-active">
+      <img class="hr-sky" src="/landing-reservas/images/hero/SKY.png" alt="" aria-hidden="true">
+      <img class="hr-clouds" src="/landing-reservas/images/hero/clouds.png" alt="" aria-hidden="true">
+      <h1 class="hr-wordmark2">{{ $hotelName }}</h1>
+      <img class="hr-building" src="/landing-reservas/images/hero/MAKAI.png" alt="{{ $hotelName }}">
     </div>
 
     <!-- Celdas 1..n: slides -->
