@@ -28,7 +28,7 @@
   .hr-chip { display:inline-flex; align-items:center; gap:9px; padding:7px 15px; margin-bottom:22px; border-radius:999px; background:rgba(255,255,255,.12); border:1px solid rgba(255,255,255,.24); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px); font-size:12.5px; font-weight:600; letter-spacing:.03em; color:#fff; }
   .hr-chip .stars { color:#f4c542; letter-spacing:1.5px; font-size:11px; }
   .hr-title { font-family:'Inter Tight','Inter',sans-serif; font-size:clamp(33px,5.6vw,62px); font-weight:700; line-height:1.06; letter-spacing:-.025em; margin:0 auto 18px; max-width:14ch; text-shadow:0 4px 40px rgba(0,0,0,.4); }
-  .hr-subtitle { font-size:clamp(15px,2vw,20px); font-weight:400; max-width:600px; margin:0 auto 34px; color:rgba(255,255,255,.9); text-shadow:0 2px 18px rgba(0,0,0,.4); line-height:1.55; }
+  .hr-subtitle { font-size:clamp(15px,2vw,20px); font-weight:400; max-width:600px; margin:0 auto; color:rgba(255,255,255,.9); text-shadow:0 2px 18px rgba(0,0,0,.4); line-height:1.55; }
   .hr-dots { position:absolute; left:0; right:0; bottom:150px; display:flex; justify-content:center; gap:8px; z-index:3; }
   .hr-dot { width:8px; height:8px; border-radius:999px; border:0; padding:0; background:rgba(255,255,255,.4); cursor:pointer; transition:all .35s cubic-bezier(.16,1,.3,1); }
   .hr-dot.is-active { background:#fff; width:26px; }
@@ -162,13 +162,8 @@
             </span>
             <h1 class="hr-title">{{ $slideTitle }}</h1>
             @if(!empty($slide['subtitle']))<p class="hr-subtitle">{{ $slide['subtitle'] }}</p>@endif
-            @php
-              // Un único CTA en el hero (evita saturar de botones). Si la slide
-              // define su propio botón se respeta; si no, lleva al buscador.
-              $heroBtnText = !empty($slide['button_text']) ? $slide['button_text'] : 'Ver disponibilidad';
-              $heroBtnLink = !empty($slide['button_text']) ? ($slide['button_link'] ?: '#rooms-results') : '#reservation-form';
-            @endphp
-            <a href="{{ $heroBtnLink }}" class="hb-btn hb-btn-primary hb-btn-lg nav-scroll">{{ $heroBtnText }} <i class="fa fa-angle-right"></i></a>
+            {{-- Sin botón en el hero: el buscador de disponibilidad, justo debajo,
+                 es la única llamada a la acción de esta zona. --}}
           </div>
         </div>
       </div>
@@ -336,7 +331,7 @@
       <h3 class="font-display text-3xl md:text-4xl font-bold mb-4">{{ $hotelName }}</h3>
       <p class="text-lg text-white/85">{{ $cfg['parallax']['text'] ?? 'Vive una experiencia inolvidable' }}</p>
       @if(!empty($cfg['parallax']['button_text']))
-        <a href="{{ $cfg['parallax']['button_link'] ?: '#rooms-results' }}" class="nav-scroll hb-btn hb-btn-primary hb-btn-lg mt-8">{{ $cfg['parallax']['button_text'] }}</a>
+        <a href="{{ $cfg['parallax']['button_link'] ?: '#rooms-results' }}" class="nav-scroll hb-btn hb-btn-light hb-btn-lg mt-8">{{ $cfg['parallax']['button_text'] }} <i class="fa fa-angle-right"></i></a>
       @endif
     </div>
   </div>

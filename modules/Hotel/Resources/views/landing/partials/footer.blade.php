@@ -35,7 +35,9 @@
       <div class="md:col-span-3">
         <h4 class="font-display text-white font-semibold mb-4">Reserva ahora</h4>
         <p class="text-[14px] text-ink-400 mb-5">Consulta disponibilidad en tiempo real y asegura tu habitación.</p>
-        <a href="{{ $reserveHref }}" class="hb-btn hb-btn-primary hb-btn-block {{ $reserveClass }}"><i class="fa fa-calendar-check-o"></i> Ver disponibilidad</a>
+        {{-- Botón secundario (outline sobre el footer oscuro): evita duplicar el
+             mismo botón verde sólido de la banda CTA que va justo encima. --}}
+        <a href="{{ $reserveHref }}" class="hb-btn hb-btn-light hb-btn-block {{ $reserveClass }}"><i class="fa fa-calendar-check-o"></i> Ver disponibilidad</a>
       </div>
     </div>
   </div>
