@@ -156,6 +156,15 @@
                                             <template v-if="bar.isMultiGuest">+ </template>{{ bar.customer_name }}
                                         </span>
                                     </div>
+
+                                    <!-- Maintenance bars -->
+                                    <div v-for="mb in getRoomMaintenanceBars(room.id)" :key="'mnt'+mb.id"
+                                         class="rcal-bar rcal-bar-maintenance"
+                                         :style="mb.style"
+                                         @click.stop="confirmDeleteMaintenance(mb)"
+                                         :title="'Mantenimiento' + (mb.reason ? ' — ' + mb.reason : '') + ' (clic para eliminar)'">
+                                        <span class="rcal-bar-text">🔧 Mantenimiento<template v-if="mb.reason"> · {{ mb.reason }}</template></span>
+                                    </div>
                                 </div>
                             </div>
                         </template>
@@ -427,6 +436,64 @@
             </div>
         </el-dialog>
 
+        <!-- Action Choice Dialog: Reservar / Mantenimiento -->
+        <el-dialog :visible.sync="showActionChoice" width="440px" custom-class="rcal-modal" :show-close="true" append-to-body @close="cancelActionChoice">
+            <template slot="title">
+                <div class="rcal-modal-title">
+                    <span>{{ actionStep === 'maintenance' ? 'Poner en mantenimiento' : '¿Qué deseas hacer?' }}</span>
+                </div>
+            </template>
+
+            <div v-if="pendingSelection" class="rcal-action-body">
+                <div class="rcal-action-info">
+                    <span class="rcal-action-room">{{ pendingSelection.room.name }}</span>
+                    <span class="rcal-action-range">{{ pendingSelectionRangeLabel }}</span>
+                </div>
+
+                <!-- Paso 1: elegir acción -->
+                <template v-if="actionStep === 'choose'">
+                    <button class="rcal-action-opt rcal-action-reserve" @click="chooseReserve">
+                        <span class="rcal-action-ico">📅</span>
+                        <span class="rcal-action-txt">
+                            <b>Reservar</b>
+                            <small>Registrar una reserva para estas fechas</small>
+                        </span>
+                    </button>
+                    <button class="rcal-action-opt rcal-action-maint" @click="actionStep = 'maintenance'">
+                        <span class="rcal-action-ico">🔧</span>
+                        <span class="rcal-action-txt">
+                            <b>Poner en mantenimiento</b>
+                            <small>La habitación no estará disponible en estas fechas</small>
+                        </span>
+                    </button>
+                </template>
+
+                <!-- Paso 2: detalle de mantenimiento -->
+                <template v-else>
+                    <el-form-item label="Motivo (opcional)">
+                        <el-input v-model="maintenanceReason" type="textarea" :rows="2" size="small"
+                                  placeholder="Ej: pintura, reparación de aire acondicionado..."></el-input>
+                    </el-form-item>
+                    <p class="rcal-action-hint">
+                        La habitación quedará en <b>MANTENIMIENTO</b> y volverá a estar
+                        <b>disponible</b> automáticamente al terminar el periodo.
+                    </p>
+                </template>
+            </div>
+
+            <div slot="footer" class="rcal-modal-footer">
+                <template v-if="actionStep === 'choose'">
+                    <el-button size="small" @click="cancelActionChoice">Cancelar</el-button>
+                </template>
+                <template v-else>
+                    <el-button size="small" @click="actionStep = 'choose'">Atrás</el-button>
+                    <el-button size="small" type="warning" :loading="savingMaintenance" @click="confirmMaintenance">
+                        Confirmar mantenimiento
+                    </el-button>
+                </template>
+            </div>
+        </el-dialog>
+
     </div>
 </template>
 
@@ -448,6 +515,7 @@ export default {
             filteredRooms: [],
             categories: [],
             reservations: [],
+            maintenances: [],
             roomRates: {},
             dailySalesTotals: {},
             categoryDailySales: {},
@@ -468,6 +536,12 @@ export default {
             // New reservation popup
             showReservationPopup: false,
             selectedRoom: null,
+            // Action choice (reservar / mantenimiento) tras seleccionar días
+            showActionChoice: false,
+            actionStep: 'choose', // 'choose' | 'maintenance'
+            pendingSelection: null,
+            maintenanceReason: '',
+            savingMaintenance: false,
             // Drag-to-select range (arrastrar varios días para crear reserva)
             dragging: false,
             dragRoom: null,
@@ -628,6 +702,34 @@ export default {
                 })
             })
             return map
+        },
+        // roomId -> barras de mantenimiento posicionadas para el rango visible.
+        maintenanceBarsByRoom() {
+            const { wsT, weT } = this.visibleRange
+            const map = {}
+            this.maintenances.forEach(m => {
+                const sT = this.parseDate(m.start_date).getTime()
+                const eT = this.parseDate(m.end_date).getTime()
+                if (eT < wsT || sT > weT) return
+                const visStartT = sT < wsT ? wsT : sT
+                const visEndT = eT > weT ? weT : eT
+                const startIdx = Math.round((visStartT - wsT) / 864e5)
+                const span = Math.round((visEndT - visStartT) / 864e5) + 1
+                const leftPx = startIdx * this.dayCellWidth + 2
+                const widthPx = span * this.dayCellWidth - 4
+                const roomId = String(m.hotel_room_id)
+                if (!map[roomId]) map[roomId] = []
+                map[roomId].push({ ...m, style: { left: leftPx + 'px', width: widthPx + 'px' } })
+            })
+            return map
+        },
+        // Etiqueta de fechas de la selección pendiente (para el modal de acción).
+        pendingSelectionRangeLabel() {
+            const p = this.pendingSelection
+            if (!p) return ''
+            const fmt = (day) => day.date.toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' })
+            if (!p.isRange) return fmt(p.startDay)
+            return fmt(p.startDay) + ' → ' + fmt(p.endDay)
         },
 
         /* ── Vista por horas (modo Día) ── */
@@ -866,13 +968,29 @@ export default {
                     params: { start_date: this.toStr(this.startDate), end_date: this.toStr(endDate) }
                 })
                 this.reservations = r.data?.data || []
-                
+
+                // Periodos de mantenimiento del rango visible (barras grises).
+                await this.loadMaintenances()
+
                 // Load daily sales totals for all visible days
                 await this.loadDailySalesTotals()
             } catch (e) {
                 console.error('Reservations error:', e)
             } finally {
                 this.loading = false
+            }
+        },
+        async loadMaintenances() {
+            try {
+                const endDate = new Date(this.startDate)
+                endDate.setDate(this.startDate.getDate() + this.visibleDays - 1)
+                const r = await this.$http.get('/hotels/reservations/calendar/maintenance', {
+                    params: { start_date: this.toStr(this.startDate), end_date: this.toStr(endDate) }
+                })
+                this.maintenances = r.data?.data || []
+            } catch (e) {
+                console.error('Maintenance error:', e)
+                this.maintenances = []
             }
         },
         applyFilters() {
@@ -964,6 +1082,9 @@ export default {
         },
         getRoomHourBars(roomId) {
             return this.hourlyBarsByRoom[roomId] || []
+        },
+        getRoomMaintenanceBars(roomId) {
+            return this.maintenanceBarsByRoom[roomId] || []
         },
         // Clic en una celda de hora (modo Día): crear reserva con fecha y hora.
         onHourCellClick(room, hour) {
@@ -1096,18 +1217,8 @@ export default {
                 return
             }
 
-            // Rango: input = primer día seleccionado; output = día siguiente al
-            // último seleccionado, de modo que N celdas marcadas = N noches.
-            const out = new Date(endDay.date)
-            out.setDate(out.getDate() + 1)
-            const params = new URLSearchParams({
-                is_reservation: 'true',
-                input_date: startDay.dateStr,
-                output_date: this.toStr(out),
-                source: 'calendar',
-                t: Date.now().toString(),
-            })
-            window.location.href = `/hotels/reception/${room.id}/rent?${params.toString()}`
+            // Rango de varios días: preguntar si reservar o poner en mantenimiento.
+            this.promptCellAction(room, startDay, endDay)
         },
 
         /* ── Actions ── */
@@ -1120,20 +1231,97 @@ export default {
             if (hit) {
                 this.openDetails(hit)
             } else {
-                // No hay reserva en esta celda/día: se puede crear una nueva.
-                // No dependemos de room.status (estado físico actual de la
-                // habitación): una habitación OCUPADA hoy puede tener días
-                // futuros libres, y la búsqueda de `hit` ya garantiza que ese
+                // No hay reserva en esta celda/día: preguntar si reservar o poner
+                // la habitación en mantenimiento. No dependemos de room.status
+                // (estado físico actual): una habitación OCUPADA hoy puede tener
+                // días futuros libres, y la búsqueda de `hit` ya garantiza que ese
                 // día concreto no tiene ninguna reserva encima.
-                // Ir a crear reserva con la fecha de entrada ya marcada (la celda clickeada).
-                const params = new URLSearchParams({
-                    is_reservation: 'true',
-                    input_date: day.dateStr,
-                    source: 'calendar',
-                    t: Date.now().toString(),
-                })
-                window.location.href = `/hotels/reception/${room.id}/rent?${params.toString()}`
+                this.promptCellAction(room, day, day)
             }
+        },
+
+        /* ── Elección tras seleccionar días: reservar o mantenimiento ── */
+        promptCellAction(room, startDay, endDay) {
+            this.pendingSelection = {
+                room,
+                startDay,
+                endDay,
+                isRange: startDay.dateStr !== endDay.dateStr,
+            }
+            this.actionStep = 'choose'
+            this.maintenanceReason = ''
+            this.showActionChoice = true
+        },
+        cancelActionChoice() {
+            this.showActionChoice = false
+            this.pendingSelection = null
+            this.actionStep = 'choose'
+            this.maintenanceReason = ''
+        },
+        chooseReserve() {
+            const p = this.pendingSelection
+            if (!p) return
+            const params = new URLSearchParams({
+                is_reservation: 'true',
+                input_date: p.startDay.dateStr,
+                source: 'calendar',
+                t: Date.now().toString(),
+            })
+            // Rango: output = día siguiente al último seleccionado (N celdas = N noches).
+            if (p.isRange) {
+                const out = new Date(p.endDay.date)
+                out.setDate(out.getDate() + 1)
+                params.set('output_date', this.toStr(out))
+            }
+            window.location.href = `/hotels/reception/${p.room.id}/rent?${params.toString()}`
+        },
+        async confirmMaintenance() {
+            const p = this.pendingSelection
+            if (!p) return
+            this.savingMaintenance = true
+            try {
+                const r = await this.$http.post('/hotels/reservations/calendar/maintenance/store', {
+                    hotel_room_id: p.room.id,
+                    start_date: p.startDay.dateStr,
+                    end_date: p.endDay.dateStr,
+                    reason: this.maintenanceReason || null,
+                })
+                if (r.data?.success) {
+                    this.$message.success(r.data.message || 'Mantenimiento programado.')
+                    this.cancelActionChoice()
+                    await this.loadRooms()
+                    await this.loadReservations()
+                } else {
+                    this.$message.error(r.data?.message || 'No se pudo programar el mantenimiento.')
+                }
+            } catch (e) {
+                const msg = e?.response?.data?.message || 'Error al programar el mantenimiento.'
+                this.$message.error(msg)
+            } finally {
+                this.savingMaintenance = false
+            }
+        },
+        confirmDeleteMaintenance(mb) {
+            this.$confirm('¿Eliminar este periodo de mantenimiento? La habitación volverá a estar disponible.', 'Eliminar mantenimiento', {
+                confirmButtonText: 'Eliminar',
+                cancelButtonText: 'Cancelar',
+                type: 'warning',
+                confirmButtonClass: 'el-button--danger',
+            }).then(async () => {
+                try {
+                    const r = await this.$http.delete(`/hotels/reservations/calendar/maintenance/${mb.id}/delete`)
+                    if (r.data?.success === false) {
+                        this.$message.error(r.data.message || 'No se pudo eliminar el mantenimiento.')
+                        return
+                    }
+                    this.$message.success(r.data?.message || 'Mantenimiento eliminado.')
+                    await this.loadRooms()
+                    await this.loadReservations()
+                } catch (e) {
+                    const msg = e?.response?.data?.message || 'Error al eliminar el mantenimiento.'
+                    this.$message.error(msg)
+                }
+            }).catch(() => { /* cancelado */ })
         },
         emptyEditForm() {
             return {
@@ -1686,6 +1874,21 @@ export default {
     text-shadow: 0 1px 2px rgba(0,0,0,.25);
 }
 
+/* Barra de mantenimiento (rayado gris con acento ámbar). */
+.rcal-bar-maintenance {
+    background: repeating-linear-gradient(45deg, #9ca3af, #9ca3af 8px, #6b7280 8px, #6b7280 16px);
+    z-index: 4;
+}
+.rcal-bar-maintenance .rcal-bar-text {
+    color: #fff;
+    text-shadow: 0 1px 2px rgba(0,0,0,.35);
+    font-weight: 700;
+}
+.rcal-bar-maintenance:hover {
+    filter: brightness(0.95);
+    box-shadow: 0 0 0 2px rgba(245,158,11,.6);
+}
+
 .bars-cancelled {
     background: linear-gradient(135deg, #ef9a9a 25%, #e57373 25%, #e57373 50%, #ef9a9a 50%, #ef9a9a 75%, #e57373 75%);
     background-size: 14px 14px;
@@ -1788,6 +1991,28 @@ export default {
 .rcal-det-price span { font-size: 20px; font-weight: 800; color: #059669; }
 .rcal-det-notes { font-size: 13px; color: #6b7280; line-height: 1.5; margin: 0; background: #f9fafb; padding: 10px 14px; border-radius: 8px; }
 .rcal-modal-footer { display: flex; justify-content: flex-end; gap: 8px; }
+
+/* ── Action choice (reservar / mantenimiento) ── */
+.rcal-action-body { display: flex; flex-direction: column; gap: 12px; }
+.rcal-action-info {
+    display: flex; flex-direction: column; gap: 2px;
+    padding: 10px 14px; background: #f8f9fb; border: 1px solid #ebedf0; border-radius: 8px;
+}
+.rcal-action-room { font-size: 15px; font-weight: 800; color: #111827; }
+.rcal-action-range { font-size: 13px; font-weight: 600; color: #6b7280; }
+.rcal-action-opt {
+    display: flex; align-items: center; gap: 14px; width: 100%;
+    padding: 14px 16px; border: 1.5px solid #dce0e6; border-radius: 10px;
+    background: #fff; cursor: pointer; text-align: left; transition: all .15s;
+}
+.rcal-action-opt:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,.08); }
+.rcal-action-reserve:hover { border-color: #4f46e5; background: #f0f4ff; }
+.rcal-action-maint:hover { border-color: #f59e0b; background: #fffbeb; }
+.rcal-action-ico { font-size: 26px; line-height: 1; flex-shrink: 0; }
+.rcal-action-txt { display: flex; flex-direction: column; gap: 2px; }
+.rcal-action-txt b { font-size: 15px; font-weight: 700; color: #111827; }
+.rcal-action-txt small { font-size: 12px; color: #6b7280; }
+.rcal-action-hint { font-size: 12.5px; color: #6b7280; line-height: 1.5; margin: 4px 0 0; }
 
 /* ── Edit form layout ── */
 .rcal-edit { padding-top: 4px; }

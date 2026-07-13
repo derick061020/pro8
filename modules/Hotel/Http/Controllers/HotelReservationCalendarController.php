@@ -10,6 +10,7 @@ use Modules\Hotel\Models\HotelRentItem;
 use Modules\Hotel\Models\HotelRentItemPayment;
 use Modules\Hotel\Models\HotelRentOrder;
 use Modules\Hotel\Models\HotelRoom;
+use Modules\Hotel\Models\HotelRoomMaintenance;
 use Modules\Hotel\Models\HotelCategory;
 use Modules\Hotel\Http\Requests\HotelReservationRequest;
 use App\Models\Tenant\Person;
@@ -50,6 +51,10 @@ class HotelReservationCalendarController extends Controller
         $endDate   = $request->get('end_date');
 
         $establishmentId = $this->currentEstablishmentId();
+
+        // Sincronizar el estado físico de las habitaciones con sus periodos de
+        // mantenimiento antes de construir los eventos (auto-actualización).
+        HotelRoomMaintenance::reconcile($establishmentId);
 
         // Solo reservas de habitaciones de la sucursal actual. Se filtra por la
         // habitación (fuente de verdad de a qué sucursal pertenece) para no
@@ -157,6 +162,9 @@ class HotelReservationCalendarController extends Controller
     {
         $establishmentId = $this->currentEstablishmentId();
 
+        // Auto-actualizar estados según los periodos de mantenimiento vigentes.
+        HotelRoomMaintenance::reconcile($establishmentId);
+
         $rooms = HotelRoom::with(['category', 'rates.rate'])
             ->where('establishment_id', $establishmentId)
             ->where('active', true)
@@ -199,6 +207,143 @@ class HotelReservationCalendarController extends Controller
 
         return response()->json([
             'data' => $categories
+        ]);
+    }
+
+    /**
+     * Periodos de mantenimiento de la sucursal actual que solapan con el rango
+     * de fechas visible del calendario. Se usan para pintar las barras grises de
+     * "mantenimiento" junto a las reservas.
+     */
+    public function getMaintenances(Request $request)
+    {
+        $establishmentId = $this->currentEstablishmentId();
+        HotelRoomMaintenance::reconcile($establishmentId);
+
+        $startDate = $request->get('start_date');
+        $endDate   = $request->get('end_date');
+
+        $query = HotelRoomMaintenance::where('establishment_id', $establishmentId);
+
+        if ($startDate && $endDate) {
+            // Solapamiento estándar: start <= rango.fin AND end >= rango.inicio
+            $query->whereDate('start_date', '<=', $endDate)
+                  ->whereDate('end_date', '>=', $startDate);
+        }
+
+        $items = $query->orderBy('start_date', 'asc')->get()->map(function ($m) {
+            return [
+                'id'            => $m->id,
+                'hotel_room_id' => $m->hotel_room_id,
+                'start_date'    => Carbon::parse($m->start_date)->format('Y-m-d'),
+                'end_date'      => Carbon::parse($m->end_date)->format('Y-m-d'),
+                'reason'        => $m->reason,
+                'status'        => $m->status,
+            ];
+        });
+
+        return response()->json(['data' => $items]);
+    }
+
+    /**
+     * Programa un periodo de mantenimiento para una habitación. Las fechas son
+     * inclusivas: la habitación quedará en mantenimiento desde start_date hasta
+     * end_date y volverá a estar disponible el día siguiente.
+     */
+    public function storeMaintenance(Request $request)
+    {
+        $request->validate([
+            'hotel_room_id' => 'required|integer',
+            'start_date'    => 'required|date',
+            'end_date'      => 'required|date|after_or_equal:start_date',
+            'reason'        => 'nullable|string|max:250',
+        ]);
+
+        $establishmentId = $this->currentEstablishmentId();
+
+        $room = HotelRoom::where('id', $request->get('hotel_room_id'))
+            ->where('establishment_id', $establishmentId)
+            ->first();
+
+        if (!$room) {
+            return response()->json([
+                'success' => false,
+                'message' => 'La habitación no pertenece a esta sucursal.',
+            ], 422);
+        }
+
+        // Evitar solapar el mantenimiento con reservas ya existentes en esas fechas.
+        $overlappingReservation = HotelRent::where('hotel_room_id', $room->id)
+            ->where('status', '!=', 'FINALIZADO')
+            ->whereDate('input_date', '<=', $request->get('end_date'))
+            ->whereDate('output_date', '>=', $request->get('start_date'))
+            ->exists();
+
+        if ($overlappingReservation) {
+            return response()->json([
+                'success' => false,
+                'message' => 'La habitación ya tiene una reserva en esas fechas.',
+            ], 422);
+        }
+
+        $maintenance = HotelRoomMaintenance::create([
+            'hotel_room_id'    => $room->id,
+            'establishment_id' => $establishmentId,
+            'start_date'       => $request->get('start_date'),
+            'end_date'         => $request->get('end_date'),
+            'reason'           => $request->get('reason'),
+            'status'           => 'SCHEDULED',
+        ]);
+
+        // Aplicar de inmediato si el periodo ya está en curso hoy.
+        HotelRoomMaintenance::reconcile($establishmentId);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Mantenimiento programado correctamente.',
+            'data'    => $maintenance,
+        ]);
+    }
+
+    /**
+     * Elimina/cancela un periodo de mantenimiento. Si estaba en curso, devuelve
+     * la habitación a disponible (salvo que otro periodo la mantenga).
+     */
+    public function deleteMaintenance($id)
+    {
+        $establishmentId = $this->currentEstablishmentId();
+
+        $maintenance = HotelRoomMaintenance::where('id', $id)
+            ->where('establishment_id', $establishmentId)
+            ->first();
+
+        if (!$maintenance) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Mantenimiento no encontrado.',
+            ], 404);
+        }
+
+        $room = HotelRoom::find($maintenance->hotel_room_id);
+        $maintenance->delete();
+
+        // Si la habitación estaba en mantenimiento por este periodo y no hay otro
+        // vigente, devolverla a disponible.
+        if ($room && $room->status === 'MANTENIMIENTO') {
+            $stillInMaintenance = HotelRoomMaintenance::where('hotel_room_id', $room->id)
+                ->where('status', '!=', 'DONE')
+                ->whereDate('start_date', '<=', Carbon::today()->toDateString())
+                ->whereDate('end_date', '>=', Carbon::today()->toDateString())
+                ->exists();
+            if (!$stillInMaintenance) {
+                $room->status = 'DISPONIBLE';
+                $room->save();
+            }
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Mantenimiento eliminado.',
         ]);
     }
 

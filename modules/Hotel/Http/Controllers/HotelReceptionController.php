@@ -4,6 +4,7 @@ namespace Modules\Hotel\Http\Controllers;
 
 use Illuminate\Routing\Controller;
 use Modules\Hotel\Models\HotelRoom;
+use Modules\Hotel\Models\HotelRoomMaintenance;
 use Modules\Hotel\Models\HotelFloor;
 use Modules\Hotel\Models\HotelRent;
 use Modules\Hotel\Models\HotelRentChange;
@@ -136,6 +137,12 @@ class HotelReceptionController extends Controller
     private function getRooms()
     {
         $user = auth()->user();
+
+        // Sincronizar estados con los periodos de mantenimiento programados: las
+        // habitaciones cuyo mantenimiento empezó pasan a MANTENIMIENTO y las que
+        // terminaron vuelven a DISPONIBLE.
+        HotelRoomMaintenance::reconcile($user->establishment_id);
+
         $rooms = HotelRoom::with('category', 'floor', 'rates', 'establishment')
             ->where('establishment_id', $user->establishment_id)
             ->where('active', true);

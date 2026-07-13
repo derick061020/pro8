@@ -144,6 +144,10 @@ if ($hostname) {
             Route::get('calendar/category-daily-sales-total', 'HotelReservationCalendarController@getCategoryDailySalesTotal');
             // Totales de ventas de todo el rango en una sola petición (reemplaza el fan-out anterior)
             Route::get('calendar/sales-totals', 'HotelReservationCalendarController@getSalesTotals');
+            // Mantenimiento de habitaciones desde el calendario
+            Route::get('calendar/maintenance', 'HotelReservationCalendarController@getMaintenances');
+            Route::post('calendar/maintenance/store', 'HotelReservationCalendarController@storeMaintenance');
+            Route::delete('calendar/maintenance/{id}/delete', 'HotelReservationCalendarController@deleteMaintenance');
         });
     });
   });
