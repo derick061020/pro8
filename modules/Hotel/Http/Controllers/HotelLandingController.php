@@ -488,6 +488,7 @@ class HotelLandingController extends Controller
             'checkout'        => 'required',
             'adults'          => 'nullable|numeric|min:1',
             'children'        => 'nullable|numeric|min:0',
+            'payment_method'  => 'nullable|string|max:60',
             'notes'           => 'nullable|string|max:500',
         ]);
 
@@ -555,10 +556,23 @@ class HotelLandingController extends Controller
             // queda como huésped externo (customer_id = 0).
             [$customerId, $customerData] = $this->resolveCustomer($request);
 
+            // Método de pago elegido por el huésped en la web (Yape, transferencia
+            // bancaria, efectivo, etc.). No hay columna propia para él, así que se
+            // deja registrado en las notas para que recepción lo vea al confirmar.
+            $paymentMethod = $this->resolvePaymentMethod($request->payment_method);
+
+            $notes = 'Reserva web (landing)';
+            if ($paymentMethod) {
+                $notes .= ' · Pago: ' . $paymentMethod;
+            }
+            if ($request->notes) {
+                $notes .= ' · ' . $request->notes;
+            }
+
             $rent = HotelRent::create([
                 'customer_id'      => $customerId,
                 'customer'         => $customerData,
-                'notes'            => $request->notes ? ('Reserva web: ' . $request->notes) : 'Reserva web (landing)',
+                'notes'            => $notes,
                 'adults'           => $adults,
                 'children'         => $children,
                 'towels'           => 1,
@@ -625,6 +639,29 @@ class HotelLandingController extends Controller
             DB::connection('tenant')->rollBack();
             return $this->alert('danger', 'No se pudo registrar la reserva. Inténtalo de nuevo.');
         }
+    }
+
+    /**
+     * Normaliza el método de pago elegido en la web a una de las etiquetas
+     * permitidas. Cualquier valor desconocido (o vacío) se descarta para no
+     * guardar texto arbitrario en las notas de la reserva.
+     */
+    private function resolvePaymentMethod($value)
+    {
+        $value = trim((string) $value);
+        if ($value === '') {
+            return null;
+        }
+
+        $allowed = ['Efectivo', 'Yape', 'Plin', 'Transferencia bancaria', 'Tarjeta'];
+
+        foreach ($allowed as $method) {
+            if (strcasecmp($method, $value) === 0) {
+                return $method;
+            }
+        }
+
+        return null;
     }
 
     /**

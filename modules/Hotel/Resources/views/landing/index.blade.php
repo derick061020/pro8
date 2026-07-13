@@ -710,6 +710,17 @@
           </div>
         </div>
         <div>
+          <label class="hb-label">Método de pago <span class="text-err">*</span></label>
+          <select class="hb-select" name="payment_method" id="r-payment-method" required>
+            <option value="Efectivo">Efectivo (pagar en recepción)</option>
+            <option value="Yape">Yape</option>
+            <option value="Plin">Plin</option>
+            <option value="Transferencia bancaria">Transferencia bancaria</option>
+            <option value="Tarjeta">Tarjeta (débito / crédito)</option>
+          </select>
+          <div class="text-[12px] mt-1.5 text-ink-500" id="r-payment-feedback">Elige cómo realizarás el pago de tu reserva.</div>
+        </div>
+        <div>
           <label class="hb-label">Comentarios / solicitudes especiales</label>
           <textarea class="hb-input" name="notes" id="r-notes" rows="2" placeholder="Ej: llegada tardía, cuna, piso alto..."></textarea>
         </div>
