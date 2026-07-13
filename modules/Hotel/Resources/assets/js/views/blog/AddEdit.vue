@@ -139,7 +139,8 @@
           <label class="control-label" for="content">Contenido</label>
           <div class="ckeditor-wrap">
             <vue-ckeditor
-              v-if="visible"
+              v-if="visible && editorReady"
+              :key="editorKey"
               :editors="editors"
               type="classic"
               v-model="form.content"
@@ -254,6 +255,8 @@ export default {
       loading: false,
       uploadingImage: false,
       previewVisible: false,
+      editorReady: false,
+      editorKey: 0,
       editors: {
         classic: ClassicEditor,
       },
@@ -307,6 +310,10 @@ export default {
     onOpen() {
       this.errors = {};
       this.previewVisible = false;
+      // El editor se monta recién después de poblar el form, para que
+      // vue-ckeditor lea el contenido correcto en su create()/mounted().
+      this.editorReady = false;
+      this.editorKey += 1;
       if (this.post) {
         this.title = "Editar entrada";
         this.form = {
@@ -340,6 +347,10 @@ export default {
           image_name: null,
         };
       }
+      // Ahora que form.content ya está asignado, montamos el editor.
+      this.$nextTick(() => {
+        this.editorReady = true;
+      });
     },
     today() {
       const d = new Date();
@@ -503,6 +514,7 @@ export default {
       }
     },
     onClose() {
+      this.editorReady = false;
       this.$emit("update:visible", false);
     },
   },
