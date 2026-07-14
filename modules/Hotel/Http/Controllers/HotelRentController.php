@@ -901,21 +901,20 @@ class HotelRentController extends Controller
 
 		// Registrar en el historial de cambios los productos recién agregados,
 		// de modo que aparezcan en el historial de la habitación y se puedan
-		// revertir (eliminar el producto y su cobro).
-		if (!empty($addedProducts)) {
-			$totalAdded = array_sum(array_column($addedProducts, 'total'));
+		// revertir (eliminar el producto y su cobro). Se crea UN registro por
+		// producto para que cada uno sea un movimiento independiente y se pueda
+		// revertir individualmente sin afectar a los demás.
+		foreach ($addedProducts as $addedProduct) {
 			HotelRentChange::create([
 				'hotel_rent_id'    => $rent->id,
 				'change_type'      => 'PRODUCT_ADD',
 				'old_values'       => [],
 				'new_values'       => [
-					'products'  => $addedProducts,
-					'item_ids'  => array_column($addedProducts, 'item_id'),
+					'products'  => [$addedProduct],
+					'item_ids'  => [$addedProduct['item_id']],
 				],
-				'notes'            => count($addedProducts) === 1
-					? ('Producto agregado: ' . $addedProducts[0]['name'])
-					: ('Se agregaron ' . count($addedProducts) . ' productos'),
-				'price_difference' => $totalAdded,
+				'notes'            => 'Producto agregado: ' . $addedProduct['name'],
+				'price_difference' => floatval($addedProduct['total'] ?? 0),
 				'user_id'          => auth()->id(),
 			]);
 		}
