@@ -297,6 +297,29 @@
                                         v-text="errors.travel_reason[0]"
                                     ></small>
                                 </div>
+                                <div
+                                    v-if="isReservationContext"
+                                    class="form-group col-12 col-md-4"
+                                    :class="{ 'has-danger': errors.reservation_origin }"
+                                >
+                                    <label class="control-label" for="reservation_origin">Origen de la reserva</label>
+                                    <el-select
+                                        v-model="form.reservation_origin"
+                                        placeholder="¿Por qué medio se reservó?"
+                                        clearable
+                                        style="width: 100%"
+                                    >
+                                        <el-option label="WhatsApp" value="whatsapp"></el-option>
+                                        <el-option label="Correo" value="correo"></el-option>
+                                        <el-option label="Celular" value="celular"></el-option>
+                                        <el-option label="Presencial" value="presencial"></el-option>
+                                    </el-select>
+                                    <small
+                                        class="form-control-feedback"
+                                        v-if="errors.reservation_origin"
+                                        v-text="errors.reservation_origin[0]"
+                                    ></small>
+                                </div>
                             </div>
                             <!-- <div class="row">
                                 <div
@@ -807,6 +830,7 @@ export default {
                 data_persons: [],
                 license_plate: null,
                 travel_reason: null,
+                reservation_origin: null,
                 notes: null,
                 hotel_rate_id: null,
                 rate_price: 10,
@@ -1396,6 +1420,7 @@ export default {
                 this.form.towels = reservationData.towels || 1;
                 this.form.license_plate = reservationData.license_plate || '';
                 this.form.travel_reason = reservationData.travel_reason || '';
+                this.form.reservation_origin = reservationData.reservation_origin || null;
                 this.form.notes = reservationData.notes || '';
                 
                 // Establecer que es edición de reserva (no check-in)
@@ -1465,6 +1490,7 @@ export default {
                     towels: parseInt(this.form.towels, 10) || 0,
                     license_plate: this.form.license_plate || null,
                     travel_reason: this.form.travel_reason || null,
+                    reservation_origin: this.form.reservation_origin || null,
                     notes: this.form.notes || null,
                     // Precio unitario (por noche) real que se está mostrando. Se
                     // envía siempre para que el item de la reserva conserve el

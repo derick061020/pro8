@@ -24,6 +24,7 @@ class HotelRentRequest extends FormRequest
 			'towels'                   => 'required|numeric|min:1',
 			'license_plate'            => 'nullable|string|max:20',
 			'travel_reason'            => 'nullable|in:visita,trabajo,estudio,religion,salud,compras,otros',
+			'reservation_origin'       => 'nullable|in:whatsapp,correo,celular,presencial',
 			'duration'                 => 'required|numeric|min:1',
 			'quantity_persons'         => 'required|numeric|min:1',
 			'payment_status'           => 'required|in:PAID,DEBT,ADVANCE',

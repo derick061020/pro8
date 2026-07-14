@@ -293,6 +293,7 @@
                             <div class="rcal-det-field"><label>Toallas</label><span>{{ detail.towels ?? '—' }}</span></div>
                             <div class="rcal-det-field"><label>Placa</label><span>{{ detail.license_plate || '—' }}</span></div>
                             <div class="rcal-det-field"><label>Motivo</label><span>{{ getTravelReasonLabel(detail.travel_reason) }}</span></div>
+                            <div class="rcal-det-field"><label>Origen de la reserva</label><span>{{ getReservationOriginLabel(detail.reservation_origin) }}</span></div>
                             <div class="rcal-det-field rcal-det-price"><label>Total</label><span>S/ {{ Number(detail.totals?.total ?? detail.total ?? 0).toFixed(2) }}</span></div>
                         </div>
                     </div>
@@ -371,6 +372,11 @@
                             <el-form-item label="Motivo del viaje" class="rcal-edit-field">
                                 <el-select v-model="editForm.travel_reason" size="small" clearable style="width:100%">
                                     <el-option v-for="r in travelReasons" :key="r.value" :value="r.value" :label="r.label"></el-option>
+                                </el-select>
+                            </el-form-item>
+                            <el-form-item label="Origen de la reserva" class="rcal-edit-field">
+                                <el-select v-model="editForm.reservation_origin" size="small" clearable style="width:100%">
+                                    <el-option v-for="o in reservationOrigins" :key="o.value" :value="o.value" :label="o.label"></el-option>
                                 </el-select>
                             </el-form-item>
                             <el-form-item label="Notas" class="rcal-edit-field rcal-edit-field-wide">
@@ -558,6 +564,13 @@ export default {
                 { value: 'salud',    label: 'Salud' },
                 { value: 'compras',  label: 'Compras' },
                 { value: 'otros',    label: 'Otros' },
+            ],
+            // Medio por el que se realizó la reserva.
+            reservationOrigins: [
+                { value: 'whatsapp',   label: 'WhatsApp' },
+                { value: 'correo',     label: 'Correo' },
+                { value: 'celular',    label: 'Celular' },
+                { value: 'presencial', label: 'Presencial' },
             ],
         }
     },
@@ -1166,6 +1179,11 @@ export default {
             const r = this.travelReasons.find(x => x.value === v);
             return r ? r.label : v;
         },
+        getReservationOriginLabel(v) {
+            if (!v) return '—';
+            const r = this.reservationOrigins.find(x => x.value === v);
+            return r ? r.label : v;
+        },
         // Cualquier reserva no finalizada es editable. El status real puede ser
         // 'INICIADO' (default), 'ACTIVE', 'confirmed', 'pending', 'checked_in', etc.
         // La única razón para bloquear edición es 'FINALIZADO'.
@@ -1334,7 +1352,7 @@ export default {
                 output_date: '', output_time: '',
                 duration: 1,
                 adults: 1, children: 0, quantity_persons: 1, towels: 1,
-                license_plate: '', travel_reason: '', notes: '',
+                license_plate: '', travel_reason: '', reservation_origin: '', notes: '',
                 rental_price: 0,
                 _availableRates: [],
             };
@@ -1386,6 +1404,7 @@ export default {
                     towels: detail.towels ?? 1,
                     license_plate: detail.license_plate || '',
                     travel_reason: detail.travel_reason || '',
+                    reservation_origin: detail.reservation_origin || '',
                     notes: detail.notes || '',
                     rental_price: detail.rate?.rental_price || 0,
                     _availableRates: detail.room?.rates || [],
@@ -1407,6 +1426,7 @@ export default {
                     towels: fallbackEvent.towels ?? 1,
                     license_plate: fallbackEvent.license_plate || '',
                     travel_reason: fallbackEvent.travel_reason || '',
+                    reservation_origin: fallbackEvent.reservation_origin || '',
                     notes: fallbackEvent.notes || '',
                     customer: {
                         ...this.emptyEditForm().customer,
@@ -1498,6 +1518,7 @@ export default {
                     towels: parseInt(this.editForm.towels, 10) || 0,
                     license_plate: this.editForm.license_plate || null,
                     travel_reason: this.editForm.travel_reason || null,
+                    reservation_origin: this.editForm.reservation_origin || null,
                     notes: this.editForm.notes || null,
                 };
                 const r = await this.$http.put(`/hotels/reservations/calendar/${this.editForm.id}/update`, payload);

@@ -60,6 +60,7 @@
             'notes',
             'license_plate',
             'travel_reason',
+            'reservation_origin',
             'adults',
             'children',
             'towels',

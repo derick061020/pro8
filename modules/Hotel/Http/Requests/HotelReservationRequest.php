@@ -35,6 +35,7 @@ class HotelReservationRequest extends FormRequest
             'data_persons'             => 'required',
             'license_plate'            => 'nullable|string|max:20',
             'travel_reason'            => 'nullable|in:visita,trabajo,estudio,religion,salud,compras,otros',
+            'reservation_origin'       => 'nullable|in:whatsapp,correo,celular,presencial',
         ];
 
         // Product y pagos solo obligatorios si payment_status es PAID o ADVANCE

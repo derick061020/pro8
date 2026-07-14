@@ -122,6 +122,7 @@ class HotelReservationCalendarController extends Controller
                 'towels'             => $reservation->towels,
                 'license_plate'      => $reservation->license_plate,
                 'travel_reason'      => $reservation->travel_reason,
+                'reservation_origin' => $reservation->reservation_origin,
                 'notes'              => $reservation->notes,
                 'is_reserve'         => (bool) $reservation->is_reserve,
                 'created_at'         => optional($reservation->created_at)->format('Y-m-d H:i:s'),
@@ -481,6 +482,7 @@ class HotelReservationCalendarController extends Controller
             'towels'              => $reservation->towels,
             'license_plate'       => $reservation->license_plate,
             'travel_reason'       => $reservation->travel_reason,
+            'reservation_origin'  => $reservation->reservation_origin,
             'notes'               => $reservation->notes,
             'is_reserve'          => (bool) $reservation->is_reserve,
             'rental_period_type'  => $reservation->rental_period_type,
@@ -639,7 +641,7 @@ class HotelReservationCalendarController extends Controller
             $effectivePaymentStatus = $isAdvancePayment ? 'DEBT' : $request->payment_status;
 
             $data = $request->only(
-                'customer_id', 'customer', 'notes', 'license_plate', 'travel_reason',
+                'customer_id', 'customer', 'notes', 'license_plate', 'travel_reason', 'reservation_origin',
                 'adults', 'children', 'towels', 'hotel_room_id', 'hotel_rate_id',
                 'duration', 'quantity_persons', 'output_date',
                 'output_time', 'input_date', 'input_time', 'data_persons'
@@ -717,6 +719,7 @@ class HotelReservationCalendarController extends Controller
             'notes'              => 'nullable|string|max:500',
             'license_plate'      => 'nullable|string|max:20',
             'travel_reason'      => 'nullable|in:visita,trabajo,estudio,religion,salud,compras,otros',
+            'reservation_origin' => 'nullable|in:whatsapp,correo,celular,presencial',
             'adults'             => 'nullable|integer|min:0',
             'children'           => 'nullable|integer|min:0',
             'towels'             => 'nullable|integer|min:0',
@@ -786,7 +789,7 @@ class HotelReservationCalendarController extends Controller
 
             // Construir payload de actualización solo con los campos enviados
             $updatable = array_intersect_key($validated, array_flip([
-                'customer_id', 'customer', 'notes', 'license_plate', 'travel_reason',
+                'customer_id', 'customer', 'notes', 'license_plate', 'travel_reason', 'reservation_origin',
                 'adults', 'children', 'towels', 'hotel_room_id', 'hotel_rate_id',
                 'rental_price', 'duration', 'quantity_persons', 'input_date', 'input_time',
                 'output_date', 'output_time', 'status',

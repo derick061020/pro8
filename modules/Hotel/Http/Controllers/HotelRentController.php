@@ -205,7 +205,7 @@ class HotelRentController extends Controller
 				)->setTimeFromTimeString($request->input('input_time', '14:00'));
 			}
 			
-			$rentData = $request->only('customer_id', 'customer', 'notes', 'license_plate', 'travel_reason', 'adults', 'children', 'towels', 'hotel_room_id', 'hotel_rate_id', 'duration', 'quantity_persons', 'payment_status', 'output_date', 'output_time', 'input_date', 'input_time','data_persons','establishment_id','is_reserve');
+			$rentData = $request->only('customer_id', 'customer', 'notes', 'license_plate', 'travel_reason', 'reservation_origin', 'adults', 'children', 'towels', 'hotel_room_id', 'hotel_rate_id', 'duration', 'quantity_persons', 'payment_status', 'output_date', 'output_time', 'input_date', 'input_time','data_persons','establishment_id','is_reserve');
 			$rentData['rental_date_time'] = $rentalDateTime;
 			$rentData['rental_price'] = $rentalPrice;
 			$rentData['rental_period_type'] = $rentalPeriodType;
