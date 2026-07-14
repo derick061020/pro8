@@ -140,11 +140,13 @@
           <div class="ckeditor-wrap">
             <vue-ckeditor
               v-if="visible && editorReady"
+              ref="editor"
               :key="editorKey"
               :editors="editors"
               type="classic"
               v-model="form.content"
               :config="editorConfig"
+              @ready="applyInitialEditorContent"
             />
           </div>
           <p class="cover-hint">
@@ -350,7 +352,24 @@ export default {
       // Ahora que form.content ya está asignado, montamos el editor.
       this.$nextTick(() => {
         this.editorReady = true;
+        // Respaldo: vue-ckeditor no siempre aplica el valor inicial al crearse,
+        // así que forzamos el contenido en cuanto la instancia esté disponible.
+        this.applyInitialEditorContent();
       });
+    },
+    // Fuerza el contenido dentro del editor CKEditor. La instancia se crea de
+    // forma asíncrona, por eso reintentamos hasta que esté lista.
+    applyInitialEditorContent(retries = 40) {
+      if (retries <= 0) return;
+      const editor = this.$refs.editor;
+      if (!editor || !editor.instance) {
+        setTimeout(() => this.applyInitialEditorContent(retries - 1), 25);
+        return;
+      }
+      const value = this.form.content || "";
+      if (editor.instance.getData() !== value) {
+        editor.instance.setData(value);
+      }
     },
     today() {
       const d = new Date();
