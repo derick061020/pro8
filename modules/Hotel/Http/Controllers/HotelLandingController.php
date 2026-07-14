@@ -9,7 +9,11 @@ use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use App\Models\Tenant\Establishment;
 use App\Models\Tenant\Configuration;
+use App\Models\Tenant\Company;
 use App\Models\Tenant\Person;
+use App\Http\Controllers\Tenant\EmailController;
+use Modules\Hotel\Emails\HotelReservationConfirmationMail;
+use Modules\Hotel\Emails\HotelNewReservationNoticeMail;
 use App\Models\Tenant\Catalogs\IdentityDocumentType;
 use Modules\Hotel\Models\HotelRoom;
 use Modules\Hotel\Models\HotelRent;
@@ -629,16 +633,140 @@ class HotelLandingController extends Controller
 
             DB::connection('tenant')->commit();
 
+            // Comunicación por correo (confirmación al huésped + aviso al hotel).
+            // Nunca debe romper la reserva: cualquier fallo de SMTP se ignora.
+            $this->sendReservationEmails([
+                'rent'          => $rent,
+                'room'          => $room,
+                'description'   => $description,
+                'inDate'        => $inDate,
+                'outDate'       => $outDate,
+                'inTime'        => $inTime,
+                'outTime'       => $outTime,
+                'nights'        => $nights,
+                'unitPrice'     => $unitPrice,
+                'total'         => $total,
+                'adults'        => $adults,
+                'children'      => $children,
+                'paymentMethod' => $paymentMethod,
+                'guestName'     => trim($request->name),
+                'guestEmail'    => $request->email,
+                'guestPhone'    => $request->telephone,
+                'guestDocument' => trim((string) $request->document_number),
+                'guestNotes'    => trim((string) $request->notes),
+            ]);
+
+            $guestEmail = trim((string) $request->email);
+            $emailNote  = ($guestEmail !== '' && filter_var($guestEmail, FILTER_VALIDATE_EMAIL))
+                ? ' Te enviamos un correo de confirmación con el detalle.'
+                : '';
+
             $msg = '¡Reserva registrada para ' . e($description) . ' del '
                 . $inDate->format('d/m/Y') . ' al ' . $outDate->format('d/m/Y')
                 . ($total > 0 ? ' (estimado: S/ ' . number_format($total, 2) . ')' : '')
-                . '. El hotel se pondrá en contacto contigo para confirmar.';
+                . '. El hotel se pondrá en contacto contigo para confirmar.' . $emailNote;
 
             return $this->alert('success', $msg);
         } catch (\Throwable $th) {
             DB::connection('tenant')->rollBack();
             return $this->alert('danger', 'No se pudo registrar la reserva. Inténtalo de nuevo.');
         }
+    }
+
+    /**
+     * Envía los correos de la reserva web:
+     *   - Confirmación (comprobante) al huésped, si dejó un correo válido.
+     *   - Aviso interno al hotel (correo del establecimiento).
+     *
+     * Se ejecuta siempre en un try/catch: un fallo de SMTP jamás debe afectar
+     * a la reserva, que ya está confirmada en la base de datos.
+     */
+    private function sendReservationEmails(array $ctx)
+    {
+        try {
+            $room = $ctx['room'];
+            $establishment = Establishment::find($room->establishment_id);
+
+            $company   = Company::first();
+            $hotelName = ($company && $company->name)
+                ? $company->name
+                : ($establishment->description ?? 'Hotel');
+
+            $settings = $this->landingConfig($establishment);
+            $accent   = $this->colorHex($settings['color'] ?? null);
+
+            $hotel = [
+                'name'    => $hotelName,
+                'address' => $establishment->address ?? null,
+                'email'   => $establishment->email ?? null,
+                'phone'   => $establishment->telephone ?? null,
+                'accent'  => $accent,
+            ];
+
+            $adults   = (int) $ctx['adults'];
+            $children = (int) $ctx['children'];
+            $guests   = $adults . ' adulto' . ($adults === 1 ? '' : 's');
+            if ($children > 0) {
+                $guests .= ' · ' . $children . ' niño' . ($children === 1 ? '' : 's');
+            }
+
+            $reservation = [
+                'code'           => 'RES-' . str_pad((string) $ctx['rent']->id, 6, '0', STR_PAD_LEFT),
+                'room'           => $ctx['description'],
+                'checkin_date'   => $ctx['inDate']->format('d/m/Y'),
+                'checkin_time'   => $ctx['inTime'],
+                'checkout_date'  => $ctx['outDate']->format('d/m/Y'),
+                'checkout_time'  => $ctx['outTime'],
+                'nights'         => (int) $ctx['nights'],
+                'guests_label'   => $guests,
+                'currency'       => 'S/',
+                'total'          => (float) $ctx['total'],
+                'payment_method' => $ctx['paymentMethod'],
+                'notes'          => $ctx['guestNotes'] ?: null,
+                'guest_name'     => $ctx['guestName'],
+                'guest_email'    => $ctx['guestEmail'],
+                'guest_phone'    => $ctx['guestPhone'],
+                'guest_document' => $ctx['guestDocument'] ?: null,
+            ];
+
+            // Confirmación al huésped (sólo si dejó un correo).
+            $guestEmail = trim((string) $ctx['guestEmail']);
+            if ($guestEmail !== '' && filter_var($guestEmail, FILTER_VALIDATE_EMAIL)) {
+                EmailController::SendMail(
+                    $guestEmail,
+                    new HotelReservationConfirmationMail($reservation, $hotel),
+                    $ctx['rent']->id
+                );
+            }
+
+            // Aviso interno al hotel.
+            $hotelEmail = trim((string) ($establishment->email ?? ''));
+            if ($hotelEmail !== '' && filter_var($hotelEmail, FILTER_VALIDATE_EMAIL)) {
+                EmailController::SendMail(
+                    $hotelEmail,
+                    new HotelNewReservationNoticeMail($reservation, $hotel),
+                    $ctx['rent']->id
+                );
+            }
+        } catch (\Throwable $th) {
+            // Silencioso a propósito: la reserva ya está creada.
+            \Log::channel('emails')->error('Reserva web: fallo al enviar correo. ' . $th->getMessage());
+        }
+    }
+
+    /**
+     * Traduce el nombre de color del tema de la landing a su hex, para usarlo
+     * como color de acento en los correos. Réplica del mapa del editor web.
+     */
+    private function colorHex($name)
+    {
+        $map = [
+            'turquoise' => '#1abc9c', 'blue' => '#3498db', 'green' => '#2ecc71',
+            'orange'    => '#e67e22', 'purple' => '#9b59b6', 'red' => '#e74c3c',
+            'brown'     => '#8d6e63', 'black' => '#2c3e50',
+        ];
+
+        return $map[$name] ?? '#1abc9c';
     }
 
     /**
