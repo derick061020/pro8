@@ -2077,8 +2077,22 @@ export default {
                 this.document_types = this.all_document_types;
             }
 
-            this.document.document_type_id =
-                this.document_types.length > 0 ? this.document_types[0].id : null;
+            // Aplicar el tipo de comprobante por defecto configurado en Ajustes.
+            // Si "nota de venta por defecto" (default_document_type_80) está
+            // activo y la NV (80) está disponible, se preselecciona. Igual para
+            // "boleta por defecto" (default_document_type_03). Si ninguno aplica
+            // se mantiene el primer tipo disponible.
+            let default_document_type_id = null;
+            if (this.config && this.config.default_document_type_80 &&
+                this.document_types.some((row) => row.id === '80')) {
+                default_document_type_id = '80';
+            } else if (this.config && this.config.default_document_type_03 &&
+                this.document_types.some((row) => row.id === '03')) {
+                default_document_type_id = '03';
+            }
+
+            this.document.document_type_id = default_document_type_id ||
+                (this.document_types.length > 0 ? this.document_types[0].id : null);
             this.changeDocumentType();
         },
         changeDateOfIssue() {

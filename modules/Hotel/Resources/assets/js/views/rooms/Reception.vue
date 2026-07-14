@@ -930,6 +930,40 @@
     stroke: #f5871f !important;
 }
 
+/* Estados base con degradado 135° (mismo tono, claro → oscuro) para
+   armonizar con MANTENIMIENTO y los demás estados especiales. Sobrescriben
+   los colores planos de theme.css (.hotel-rooms .available/.occupied/...). */
+.room-container .room-el-card.available,
+.hotel-rooms .room-el-card.available.el-card {
+    background: linear-gradient(135deg, #4caf50 0%, #2e7d32 100%) !important;
+    border: 0 !important;
+    box-shadow: 0 4px 14px rgba(46, 125, 50, 0.35) !important;
+}
+.room-container .room-el-card.occupied,
+.hotel-rooms .room-el-card.occupied.el-card {
+    background: linear-gradient(135deg, #ef5350 0%, #c62828 100%) !important;
+    border: 0 !important;
+    box-shadow: 0 4px 14px rgba(198, 40, 40, 0.38) !important;
+}
+.room-container .room-el-card.occupied-last,
+.hotel-rooms .room-el-card.occupied-last.el-card {
+    background: linear-gradient(135deg, #a855f7 0%, #6b21a8 100%) !important;
+    border: 0 !important;
+    box-shadow: 0 4px 14px rgba(107, 33, 168, 0.38) !important;
+}
+.room-container .room-el-card.cleaning,
+.hotel-rooms .room-el-card.cleaning.el-card {
+    background: linear-gradient(135deg, #29b6f6 0%, #0277bd 100%) !important;
+    border: 0 !important;
+    box-shadow: 0 4px 14px rgba(2, 119, 189, 0.38) !important;
+}
+.room-container .room-el-card.available .el-card__body,
+.room-container .room-el-card.occupied .el-card__body,
+.room-container .room-el-card.occupied-last .el-card__body,
+.room-container .room-el-card.cleaning .el-card__body {
+    background: transparent !important;
+}
+
 .room-container .room-el-card:hover {
     transform: translateY(-2px);
     box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12) !important;

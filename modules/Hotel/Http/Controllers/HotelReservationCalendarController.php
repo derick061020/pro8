@@ -80,7 +80,17 @@ class HotelReservationCalendarController extends Controller
 
         $reservations = $query->orderBy('input_date', 'asc')->get();
 
-        $events = $reservations->map(function ($reservation) {
+        // Pagos aplicados por reserva (una sola consulta agregada). Se usa para
+        // colorear las barras según el estado de pago: pagado / adelanto / debe.
+        // Misma base que calculateRentDebt: deuda = Σ(items no-PAY) − pagos + arrears.
+        $paidByRent = HotelRentItemPayment::query()
+            ->join('hotel_rent_items', 'hotel_rent_items.id', '=', 'hotel_rent_item_payments.hotel_rent_item_id')
+            ->whereIn('hotel_rent_items.hotel_rent_id', $reservations->pluck('id'))
+            ->groupBy('hotel_rent_items.hotel_rent_id')
+            ->selectRaw('hotel_rent_items.hotel_rent_id as rent_id, SUM(hotel_rent_item_payments.payment) as paid')
+            ->pluck('paid', 'rent_id');
+
+        $events = $reservations->map(function ($reservation) use ($paidByRent) {
             $inputAt  = Carbon::parse($reservation->input_date);
             $outputAt = Carbon::parse($reservation->output_date);
 
@@ -92,6 +102,8 @@ class HotelReservationCalendarController extends Controller
 
             $roomName     = $reservation->room ? $reservation->room->name : 'Habitación eliminada';
             $roomCategory = ($reservation->room && $reservation->room->category) ? $reservation->room->category->description : 'N/A';
+
+            $pay = $this->computeReservationPayment($reservation, (float) ($paidByRent[$reservation->id] ?? 0));
 
             return [
                 'id'                 => $reservation->id,
@@ -125,6 +137,10 @@ class HotelReservationCalendarController extends Controller
                 'reservation_origin' => $reservation->reservation_origin,
                 'notes'              => $reservation->notes,
                 'is_reserve'         => (bool) $reservation->is_reserve,
+                // Estado de pago para el color de la barra: paid | partial | unpaid.
+                'paid'               => $pay['paid'],
+                'debt'               => $pay['debt'],
+                'payment_state'      => $pay['state'],
                 'created_at'         => optional($reservation->created_at)->format('Y-m-d H:i:s'),
             ];
         });
@@ -148,6 +164,54 @@ class HotelReservationCalendarController extends Controller
             $json = is_object($item->item) ? (array) $item->item : ($item->item ?: []);
             return (float) ($json['total'] ?? 0);
         });
+    }
+
+    /**
+     * Estado de pago de una reserva para colorear la barra del calendario.
+     * Reutiliza la misma fórmula de deuda que el resto del sistema:
+     *   deuda = Σ(items no-PAY) − pagos aplicados + arrears.
+     *
+     * @param  float|null $paid  Suma de pagos ya calculada (evita N+1 en el
+     *                           listado); si es null se consulta aquí.
+     * @return array{paid: float, debt: float, state: string}
+     *         state: 'paid' (pagado) | 'partial' (adelanto) | 'unpaid' (sin pagar).
+     */
+    private function computeReservationPayment(HotelRent $reservation, $paid = null)
+    {
+        if (!$reservation->relationLoaded('items')) {
+            $reservation->load('items');
+        }
+
+        if ($paid === null) {
+            $paid = (float) HotelRentItemPayment::query()
+                ->join('hotel_rent_items', 'hotel_rent_items.id', '=', 'hotel_rent_item_payments.hotel_rent_item_id')
+                ->where('hotel_rent_items.hotel_rent_id', $reservation->id)
+                ->sum('hotel_rent_item_payments.payment');
+        }
+        $paid = (float) $paid;
+
+        // Total facturable: items que no son de tipo PAY (los PAY son movimientos
+        // de pago, no cargos), tomando el total plano o el del JSON legacy.
+        $totalItems = (float) $reservation->items
+            ->filter(function ($i) { return $i->type !== 'PAY'; })
+            ->sum(function ($i) {
+                $col = (float) $i->total;
+                if ($col > 0) return $col;
+                $json = is_object($i->item) ? (array) $i->item : ($i->item ?: []);
+                return (float) ($json['total'] ?? 0);
+            });
+
+        $debt = round($totalItems - $paid + (float) ($reservation->arrears ?? 0), 2);
+
+        if ($debt <= 0.009) {
+            $state = 'paid';           // Saldado (o con vuelto a favor).
+        } elseif ($paid > 0) {
+            $state = 'partial';        // Adelanto / pago parcial pendiente.
+        } else {
+            $state = 'unpaid';         // No se ha pagado nada.
+        }
+
+        return ['paid' => round($paid, 2), 'debt' => $debt, 'state' => $state];
     }
 
     /**
@@ -454,6 +518,8 @@ class HotelReservationCalendarController extends Controller
             ];
         })->values();
 
+        $payment = $this->computeReservationPayment($reservation);
+
         $details = [
             'id'                  => $reservation->id,
             'customer'            => $customerDetails,
@@ -473,7 +539,10 @@ class HotelReservationCalendarController extends Controller
                 'unit_price'       => $effectiveUnitPrice,
             ],
             'totals'              => [
-                'total' => $this->computeReservationTotal($reservation),
+                'total'         => $this->computeReservationTotal($reservation),
+                'paid'          => $payment['paid'],
+                'debt'          => $payment['debt'],
+                'payment_state' => $payment['state'],
             ],
             'status'              => $reservation->status,
             'adults'              => $reservation->adults,

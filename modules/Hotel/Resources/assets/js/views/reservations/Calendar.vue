@@ -151,8 +151,9 @@
                                          :class="getBarClass(bar)"
                                          :style="bar.style"
                                          @click.stop="openDetails(bar)"
-                                         :title="bar.customer_name + ' — ' + bar.duration + ' noches'">
+                                         :title="getBarTitle(bar)">
                                         <span class="rcal-bar-text">
+                                            <span class="rcal-bar-ico">{{ getBarIcon(bar) }}</span>
                                             <template v-if="bar.isMultiGuest">+ </template>{{ bar.customer_name }}
                                         </span>
                                     </div>
@@ -223,8 +224,10 @@
                                          :class="getBarClass(bar)"
                                          :style="bar.style"
                                          @click.stop="openDetails(bar)"
-                                         :title="bar.customer_name + ' — ' + bar.timeLabel">
-                                        <span class="rcal-bar-text">{{ bar.customer_name }} · {{ bar.timeLabel }}</span>
+                                         :title="getBarTitle(bar)">
+                                        <span class="rcal-bar-text">
+                                            <span class="rcal-bar-ico">{{ getBarIcon(bar) }}</span>{{ bar.customer_name }} · {{ bar.timeLabel }}
+                                        </span>
                                     </div>
                                 </div>
                             </div>
@@ -243,14 +246,18 @@
 
         <!-- Legend -->
         <div class="rcal-legend">
-            <span class="rcal-lg-item"><i class="rcal-lg-dot lg-info"></i>Información</span>
-            <span class="rcal-lg-item"><i class="rcal-lg-dot lg-connected"></i>Conectado</span>
-            <span class="rcal-lg-item"><i class="rcal-lg-dot lg-confirmed"></i>Confirmada</span>
-            <span class="rcal-lg-item"><i class="rcal-lg-dot lg-pending"></i>Pendiente</span>
-            <span class="rcal-lg-item"><i class="rcal-lg-dot lg-checkin"></i>Check-in</span>
-            <span class="rcal-lg-item"><i class="rcal-lg-dot lg-active"></i>Activa</span>
-            <span class="rcal-lg-item"><i class="rcal-lg-dot lg-checkout"></i>Check-out</span>
+            <span class="rcal-lg-title">Pago:</span>
+            <span class="rcal-lg-item"><i class="rcal-lg-dot lg-paid"></i>Pagado</span>
+            <span class="rcal-lg-item"><i class="rcal-lg-dot lg-partial"></i>Adelanto / parcial</span>
+            <span class="rcal-lg-item"><i class="rcal-lg-dot lg-unpaid"></i>Sin pagar</span>
+            <span class="rcal-lg-sep"></span>
+            <span class="rcal-lg-title">Tipo:</span>
+            <span class="rcal-lg-item"><i class="rcal-lg-dot lg-booking"></i>📅 Reserva (rayada)</span>
+            <span class="rcal-lg-item"><i class="rcal-lg-dot lg-stay"></i>🛏️ En curso (sólida)</span>
+            <span class="rcal-lg-sep"></span>
             <span class="rcal-lg-item"><i class="rcal-lg-dot lg-finalized"></i>Finalizada</span>
+            <span class="rcal-lg-item"><i class="rcal-lg-dot lg-cancelled"></i>Cancelada</span>
+            <span class="rcal-lg-item"><i class="rcal-lg-dot lg-maint"></i>🔧 Mantenimiento</span>
         </div>
 
         <!-- Detail / Edit Modal -->
@@ -295,6 +302,14 @@
                             <div class="rcal-det-field"><label>Motivo</label><span>{{ getTravelReasonLabel(detail.travel_reason) }}</span></div>
                             <div class="rcal-det-field"><label>Origen de la reserva</label><span>{{ getReservationOriginLabel(detail.reservation_origin) }}</span></div>
                             <div class="rcal-det-field rcal-det-price"><label>Total</label><span>S/ {{ Number(detail.totals?.total ?? detail.total ?? 0).toFixed(2) }}</span></div>
+                            <div class="rcal-det-field"><label>Pagado</label><span>S/ {{ Number(detail.totals?.paid ?? 0).toFixed(2) }}</span></div>
+                            <div class="rcal-det-field">
+                                <label>Saldo</label>
+                                <span class="rcal-det-debt" :class="'debt-' + (detail.totals?.payment_state || 'unpaid')">
+                                    <template v-if="Number(detail.totals?.debt) > 0">Debe S/ {{ Number(detail.totals.debt).toFixed(2) }}</template>
+                                    <template v-else>Pagado ✓</template>
+                                </span>
+                            </div>
                         </div>
                     </div>
                     <div class="rcal-det-section" v-if="detail.notes">
@@ -1123,45 +1138,55 @@ export default {
             window.location.href = `/hotels/reception/${room.id}/rent?${params.toString()}`
         },
         getBarClass(bar) {
-            // El estado terminal tiene prioridad sobre is_reserve: una reserva
-            // finalizada/con checkout conserva is_reserve = true, así que hay que
-            // evaluar el estado antes que el color naranja de reserva.
+            // Guía de colores del calendario (simplificada). Dos grupos:
+            //
+            //  1) TERMINADAS — el pago ya no importa en el calendario (es historia):
+            //       · Cancelada  → rojo apagado  (bars-cancelled)
+            //       · Finalizada → plomo         (bars-finalized)
+            //         Se unifican el checkout real y la reserva vencida: para el
+            //         personal ambas son "ya terminó", y separarlas confundía.
+            //
+            //  2) VIVAS (reserva o estancia en curso) — el color indica el PAGO:
+            //       · Pagado           → verde  (bars-paid)
+            //       · Adelanto/parcial → ámbar  (bars-partial)
+            //       · Sin pagar        → rojo   (bars-unpaid)
+            //     Reserva futura vs estancia en curso se distinguen por patrón
+            //     (rayado vs sólido) + ícono, no por color, para no multiplicar
+            //     colores: bar-booking (is_reserve) / bar-stay (ya ingresó).
             const st = String(bar.status || '').toUpperCase();
-            // Todos los registros terminados quedan en estado FINALIZADO, pero
-            // se distinguen por si hubo un checkout real:
-            //  - is_reserve = false → era un INGRESO real que pasó por checkout
-            //    (finalizeRent registró la salida) → morado (guía de colores).
-            //  - is_reserve = true  → era una RESERVA que expiró/se consumió sin
-            //    checkout real → plomo (bars-finalized).
-            if (st === 'FINALIZADO') {
-                return bar.is_reserve ? 'bars-finalized' : 'bars-checkout';
-            }
-            // Estado de checkout explícito (por si llega en inglés) → morado.
-            if (st === 'CHECKED_OUT') {
-                return 'bars-checkout';
-            }
-            if (st === 'CANCELLED') {
-                return 'bars-cancelled';
-            }
 
-            // Si es una reserva (aún no finalizada), mostrar con color especial
-            if (bar.is_reserve) {
-                return 'bars-reservation';
-            }
+            if (st === 'CANCELLED') return 'bars-cancelled';
+            if (st === 'FINALIZADO' || st === 'CHECKED_OUT') return 'bars-finalized';
 
-            const statusMap = {
-                confirmed: 'bars-confirmed',
-                pending: 'bars-pending',
-                cancelled: 'bars-cancelled',
-                checked_in: 'bars-checkin',
-                checked_out: 'bars-checkout',
-                ACTIVE: 'bars-active',
-                FINALIZADO: 'bars-finalized',
-                active: 'bars-active',
-                Confirmada: 'bars-confirmed',
-                Pendiente: 'bars-pending',
-            }
-            return statusMap[bar.status] || 'bars-default'
+            const payClass = {
+                paid: 'bars-paid',
+                partial: 'bars-partial',
+                unpaid: 'bars-unpaid',
+            }[bar.payment_state] || 'bars-unpaid';
+
+            return payClass + (bar.is_reserve ? ' bar-booking' : ' bar-stay');
+        },
+        // Ícono dentro de la barra: 📅 reserva futura · 🛏️ estancia en curso.
+        getBarIcon(bar) {
+            const st = String(bar.status || '').toUpperCase();
+            if (st === 'CANCELLED') return '✕';
+            if (st === 'FINALIZADO' || st === 'CHECKED_OUT') return '✓';
+            return bar.is_reserve ? '📅' : '🛏️';
+        },
+        // Etiqueta de pago legible para el tooltip / leyenda.
+        paymentLabel(state) {
+            return { paid: 'Pagado', partial: 'Adelanto / parcial', unpaid: 'Sin pagar' }[state] || 'Sin pagar';
+        },
+        // Tooltip de la barra: cliente + tipo + estado de pago y saldo.
+        getBarTitle(bar) {
+            const st = String(bar.status || '').toUpperCase();
+            const parts = [bar.customer_name];
+            if (st === 'CANCELLED') { parts.push('Cancelada'); return parts.join(' — '); }
+            if (st === 'FINALIZADO' || st === 'CHECKED_OUT') { parts.push('Finalizada'); return parts.join(' — '); }
+            parts.push(bar.is_reserve ? 'Reserva' : 'En curso');
+            parts.push(this.paymentLabel(bar.payment_state));
+            if (Number(bar.debt) > 0) parts.push('Debe S/ ' + this.formatPrice(bar.debt));
+            return parts.join(' — ');
         },
 
         /* ── Labels ── */
@@ -1873,27 +1898,24 @@ export default {
     text-shadow: 0 1px 2px rgba(0,0,0,.15);
 }
 
-/* Bar status colors — Diagonal stripe pattern matching screenshot */
-.bars-confirmed {
-    background: linear-gradient(135deg, #4fc3f7 25%, #29b6f6 25%, #29b6f6 50%, #4fc3f7 50%, #4fc3f7 75%, #29b6f6 75%);
-    background-size: 14px 14px;
-}
-.bars-pending {
-    background: linear-gradient(135deg, #ffd54f 25%, #ffca28 25%, #ffca28 50%, #ffd54f 50%, #ffd54f 75%, #ffca28 75%);
-    background-size: 14px 14px;
-}
-.bars-pending .rcal-bar-text { color: #5d4037; text-shadow: none; }
+/* ── Colores por ESTADO DE PAGO (barras vivas: reserva o estancia en curso) ──
+   Verde = pagado · Ámbar = adelanto/parcial · Rojo = sin pagar.
+   El color de pago es de FONDO sólido; el patrón (rayado/sólido) distingue si
+   es una reserva futura o una estancia en curso (ver .bar-booking / .bar-stay). */
+.bars-paid    { background-color: #43a047; }
+.bars-partial { background-color: #fb8c00; }
+.bars-unpaid  { background-color: #e53935; }
 
-/* Color especial para reservas — naranja/ámbar para no confundir con
-   checkout (morado) ni con check-in (azul). */
-.bars-reservation {
-    background: linear-gradient(135deg, #ffb74d 25%, #ff9800 25%, #ff9800 50%, #ffb74d 50%, #ffb74d 75%, #ff9800 75%);
-    background-size: 14px 14px;
+.rcal-bar-ico { margin-right: 4px; font-size: 10px; line-height: 1; }
+
+/* Reserva FUTURA (📅): rayas translúcidas sobre el color de pago.
+   Estancia EN CURSO (🛏️): color sólido + filo izquierdo (huésped ya ingresó). */
+.bar-booking {
+    background-image: repeating-linear-gradient(135deg,
+        rgba(255,255,255,.30) 0, rgba(255,255,255,.30) 7px,
+        rgba(255,255,255,0) 7px, rgba(255,255,255,0) 14px);
 }
-.bars-reservation .rcal-bar-text {
-    color: #fff;
-    text-shadow: 0 1px 2px rgba(0,0,0,.25);
-}
+.bar-stay { box-shadow: inset 4px 0 0 rgba(0,0,0,.30); }
 
 /* Barra de mantenimiento (rayado gris con acento ámbar). */
 .rcal-bar-maintenance {
@@ -1910,30 +1932,10 @@ export default {
     box-shadow: 0 0 0 2px rgba(245,158,11,.6);
 }
 
-.bars-cancelled {
-    background: linear-gradient(135deg, #ef9a9a 25%, #e57373 25%, #e57373 50%, #ef9a9a 50%, #ef9a9a 75%, #e57373 75%);
-    background-size: 14px 14px;
-}
-.bars-checkin {
-    background: linear-gradient(135deg, #81d4fa 25%, #4fc3f7 25%, #4fc3f7 50%, #81d4fa 50%, #81d4fa 75%, #4fc3f7 75%);
-    background-size: 14px 14px;
-}
-.bars-checkout {
-    background: linear-gradient(135deg, #b39ddb 25%, #9575cd 25%, #9575cd 50%, #b39ddb 50%, #b39ddb 75%, #9575cd 75%);
-    background-size: 14px 14px;
-}
-.bars-active {
-    background: linear-gradient(135deg, #81c784 25%, #66bb6a 25%, #66bb6a 50%, #81c784 50%, #81c784 75%, #66bb6a 75%);
-    background-size: 14px 14px;
-}
-.bars-finalized {
-    background: linear-gradient(135deg, #b0bec5 25%, #90a4ae 25%, #90a4ae 50%, #b0bec5 50%, #b0bec5 75%, #90a4ae 75%);
-    background-size: 14px 14px;
-}
-.bars-default {
-    background: linear-gradient(135deg, #4fc3f7 25%, #29b6f6 25%, #29b6f6 50%, #4fc3f7 50%, #4fc3f7 75%, #29b6f6 75%);
-    background-size: 14px 14px;
-}
+/* ── Terminadas (el pago ya no se muestra: es historia) ── */
+.bars-finalized { background-color: #90a4ae; }          /* plomo */
+.bars-cancelled { background-color: #b0908f; opacity: .75; } /* rojo grisáceo apagado */
+.bars-cancelled .rcal-bar-text { text-decoration: line-through; }
 
 /* ── Empty state ── */
 .rcal-empty {
@@ -1951,32 +1953,19 @@ export default {
 .rcal-lg-dot {
     width: 14px; height: 14px; border-radius: 3px; flex-shrink: 0; display: inline-block;
 }
-.lg-info { background: #4caf50; }
-.lg-connected { background: #2196f3; }
-.lg-confirmed {
-    background: linear-gradient(135deg, #4fc3f7 25%, #29b6f6 25%, #29b6f6 50%, #4fc3f7 50%, #4fc3f7 75%, #29b6f6 75%);
-    background-size: 8px 8px;
+.rcal-lg-title { font-size: 12px; font-weight: 700; color: #374151; }
+.rcal-lg-sep { width: 1px; height: 14px; background: #dce0e6; }
+.lg-paid { background: #43a047; }
+.lg-partial { background: #fb8c00; }
+.lg-unpaid { background: #e53935; }
+.lg-booking {
+    background-color: #78909c;
+    background-image: repeating-linear-gradient(135deg, rgba(255,255,255,.55) 0 3px, rgba(255,255,255,0) 3px 6px);
 }
-.lg-pending {
-    background: linear-gradient(135deg, #ffd54f 25%, #ffca28 25%, #ffca28 50%, #ffd54f 50%, #ffd54f 75%, #ffca28 75%);
-    background-size: 8px 8px;
-}
-.lg-checkin {
-    background: linear-gradient(135deg, #81d4fa 25%, #4fc3f7 25%, #4fc3f7 50%, #81d4fa 50%, #81d4fa 75%, #4fc3f7 75%);
-    background-size: 8px 8px;
-}
-.lg-active {
-    background: linear-gradient(135deg, #81c784 25%, #66bb6a 25%, #66bb6a 50%, #81c784 50%, #81c784 75%, #66bb6a 75%);
-    background-size: 8px 8px;
-}
-.lg-checkout {
-    background: linear-gradient(135deg, #b39ddb 25%, #9575cd 25%, #9575cd 50%, #b39ddb 50%, #b39ddb 75%, #9575cd 75%);
-    background-size: 8px 8px;
-}
-.lg-finalized {
-    background: linear-gradient(135deg, #b0bec5 25%, #90a4ae 25%, #90a4ae 50%, #b0bec5 50%, #b0bec5 75%, #90a4ae 75%);
-    background-size: 8px 8px;
-}
+.lg-stay { background: #78909c; box-shadow: inset 3px 0 0 rgba(0,0,0,.35); }
+.lg-finalized { background: #90a4ae; }
+.lg-cancelled { background: #b0908f; }
+.lg-maint { background: repeating-linear-gradient(45deg, #9ca3af, #9ca3af 3px, #6b7280 3px, #6b7280 6px); }
 
 /* ── Detail Modal ── */
 .rcal-modal-title { display: flex; align-items: center; gap: 10px; }
@@ -1985,6 +1974,10 @@ export default {
     font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px;
     padding: 3px 10px; border-radius: 6px; color: #fff;
 }
+.rcal-det-debt { font-weight: 700; }
+.rcal-det-debt.debt-paid { color: #2e7d32; }
+.rcal-det-debt.debt-partial { color: #ef6c00; }
+.rcal-det-debt.debt-unpaid { color: #c62828; }
 .mbadge-confirmed { background: #29b6f6; }
 .mbadge-pending { background: #ffca28; color: #5d4037; }
 .mbadge-cancelled { background: #e57373; }
