@@ -56,12 +56,25 @@ class ConsultCdrService extends BaseSunat
             if (isset($vars['document']) && strlen($vars['document']) > 200) {
                 $vars['document'] = '[ZIP: ' . strlen($vars['document']) . ' bytes]';
             }
-            $document = $response->{$resultName} ?? null;
+            $statusResponse = $response->{$resultName} ?? null;
+
+            if (!$statusResponse) {
+                \Log::warning('No se recibió un documento válido desde el servicio SOAP');
+                return $result->setSuccess(false)
+                    ->setError($this->getErrorByCode('', 'La SUNAT no devolvió una respuesta válida para la consulta del CDR.'));
+            }
+
+            // Estado del comprobante informado por SUNAT (siempre presente).
+            $statusCode = $statusResponse->statusCode ?? null;
+            $statusMessage = $statusResponse->statusMessage ?? '';
+
+            // El CDR (zip base64) solo viene cuando SUNAT lo tiene disponible.
+            // En getStatus (sin CDR) la respuesta no incluye 'content'.
+            $document = ($resultName === 'statusCdr')
+                ? ($statusResponse->content ?? null)
+                : null;
 
             if ($document) {
-                if ($resultName === 'statusCdr') {
-                    $document = $document->content;
-                }
                 $result->setCdrZip($document);
                 $cdrResponse = $this->extractResponse($document);
                 $code = $cdrResponse->getCode();
@@ -76,7 +89,17 @@ class ConsultCdrService extends BaseSunat
                     $this->loadErrorByCode($result, $code);
                 }
             } else {
-                \Log::warning('No se recibió un documento válido desde el servicio SOAP');
+                // SUNAT respondió pero sin CDR (comprobante no informado, rechazado,
+                // aún en proceso, etc.). Devolver el estado para un mensaje claro.
+                \Log::warning("Consulta CDR sin contenido. statusCode: {$statusCode}; statusMessage: {$statusMessage}");
+                $error = $this->getErrorByCode($statusCode, $statusMessage);
+                if (empty($error->getMessage())) {
+                    $error->setMessage($statusMessage ?: 'La SUNAT no devolvió el CDR para este comprobante.');
+                }
+                $result->setCode($statusCode)
+                    ->setMessage($statusMessage)
+                    ->setSuccess(false)
+                    ->setError($error);
             }
 
             // $statusCdr = $response->{$resultName};
