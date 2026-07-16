@@ -80,12 +80,23 @@ class ConsultCdr
 
         if(!$res->isSuccess()) {
 
+            // No se pudo obtener la constancia (CDR). Consultamos el estado de
+            // aceptación del comprobante para informar si SUNAT lo aceptó o no.
+            $acceptance = $this->consultAcceptanceStatus($consultCdrService, $company_number, $document_type_id, $series, $number);
+
+            $cdrError = "Code: {$res->getError()->getCode()}; Description: {$res->getError()->getMessage()}";
+
+            Log::info("Consulta CDR SUNAT [{$document_type_id}-{$series}-{$number}] => {$acceptance['text']} | {$cdrError}");
+
             return [
                 'success' => false,
-                'message' => "Code: {$res->getError()->getCode()}; Description: {$res->getError()->getMessage()}"
+                'accepted' => $acceptance['accepted'],
+                'status_code' => $acceptance['code'],
+                'status_message' => $acceptance['message'],
+                'message' => "{$acceptance['text']} {$cdrError}",
             ];
             // throw new Exception("Code: {$res->getError()->getCode()}; Description: {$res->getError()->getMessage()}");
-            
+
         } else {
 
             $cdrResponse = $res->getCdrResponse();
@@ -111,6 +122,52 @@ class ConsultCdr
 
         }
 
+    }
+
+    /**
+     * Consulta a la SUNAT el estado de ACEPTACIÓN del comprobante (getStatus),
+     * independientemente de si la constancia (CDR) está disponible o no.
+     *
+     * @return array{accepted: bool|null, code: string|null, message: string, text: string}
+     */
+    public function consultAcceptanceStatus($consultCdrService, $company_number, $document_type_id, $series, $number)
+    {
+        // Códigos de estado del servicio getStatus de SUNAT.
+        $labels = [
+            '0001' => 'ACEPTADO',
+            '0002' => 'RECHAZADO',
+            '0003' => 'DADO DE BAJA / ANULADO',
+            '0004' => 'NO INFORMADO A SUNAT (no existe)',
+        ];
+
+        try {
+            $status = $consultCdrService->getStatus($company_number, $document_type_id, $series, $number);
+
+            $code = $status->getCode();
+            $message = $status->getMessage();
+            $label = $labels[$code] ?? null;
+            $accepted = ($code === '0001');
+
+            $text = $label
+                ? "El comprobante fue {$label} por SUNAT (código {$code}: {$message})."
+                : "Estado del comprobante en SUNAT (código {$code}: {$message}).";
+
+            return [
+                'accepted' => $accepted,
+                'code' => $code,
+                'message' => $message,
+                'text' => $text,
+            ];
+        } catch (\Throwable $e) {
+            Log::error('No se pudo consultar el estado de aceptación en SUNAT: '.$e->getMessage());
+
+            return [
+                'accepted' => null,
+                'code' => null,
+                'message' => $e->getMessage(),
+                'text' => 'No se pudo determinar si el comprobante fue aceptado en SUNAT.',
+            ];
+        }
     }
 
     public function consultaCdrSendfact($model)

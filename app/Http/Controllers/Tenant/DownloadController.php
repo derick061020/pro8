@@ -124,7 +124,14 @@ class DownloadController extends Controller
             $message = is_array($result) && isset($result['message'])
                 ? $result['message']
                 : 'La SUNAT no devolvió un CDR para este comprobante.';
-            throw new Exception('No fue posible recuperar el CDR desde la SUNAT: '.$message);
+
+            // Distinguir el caso en que el comprobante SÍ fue aceptado pero SUNAT
+            // no entrega la constancia (típico en boletas informadas por resumen).
+            if (is_array($result) && ($result['accepted'] ?? null) === true) {
+                throw new Exception('El comprobante está ACEPTADO por SUNAT, pero SUNAT no entrega la constancia (CDR) para descargarla individualmente. Detalle: '.$message);
+            }
+
+            throw new Exception('No fue posible recuperar el CDR desde la SUNAT. '.$message);
         }
     }
 
