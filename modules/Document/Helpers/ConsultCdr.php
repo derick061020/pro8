@@ -132,12 +132,11 @@ class ConsultCdr
      */
     public function consultAcceptanceStatus($consultCdrService, $company_number, $document_type_id, $series, $number)
     {
-        // Códigos de estado del servicio getStatus de SUNAT.
+        // Códigos de estado del servicio getStatus de SUNAT (solo los inequívocos;
+        // para el resto se muestra el mensaje literal que devuelve SUNAT).
         $labels = [
             '0001' => 'ACEPTADO',
             '0002' => 'RECHAZADO',
-            '0003' => 'DADO DE BAJA / ANULADO',
-            '0004' => 'NO INFORMADO A SUNAT (no existe)',
         ];
 
         try {

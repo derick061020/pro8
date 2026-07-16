@@ -88,7 +88,12 @@ class DownloadController extends Controller
         if ($type === 'cdr'
             && $document instanceof Document
             && !$this->existFileInStorage($document->filename, 'cdr')) {
-            $this->recoverCdrFromSunat($document);
+            $fallback = $this->recoverCdrFromSunat($document);
+            // Para boletas, SUNAT no entrega CDR individual: se devuelve el CDR del
+            // resumen diario (constancia válida) si está disponible.
+            if ($fallback !== null) {
+                return $fallback;
+            }
         }
 
         //borrar despues
@@ -104,35 +109,83 @@ class DownloadController extends Controller
 
     /**
      * Recupera el CDR desde la SUNAT (o PSE/OSE según configuración) cuando el
-     * archivo no existe en el storage, y lo guarda para poder descargarlo.
+     * archivo no existe en el storage.
+     *
+     * SUNAT solo entrega el CDR individual (getStatusCdr) para FACTURAS y notas
+     * de crédito/débito relacionadas a facturas, y solo en producción. Para las
+     * BOLETAS (tipo 03) no existe CDR individual: la constancia válida es el CDR
+     * de su RESUMEN DIARIO (RC-...). Por eso, si la consulta a SUNAT no deja el
+     * archivo, se busca el CDR del resumen que reportó el comprobante.
      *
      * @param  Document $document
-     * @return void
+     * @return \Symfony\Component\HttpFoundation\BinaryFileResponse|null  Respuesta
+     *         con el CDR del resumen si aplica; null si el CDR propio quedó disponible.
      * @throws Exception
      */
     private function recoverCdrFromSunat(Document $document)
     {
-        try {
-            $result = (new ConsultCdr)->search($document);
-        } catch (Exception $e) {
-            Log::error('Error al recuperar CDR desde SUNAT: '.$e->getMessage());
-            throw new Exception('No se encontró el CDR almacenado y falló la consulta a la SUNAT: '.$e->getMessage());
-        }
+        $result = null;
 
-        // Verificar que la consulta haya dejado el archivo en el storage.
-        if (!$this->existFileInStorage($document->filename, 'cdr')) {
-            $message = is_array($result) && isset($result['message'])
-                ? $result['message']
-                : 'La SUNAT no devolvió un CDR para este comprobante.';
-
-            // Distinguir el caso en que el comprobante SÍ fue aceptado pero SUNAT
-            // no entrega la constancia (típico en boletas informadas por resumen).
-            if (is_array($result) && ($result['accepted'] ?? null) === true) {
-                throw new Exception('El comprobante está ACEPTADO por SUNAT, pero SUNAT no entrega la constancia (CDR) para descargarla individualmente. Detalle: '.$message);
+        // La consulta directa solo tiene sentido para facturas/notas (01, 07, 08).
+        if (in_array($document->document_type_id, ['01', '07', '08'], true)) {
+            try {
+                $result = (new ConsultCdr)->search($document);
+            } catch (Exception $e) {
+                Log::error('Error al recuperar CDR desde SUNAT: '.$e->getMessage());
+                throw new Exception('No se encontró el CDR almacenado y falló la consulta a la SUNAT: '.$e->getMessage());
             }
 
-            throw new Exception('No fue posible recuperar el CDR desde la SUNAT. '.$message);
+            // Si la consulta dejó el CDR propio en storage, se descarga normalmente.
+            if ($this->existFileInStorage($document->filename, 'cdr')) {
+                return null;
+            }
         }
+
+        // Fallback: buscar el CDR del resumen diario que reportó el comprobante.
+        $summaryCdr = $this->downloadSummaryCdr($document);
+        if ($summaryCdr !== null) {
+            return $summaryCdr;
+        }
+
+        // No se pudo obtener ninguna constancia: mensaje claro según el caso.
+        $message = is_array($result) && isset($result['message'])
+            ? $result['message']
+            : 'La SUNAT no devolvió un CDR para este comprobante.';
+
+        if ($document->document_type_id === '03') {
+            throw new Exception('Las boletas no tienen CDR individual en SUNAT; la constancia es el CDR del resumen diario, que aún no está disponible para este comprobante. '.$message);
+        }
+
+        if (is_array($result) && ($result['accepted'] ?? null) === true) {
+            throw new Exception('El comprobante está ACEPTADO por SUNAT, pero no se pudo obtener la constancia (CDR) para descargarla individualmente. Detalle: '.$message);
+        }
+
+        throw new Exception('No fue posible recuperar el CDR desde la SUNAT. '.$message);
+    }
+
+    /**
+     * Devuelve el CDR del resumen diario (RC-...) que reportó el comprobante,
+     * si el resumen existe y su CDR está almacenado. Constancia válida de boletas.
+     *
+     * @param  Document $document
+     * @return \Symfony\Component\HttpFoundation\BinaryFileResponse|null
+     */
+    private function downloadSummaryCdr(Document $document)
+    {
+        $summaryDocument = \App\Models\Tenant\SummaryDocument::where('document_id', $document->id)
+            ->latest('id')
+            ->first();
+
+        $summary = $summaryDocument
+            ? \App\Models\Tenant\Summary::find($summaryDocument->summary_id)
+            : null;
+
+        if ($summary && $this->existFileInStorage($summary->filename, 'cdr')) {
+            Log::info("CDR de boleta {$document->filename} servido desde el resumen {$summary->filename}.");
+            return $this->downloadStorage($summary->filename, 'cdr');
+        }
+
+        return null;
     }
 
     /**
