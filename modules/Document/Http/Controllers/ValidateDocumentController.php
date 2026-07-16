@@ -16,6 +16,9 @@ use Modules\Document\Http\Requests\ValidateDocumentsRequest;
 // use App\CoreFacturalo\Services\Extras\ValidateCpe2;
 use App\Models\Tenant\Company;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use App\CoreFacturalo\Helpers\Storage\StorageDocument;
+use Modules\Document\Helpers\ConsultCdr;
 use App\CoreFacturalo\Services\IntegratedQuery\{
     AuthApi,
     ValidateCpe,
@@ -23,6 +26,7 @@ use App\CoreFacturalo\Services\IntegratedQuery\{
 
 class ValidateDocumentController extends Controller
 {
+    use StorageDocument;
 
     protected $access_token;
 
@@ -182,6 +186,13 @@ class ValidateDocumentController extends Controller
                                 'state_type_id' => $state_type->id
                             ]);
 
+                            // Si el comprobante quedó ACEPTADO, obtener y guardar su CDR
+                            // para que exista el archivo (la validación por API de validez
+                            // solo devuelve el estado, no la constancia).
+                            if ($state_type->id === '05') {
+                                $this->ensureCdrStored($document);
+                            }
+
                         }else{
                             //cpe no existe, entonces el documento se cambia de estado a rechazado (09)
                             $document->update([
@@ -216,6 +227,40 @@ class ValidateDocumentController extends Controller
 
     }
 
+
+    /**
+     * Garantiza que el CDR de un comprobante ACEPTADO quede almacenado.
+     *
+     * La validación masiva usa la API de validez del CPE, que solo devuelve el
+     * estado (aceptado/rechazado) y no la constancia. Por eso, al pasar a
+     * ACEPTADO, se consulta el CDR real a SUNAT y se guarda:
+     *  - Facturas/notas (01, 07, 08): getStatusCdr (CDR individual).
+     *  - Boletas (03): SUNAT no emite CDR individual; su constancia es la del
+     *    resumen diario y se resuelve al descargar (fallback en DownloadController).
+     *
+     * No interrumpe el proceso masivo si falla: solo lo registra en el log.
+     *
+     * @param  Document $document
+     * @return void
+     */
+    private function ensureCdrStored(Document $document)
+    {
+        // Ya existe el archivo del CDR.
+        if ($this->existFileInStorage($document->filename, 'cdr')) {
+            return;
+        }
+
+        // Solo facturas y notas tienen CDR individual recuperable desde SUNAT.
+        if (!in_array($document->document_type_id, ['01', '07', '08'], true)) {
+            return;
+        }
+
+        try {
+            (new ConsultCdr)->search($document);
+        } catch (\Throwable $e) {
+            Log::warning("Validación masiva: no se pudo obtener el CDR de {$document->filename}: ".$e->getMessage());
+        }
+    }
 
     private function getResult($document, $description, $updated, $sunat_state_type_id)
     {
