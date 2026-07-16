@@ -7,8 +7,11 @@ use App\CoreFacturalo\Facturalo;
 use App\Http\Controllers\Tenant\QuotationController;
 use App\CoreFacturalo\Template;
 use App\Models\Tenant\Company;
+use App\Models\Tenant\Document;
+use Modules\Document\Helpers\ConsultCdr;
 use Mpdf\Mpdf;
 use Exception;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 
 class DownloadController extends Controller
@@ -79,6 +82,15 @@ class DownloadController extends Controller
                 throw new Exception('Tipo de archivo a descargar es inválido');
         }
 
+        // Si se solicita el CDR de un comprobante electrónico y no existe físicamente
+        // en el storage, intentar recuperarlo consultando a la SUNAT (o al PSE/OSE según
+        // configuración) antes de fallar con "Unable to retrieve the file_size...".
+        if ($type === 'cdr'
+            && $document instanceof Document
+            && !$this->existFileInStorage($document->filename, 'cdr')) {
+            $this->recoverCdrFromSunat($document);
+        }
+
         //borrar despues
         // solo desarrollo
         // $this->reloadPDF($document, 'dispatch', 'a4');
@@ -88,6 +100,32 @@ class DownloadController extends Controller
         // return response()->file($temp);
         //borrar antes
         return $this->downloadStorage($document->filename, $folder);
+    }
+
+    /**
+     * Recupera el CDR desde la SUNAT (o PSE/OSE según configuración) cuando el
+     * archivo no existe en el storage, y lo guarda para poder descargarlo.
+     *
+     * @param  Document $document
+     * @return void
+     * @throws Exception
+     */
+    private function recoverCdrFromSunat(Document $document)
+    {
+        try {
+            $result = (new ConsultCdr)->search($document);
+        } catch (Exception $e) {
+            Log::error('Error al recuperar CDR desde SUNAT: '.$e->getMessage());
+            throw new Exception('No se encontró el CDR almacenado y falló la consulta a la SUNAT: '.$e->getMessage());
+        }
+
+        // Verificar que la consulta haya dejado el archivo en el storage.
+        if (!$this->existFileInStorage($document->filename, 'cdr')) {
+            $message = is_array($result) && isset($result['message'])
+                ? $result['message']
+                : 'La SUNAT no devolvió un CDR para este comprobante.';
+            throw new Exception('No fue posible recuperar el CDR desde la SUNAT: '.$message);
+        }
     }
 
     /**
