@@ -180,7 +180,28 @@ class DownloadController extends Controller
             ? \App\Models\Tenant\Summary::find($summaryDocument->summary_id)
             : null;
 
-        if ($summary && $this->existFileInStorage($summary->filename, 'cdr')) {
+        if (!$summary) {
+            return null;
+        }
+
+        // Si el CDR del resumen no está en storage pero el resumen tiene ticket,
+        // recuperarlo desde SUNAT (getStatus por ticket) para que quede disponible.
+        if (!$this->existFileInStorage($summary->filename, 'cdr') && !empty($summary->ticket)) {
+            try {
+                $facturalo = new Facturalo();
+                $facturalo->setDocument($summary);
+                $facturalo->setType('summary');
+                if ($facturalo->hasPseSend()) {
+                    $facturalo->pseQuerySummary();
+                } else {
+                    $facturalo->statusSummary($summary->ticket);
+                }
+            } catch (Exception $e) {
+                Log::error("No se pudo recuperar el CDR del resumen {$summary->filename} desde SUNAT: ".$e->getMessage());
+            }
+        }
+
+        if ($this->existFileInStorage($summary->filename, 'cdr')) {
             Log::info("CDR de boleta {$document->filename} servido desde el resumen {$summary->filename}.");
             return $this->downloadStorage($summary->filename, 'cdr');
         }
