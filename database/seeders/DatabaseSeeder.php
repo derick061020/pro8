@@ -39,6 +39,7 @@ class DatabaseSeeder extends Seeder
             'limit_users' => 0,
             'limit_documents' =>  0,
             'plan_documents' => [1,2,3,4],
+            'is_popular' => true,
             'locked' => true
         ]);
 

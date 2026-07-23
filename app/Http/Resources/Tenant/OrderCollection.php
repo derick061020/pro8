@@ -33,6 +33,8 @@ class OrderCollection extends ResourceCollection
                 'document_external_id' => $row->document_external_id,
                 'created_at' => $row->created_at->format('Y-m-d H:i:s'),
                 'status_order_id' => $row->status_order_id,
+                'payment_status_order_id' => $row->payment_status_order_id,
+                'shipping_status_order_id' => $row->shipping_status_order_id,
                 'purchase' => $row->purchase,
                 'document_type_id' => optional($row->purchase)->codigo_tipo_documento,
                 'has_sale_note' => !is_null($row->sale_note),

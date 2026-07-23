@@ -516,16 +516,16 @@
     @else
         @foreach($document->items as $row)
             <tr>
-                <td class="text-center desc-9 align-top font-bold">{{ $row->item->internal_id }}</td>
-                <td class="text-center desc-9 align-top font-bold">
+                <td class="text-left desc-5 align-top font-bold">{{ $row->item->internal_id }}</td>
+                <td class="text-center desc-5 align-top font-bold">
                     @if(((int)$row->quantity != $row->quantity))
                         {{ $row->quantity }}
                     @else
                         {{ number_format($row->quantity, 0) }}
                     @endif
                 </td>
-                <td class="text-center desc-9 align-top">{{ $row->item->unit_type_id }}</td>
-                <td class="text-left desc-9 align-top font-bold">
+                <td class="text-center desc-5 align-top">{{ $row->item->unit_type_id }}</td>
+                <td class="text-left desc-5 align-top font-bold">
                     @if($row->name_product_pdf)
                         {!!$row->name_product_pdf!!}
                     @else
@@ -624,8 +624,8 @@
                         @endisset
                     </small>
                 </td>
-                <td class="text-right desc-9 align-top">{{ number_format(optional($row->item)->unit_price ? $row->item->unit_price : $row->unit_price, 2) }}</td>
-                <td class="text-right desc-9 align-top font-bold">{{ number_format($row->total, 2) }}</td>
+                <td class="text-right desc-5 align-top">{{ number_format(optional($row->item)->unit_price ? $row->item->unit_price : $row->unit_price, 2) }}</td>
+                <td class="text-right desc-5 align-top font-bold">{{ number_format($row->total, 2) }}</td>
             </tr>
             <tr>
                 <td colspan="6" class="border-bottom"></td>

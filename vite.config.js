@@ -63,6 +63,7 @@ export default defineConfig({
       '@viewsModuleQrApi' : path.resolve(__dirname, 'modules/QrApi/Resources/assets/js/views'),
       '@viewsModuleCustomField' : path.resolve(__dirname, 'modules/CustomField/Resources/assets/js'),
       '@viewsModuleClaimsBook' : path.resolve(__dirname, 'modules/ClaimsBook/Resources/assets/js'),
+      '@viewsModuleWebhook' : path.resolve(__dirname, 'modules/Webhook/Resources/assets/js'),
       'vue': path.resolve(__dirname, 'node_modules/vue/dist/vue.esm.js'),
       '@ckeditor/ckeditor5-build-classic': path.resolve(__dirname, 'resources/js/ckeditor-shim.js'),
       '@viewsModuleRestaurant' : path.resolve(__dirname, 'modules/Restaurant/Resources/assets/js/views'),

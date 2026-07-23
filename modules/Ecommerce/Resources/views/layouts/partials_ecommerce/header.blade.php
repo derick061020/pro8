@@ -136,7 +136,8 @@ div.cart-dropdown {
     display: none;
 }
 .header-dropdown-inside input:focus + .clear-icon,
-.header-dropdown-inside input:not(:placeholder-shown) + .clear-icon {
+.header-dropdown-inside input:not(:placeholder-shown) + .clear-icon,
+.header-search-wrapper.active .clear-icon {
     display: inline-block; /* Muestra el ícono */
 }
 /* Overlay oscuro */
@@ -259,7 +260,17 @@ div.cart-dropdown {
         <div class="container">
             <div class="header-left">
                 <a href="{{ route("tenant.ecommerce.index") }}" class="logo" style="max-width: 180px">
-                    @php($headerLogo = data_get($company ?? null, 'logo') ?: data_get($information ?? null, 'logo'))
+                    @php
+                        $headerPrefs = optional(\App\Models\Tenant\ConfigurationEcommerce::first())->preferences;
+                        if (is_string($headerPrefs)) {
+                            $headerPrefs = json_decode($headerPrefs, true);
+                        }
+                        $headerTheme = data_get($headerPrefs, 'header_theme', 'light');
+                        $headerLogoDark = data_get($company ?? null, 'logo_dark');
+                        $headerLogo = ($headerTheme === 'dark' && $headerLogoDark)
+                            ? $headerLogoDark
+                            : (data_get($company ?? null, 'logo') ?: data_get($information ?? null, 'logo'));
+                    @endphp
                     @if($headerLogo)
                         <img src="{{ asset('storage/uploads/logos/'.$headerLogo) }}" alt="Logo" />
                     @else
@@ -307,6 +318,7 @@ div.cart-dropdown {
                 </div>
                 @endif
             </div>
+            @php($customLinks = $customLinks ?? \App\Models\Tenant\ConfigurationEcommerce::getCustomLinks())
             <div class="customlinks" style="display: flex !important; align-items: center; flex-shrink: 0; white-space: nowrap; margin-right: 15px !important;">
                 @if(!empty($customLinks['title_one']) && !empty($customLinks['link_one']))
                     <a href="{{ $customLinks['link_one'] }}" style="display: inline-block !important; font-weight: 500; font-size: 14px; color: var(--title-color); text-decoration: none; margin-left: 12px; white-space: nowrap;" target="_blank">{{ $customLinks['title_one'] }}</a>
@@ -443,6 +455,10 @@ div.cart-dropdown {
                     clearInput() {
                         this.value = '';
                         this.results = [];
+                        var wrapper = document.getElementById('search-wrapper');
+                        var overlay = document.getElementById('search-overlay');
+                        if (wrapper) wrapper.classList.remove('active');
+                        if (overlay) overlay.classList.remove('active');
                     },
                     autoComplete() {
                         if (this.value) {

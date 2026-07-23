@@ -33,9 +33,12 @@
                             class="skin-row"
                             :class="skin.is_tenant_default ? 'table-background' : ''">
                             <td class="align-middle ps-3 py-2 text-center">
-                                <el-tooltip :content="skin.is_visible_to_clients ? 'Desactivar plantilla para clientes' : 'Activar plantilla para clientes'" placement="top">
+                                <el-tooltip
+                                    :content="(skin.is_visible_to_clients && skin.is_tenant_default) ? 'No se puede desactivar: es el tema predeterminado' : (skin.is_visible_to_clients ? 'Desactivar plantilla para clientes' : 'Activar plantilla para clientes')"
+                                    placement="top">
                                     <el-switch
                                         :value="skin.is_visible_to_clients"
+                                        :disabled="skin.is_visible_to_clients && skin.is_tenant_default"
                                         :loading="loading_toggle_visibility === skin.id"
                                         @change="toggleSkinVisibility(skin)">
                                     </el-switch>
@@ -560,6 +563,10 @@ export default {
         },
 
         toggleSkinVisibility(skin) {
+            if (skin.is_visible_to_clients && skin.is_tenant_default) {
+                this.$message.warning(`No puedes desactivar "${skin.name}" porque es el tema predeterminado. Asigna otro tema como predeterminado antes de ocultarlo.`);
+                return;
+            }
             this.loading_toggle_visibility = skin.id;
             this.$http.post('configurations/system-skins/toggle-visibility', { skin_id: skin.id }).then(response => {
                 this.loading_toggle_visibility = null;

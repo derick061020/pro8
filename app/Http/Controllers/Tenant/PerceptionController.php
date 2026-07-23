@@ -8,6 +8,7 @@ use App\Http\Resources\Tenant\PerceptionResource;
 use App\Models\Tenant\Company;
 use App\Models\Tenant\Establishment;
 use App\Models\Tenant\Series;
+use App\Services\SeriesResolver;
 use App\Models\Tenant\Catalogs\CurrencyType;
 use App\Models\Tenant\Catalogs\DocumentType;
 use App\Models\Tenant\Perception;
@@ -62,7 +63,8 @@ class PerceptionController extends Controller
         $items = $this->table('items');
         $company = Company::with(['identity_document_type'])->first();
         $document_types = DocumentType::all();
-        $series = Series::all();
+        // Series filtradas por contexto (oculta dedicadas / restringe al grupo activo). Ver SeriesResolver.
+        $series = app(SeriesResolver::class)->applyContext(Series::query())->get();
         $establishments = Establishment::where('id', auth()->user()->establishment_id)->get();// Establishment::all();
         $user_id = auth()->user()->id;
 

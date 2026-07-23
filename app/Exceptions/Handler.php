@@ -86,13 +86,23 @@ class Handler extends ExceptionHandler
 
         if($exception instanceof NotFoundHttpException)
         {
-            return $this->errorResponse('No se encontró la URL especificada', 404, $exception);
+            if ($request->expectsJson())
+            {
+                return $this->errorResponse('No se encontró la URL especificada', 404, $exception);
+            }
+
+            return parent::render($request, $exception);
         }
 
 
         if($exception instanceof MethodNotAllowedHttpException)
         {
-            return $this->errorResponse('El método especificado en la petición no es válido', 405, $exception);
+            if ($request->expectsJson())
+            {
+                return $this->errorResponse('El método especificado en la petición no es válido', 405, $exception);
+            }
+
+            return parent::render($request, $exception);
         }
 
 
@@ -148,14 +158,18 @@ class Handler extends ExceptionHandler
     {
         $message = ($message === '')?$exception->getMessage():$message;
         $code = ($code === '')?$exception->getCode():$code;
-        $file = $exception->getFile();
-        $line = $exception->getLine();
 
-        return response()->json([
+        $payload = [
             'success' => false,
             'message' => $message,
-            'file' => $file,
-            'line' => $line
-        ], $code);
+        ];
+
+        if (config('app.debug'))
+        {
+            $payload['file'] = $exception->getFile();
+            $payload['line'] = $exception->getLine();
+        }
+
+        return response()->json($payload, $code);
     }
 }

@@ -95,8 +95,9 @@
                     <QrApi 
                         colClass="col-md-12"
                         :wsPhone="form.customer_telephone"
-                        :wsFile="form.pdf_a4_filename"
+                        :wsFile="form.print_ticket"
                         :wsDocument="form.number"
+                        :wsFileA4="form.pdf_a4_filename"
                         :wsMessage="form.message_text"
                         :wsData="form.pdf_a4_data"
                     />
@@ -1162,8 +1163,9 @@ export default {
         clickToPrint(format) {
             // Si no hay external id, no hará nada.
             if(this.form.external_id == null) return null;
+            const timestamp = new Date().getTime();
             window.open(
-                `/${this.resource}/print/${this.form.external_id}/${format}`,
+                `/${this.resource}/print/${this.form.external_id}/${format}?v=${timestamp}`,
                 "_blank"
             );
         },

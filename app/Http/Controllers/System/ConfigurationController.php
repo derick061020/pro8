@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use App\Models\System\Configuration;
 use App\Models\System\Skin as SystemSkin;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 use App\Models\System\Client;
 use App\Models\System\Plan;
@@ -42,7 +43,10 @@ class ConfigurationController extends Controller
             'username_izipay' => $configuration->username_izipay,
             'password_izipay' => $configuration->password_izipay,
             'publickey_izipay' => $configuration->publickey_izipay,
-            'sha256key_izipay' => $configuration->sha256key_izipay
+            'sha256key_izipay' => $configuration->sha256key_izipay,
+            'enabled_mp' => $configuration->enabled_mp,
+            'access_token_mp' => $configuration->access_token_mp,
+            'public_key_mp' => $configuration->public_key_mp,
         ];
     }
 
@@ -51,17 +55,6 @@ class ConfigurationController extends Controller
     {
         $configuration = Configuration::first();
 
-        if ($configuration->enabled_culqi === true && $request->enabled_izipay === true) {
-            return [
-                'success' => false,
-                'message' => 'No se puede habilitar Izipay si Culqi está habilitado'
-            ];
-        } else if ($configuration->enabled_izipay === true && $request->enabled_culqi === true) {
-            return [
-                'success' => false,
-                'message' => 'No se puede habilitar Culqi si Izipay está habilitado'
-            ];
-        }
 
         if($request->token_public_culqui)
         {
@@ -298,6 +291,9 @@ class ConfigurationController extends Controller
         if ($request->has('guest_register_plan_id')) {
             $record->guest_register_plan_id = $request->guest_register_plan_id;
         }
+        if ($request->has('validate_ruc_register')) {
+            $record->validate_ruc_register = (bool) $request->validate_ruc_register;
+        }
         $record->save();
 
         return [
@@ -318,7 +314,8 @@ class ConfigurationController extends Controller
                                 'tenant_show_ads',
                                 'tenant_image_ads',
                                 'enable_guest_register',
-                                'guest_register_plan_id'
+                                'guest_register_plan_id',
+                                'validate_ruc_register'
                             ])
                             ->firstOrFail();
     }
@@ -488,11 +485,10 @@ class ConfigurationController extends Controller
             ], 500);
         }
     }
-    public function qrapi(Request $request)
+    public function googleMaps(Request $request)
     {
         $record = Configuration::first();
-        $record->qr_api_url = $request->qr_api_url;  
-        $record->qr_api_token = $request->qr_api_token;  
+        $record->google_maps_api_key = $request->google_maps_api_key;
         $record->save();
 
         return [
@@ -502,17 +498,66 @@ class ConfigurationController extends Controller
 
     }
 
-    public function googleMaps(Request $request)
+    /**
+     * Configuración de la página pública de Términos y Condiciones.
+     * Un único modo (disabled|content|url) garantiza que nunca se sirvan las dos fuentes a la vez.
+     */
+    public function getTerms()
     {
+        return Configuration::select(['terms_mode', 'terms_content', 'terms_url'])->firstOrFail();
+    }
+
+    public function storeTerms(Request $request)
+    {
+        $request->validate([
+            'terms_mode' => 'required|in:disabled,content,url',
+            'terms_content' => 'nullable|string',
+            'terms_url' => 'nullable|url|max:255',
+        ]);
+
+        if ($request->terms_mode === 'url' && empty($request->terms_url)) {
+            return response()->json([
+                'terms_url' => ['Debe indicar una URL para el modo "URL externa".'],
+            ], 422);
+        }
+
         $record = Configuration::first();
-        $record->google_maps_api_key = $request->google_maps_api_key;  
+        $record->terms_mode = $request->terms_mode;
+
+        // Se persiste solo la fuente del modo activo y se limpia la otra:
+        // así nunca quedan ambas almacenadas a la vez.
+        if ($request->terms_mode === 'content') {
+            $record->terms_content = $request->terms_content;
+            $record->terms_url = null;
+        } elseif ($request->terms_mode === 'url') {
+            $record->terms_url = $request->terms_url;
+            $record->terms_content = null;
+        }
+
         $record->save();
 
         return [
             'success' => true,
             'message' => 'Configuración actualizada',
         ];
+    }
 
+    public function evolutionServer(Request $request)
+    {
+        $request->validate([
+            'evolution_server_url' => 'nullable|string|max:255',
+            'evolution_server_apikey' => 'nullable|string|max:255',
+        ]);
+
+        $record = Configuration::first();
+        $record->evolution_server_url = rtrim($request->evolution_server_url ?? '', '/') ?: null;
+        $record->evolution_server_apikey = $request->evolution_server_apikey;
+        $record->save();
+
+        return [
+            'success' => true,
+            'message' => 'Configuración del servidor Evolution actualizada',
+        ];
     }
 
     public function cron(Request $request)
@@ -857,6 +902,13 @@ class ConfigurationController extends Controller
             return response()->json(['success' => false, 'message' => 'Tema no encontrado']);
         }
 
+        if ($skin->is_visible_to_clients && $skin->is_tenant_default) {
+            return response()->json([
+                'success' => false,
+                'message' => "No puedes desactivar \"$skin->name\" porque es el tema predeterminado. Asigna otro tema como predeterminado antes de ocultarlo.",
+            ]);
+        }
+
         $skin->update(['is_visible_to_clients' => !$skin->is_visible_to_clients]);
 
         $status = $skin->is_visible_to_clients ? 'visible' : 'oculto';
@@ -866,5 +918,104 @@ class ConfigurationController extends Controller
             'message' => "Tema \"$skin->name\" ahora es $status para los clientes",
             'skins'   => SystemSkin::all()->map(fn($s) => $s->getCollectionData()),
         ]);
+    }
+
+    // ===== OpenAI provider =====
+    // El reseller (superadmin) configura aqui la API key y el modelo. Los tenants
+    // heredan estos valores via App\Models\System\Configuration en el bot.
+
+    public function openAiConfig()
+    {
+        $c = Configuration::first();
+        return [
+            'openai_api_key' => $c->openai_api_key,
+            'openai_model' => $c->openai_model ?: 'gpt-4o-mini',
+        ];
+    }
+
+    public function storeOpenAiConfig(Request $request)
+    {
+        $request->validate([
+            'openai_api_key' => 'nullable|string|max:255',
+            'openai_model' => 'nullable|string|max:100',
+        ]);
+        $c = Configuration::first();
+        $c->openai_api_key = $request->openai_api_key;
+        $c->openai_model = $request->openai_model ?: 'gpt-4o-mini';
+        $c->save();
+        return ['success' => true, 'message' => 'Configuración de IA guardada'];
+    }
+
+    public function listOpenAiModels(Request $request)
+    {
+        $apiKey = $request->openai_api_key ?: Configuration::first()->openai_api_key;
+        if (empty($apiKey)) {
+            return ['success' => false, 'message' => 'Falta API Key.', 'models' => []];
+        }
+
+        try {
+            $response = Http::withToken($apiKey)
+                ->timeout(15)
+                ->get('https://api.openai.com/v1/models');
+
+            if (!$response->successful()) {
+                return [
+                    'success' => false,
+                    'message' => 'OpenAI respondio ' . $response->status() . ': ' . substr($response->body(), 0, 200),
+                    'models' => [],
+                ];
+            }
+
+            // Filtrar solo modelos de chat (gpt-*) y excluir variantes raras
+            // (instruct/realtime/audio/embedding/tts/whisper/moderation/etc).
+            $excludePatterns = ['instruct', 'realtime', 'audio', 'embedding', 'tts', 'whisper', 'moderation', 'transcribe', 'davinci', 'babbage'];
+            $models = collect($response->json('data', []))
+                ->pluck('id')
+                ->filter(function ($id) use ($excludePatterns) {
+                    if (!str_starts_with($id, 'gpt-')) return false;
+                    foreach ($excludePatterns as $p) {
+                        if (str_contains($id, $p)) return false;
+                    }
+                    return true;
+                })
+                ->sort()
+                ->values()
+                ->all();
+
+            return ['success' => true, 'models' => $models];
+        } catch (\Throwable $e) {
+            return ['success' => false, 'message' => 'Error: ' . $e->getMessage(), 'models' => []];
+        }
+    }
+
+    public function testOpenAiConnection(Request $request)
+    {
+        $apiKey = $request->openai_api_key ?: Configuration::first()->openai_api_key;
+        $model = $request->openai_model ?: (Configuration::first()->openai_model ?: 'gpt-4o-mini');
+
+        if (empty($apiKey)) {
+            return ['success' => false, 'message' => 'Falta API Key.'];
+        }
+
+        try {
+            $response = Http::withToken($apiKey)
+                ->timeout(15)
+                ->post('https://api.openai.com/v1/chat/completions', [
+                    'model' => $model,
+                    'messages' => [['role' => 'user', 'content' => 'ping']],
+                    'max_tokens' => 5,
+                ]);
+
+            if (!$response->successful()) {
+                return [
+                    'success' => false,
+                    'message' => 'OpenAI respondió ' . $response->status() . ': ' . substr($response->body(), 0, 200),
+                ];
+            }
+
+            return ['success' => true, 'message' => 'Conexión OK con modelo ' . $model];
+        } catch (\Throwable $e) {
+            return ['success' => false, 'message' => 'Error: ' . $e->getMessage()];
+        }
     }
 }

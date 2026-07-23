@@ -334,4 +334,85 @@ class PaymentOrderController extends Controller
         return compact('plans', 'periods');
     }
 
+    public function paymentView(Request $request, string $uuid)
+    {
+        $order = PaymentOrder::with(['order_state'])->where('uuid', $uuid)->first();
+        $client = $order ? $order->client : null;
+
+        if (!$client || !$order) {
+            abort(404);
+        }
+
+        $plan = $client->plan;
+        $period = $client->period;
+
+        $payment_order = [
+            'uuid' => $order->uuid,
+            'order' => $order->order,
+            'description' => $order->description ?? 'Pago de servicio',
+            'amount' => $order->amount,
+            'due_date' => $order->date_of_due ? $order->date_of_due->format('Y-m-d') : null,
+            'date_of_payment' => $order->date_of_payment ? Carbon::parse($order->date_of_payment)->format('Y-m-d') : null,
+            'state' => $order->order_state ? $order->order_state->name : '',
+            'state_id' => $order->order_state_id,
+            'is_paid' => $order->order_state_id == 2,
+            'currency' => 'S/',
+        ];
+
+        $client_data = [
+            'name' => $client->name,
+            'number' => $client->number,
+            'client_name' => $client->client_name,
+            'contact_email' => $client->contact_email,
+            'phone_ws' => $client->phone_ws,
+        ];
+
+        $plan_data = $plan ? [
+            'name' => $plan->name,
+            'price' => $client->getPricePlan(),
+            'period' => $period ? $period->name : null,
+            'active' => $client->activeService(),
+            'date_of_ending' => $client->ending_billing_cycle ? Carbon::parse($client->ending_billing_cycle)->format('Y-m-d') : null,
+        ] : null;
+
+        return view('system.payments.payment-view', [
+            'payment_order' => $payment_order,
+            'client' => $client_data,
+            'plan' => $plan_data,
+        ]);
+    }
+
+    public function paymentViewPay(Request $request) 
+    {
+        $request->validate([
+            'status' => 'required',
+            'uuid' => 'required|uuid|exists:payment_orders,uuid'
+        ]);
+
+
+        $status = $this->returnStatusOrder($request->status);
+        $order =  PaymentOrder::where('uuid', $request->uuid)->first();
+
+        $order->order_state_id = $status ? '02' : $order->order_state_id;
+
+        $order->save();
+
+        return [
+            'uuid' => $request->uuid,
+            'paid' =>  $status,
+            'status' => $order->order_state_id
+        ];
+
+    }
+        public function returnStatusOrder(string $status) : bool
+        {
+            // Izipay, Culqi y MercadoPago
+            return match($status) {
+                'venta_exitosa' => true,
+                'operacion_denegada' => false,
+                'PAID' => true,
+                'approved', 'authorized' => true,
+                default => false,
+            };
+        }
 }

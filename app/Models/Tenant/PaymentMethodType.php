@@ -73,11 +73,13 @@
             'number_days',
             'is_credit',
             'is_cash',
+            'is_active'
         ];
 
         protected $casts = [
             'is_credit' => 'bool',
-            'is_cash' => 'bool'
+            'is_cash' => 'bool',
+            'is_active' => 'bool'
         ];
 
         public const CASH_PAYMENT_ID = '01';

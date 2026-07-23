@@ -1,7 +1,7 @@
 <?php
 
 namespace Modules\Document\Models;
- 
+
 use App\Models\Tenant\ModelTenant;
 use App\Models\Tenant\Series;
 use App\Models\Tenant\Catalogs\DocumentType;
@@ -14,7 +14,7 @@ class SeriesConfiguration extends ModelTenant
         'number',
         'document_type_id',
     ];
-  
+
     public function relationSeries()
     {
         return $this->belongsTo(Series::class,'series_id');

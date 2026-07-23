@@ -22,16 +22,28 @@ class PolymorphicRelationSeeder extends Seeder
 {
     public function run(): void
     {
+        // Este seeder es para migrar datos historicos prox -> pro8. Cuando se
+        // ejecuta durante la creacion de un tenant nuevo, la tabla companies
+        // aun esta vacia (la company se inserta despues, en ClientController)
+        // y los seeders polimorficos no aplican porque no hay datos viejos.
+        $companyRow = DB::table('companies')->select('number')->first();
+        if (!$companyRow) {
+            $this->log('SKIP: companies vacia (tenant recien creado, nada que migrar)');
+            return;
+        }
+        $ruc = $companyRow->number;
 
-        $ruc = DB::table('companies')->select('number')->first()->number;
-        
-        $uuid = Client::where('number', '=' , $ruc, false)->first()->hostname->website->uuid;
+        $client = Client::where('number', '=', $ruc, false)->first();
+        if (!$client || !$client->hostname || !$client->hostname->website) {
+            $this->log("SKIP: no encuentro Client/hostname/website para RUC {$ruc}");
+            return;
+        }
+        $uuid = $client->hostname->website->uuid;
 
         $this->log("RUN {$uuid}");
         foreach (PolymorphicRelation::cases() as $relation) {
             $this->inspect($relation);
         }
-
     }
 
     protected function inspect(PolymorphicRelation $relation): void

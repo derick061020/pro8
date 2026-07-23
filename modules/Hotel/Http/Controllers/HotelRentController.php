@@ -4,6 +4,7 @@ namespace Modules\Hotel\Http\Controllers;
 
 use App\Models\Tenant\Person;
 use App\Models\Tenant\Series;
+use App\Services\SeriesResolver;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
@@ -36,7 +37,7 @@ class HotelRentController extends Controller
 			->findOrFail($roomId);
 
 		$affectation_igv_types = AffectationIgvType::whereActive()->get();
-		$series = Series::where('establishment_id',  auth()->user()->establishment_id)->get();
+		$series = app(SeriesResolver::class)->applyContext(Series::where('establishment_id',  auth()->user()->establishment_id))->get();
 
 		return view('hotel::rooms.rent', compact('room', 'affectation_igv_types','series'));
 	}
@@ -199,7 +200,7 @@ class HotelRentController extends Controller
 			->where('hotel_rent_items.type', 'PRO')
 			->get();
 
-		$series = Series::where('establishment_id',  auth()->user()->establishment_id)->get();
+		$series = app(SeriesResolver::class)->applyContext(Series::where('establishment_id',  auth()->user()->establishment_id))->get();
 
 		return view('hotel::rooms.add-product-to-room', compact('rent', 'configuration', 'products', 'establishment','series'));
 	}
@@ -277,7 +278,7 @@ class HotelRentController extends Controller
 
         $payment_method_types = PaymentMethodType::getPaymentMethodTypes();
         $payment_destinations = $this->getPaymentDestinations();
-        $series = Series::where('establishment_id',  auth()->user()->establishment_id)->get();
+        $series = app(SeriesResolver::class)->applyContext(Series::where('establishment_id',  auth()->user()->establishment_id))->get();
         $document_types_invoice = DocumentType::whereIn('id', ['01', '03', '80'])->get();
     	$affectation_igv_types = AffectationIgvType::whereActive()->get();
 		$payments = HotelRentItemPayment::whereHas('associated_record_payment', function ($query) use($rentId) {

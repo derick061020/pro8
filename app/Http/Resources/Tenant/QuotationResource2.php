@@ -49,7 +49,8 @@ class QuotationResource2 extends JsonResource
             'attributes' => $this->attributes,
             'guides' => $this->guides,
             'additional_information' => $this->additional_information,
-            'actions' => $this->actions
+            'actions' => $this->actions,
+            'custom_fields_data' => $this->custom_fields_data
         ];
     }
 }

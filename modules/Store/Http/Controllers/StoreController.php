@@ -8,6 +8,7 @@ use App\Models\Tenant\DocumentItem;
 use App\Models\Tenant\Establishment;
 use App\Models\Tenant\Quotation;
 use App\Models\Tenant\Series;
+use App\Services\SeriesResolver;
 use Illuminate\Http\Request;
 use Modules\Document\Http\Resources\ItemLotCollection;
 use Modules\Inventory\Models\Warehouse as ModuleWarehouse;
@@ -39,10 +40,11 @@ class StoreController extends Controller
         $rec = $record->toArray();
         $document_type_id = $person->identity_document_type_id === '6' ? '01' : '03';
 
-        $series = Series::query()
+        // Series filtradas por contexto (oculta dedicadas / restringe al grupo activo). Ver SeriesResolver.
+        $series = app(SeriesResolver::class)->applyContext(Series::query()
             ->select('number')
             ->where('establishment_id', $rec['establishment_id'])
-            ->where('document_type_id', $document_type_id)
+            ->where('document_type_id', $document_type_id))
             ->first();
 
         foreach ($rec['items'] as &$item) {

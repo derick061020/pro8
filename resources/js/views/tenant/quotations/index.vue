@@ -44,12 +44,31 @@
                     <el-button type="secondary">
                         Mostrar columnas<i class="el-icon-arrow-down el-icon--right"></i>
                     </el-button>
-                    <el-dropdown-menu slot="dropdown">
-                        <el-dropdown-item v-for="col in orderedColumns" :key="col.key">
-                            <el-checkbox v-model="columns[col.key].visible" @change="saveColumnVisibilityQuotations">
-                                {{ col.title }}
-                            </el-checkbox>
-                        </el-dropdown-item>
+                    <el-dropdown-menu slot="dropdown" style="min-width: 220px;">
+                        <div style="max-height: 520px; overflow-y: auto;">
+                            <el-dropdown-item divided disabled v-if=" customFieldColumns.length > 0 ">
+                                <strong>Campos personalizados</strong>
+                            </el-dropdown-item>
+                            <el-dropdown-item
+                                v-for="field in customFieldColumns"
+                                :key="`custom-field-${field.id}`"
+                            >
+                                <el-checkbox
+                                    @change="updateCustomFieldColumns()"
+                                    v-model="field.visible"
+                                    >{{ field.name }}</el-checkbox
+                                >
+                            </el-dropdown-item>
+                            <el-dropdown-item divided v-if=" customFieldColumns.length > 0 "></el-dropdown-item>
+                            <el-dropdown-item disabled>
+                                <strong>Seleccionar columnas</strong>
+                            </el-dropdown-item>
+                            <el-dropdown-item v-for="col in tenantSelectableColumns" :key="col.key">
+                                <el-checkbox v-model="columns[col.key].visible" @change="saveColumnVisibilityQuotations">
+                                    {{ col.title }}
+                                </el-checkbox>
+                            </el-dropdown-item>
+                        </div>
                     </el-dropdown-menu>
                 </el-dropdown>
             </div>
@@ -81,6 +100,11 @@
                             <th v-if="col.visible && col.key === 'total_igv'" :key="col.key" class="text-end">T.Igv</th>
                             <th v-if="col.visible && col.key === 'total'" :key="col.key" class="text-end">Total</th>
                             <th v-if="col.visible && col.key === 'pdf'" :key="col.key" class="text-center">PDF</th>
+                            <template v-if="col.key === 'personalized'">
+                                <template v-for="field in customFieldColumns">
+                                    <th v-if="field.visible" :key="`cf-header-${field.id}`">{{ field.name }}</th>
+                                </template>
+                            </template>
                             <th v-if="col.visible && col.key === 'actions'" :key="col.key" class="text-end"></th>
                         </template>
                     </tr>
@@ -162,6 +186,14 @@
                             <td v-if="col.visible && col.key === 'pdf'" :key="col.key" class="text-end">
                                 <button type="button" class="btn waves-effect waves-light btn-xs btn-info" @click.prevent="clickOptionsPdf(row.id)">PDF</button>
                             </td>
+                            <!-- Campos personalizados -->
+                            <template v-if="col.key === 'personalized'">
+                                <template v-for="field in customFieldColumns">
+                                    <td v-if="field.visible" :key="`cf-data-${field.id}`" class="text-start">
+                                        {{ formatCustomFieldValue(row.custom_fields_data ? row.custom_fields_data[field.slug] : null) }}
+                                    </td>
+                                </template>
+                            </template>
                             <td v-if="col.visible && col.key === 'actions'" :key="col.key" class="text-end">
                             <el-dropdown trigger="click" placement="bottom-end">
                                 <el-button class="btn-dropdown">
@@ -341,6 +373,9 @@ export default {
                 .map(([key, col]) => ({ key, ...col }))
                 .sort((a, b) => a.order - b.order);
         },
+        tenantSelectableColumns() {
+            return this.orderedColumns.filter(col => col.key !== 'personalized');
+        },
     },
     data() {
         return {
@@ -377,12 +412,16 @@ export default {
                 total:                   { title: "Total",            visible: true,  order: 22 },
                 pdf:                     { title: "PDF",              visible: true,  order: 23 },
                 actions:                 { title: "Acciones",         visible: true,  order: 24 },
+                personalized:            { title: "Personalizados",   visible: true,  order: 25 },
             },
+            customFieldColumns: [],
+            savedCustomFieldVisibilities: {},
             decimal_quantity: 2,
         };
     },
     async created() {
-        this.loadColumnVisibilityQuotations();
+        await this.loadColumnVisibilityQuotations();
+        await this.loadCustomFieldsColumns();
         await this.filter();
         this.loadDecimalQuantity();
     },
@@ -417,25 +456,69 @@ export default {
             if (!date) return null;
             return moment(date).format("DD-MM-YYYY");
         },
+        async loadCustomFieldsColumns() {
+            try {
+                const response = await this.$http.get(
+                    "/configurations/custom-fields/quotations"
+                );
+                const defaultVisible = this.columns.personalized
+                    ? this.columns.personalized.visible
+                    : true;
+                this.customFieldColumns = (response.data.data || []).map(field => {
+                    const savedVisible = this.savedCustomFieldVisibilities[field.slug];
+                    return {
+                        ...field,
+                        visible: savedVisible !== undefined ? savedVisible : defaultVisible
+                    };
+                });
+            } catch (error) {
+                console.error("Error cargando columnas de campos personalizados:", error);
+                this.customFieldColumns = [];
+            }
+        },
+        updateCustomFieldColumns() {
+            this.saveColumnVisibilityQuotations();
+        },
+        formatCustomFieldValue(value) {
+            if (value === null || value === undefined || value === "") {
+                return "";
+            }
+            if (Array.isArray(value)) {
+                return value.join(", ");
+            }
+            if (typeof value === "object") {
+                return JSON.stringify(value);
+            }
+            return value;
+        },
         saveColumnVisibilityQuotations() {
             const columns = {};
             Object.keys(this.columns).forEach(key => {
                 columns[key] = { title: this.columns[key].title, visible: this.columns[key].visible, order: this.columns[key].order };
             });
-            this.$http.post('/column-visibility/quotations_index', { columns }).catch(() => {});
+            const personalized = { fields: this.customFieldColumns.reduce((acc, f) => { acc[f.slug] = f.visible; return acc; }, {}) };
+            this.$http.post('/column-visibility/quotations_index', { columns, personalized }).catch(() => {});
         },
         loadColumnVisibilityQuotations() {
-            this.$http.get('/column-visibility/quotations_index').then(response => {
+            return this.$http.get('/column-visibility/quotations_index').then(response => {
                 if (response.data.success && response.data.data) {
                     const data = response.data.data;
                     Object.keys(data).forEach(key => {
-                        if (this.columns[key] !== undefined) {
+                        if (key !== 'personalized' && this.columns[key] !== undefined) {
                             this.columns[key].visible = data[key].visible;
                             if (data[key].order !== undefined) {
                                 this.columns[key].order = data[key].order;
                             }
                         }
                     });
+                    if (data.personalized && data.personalized.fields) {
+                        this.savedCustomFieldVisibilities = data.personalized.fields;
+                    }
+                    if (data.columns && data.columns.personalized) {
+                        this.columns.personalized.visible = data.columns.personalized.visible;
+                    } else if (data.personalized && data.personalized.visible !== undefined) {
+                        this.columns.personalized.visible = data.personalized.visible;
+                    }
                 }
             }).catch(() => {});
         },

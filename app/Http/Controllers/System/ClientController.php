@@ -31,7 +31,8 @@
     use App\Models\System\PlanPeriod;
     use App\Models\System\User as SystemUser;
     use Illuminate\Support\Facades\Config;
-    use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 
     class ClientController extends Controller
     {
@@ -158,6 +159,34 @@
                 'global_smtp_config');
         }
 
+        /**
+         *
+         * Validar el override de mensajes de WhatsApp para un cliente: no puede
+         * ser menor al limite del plan (si el plan no es ilimitado).
+         *
+         * @param  int $plan_id
+         * @param  mixed $override
+         * @return string|null
+         */
+        private function validateWhatsappMessagesOverride($plan_id, $override)
+        {
+            if ($override === null || $override === '') {
+                return null;
+            }
+
+            if (!is_numeric($override)) {
+                return 'El valor de mensajes de WhatsApp no es un número válido.';
+            }
+
+            $plan = Plan::find($plan_id);
+
+            if ($plan && !$plan->whatsapp_messages_unlimited && (int) $override < (int) $plan->whatsapp_messages_limit) {
+                return "El límite de mensajes de WhatsApp para este cliente no puede ser menor al de su plan ({$plan->whatsapp_messages_limit}).";
+            }
+
+            return null;
+        }
+
         private function prepareModules(Module $module): Module
         {
             $levels = [];
@@ -212,6 +241,7 @@
                 $row->document_not_sent = $quantity_pending_documents['document_not_sent'];
                 $row->document_to_be_canceled = $quantity_pending_documents['document_to_be_canceled'];
                 $row->monthly_sales_total = 0;
+                $row->count_whatsapp_month = 0;
 
                 if ($row->start_billing_cycle) {
 
@@ -251,6 +281,10 @@
                     //dd($row->count_sales_notes);
 
                     $row->monthly_sales_total = $client_helper->getSalesTotal($init->format('Y-m-d'), $end->format('Y-m-d'), $row->plan);
+
+                    // $end viene a medianoche (pensado para columnas de tipo date); whatsapp_message_logs.created_at
+                    // es datetime, asi que se extiende al fin del dia para no perder los envios de hoy
+                    $row->count_whatsapp_month = DB::connection('tenant')->table('whatsapp_message_logs')->whereBetween('created_at', [$init, (clone $end)->endOfDay()])->count();
                 }
 
                 $row->quantity_establishments = $this->getQuantityRecordsFromTable('establishments');
@@ -349,6 +383,24 @@
                 ->first();
 
             $client->config_system_env = $config->config_system_env;
+            $tenant_plan = json_decode($config->plan);
+            $business = (int) data_get($tenant_plan, 'module_permissions.business', data_get($client->plan->module_permissions, 'business'));
+
+            if ($business !== 6) {
+                $nrus_modules = collect([7, 2, 1, 17, 18, 8, 12, 52, 4])->sort()->values();
+                $nrus_apps = collect([11, 14, 5, 53])->sort()->values();
+                $selected_modules = collect($client->modules)->map(fn($id) => (int) $id)->sort()->values();
+                $selected_apps = collect($client->apps)->map(fn($id) => (int) $id)->sort()->values();
+
+                if ($selected_modules->diff($nrus_modules)->isEmpty()
+                    && $nrus_modules->diff($selected_modules)->isEmpty()
+                    && $selected_apps->diff($nrus_apps)->isEmpty()
+                    && $nrus_apps->diff($selected_apps)->isEmpty()) {
+                    $business = 6;
+                }
+            }
+
+            $client->business = $business;
 
             $client->smtp_host       = $config->smtp_host;
             $client->smtp_port       = $config->smtp_port;
@@ -377,7 +429,7 @@
             try {
                 $records = Client::all();
                 $count_documents = [];
-                
+
                 foreach ($records as $row) {
                     try {
                         // Verificar que el cliente tenga hostname y website válidos
@@ -388,7 +440,7 @@
 
                         $tenancy = app(Environment::class);
                         $tenancy->tenant($row->hostname->website);
-                        
+
                         // Verificar que la conexión tenant esté disponible
                         if (!DB::connection('tenant')->getDatabaseName()) {
                             \Log::warning("Cliente {$row->number} no tiene base de datos configurada");
@@ -396,15 +448,15 @@
                         }
 
                         for ($i = 1; $i <= 12; $i++) {
-                            
+
                             $date_initial = Carbon::create(null, $i)->startOfMonth();
                             $date_final = Carbon::create(null, $i)->endOfMonth();
-                            
+
                             $count = DB::connection('tenant')
                                 ->table('documents')
                                 ->whereBetween('date_of_issue', [$date_initial, $date_final])
                                 ->count();
-                            
+
                             $count_documents[] = [
                                 'client' => $row->number,
                                 'month' => $i,
@@ -423,11 +475,11 @@
                 $groups_by_month = collect($count_documents)->groupBy('month');
                 $labels = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Set', 'Oct', 'Nov', 'Dic'];
                 $documents_by_month = [];
-                
+
                 foreach ($groups_by_month as $month => $group) {
                     $documents_by_month[] = $group->sum('count');
                 }
-                
+
                 // Asegurarse de que siempre haya 12 meses (rellenar con 0 si falta alguno)
                 for ($i = 0; $i < 12; $i++) {
                     if (!isset($documents_by_month[$i])) {
@@ -441,16 +493,16 @@
                 ];
 
                 return compact('line', 'total_documents');
-                
+
             } catch (\Exception $e) {
                 \Log::error("Error general en charts(): " . $e->getMessage());
-                
+
                 // Devolver datos vacíos en caso de error
                 $line = [
                     'labels' => ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Set', 'Oct', 'Nov', 'Dic'],
                     'data' => [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
                 ];
-                
+
                 return [
                     'line' => $line,
                     'total_documents' => 0,
@@ -509,6 +561,14 @@
 
                 $client = Client::findOrFail($request->id);
 
+                $whatsapp_override_error = $this->validateWhatsappMessagesOverride($request->plan_id, $request->whatsapp_messages_limit_override);
+                if ($whatsapp_override_error) {
+                    return [
+                        'success' => false,
+                        'message' => $whatsapp_override_error,
+                    ];
+                }
+
                 $client
                     ->setSmtpHost($smtp_host)
                     ->setSmtpPort($smtp_port)
@@ -519,6 +579,7 @@
                     $client->setSmtpPassword($smtp_password);
                 }
                 $client->plan_id = $request->plan_id;
+                $client->whatsapp_messages_limit_override = ($request->whatsapp_messages_limit_override === '' ? null : $request->whatsapp_messages_limit_override);
                 $client->price = $request->price;
                 $client->plan_period_id = $request->plan_period_id;
                 $client->phone_ws = $request->phone_ws;
@@ -529,11 +590,17 @@
                 $client->save();
 
                 $plan = Plan::find($request->plan_id);
+                $selected_business = (int) $request->input('business', data_get($plan->module_permissions, 'business'));
+                $plan_for_config = $plan->toArray();
+                $module_permissions = $plan_for_config['module_permissions'] ?? [];
+                $module_permissions = is_array($module_permissions) ? $module_permissions : (array) $module_permissions;
+                $module_permissions['business'] = $selected_business;
+                $plan_for_config['module_permissions'] = $module_permissions;
 
                 $tenancy = app(Environment::class);
                 $tenancy->tenant($client->hostname->website);
                 $clientData = [
-                    'plan' => json_encode($plan),
+                    'plan' => json_encode($plan_for_config),
                     'config_system_env' => $request->config_system_env,
                     'limit_documents' => $plan->limit_documents,
                     'smtp_host' => $client->smtp_host,
@@ -680,6 +747,14 @@
                 ];
             }
 
+            $whatsapp_override_error = $this->validateWhatsappMessagesOverride($request->input('plan_id'), $request->input('whatsapp_messages_limit_override'));
+            if ($whatsapp_override_error) {
+                return [
+                    'success' => false,
+                    'message' => $whatsapp_override_error,
+                ];
+            }
+
             $hostname = new Hostname();
             $website = new Website();
 
@@ -745,6 +820,7 @@
                     'number' => $request->input('number'),
                     'plan_id' => $request->input('plan_id'),
                     'locked_emission' => $request->input('locked_emission'),
+                    'whatsapp_messages_limit_override' => $request->input('whatsapp_messages_limit_override') !== '' ? $request->input('whatsapp_messages_limit_override') : null,
                     'enable_list_product' => $request->input('enable_list_product'),
                     'price' => $request->input('price'),
                     'plan_period_id' => $request->input('plan_period_id'),
@@ -761,7 +837,12 @@
                     ? 'Pago por autoregistro - Plan ' . optional($client->plan)->name
                     : null;
                 $payment_created_by = $is_guest_register ? 'Autoregistro' : 'Sistema';
-                $payment_order = $client->createPayemtnOrder($payment_description, $payment_created_by);
+
+                $payment_order = $client->createPayemtnOrder($payment_description, $payment_created_by, [
+                    'tenant_created' => true,
+                    'order_state_id' => $request->input('order_state_id')
+                ]);
+
                 \Log::info('Configurando tenancy...');
                 $tenancy = app(Environment::class);
                 $tenancy->tenant($website);
@@ -779,14 +860,22 @@
                     'soap_username' => $request->soap_username,
                     'soap_password' => $request->soap_password,
                     'soap_url' => $request->soap_url,
-                    'certificate' => $name_certificate, 
+                    'certificate' => $name_certificate,
                 ]);
 
                 \Log::info('Company insertada');
 
             $plan = Plan::findOrFail($request->input('plan_id'));
+            $selected_business = (int) $request->input('business', data_get($plan->module_permissions, 'business'));
+            $is_nrus = $selected_business === 6;
+            $plan_for_config = $plan->toArray();
+            $module_permissions = $plan_for_config['module_permissions'] ?? [];
+            $module_permissions = is_array($module_permissions) ? $module_permissions : (array) $module_permissions;
+            $module_permissions['business'] = $selected_business;
+            $plan_for_config['module_permissions'] = $module_permissions;
+
             $http = config('tenant.force_https') == true ? 'https://' : 'http://';
-            
+
             // Definir variable para registro de invitado
             $from_guest_register = $request->input('from_guest_register', false);
 
@@ -837,7 +926,7 @@
                 'locked_users' => false,
                 'limit_documents' => $plan->limit_documents,
                 'limit_users' => $plan->limit_users,
-                'plan' => json_encode($plan),
+                'plan' => json_encode($plan_for_config),
                 'date_time_start' => date('Y-m-d H:i:s'),
                 'quantity_documents' => 0,
                 'config_system_env' => $request->config_system_env,
@@ -860,15 +949,19 @@
                     'header' => 'light',
                     'navbar' => 'fixed',
                     'sidebars' => 'light',
-                    'sidebar_theme' => 'white'
+                    'sidebar_theme' => 'white',
+                    'show_welcome_panel' => false
                 ]),
                 'skin_id' => $tenantSkinId,
                 'top_menu_a_id' => 1,
                 'top_menu_b_id' => 15,
                 'top_menu_c_id' => 76,
                 'quantity_sales_notes' => 0,
-                'from_guest_register' => $from_guest_register
+                'from_guest_register' => $from_guest_register,
+                'date_of_due_test_days' => $plan->test_days > 0 ? Carbon::now()->addDays($plan->test_days)->toDateTimeLocalString() :null
             ]);
+
+
             \Log::info('Configuración insertada');
 
             \Log::info('Insertando establishment...');
@@ -881,7 +974,8 @@
                 'address' => '-',
                 'email' => $request->input('email'),
                 'telephone' => '-',
-                'code' => '0000'
+                'code' => '0000',
+                'template_ticket_pdf' => $is_nrus ? 'nrus' : 'default',
             ]);
             \Log::info('Establishment insertado', ['establishment_id' => $establishment_id]);
 
@@ -895,24 +989,20 @@
             \Log::info('Warehouse insertado');
 
             \Log::info('Insertando series...');
-            DB::connection('tenant')->table('series')->insert([
-                ['establishment_id' => 1, 'document_type_id' => '01', 'number' => 'F001'],
-                ['establishment_id' => 1, 'document_type_id' => '03', 'number' => 'B001'],
-                ['establishment_id' => 1, 'document_type_id' => '07', 'number' => 'FC01'],
-                ['establishment_id' => 1, 'document_type_id' => '07', 'number' => 'BC01'],
-                ['establishment_id' => 1, 'document_type_id' => '08', 'number' => 'FD01'],
-                ['establishment_id' => 1, 'document_type_id' => '08', 'number' => 'BD01'],
-                ['establishment_id' => 1, 'document_type_id' => '20', 'number' => 'R001'],
-                ['establishment_id' => 1, 'document_type_id' => '09', 'number' => 'T001'],
-                ['establishment_id' => 1, 'document_type_id' => '40', 'number' => 'P001'],
-                ['establishment_id' => 1, 'document_type_id' => '80', 'number' => 'NV01'],
-                ['establishment_id' => 1, 'document_type_id' => '04', 'number' => 'L001'],
-                ['establishment_id' => 1, 'document_type_id' => '31', 'number' => 'V001'],
+            // Solo se siembran las básicas (SUNAT: factura, boleta, NC y ND) y la nota de venta,
+            // con la codificación estándar (FF/BB/FC/BC/FD/BD/NV). Fuente única: SeriesCodeGenerator.
+            // Las avanzadas (retención/percepción/guías/liquidación) se crean a demanda desde la UI.
+            DB::connection('tenant')->table('series')->insert(
+                \App\Services\SeriesCodeGenerator::defaultTenantSeries($establishment_id)
+            );
 
-                ['establishment_id' => 1, 'document_type_id' => 'U2', 'number' => 'NIA1'],
-                ['establishment_id' => 1, 'document_type_id' => 'U3', 'number' => 'NSA1'],
-                ['establishment_id' => 1, 'document_type_id' => 'U4', 'number' => 'NTA1'],
-            ]);
+            // Series internas de almacén (U2/U3/U4): NO confirmadas para sembrar.
+            // Descomentar en un commit posterior si se decide habilitarlas:
+            // DB::connection('tenant')->table('series')->insert([
+            //     ['establishment_id' => $establishment_id, 'document_type_id' => 'U2', 'number' => 'AI01'],
+            //     ['establishment_id' => $establishment_id, 'document_type_id' => 'U3', 'number' => 'AS01'],
+            //     ['establishment_id' => $establishment_id, 'document_type_id' => 'U4', 'number' => 'AT01'],
+            // ]);
             \Log::info('Series insertadas');
 
             \Log::info('Insertando usuario...');
@@ -923,7 +1013,7 @@
                 'api_token' => $token,
                 'establishment_id' => $establishment_id,
                 'type' => $request->input('type'),
-                'locked' => true,
+                'locked' => false,
                 'permission_edit_cpe' => true,
                 'last_password_update' => date('Y-m-d H:i:s'),
                 'from_guest_register' => $from_guest_register
@@ -963,15 +1053,25 @@
                 \Log::info('Módulos básicos insertados');
             }
 
+            // Si la empresa se creó con el giro de negocio NRUS, dejar activo únicamente
+            // el tipo de operación "Venta Interna - NRUS" (0113) y desactivar los demás.
+            if ($is_nrus) {
+                \Log::info('Plan NRUS detectado, configurando tipos de operación...');
+                DB::connection('tenant')->table('cat_operation_types')->update(['active' => false]);
+                DB::connection('tenant')->table('cat_operation_types')->where('id', '0113')->update(['active' => true]);
+                \Log::info('Tipos de operación NRUS configurados');
+            }
+
             \Log::info('=== CLIENTE REGISTRADO EXITOSAMENTE ===', ['timestamp' => now()]);
             return [
                 'success' => true,
                 'message' => 'Cliente Registrado satisfactoriamente',
-                'guest_register' => $this->runGuestRegister($from_guest_register, $user_id, $request->email, $client->id, $payment_order)
+                'guest_register' => $this->runGuestRegister($from_guest_register, $user_id, $request->email, $client->id)
+
             ];
 
         } catch (Exception $e) {
-            \Log::error('Error en store client', ['error' => $e->getMessage()]);
+            Log::error('Error en store client', ['error' => $e->getTraceAsString()]);
             app(HostnameRepository::class)->delete($hostname, true);
             app(WebsiteRepository::class)->delete($website, true);
             return [
@@ -1037,6 +1137,9 @@
 
             // dd($request->all());
             $client = Client::findOrFail($request->id);
+            $client->whatsapp_messages_limit_override = null;
+            $client->save();
+
             $tenancy = app(Environment::class);
             $tenancy->tenant($client->hostname->website);
 
@@ -1261,7 +1364,7 @@
         public function confirmGuest(Request $request)
         {
             $client = Client::where('id',$request->id)->where('number',$request->number)->first();
-        
+
             if(!$client){
                 return $this->generalResponse(false, 'Empresa no encontrada');
             }

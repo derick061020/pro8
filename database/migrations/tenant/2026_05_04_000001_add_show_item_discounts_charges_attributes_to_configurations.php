@@ -9,7 +9,7 @@ class AddShowItemDiscountsChargesAttributesToConfigurations extends Migration
     public function up()
     {
         Schema::table('configurations', function (Blueprint $table) {
-            $table->boolean('show_item_discounts_charges_attributes')->default(true);
+            $table->boolean('show_item_discounts_charges_attributes')->default(false);
         });
     }
 

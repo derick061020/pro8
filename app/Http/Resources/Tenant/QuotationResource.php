@@ -31,6 +31,7 @@ class QuotationResource extends JsonResource
             'identifier' => $this->identifier,
             'date_of_issue' => $this->date_of_issue->format('Y-m-d'),
             'pdf_a4_filename' => url(''). "/print/quotation/{$this->external_id}/a4/{$this->filename}.pdf",
+            'print_ticket' => url('')."/print/quotation/{$this->external_id}/ticket",
             'pdf_a4_data' => [
                 "filename_only" => $this->filename,
                 "extension_only" => "pdf"
@@ -38,7 +39,7 @@ class QuotationResource extends JsonResource
             'quotation' => $quotation,
             'customer' => $customer,
             'message_text' => "Su cotización {$this->number_full} ha sido generado correctamente, " .
-                "puede revisarlo en el siguiente enlace: " . url('') . "/print/quotation/{$this->external_id}/a4" . "",
+                "puede revisarlo en el siguiente enlace: " . url('') . "/print/quotation/{$this->external_id}/ticket" . "",
             'number_full' => $this->number_full,
             'customer_email' => $quotation->person->email ?? null,
             'customer_telephone' => $quotation->person->telephone ?? null,

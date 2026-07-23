@@ -426,12 +426,39 @@
 
                             <div class="col-md-6">
                                 <div :class="{ 'has-danger': errors.personal_cell_phone }" class="form-group">
-                                    <label class="control-label">N° Celular personal</label>
+                                    <label class="control-label">
+                                        N° Celular personal
+                                        <el-tooltip class="item"
+                                                    content="Este número se usa también para autorizar al usuario en el WhatsApp Bot."
+                                                    effect="dark"
+                                                    placement="top">
+                                            <i class="fa fa-info-circle"></i>
+                                        </el-tooltip>
+                                    </label>
                                     <el-input v-model="form.personal_cell_phone"></el-input>
                                     <small v-if="errors.personal_cell_phone" class="form-control-feedback" v-text="errors.personal_cell_phone[0]"></small>
                                 </div>
                             </div>
-                            
+
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label class="control-label d-block">
+                                        Bot de WhatsApp
+                                        <el-tooltip class="item"
+                                                    content="Cuando está activo, este usuario puede interactuar con el bot desde el N° Celular personal."
+                                                    effect="dark"
+                                                    placement="top">
+                                            <i class="fa fa-info-circle"></i>
+                                        </el-tooltip>
+                                    </label>
+                                    <el-switch
+                                        v-model="form.bot_enabled"
+                                        active-text="Habilitado"
+                                        inactive-text="Deshabilitado">
+                                    </el-switch>
+                                </div>
+                            </div>
+
                             <div class="col-md-6">
                                 <div :class="{ 'has-danger': errors.address }" class="form-group">
                                     <label class="control-label">Dirección</label>
@@ -880,6 +907,7 @@ export default {
                 personal_email: null,
                 corporate_email: null,
                 personal_cell_phone: null,
+                bot_enabled: false,
                 corporate_cell_phone: null,
                 date_of_birth: null,
                 contract_date: null,
@@ -989,6 +1017,9 @@ export default {
                     .get(`/${this.resource}/record/${this.recordId}`)
                     .then((response) => {
                         this.form = response.data.data;
+                        // Normalizar bot_enabled (puede venir 1/0/null del backend
+                        // y el-switch necesita boolean estricto para reflejar bien).
+                        this.form.bot_enabled = !!response.data.data.bot_enabled;
 
                         if (this.$refs.treeLeft) this.$refs.treeLeft.setCheckedKeys([]);
                         if (this.$refs.treeRight) this.$refs.treeRight.setCheckedKeys([]);

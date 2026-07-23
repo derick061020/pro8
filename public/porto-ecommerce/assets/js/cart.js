@@ -8,6 +8,15 @@
         array = JSON.parse(array);
 
         let item = JSON.parse(data)
+
+        // El catálogo envía el modelo crudo, cuyo símbolo de moneda viene anidado
+        // en currency_type.symbol. El carrito espera un campo plano currency_type_symbol.
+        if (!item.currency_type_symbol) {
+            item.currency_type_symbol = (item.currency_type && item.currency_type.symbol)
+                ? item.currency_type.symbol
+                : 'S/';
+        }
+
         let found = array.find(x => x.id == item.id)
 
         if (!found) {
@@ -106,6 +115,97 @@ function calculateTotalCart()
     $(".cart-total-price").append(total.toFixed(2));
 
 
+}
+
+// ───────────────────────────────────────────────────────────────────────────
+// Vista rápida (quick view): cantidad funcional, precio dinámico y feedback
+// "¡Agregado! (N)" sobre el botón. El partial se carga vía AJAX (sin Vue), por
+// eso la lógica vive aquí como funciones globales invocadas con onclick/oninput.
+// ───────────────────────────────────────────────────────────────────────────
+function qvScope(el) {
+	return el.closest('[data-qv-scope]');
+}
+
+// Normaliza el input a un entero >= 1 y devuelve el valor.
+function qvClampQuantity(input) {
+	let val = parseInt(input.value, 10);
+	if (isNaN(val) || val < 1) val = 1;
+	input.value = val;
+	return val;
+}
+
+// onchange del input: corrige el valor y refresca el precio mostrado.
+function qvSync(input) {
+	qvClampQuantity(input);
+	qvUpdatePrice(qvScope(input));
+}
+
+// Botones +/-: ajustan la cantidad sin bajar de 1.
+function qvStep(btn, delta) {
+	let scope = qvScope(btn);
+	let input = scope.querySelector('.qv-quantity');
+	let val = parseInt(input.value, 10);
+	if (isNaN(val)) val = 1;
+	val += delta;
+	if (val < 1) val = 1;
+	input.value = val;
+	qvUpdatePrice(scope);
+}
+
+// Recalcula el texto del botón: "Agregar a Carrito · {símbolo} {cantidad×precio}".
+// No hace nada mientras se muestra el mensaje "¡Agregado!" (qvBusy).
+function qvUpdatePrice(scope) {
+	if (!scope || scope.dataset.qvBusy === '1') return;
+	let input = scope.querySelector('.qv-quantity');
+	let label = scope.querySelector('.qv-add-label');
+	let qty = parseInt(input.value, 10) || 1;
+	let unit = parseFloat(scope.dataset.unitPrice) || 0;
+	let symbol = scope.dataset.symbol || 'S/';
+	label.textContent = `Agregar a Carrito · ${symbol} ${(unit * qty).toFixed(2)}`;
+}
+
+// Agrega la cantidad elegida al carrito (sumándola a la que ya hubiera),
+// y muestra "¡Agregado! (N)" durante 1 segundo antes de volver al precio.
+function qvAddToCart(btn) {
+	try {
+		let scope = qvScope(btn);
+		let input = scope.querySelector('.qv-quantity');
+		let qty = qvClampQuantity(input);
+
+		let item = JSON.parse(scope.dataset.qvProduct);
+		if (!item.currency_type_symbol) {
+			item.currency_type_symbol = (item.currency_type && item.currency_type.symbol)
+				? item.currency_type.symbol
+				: 'S/';
+		}
+
+		let array = JSON.parse(localStorage.getItem('products_cart')) || [];
+		let found = array.find(x => x.id == item.id);
+		if (found) {
+			// Suma la cantidad actual a la que ya está en el carrito.
+			found.quantity = (parseInt(found.quantity, 10) || 1) + qty;
+		} else {
+			item.quantity = qty;
+			array.push(item);
+		}
+		localStorage.setItem('products_cart', JSON.stringify(array));
+
+		// Refresca el dropdown/total del header y avisa a las vistas Vue.
+		if (typeof productsCartDropDown === 'function') productsCartDropDown();
+		if (typeof calculateTotalCart === 'function') calculateTotalCart();
+		window.dispatchEvent(new Event('productAddedToCart'));
+
+		// Feedback temporal "¡Agregado! (N)" por 1 segundo.
+		let label = scope.querySelector('.qv-add-label');
+		scope.dataset.qvBusy = '1';
+		label.textContent = `¡Agregado! (${qty})`;
+		setTimeout(function () {
+			scope.dataset.qvBusy = '0';
+			qvUpdatePrice(scope);
+		}, 1000);
+	} catch (e) {
+		console.log(e);
+	}
 }
 
 function logout()

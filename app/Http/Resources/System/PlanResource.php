@@ -22,6 +22,8 @@ class PlanResource extends JsonResource
             'limit_documents' => $this->limit_documents,
             'limit_users' => $this->limit_users,
             // 'plan_documents' => $this->plan_documents,
+            'test_days_enabled' => $this->test_days_enabled,
+            'test_days' => $this->test_days,
             'plan_documents' => [],
             'locked' => $this->locked,
 
@@ -32,7 +34,12 @@ class PlanResource extends JsonResource
             'sales_unlimited' => $this->sales_unlimited,
             'include_sale_notes_sales_limit' => $this->include_sale_notes_sales_limit,
             'include_sale_notes_limit_documents' => $this->include_sale_notes_limit_documents,
-            
+
+            'whatsapp_messages_limit' => $this->whatsapp_messages_limit,
+            'whatsapp_messages_unlimited' => $this->whatsapp_messages_unlimited,
+
+            'module_permissions' => $this->module_permissions,
+
         ];
     }
 }

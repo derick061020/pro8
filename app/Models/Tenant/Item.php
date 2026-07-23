@@ -23,6 +23,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
+use App\Helpers\CacheHelper;
 use Modules\Account\Models\Account;
 use Modules\Digemid\Models\CatDigemid;
 use Modules\Inventory\Helpers\InventoryValuedKardex;
@@ -217,23 +218,23 @@ class Item extends ModelTenant
         // Cualquier evento relacionado a este modelo eliminará la cache de los tags
         //TODO faltaria revisar las actualizaciones masivas, como funciona laravel esas actualizaciones se tiene que realizar configuración extra
         static::created(function ($item){
-            Cache::tags(['items_list'])->flush();
-            Cache::tags(['item_detail'])->flush();
+            CacheHelper::flush(['items_list']);
+            CacheHelper::flush(['item_detail']);
         });
 
         static::updated(function ($item){
-            Cache::tags(['items_list'])->flush();
-            Cache::tags(['item_detail'])->flush();
+            CacheHelper::flush(['items_list']);
+            CacheHelper::flush(['item_detail']);
         });
 
         static::deleted(function ($item){
-            Cache::tags(['items_list'])->flush();
-            Cache::tags(['item_detail'])->flush();
+            CacheHelper::flush(['items_list']);
+            CacheHelper::flush(['item_detail']);
         });
 
         static::saved(function ($item){
-            Cache::tags(['items_list'])->flush();
-            Cache::tags(['item_detail'])->flush();
+            CacheHelper::flush(['items_list']);
+            CacheHelper::flush(['item_detail']);
         });
     }
 
@@ -579,7 +580,8 @@ class Item extends ModelTenant
             $establishment_id = auth()->user()->establishment_id;
             $warehouse = Warehouse::where('establishment_id', $establishment_id)->first();
             if ($warehouse) {
-                $item_warehouse = $this->warehouses->where('warehouse_id',$warehouse->id)->first();
+                $this->unsetRelation('warehouses');
+                $item_warehouse = $this->warehouses->where('warehouse_id', $warehouse->id)->first();
                 return ($item_warehouse) ? $item_warehouse->stock : 0;
             }
         }
@@ -3016,6 +3018,7 @@ class Item extends ModelTenant
             'barcode' => $this->barcode,
             'currency_type_symbol' => $currency->symbol,
             'sale_unit_price' => $this->generalApplyNumberFormat($this->sale_unit_price),
+            'purchase_unit_price' => $this->generalApplyNumberFormat($this->purchase_unit_price),
             'unit_type_id' => $this->unit_type_id,
             'sale_affectation_igv_type_id' => $this->sale_affectation_igv_type_id,
             'has_igv' => (bool) $this->has_igv,

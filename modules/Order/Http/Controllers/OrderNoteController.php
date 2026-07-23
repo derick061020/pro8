@@ -33,6 +33,7 @@
     use App\Models\Tenant\Person;
     use App\Models\Tenant\Quotation;
     use App\Models\Tenant\Series;
+    use App\Services\SeriesResolver;
     use App\Models\Tenant\Warehouse;
     use App\Traits\OfflineTrait;
     use Exception;
@@ -196,7 +197,7 @@
         public function document_tables()
         {
             $establishment = Establishment::where('id', auth()->user()->establishment_id)->first();
-            $series = Series::where('establishment_id', $establishment->id)->get();
+            $series = app(SeriesResolver::class)->applyContext(Series::where('establishment_id', $establishment->id))->get();
             // $document_types_invoice = DocumentType::whereIn('id', ['01', '03', '80'])->get();
 
             return compact('series', 'establishment');
@@ -397,7 +398,7 @@
         public function option_tables()
         {
             $establishment = Establishment::where('id', auth()->user()->establishment_id)->first();
-            $series = Series::where('establishment_id', $establishment->id)->get();
+            $series = app(SeriesResolver::class)->applyContext(Series::where('establishment_id', $establishment->id))->get();
             $document_types_invoice = DocumentType::whereIn('id', ['01', '03', '80'])->get();
             $payment_method_types = PaymentMethodType::getPaymentMethodTypes();
             $payment_destinations = $this->getPaymentDestinations();

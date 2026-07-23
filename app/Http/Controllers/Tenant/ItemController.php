@@ -68,6 +68,7 @@ use Modules\Inventory\Models\InventoryConfiguration;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Cache;
+use App\Helpers\CacheHelper;
 use Modules\Item\Http\Controllers\EditorTagController;
 use Modules\Item\Models\TagTemplate;
 use App\Models\Tenant\ItemUnitTypePrice;
@@ -820,12 +821,11 @@ class ItemController extends Controller
         // }
 
         // Invalidar caché del item individual cuando se edita
-        if ($id) {
-            Cache::tags(['item_detail'])->forget("item_detail_{$id}");
+        if (isset($id) && $id) {
+            CacheHelper::forget(['item_detail'], "item_detail_{$id}");
         }
-
         // Invalidar caché de listas cuando se crea/edita un item
-        Cache::tags(['items_list'])->flush();
+        CacheHelper::flush(['items_list']);
 
         return [
             'success' => true,
@@ -941,10 +941,9 @@ class ItemController extends Controller
             $item->delete();
 
             // Invalidar caché del item individual cuando se elimina
-            Cache::tags(['item_detail'])->forget("item_detail_{$id}");
-
+            CacheHelper::forget(['item_detail'], "item_detail_{$id}");
             // Invalidar caché de listas cuando se elimina un item
-            Cache::tags(['items_list'])->flush();
+            CacheHelper::flush(['items_list']);
 
             return [
                 'success' => true,

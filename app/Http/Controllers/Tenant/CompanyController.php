@@ -175,13 +175,19 @@ class CompanyController extends Controller
                             $constraint->aspectRatio();
                             $constraint->upsize();
                         });
-                        $quality = 25;
-                        $optimizedBytes = (string) $image->encode('jpg', $quality);
+                        if (UploadFileHelper::imageSupportsTransparency($absolutePath)) {
+                            $optimizedBytes = (string) $image->encode('png');
+                            $optimizedExt = 'png';
+                        } else {
+                            $optimizedBytes = (string) $image->encode('jpg', 25);
+                            $optimizedExt = 'jpg';
+                        }
                     } else {
                         $optimizedBytes = (string) $optimized['bytes'];
+                        $optimizedExt = $optimized['extension'] ?? 'jpg';
                     }
 
-                    $name = $type . '_' . $company->number . '.jpg';
+                    $name = $type . '_' . $company->number . '.' . $optimizedExt;
                     Storage::put('public/uploads/logos/' . $name, $optimizedBytes);
                 }
             }
@@ -215,13 +221,19 @@ class CompanyController extends Controller
                             $constraint->aspectRatio();
                             $constraint->upsize();
                         });
-                        $quality = 25;
-                        $optimizedBytes = (string) $image->encode('jpg', $quality);
+                        if (UploadFileHelper::imageSupportsTransparency($absolutePath)) {
+                            $optimizedBytes = (string) $image->encode('png');
+                            $optimizedExt = 'png';
+                        } else {
+                            $optimizedBytes = (string) $image->encode('jpg', 25);
+                            $optimizedExt = 'jpg';
+                        }
                     } else {
                         $optimizedBytes = (string) $optimized['bytes'];
+                        $optimizedExt = $optimized['extension'] ?? 'jpg';
                     }
 
-                    $name = $type . '_' . $company->number . '.jpg';
+                    $name = $type . '_' . $company->number . '.' . $optimizedExt;
                     Storage::put('public/uploads/logos/' . $name, $optimizedBytes);
                 }
             }

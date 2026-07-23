@@ -1,5 +1,5 @@
 <template>
-  <div v-if="customFields.length > 0" class="row mx-0 px-0">
+  <div v-if="customFields.length > 0" class="row p-0 py-1 py-md-2 px-md-2 m-0 mx-1">
     <div class="col-12">
       <hr>
       <h5 class="mb-0">Campos Personalizados</h5>
@@ -127,7 +127,7 @@ export default {
       type: String,
       required: true,
       validator: function(value) {
-        return ['documents', 'sale_notes', 'dispatches', 'order_notes'].includes(value)
+        return ['documents', 'sale_notes', 'dispatches', 'order_notes', 'quotations'].includes(value)
       }
     },
     // Datos del formulario (v-model.sync)
@@ -202,7 +202,8 @@ export default {
         'documents': 'enabled_for_documents',
         'sale_notes': 'enabled_for_sale_notes',
         'dispatches': 'enabled_for_dispatches',
-        'order_notes': 'enabled_for_order_notes'
+        'order_notes': 'enabled_for_order_notes',
+        'quotations': 'enabled_for_quotations'
       }
       return map[this.documentType] || 'enabled_for_documents'
     },

@@ -180,6 +180,24 @@ class ServiceData
         return $response;
     }
 
+    /**
+     * Consulta los establecimientos anexos de un RUC.
+     * Endpoint: POST /api/ruc-establecimientos-anexos  (body: ruc)
+     *
+     * @param string $number
+     * @return array
+     */
+    public function establishments($number)
+    {
+        $this->parameters['form_params'] = ['ruc' => $number];
+        $res = $this->client->request('POST', '/api/ruc-establecimientos-anexos', $this->parameters);
+        $response = json_decode($res->getBody()->getContents(), true);
+
+        $this->saveService(6, $response);
+
+        return $response;
+    }
+
     public function massive_validate_cpe($data)
     {
         $this->parameters['form_params'] = $data;

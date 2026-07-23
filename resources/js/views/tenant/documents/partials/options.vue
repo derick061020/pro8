@@ -81,7 +81,7 @@
             <span>Formatos disponibles para la descarga del comprobante:</span>
             <div class="row print-buttons-container">
 
-                <div class="col text-center font-weight-bold mt-3">
+                <div class="col text-center font-weight-bold mt-3" v-if="!isNrus">
                     <button class="btn btn-lg btn-info waves-effect waves-light w-100"
                             type="button"
                             @click="clickPrint('a4')">
@@ -127,7 +127,7 @@
                     </el-popover>
                 </div>
 
-                <div class="col text-center font-weight-bold mt-3">
+                <div class="col text-center font-weight-bold mt-3" v-if="!isNrus">
 
                     <button class="btn btn-lg btn-info waves-effect waves-light w-100"
                             type="button"
@@ -181,14 +181,15 @@
                     v-if="config.qrchat_enable"
                     colClass="col-12"
                     :wsPhone="form.customer_telephone"
-                    :wsFile="form.pdf_a4_filename"
+                    :wsFile="form.print_ticket"
                     :wsDocument="form.number"
                     :wsMessage="form.message_text"/>
                     <QrApi
                         v-else-if="config.qr_api_enable_ws"
                         colClass="col-12"
                         :wsPhone="form.customer_telephone"
-                        :wsFile="form.pdf_a4_filename"
+                        :wsFile="form.print_ticket"
+                        :wsFileA4="form.print_a4"
                         :wsDocument="form.number"
                         :wsMessage="form.message_text"
                         :wsData="form.pdf_a4_data"
@@ -281,6 +282,9 @@ export default {
         ...mapState([
             'config',
         ]),
+        isNrus: function () {
+            return !!(this.config && this.config.is_nrus);
+        },
         ShowTicket58: function () {
             if (this.config === undefined) return false;
             if (this.config == null) return false;

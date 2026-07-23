@@ -36,6 +36,7 @@ if($hostname) {
                 Route::get('payment-method-types/excel', 'PaymentMethodTypeController@excel');
                 Route::get('payment-method-types/filter', 'PaymentMethodTypeController@filter');
                 Route::get('payment-method-types/records', 'PaymentMethodTypeController@records');
+                Route::post('payment-method-types/active', 'PaymentMethodTypeController@active');
 
                 /**
                  * finances/unpaid
@@ -152,7 +153,7 @@ if($hostname) {
 
             });
 
-
+            Route::post('payment-method-types/active', 'PaymentMethodTypeController@active');
             Route::prefix('income-types')->group(function () {
 
                 Route::get('/records', 'IncomeTypeController@records');

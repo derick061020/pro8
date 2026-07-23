@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Maatwebsite\Excel\Facades\Excel;
 use Modules\Dashboard\Helpers\DashboardData;
+use Modules\Dashboard\Helpers\DashboardKpi;
 use Modules\Dashboard\Helpers\DashboardUtility;
 use Modules\Dashboard\Helpers\DashboardSalePurchase;
 use Modules\Dashboard\Helpers\DashboardView;
@@ -51,15 +52,71 @@ class DashboardController extends Controller
         ];
     }
 
-    public function globalData()
+    public function globalData(Request $request)
     {
-        return response()->json((new DashboardData())->globalData(), 200);
+        return response()->json((new DashboardData())->globalData($request->all()), 200);
+    }
+
+    public function cashFlow(Request $request)
+    {
+        return response()->json((new DashboardData())->cashFlow($request->all()), 200);
+    }
+
+    public function lowStock(Request $request)
+    {
+        return response()->json((new DashboardData())->lowStock($request->all()), 200);
+    }
+
+    public function salesWeek(Request $request)
+    {
+        return response()->json((new DashboardData())->salesWeek($request->all()), 200);
+    }
+
+    public function paymentMethods(Request $request)
+    {
+        return response()->json((new DashboardData())->paymentMethods($request->all()), 200);
+    }
+
+    public function sunatStatus(Request $request)
+    {
+        return response()->json((new DashboardData())->sunatStatus($request->all()), 200);
+    }
+
+    public function debtors(Request $request)
+    {
+        return response()->json((new DashboardData())->debtors($request->all()), 200);
+    }
+
+    public function monthGoal()
+    {
+        return response()->json((new DashboardData())->monthGoal(), 200);
     }
 
     public function data(Request $request)
     {
         return [
             'data' => (new DashboardData())->data($request->all()),
+        ];
+    }
+
+    public function kpi(Request $request)
+    {
+        return [
+            'data' => (new DashboardKpi())->data($request->all()),
+        ];
+    }
+
+    public function monthlyComparison(Request $request)
+    {
+        return [
+            'data' => (new DashboardKpi())->monthlyComparison($request->all()),
+        ];
+    }
+
+    public function salesGrowth(Request $request)
+    {
+        return [
+            'data' => (new DashboardKpi())->salesGrowth($request->all()),
         ];
     }
 
@@ -81,6 +138,28 @@ class DashboardController extends Controller
     {
         return [
             'data' => (new DashboardSalePurchase())->data($request->all()),
+        ];
+    }
+
+    public function igvSales(Request $request)
+    {
+        return [
+            'data' => (new DashboardData())->salesTotalByRange(
+                $request->input('establishment_id'),
+                $request->input('date_start'),
+                $request->input('date_end')
+            ),
+        ];
+    }
+
+    public function igvPurchases(Request $request)
+    {
+        return [
+            'data' => (new DashboardSalePurchase())->purchasesTotalByRange(
+                $request->input('establishment_id'),
+                $request->input('date_start'),
+                $request->input('date_end')
+            ),
         ];
     }
 

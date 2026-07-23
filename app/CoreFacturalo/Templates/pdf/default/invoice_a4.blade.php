@@ -1125,12 +1125,15 @@ $total_pending_payment = $document->total_pending_payment;
                     <br>
                     <table class="full-width">
                         @foreach ($document->custom_fields_data as $field_slug => $field_value)
+                            @php
+                                $custom_field = \Modules\CustomField\Models\CustomField::where('slug', $field_slug)->first();
+                                if ($custom_field && !$custom_field->show_in_pdf) {
+                                    continue;
+                                }
+                                $field_name = ($custom_field) ? $custom_field->name : str_replace('_', ' ', ucfirst($field_slug));
+                            @endphp
                             <tr>
                                 <td>
-                                    @php
-                                        $custom_field = \Modules\CustomField\Models\CustomField::where('slug', $field_slug)->first();
-                                        $field_name = ($custom_field) ? $custom_field->name : str_replace('_', ' ', ucfirst($field_slug));
-                                    @endphp
                                     {{ $field_name }}
                                 </td>
                                 <td width="8px">:</td>

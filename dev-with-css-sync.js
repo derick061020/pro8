@@ -67,7 +67,12 @@ const viteArgs = isWatchMode ? ['vite', 'build', '--watch'] : ['vite'];
 console.log(`🚀 Iniciando Vite (${isWatchMode ? 'build --watch' : 'dev server'})...\n`);
 const viteProcess = spawn('npx', viteArgs, {
     stdio: 'inherit',
-    shell: true
+    shell: true,
+    env: {
+        ...process.env,
+        // NODE_OPTIONS sí lo hereda el proceso hijo (a diferencia de --max-old-space-size del padre)
+        NODE_OPTIONS: `${process.env.NODE_OPTIONS || ''} --max-old-space-size=8192`.trim(),
+    }
 });
 
 // Manejar cierre del proceso

@@ -1,0 +1,35 @@
+.auth-logo svg {
+  width: 120px !important;
+}
+.buton-login {
+  background-color: #15616d;
+  color: #ffff;
+}
+.buton-login:hover {
+  box-shadow: 0px 4px 8px #15616d6b;
+  opacity: 0.9;
+  color: #ffff;
+}
+.is-dark .buton-login {
+  background-color: #117281 !important;
+  color: #ffff !important;
+  border: none;
+}
+.is-dark .buton-login:hover {
+  box-shadow: 0px 4px 8px #2198aa86;
+  opacity: 0.9;
+  color: #ffff;
+}
+.is-dark .auth-wrapper-inner .hero-banner {
+  background-color: #1b262c !important;
+}
+.is-dark .auth-wrapper-inner .hero.is-white {
+  background-color: #121c22 !important;
+}
+.is-dark .email-input,
+.is-dark .password-input {
+  background-color: #1f2d36;
+}
+.control.has-icon .input:focus + .form-icon svg {
+  color: #15616d !important;
+}

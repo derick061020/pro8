@@ -92,10 +92,12 @@
                 this.initForm() 
             },
             clickToPrint(format){
-                window.open(`/${this.resource}/print/${this.form.external_id}/${format}`, '_blank');
+                const timestamp = new Date().getTime();
+                window.open(`/${this.resource}/print/${this.form.external_id}/${format}?v=${timestamp}`, '_blank');
             } , 
             clickDownload(format){
-                window.open(`/${this.resource}/download/${this.form.external_id}/${format}`, '_blank');
+                const timestamp = new Date().getTime();
+                window.open(`/${this.resource}/download/${this.form.external_id}/${format}?v=${timestamp}`, '_blank');
             } ,
             
             clickSendEmail()

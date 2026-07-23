@@ -581,6 +581,9 @@
                            </div>
                         @endif
                     </li>
+                    <li class="px-4 pb-1" style="height: auto; display: block;">
+                        <tenant-dedicated-group-selector></tenant-dedicated-group-selector>
+                    </li>
 
                     <li class="divider my-2"></li>
 

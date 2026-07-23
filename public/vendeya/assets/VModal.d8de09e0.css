@@ -1,0 +1,8 @@
+.bg-light {
+  background-color: hsla(var(--dark-sidebar-h), var(--dark-sidebar-s), var(--dark-sidebar-l), 0.4) !important;
+}
+@media only screen and (min-width: 768px) and (orientation: landscape) {
+.with-top-menu {
+    top: 50px;
+}
+}

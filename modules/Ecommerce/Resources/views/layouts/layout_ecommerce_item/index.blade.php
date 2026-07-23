@@ -28,6 +28,8 @@
         <link rel="stylesheet" href="{{ asset('theme/custom_styles_ecommerce.css') }}" />
     @endif
 
+    @include('ecommerce::layouts.partials_ecommerce.primary_color_style')
+
 </head>
 <body>
     @include('ecommerce::layouts.partials_ecommerce.announcement_bar')

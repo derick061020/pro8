@@ -89,7 +89,7 @@
                                 height="450px"
                             />
                         </el-tab-pane>
-                        <el-tab-pane label="A4" name="quarter">
+                        <el-tab-pane label="A4" name="quarter" v-if="!isNrus">
                             <embed
                                 :src="form.print_a4"
                                 type="application/pdf"
@@ -97,7 +97,7 @@
                                 height="450px"
                             />
                         </el-tab-pane>
-                        <el-tab-pane label="A5" name="fifth">
+                        <el-tab-pane label="A5" name="fifth" v-if="!isNrus">
                             <embed
                                 :src="form.print_a5"
                                 type="application/pdf"
@@ -109,7 +109,7 @@
                 </div>
                 <div class="col-md-12 d-sm-block d-md-block d-lg-none">
                     <div class="row">
-                        <div class="col text-center font-weight-bold mt-3">
+                        <div v-if="!isNrus" class="col text-center font-weight-bold mt-3">
                             <button
                                 class="btn btn-lg btn-info waves-effect waves-light"
                                 type="button"
@@ -158,7 +158,7 @@
                             </button>
                             <p>Ticket 50</p>
                         </div>
-                        <div class="col text-center font-weight-bold mt-3">
+                        <div v-if="!isNrus" class="col text-center font-weight-bold mt-3">
                             <button
                                 class="btn btn-lg btn-info waves-effect waves-light"
                                 type="button"
@@ -216,7 +216,8 @@
                         <QrApi
                             colClass="col-md-6"
                             :wsPhone="form.customer_telephone"
-                            :wsFile="form.pdf_a4_filename"
+                            :wsFile="form.print_ticket"
+                            :wsFileA4="form.print_a4"
                             :wsDocument="form.number"
                             :wsMessage="form.message_text"
                             :wsData="form.pdf_a4_data"
@@ -299,6 +300,9 @@ export default {
     mounted() {},
     computed: {
         ...mapState(["config"]),
+        isNrus() {
+            return !!(this.config && this.config.is_nrus);
+        },
         applyConvertCpePos() {
             if (this.configuration && this.configuration.show_convert_cpe_pos)
                 return this.configuration.show_convert_cpe_pos;

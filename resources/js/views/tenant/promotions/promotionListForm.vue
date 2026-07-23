@@ -50,19 +50,52 @@
           <div class="col-md-4">
             <div class="form-group" :class="{'has-danger': errors.item_id}">
               <label class="control-label">Link a Producto</label>
-              <el-select v-model="form.item_id" dusk="item_id">
-                <el-option
-                  v-for="option in items"
-                  :key="option.id"
-                  :value="option.id"
-                  :label="option.description"
-                ></el-option>
-              </el-select>
+              <div class="d-flex align-items-center">
+                <el-select v-model="form.item_id" dusk="item_id" clearable class="flex-grow-1">
+                  <el-option
+                    v-for="option in items"
+                    :key="option.id"
+                    :value="option.id"
+                    :label="option.description"
+                  ></el-option>
+                </el-select>
+                <el-button
+                  type="danger"
+                  icon="el-icon-close"
+                  size="mini"
+                  class="ms-2"
+                  @click.prevent="clearItem"
+                ></el-button>
+              </div>
               <small
                 class="form-control-feedback"
                 v-if="errors.item_id"
                 v-text="errors.item_id[0]"
               ></small>
+            </div>
+          </div>
+        </div>
+        <br />
+        <div class="row">
+          <div class="col-md-4">
+            <div class="form-group" :class="{'has-danger': errors.category_id}">
+              <label class="control-label">Link a Categoría</label>
+              <el-select v-model="form.category_id" placeholder="Seleccione categoría" clearable>
+                <el-option
+                  v-for="option in categories"
+                  :key="option.id"
+                  :value="option.id"
+                  :label="option.name"
+                ></el-option>
+              </el-select>
+              <small class="form-control-feedback" v-if="errors.category_id" v-text="errors.category_id[0]"></small>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="form-group" :class="{'has-danger': errors.custom_link}">
+              <label class="control-label">Link Personalizado</label>
+              <el-input v-model="form.custom_link" placeholder="https://..." />
+              <small class="form-control-feedback" v-if="errors.custom_link" v-text="errors.custom_link[0]"></small>
             </div>
           </div>
         </div>
@@ -84,6 +117,7 @@ export default {
   data() {
     return {
       items: [],
+      categories: [],
       headers: headers_token,
       loading_submit: false,
       titleDialog: null,
@@ -103,9 +137,30 @@ export default {
     this.initForm();
     this.$http.get(`/promotions/tables`).then(response => {
       this.items = response.data.items;
+      this.categories = response.data.categories || [];
     });
   },
   computed: {},
+  watch: {
+    'form.item_id'(value) {
+      if (value) {
+        this.form.category_id = null;
+        this.form.custom_link = null;
+      }
+    },
+    'form.category_id'(value) {
+      if (value) {
+        this.form.item_id = null;
+        this.form.custom_link = null;
+      }
+    },
+    'form.custom_link'(value) {
+      if (value) {
+        this.form.item_id = null;
+        this.form.category_id = null;
+      }
+    }
+  },
   methods: {
     initForm() {
       this.errors = {};
@@ -115,7 +170,10 @@ export default {
         image: null,
         image_url: null,
         temp_path: null,
-        type: "promotions"
+        type: "promotions",
+        item_id: null,
+        category_id: null,
+        custom_link: null
       };
     },
     create() {
@@ -125,6 +183,7 @@ export default {
           .get(`/promotions/record/${this.recordId}`)
           .then(response => {
             this.form = response.data.data;
+            this.normalizeRedirects();
           });
       }
     },
@@ -159,6 +218,21 @@ export default {
     close() {
       this.$emit("update:showDialog", false);
       this.initForm();
+    },
+    normalizeRedirects() {
+      if (this.form.item_id) {
+        this.form.category_id = null;
+        this.form.custom_link = null;
+      } else if (this.form.category_id) {
+        this.form.item_id = null;
+        this.form.custom_link = null;
+      } else if (this.form.custom_link) {
+        this.form.item_id = null;
+        this.form.category_id = null;
+      }
+    },
+    clearItem() {
+      this.form.item_id = null;
     },
     onSuccess(response, file, fileList) {
       if (response.success) {

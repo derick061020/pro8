@@ -114,7 +114,7 @@
                 </div>
             </div>
         </div>
-        <div class="card tab-content-default row-new mb-0">
+        <div class="card tab-content-default row-new mb-0 bg-transparent">
             <!--
             <div class="data-table-visible-columns">
 
@@ -131,42 +131,43 @@
                 </el-dropdown>
             </div>
             -->
+            
             <div class="card-body card-body-invoice">
-                <div class="data-table-visible-columns">
-                    <el-dropdown :hide-on-click="false" slot="showhide">
-                        <el-button type="secondary">
-                            Mostrar columnas<i
-                                class="el-icon-arrow-down el-icon--right"
-                            ></i>
-                        </el-button>
-                        <el-dropdown-menu slot="dropdown" style="min-width: 220px;">
-                            <div style="max-height: 520px; overflow-y: auto;">
-                                <el-dropdown-item divided disabled v-if=" customFieldColumns.length > 0 ">
-                                    <strong>Campos personalizados</strong>
-                                </el-dropdown-item>
-                                <el-dropdown-item
-                                    v-for="field in customFieldColumns"
-                                    :key="`custom-field-${field.id}`"
-
-                                >
-                                    <el-checkbox
-                                        @change="updateCustomFieldColumns()"
-                                        v-model="field.visible"
-                                        >{{ field.name }}</el-checkbox
-                                    >
-                                </el-dropdown-item>
-                                <el-dropdown-item divided v-if=" customFieldColumns.length > 0 "></el-dropdown-item>
-                                <el-dropdown-item disabled>
-                                    <strong>Seleccionar columnas</strong>
-                                </el-dropdown-item>
-                                <el-dropdown-item v-for="col in tenantSelectableColumns" :key="col.key">
-                                    <el-checkbox @change="getColumnsToShow(1)" v-model="columns[col.key].visible">{{ col.title }}</el-checkbox>
-                                </el-dropdown-item>
-                            </div>
-                        </el-dropdown-menu>
-                    </el-dropdown>
-                </div>
                 <data-table :resource="resource">
+                    <div slot="showhide">
+                        <el-dropdown :hide-on-click="false">
+                            <el-button type="secondary">
+                                Mostrar columnas<i
+                                    class="el-icon-arrow-down el-icon--right"
+                                ></i>
+                            </el-button>
+                            <el-dropdown-menu slot="dropdown" style="min-width: 220px;">
+                                <div style="max-height: 520px; overflow-y: auto;">
+                                    <el-dropdown-item divided disabled v-if=" customFieldColumns.length > 0 ">
+                                        <strong>Campos personalizados</strong>
+                                    </el-dropdown-item>
+                                    <el-dropdown-item
+                                        v-for="field in customFieldColumns"
+                                        :key="`custom-field-${field.id}`"
+
+                                    >
+                                        <el-checkbox
+                                            @change="updateCustomFieldColumns()"
+                                            v-model="field.visible"
+                                            >{{ field.name }}</el-checkbox
+                                        >
+                                    </el-dropdown-item>
+                                    <el-dropdown-item divided v-if=" customFieldColumns.length > 0 "></el-dropdown-item>
+                                    <el-dropdown-item disabled>
+                                        <strong>Seleccionar columnas</strong>
+                                    </el-dropdown-item>
+                                    <el-dropdown-item v-for="col in tenantSelectableColumns" :key="col.key">
+                                        <el-checkbox @change="getColumnsToShow(1)" v-model="columns[col.key].visible">{{ col.title }}</el-checkbox>
+                                    </el-dropdown-item>
+                                </div>
+                            </el-dropdown-menu>
+                        </el-dropdown>
+                    </div>
                     <tr slot="heading">
                         <template v-for="col in orderedColumns">
                             <th v-if="col.visible && col.key === 'soap_type'" :key="col.key">SOAP</th>
@@ -198,7 +199,7 @@
                             <th v-if="col.visible && col.key === 'total_exonerated'" :key="col.key" class="text-end">T.Exonerado</th>
                             <th v-if="col.visible && col.key === 'total_charge'" :key="col.key" class="text-end">{{ columns.total_charge.title }}</th>
                             <th v-if="col.visible && col.key === 'total_taxed'" :key="col.key" class="text-end">T.Gravado</th>
-                            <th v-if="col.visible && col.key === 'total_igv'" :key="col.key" class="text-end">T.Igv</th>
+                            <!-- <th v-if="col.visible && col.key === 'total_igv'" :key="col.key" class="text-end">T.Igv</th> -->
                             <th v-if="col.visible && col.key === 'total'" :key="col.key" class="text-end">Total</th>
                             <th v-if="col.visible && col.key === 'balance'" :key="col.key" class="text-end">Saldo</th>
                             <th v-if="col.visible && col.key === 'purchase_order'" :key="col.key" class="text-center" style="min-width: 95px;">Orden de compra</th>
@@ -222,11 +223,15 @@
                     >
                         <template v-for="col in orderedColumns">
                             <td v-if="col.visible && col.key === 'soap_type'" :key="col.key">{{ row.soap_type_description }}</td>
-                            <td v-if="col.visible && col.key === 'date_of_issue'" :key="col.key" class="text-start">{{ row.date_of_issue | toDate }}</td>
+                            <td v-if="col.visible && col.key === 'date_of_issue'" :key="col.key" class="text-start">
+                                {{ formatDateLong(row.date_of_issue) }}                               
+                            </td>
                             <td v-if="col.visible && col.key === 'date_payment'" :key="col.key" class="text-center">{{ row.date_of_payment | toDate }}</td>
                             <td v-if="col.visible && col.key === 'date_of_due'" :key="col.key" class="text-center" :class="{ 'text-danger': row.balance > 0 && isDateWarning(row.date_of_due) }">{{ row.date_of_due | toDate }}</td>
-                            <td v-if="col.visible && col.key === 'customer'" :key="col.key">{{ row.customer_name }}<br /><small v-text="row.customer_number"></small></td>
-                            <td v-if="col.visible && col.key === 'number'" :key="col.key">{{ row.number }}<br /><small v-text="row.document_type_description"></small><br /><small v-if="row.affected_document" v-text="row.affected_document"></small></td>
+                            <td v-if="col.visible && col.key === 'customer'" :key="col.key">{{ row.customer_name }}<br /><small class="text-muted"><template v-if="row.customer_identity_document_type_description">{{ row.customer_identity_document_type_description }}: </template>{{ row.customer_number }}</small></td>
+                            <td v-if="col.visible && col.key === 'number'" :key="col.key">
+                                <span class="badge" :class="{ 'bg-invoices': row.document_type_id === '01', 'bg-tickets': row.document_type_id === '03', 'bg-credit-notes': row.document_type_id === '07' }" style="font-size: 11px;">{{ row.number }}</span>
+                            </td>
                             <td v-if="col.visible && col.key === 'notes'" :key="col.key">
                                 <template v-for="(note, i) in row.notes">
                                     <label :key="i" class="d-block">{{ note.note_type_description }}: {{ note.description }}</label>
@@ -303,8 +308,8 @@
                             <td v-if="col.visible && col.key === 'total_exonerated'" :key="col.key" class="text-end">{{ row.currency_type_id === 'PEN' ? 'S/' : '$' }} {{ formatDecimal(row.total_exonerated) }}</td>
                             <td v-if="col.visible && col.key === 'total_charge'" :key="col.key" class="text-end">{{ row.currency_type_id === 'PEN' ? 'S/' : '$' }} {{ formatDecimal(row.total_charge) }}</td>
                             <td v-if="col.visible && col.key === 'total_taxed'" :key="col.key" class="text-end">{{ row.currency_type_id === 'PEN' ? 'S/' : '$' }} {{ formatDecimal(row.total_taxed) }}</td>
-                            <td v-if="col.visible && col.key === 'total_igv'" :key="col.key" class="text-end">{{ row.currency_type_id === 'PEN' ? 'S/' : '$' }} {{ formatDecimal(row.total_igv) }}</td>
-                            <td v-if="col.visible && col.key === 'total'" :key="col.key" class="text-end">{{ row.currency_type_id === 'PEN' ? 'S/' : '$' }} {{ formatDecimal(row.total) }}</td>
+                            <!-- <td v-if="col.visible && col.key === 'total_igv'" :key="col.key" class="text-end">{{ row.currency_type_id === 'PEN' ? 'S/' : '$' }} {{ formatDecimal(row.total_igv) }}</td> -->
+                            <td v-if="col.visible && col.key === 'total'" :key="col.key" class="text-end">{{ row.currency_type_id === 'PEN' ? 'S/' : '$' }} {{ formatDecimal(row.total) }} <template v-if="columns.total_igv && columns.total_igv.visible"><br> <small class="text-muted">IGV {{ row.currency_type_id === 'PEN' ? 'S/' : '$' }} {{ formatDecimal(row.total_igv) }}</small></template></td>
                             <td v-if="col.visible && col.key === 'balance'" :key="col.key" class="text-end" :class="{ 'text-warning': row.balance > 0, 'text-success': row.balance == 0 }">{{ row.currency_type_id === 'PEN' ? 'S/' : '$' }} {{ formatDecimal(row.balance) }}</td>
                             <td v-if="col.visible && col.key === 'purchase_order'" :key="col.key">{{ row.purchase_order }}</td>
                             <td v-if="col.visible && col.key === 'downloads'" :key="col.key" class="text-center">
@@ -633,6 +638,49 @@
     max-height: 140px;
     overflow-y: auto;
 }
+.documents .dot {
+    width: 6px;
+    height: 6px;
+    background-color: #1d57a2;
+    border-radius: 50%;
+}
+.icon-building-bank {
+    top: 12px;
+    right: 12px;
+}
+.documents .card-value {
+    border-bottom: 1px solid #e0e0e0;
+}
+.dot.bg-tickets,
+.dot.bg-invoices {
+    height: 15px;
+    width: 15px;
+}
+.bg-tickets {
+    background-color: color-mix(in srgb, var(--success) 10%, #ffffff) !important;
+    border: 1px solid var(--success);
+    color: var(--success);
+}
+.bg-invoices {
+    background-color: color-mix(in srgb, var(--warning) 10%, #ffffff) !important;
+    border: 1px solid var(--warning);
+    color: var(--warning);
+}
+.bg-credit-notes {
+    background-color: color-mix(in srgb, var(--info) 10%, #ffffff) !important;
+    border: 1px solid var(--info);
+    color: var(--info);
+}
+.icon-date-issue.dot {
+    width: 25px !important;
+    height: 25px !important;
+}
+.icon-date-issue.bg-invoices {
+    color: var(--warning);
+}
+.icon-date-issue.bg-tickets {
+    color: var(--success);
+}
 </style>
 <script>
 import DocumentsVoided from "./partials/voided.vue";
@@ -743,6 +791,20 @@ export default {
             customFieldColumns: [],
             savedCustomFieldVisibilities: {},
             decimal_quantity: 2,
+            kpis: {
+                sales: {
+                    total: 'S/ 0.00',
+                    facturas: 'S/ 0.00',
+                    boletas: 'S/ 0.00',
+                    variation: '',
+                    variation_up: true,
+                },
+                receivable: {
+                    total: 'S/ 0.00',
+                    current: 'S/ 0.00',
+                    overdue: 'S/ 0.00',
+                },
+            },
         };
     },
     async created() {
@@ -751,6 +813,7 @@ export default {
         this.loadDecimalQuantity();
         await this.getColumnsToShow();
         this.loadCustomFieldsColumns();
+        this.loadKpis();
     },
     methods: {
         loadDecimalQuantity() {
@@ -766,6 +829,13 @@ export default {
                 }
             }));
         },
+        loadKpis() {
+            this.$http.get('/documents/kpis').then(response => {
+                if (response.data) {
+                    this.kpis = response.data;
+                }
+            }).catch(() => {});
+        },
         formatDecimal(value) {
             if (value === undefined || value === null || isNaN(value)) return '';
             return Number(value).toLocaleString('en-US', { minimumFractionDigits: this.decimal_quantity, maximumFractionDigits: this.decimal_quantity });
@@ -773,6 +843,14 @@ export default {
         formatDate(date) {
             if (!date) return null;
             return moment(date).format("DD-MM-YYYY");
+        },
+        formatDateLong(date) {
+            if (!date) return '';
+            const m = moment(date, ["DD-MM-YYYY", "YYYY-MM-DD", moment.ISO_8601], true);
+            const d = m.isValid() ? m : moment(date);
+            if (!d.isValid()) return '';
+            const months = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+            return `${d.format('DD')} ${months[d.month()]}, ${d.format('YYYY')}`;
         },
         ...mapActions(["loadConfiguration"]),
 

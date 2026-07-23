@@ -6,12 +6,20 @@ use App\Http\Controllers\Controller;
 use Modules\MobileApp\Http\Resources\Api\AppConfigurationResource;
 use Modules\MobileApp\Models\AppConfiguration;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Modules\MobileApp\Http\Controllers\Api\AppConfigurationController as AppConfigurationControllerApi;
 
 
 class AppConfigurationController extends Controller
 {
 
+    /**
+     * Retorna la vista de configuración de la app
+     */
+    public function view()
+    {
+        return view('mobileapp::configuration.index');
+    }
 
     /**
      * @return array
@@ -38,7 +46,11 @@ class AppConfigurationController extends Controller
         $record->header_waves = $request->header_waves;
         $record->app_mode = $request->app_mode;
         $record->direct_send_documents_whatsapp = $request->direct_send_documents_whatsapp;
+        $record->primary_color = $request->primary_color;
         $record->save();
+
+        // Invalidar caché de app.json al actualizar la configuración
+        Cache::forget('app_json');
 
         return [
             'success' => true,

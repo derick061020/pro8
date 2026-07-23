@@ -15,6 +15,7 @@ use App\Http\Controllers\Tenant\SaleNoteController;
     use App\Models\Tenant\Person;
     use App\Models\Tenant\SaleNote;
     use App\Models\Tenant\Series;
+    use App\Services\SeriesResolver;
     use App\Models\Tenant\User;
     use Illuminate\Http\Request;
     use Auth;
@@ -238,10 +239,11 @@ use App\Http\Controllers\Tenant\SaleNoteController;
 
             }
 
-            $serie = Series::where([
+            // Emisión automática (suscripción): siempre se omiten series dedicadas; no hay lectura de grupo/dispositivo.
+            $serie = app(SeriesResolver::class)->applyContext(Series::where([
                 'establishment_id' => $stablisment->id,
                 'document_type_id' => '80',
-            ])->first();
+            ]), null)->first();
             $ids = [];
             $time_of_issue = Carbon::now()->format('H:m:s');
             for ($i = 0; $i < $qtyPeriods; $i++) {

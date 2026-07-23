@@ -143,6 +143,26 @@
         opacity: 0.6;
         margin: 10px 0 20px;
     }
+    .register-extra-fields {
+        max-height: 0;
+        opacity: 0;
+        overflow: hidden;
+        transform: translateY(-6px);
+        transition: max-height 0.45s ease, opacity 0.35s ease, transform 0.35s ease;
+        pointer-events: none;
+    }
+    .register-extra-fields.is-visible {
+        max-height: 600px;
+        opacity: 1;
+        transform: translateY(0);
+        pointer-events: auto;
+    }
+    #name_reg[readonly] {
+        cursor: not-allowed;
+    }
+    .select-part, .input-part {
+        box-shadow: none !important
+    }
 </style>
 
 <div class="footer-middle">
@@ -457,31 +477,40 @@
                                             <option value="dni" selected>DNI</option>
                                             <option value="ruc">RUC</option>
                                         </select>
-                                        <input type="number" oninput="inputDocument()" required autocomplete="off" maxlength="11" class="input-part" id="ruc_reg" placeholder="Ingrese su número de documento" name="ruc">
+                                        <input type="number" required autocomplete="off" maxlength="11" class="input-part" id="ruc_reg" placeholder="Ingrese su número de documento" name="ruc">
                                         <span id="counter" class="text-center counter-part">0/8</span>
                                     </div>
+                                    <button type="button" id="btn_verify_document" class="btn btn-outline-primary btn-sm mt-2">
+                                        <i class="ti ti-search"></i> Verificar
+                                    </button>
+                                    <small id="document_status" class="d-block mt-1" style="display:none;"></small>
+                                    <small id="document_hint" class="d-block mt-1 text-muted">
+                                        Ingresa tu DNI o RUC y verifícalo para continuar.
+                                    </small>
                                 </div>
+                                <div id="register-fields" class="register-extra-fields px-2">
                                 <div class="form-group">
                                     <label for="email">Nombres:</label>
-                                    <input type="text" required autocomplete="off" class="form-control" id="name_reg"
-                                        placeholder="Enter name" name="name">
+                                    <input type="text" autocomplete="off" class="form-control" id="name_reg"
+                                        placeholder="Nombre completo / Razón social" name="name">
                                 </div>
                                 <div class="form-group">
                                     <label for="email">Correo Electronico:</label>
-                                    <input type="email" required autocomplete="off" class="form-control" id="email_reg"
+                                    <input type="email" autocomplete="off" class="form-control" id="email_reg"
                                         placeholder="Enter email" name="email">
                                 </div>
                                 <div class="form-group">
                                     <label for="pwd">Contraseña:</label>
-                                    <input type="password" required autocomplete="off" class="form-control" id="pwd_reg"
+                                    <input type="password" autocomplete="off" class="form-control" id="pwd_reg"
                                         placeholder="Ingrese contraseña" name="pswd">
                                 </div>
                                 <div class="form-group">
                                     <label for="pwd">Repita la Contraseña:</label>
-                                    <input type="password" required autocomplete="off" class="form-control"
+                                    <input type="password" autocomplete="off" class="form-control"
                                         id="pwd_repeat_reg" placeholder="Repita contraseña" name="pswd_rpt">
                                 </div>
                                 <button type="submit" class="btn btn-primary">Registrarse</button>
+                                </div>
                             </form>
                         </div>
                         <!-- </div> -->
@@ -513,6 +542,25 @@ function setDocumentsCounter() {
         // Limpiar el input y remover clases del contador
         ruc_reg.value = '';
         counter.classList.remove('warning', 'success', 'error');
+
+        // Limpiar nombre autocompletado y mensaje de estado
+        let name_reg = document.getElementById('name_reg');
+        if (name_reg) {
+            name_reg.value = '';
+            name_reg.readOnly = false;
+            name_reg.classList.remove('bg-light');
+        }
+
+        // Volver a ocultar los demás campos hasta nueva verificación
+        if (typeof hideRegisterFields === 'function') {
+            hideRegisterFields();
+        }
+        let status = document.getElementById('document_status');
+        if (status) {
+            status.style.display = 'none';
+            status.textContent = '';
+            status.className = 'd-block mt-1';
+        }
         if (select.value === 'dni') {
             ruc_reg.setAttribute('maxlength', '8');
             ruc_reg.setAttribute('placeholder', 'Ingrese su DNI');
@@ -542,58 +590,6 @@ document.addEventListener("DOMContentLoaded", () => {
     });
     setDocumentsCounter();
 });
-
-function hexToHSL(hex) {
-  let r = 0, g = 0, b = 0;
-
-  if (hex.length === 4) {
-    r = "0x" + hex[1] + hex[1];
-    g = "0x" + hex[2] + hex[2];
-    b = "0x" + hex[3] + hex[3];
-  } else if (hex.length === 7) {
-    r = "0x" + hex[1] + hex[2];
-    g = "0x" + hex[3] + hex[4];
-    b = "0x" + hex[5] + hex[6];
-  }
-
-  r /= 255;
-  g /= 255;
-  b /= 255;
-
-  const max = Math.max(r, g, b),
-        min = Math.min(r, g, b);
-  let h, s, l = (max + min) / 2;
-
-  if (max === min) {
-    h = s = 0; // gris
-  } else {
-    const d = max - min;
-    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-
-    switch (max) {
-      case r: h = (g - b) / d + (g < b ? 6 : 0); break;
-      case g: h = (b - r) / d + 2; break;
-      case b: h = (r - g) / d + 4; break;
-    }
-    h /= 6;
-  }
-
-  return [
-    Math.round(h * 360),
-    Math.round(s * 100) + "%",
-    Math.round(l * 100) + "%"
-  ];
-}
-
-fetch('/ecommerce/color-ecommerce')
-  .then(response => response.json())
-  .then(data => {
-    const hsl = hexToHSL(data.color);
-    document.documentElement.style.setProperty("--primary-h", hsl[0]);
-    document.documentElement.style.setProperty("--primary-s", hsl[1]);
-    document.documentElement.style.setProperty("--primary-l", hsl[2]);
-  })
-  .catch(error => console.error('Error obteniendo el color:', error));
 </script>
 
 
@@ -601,10 +597,13 @@ fetch('/ecommerce/color-ecommerce')
 @push('scripts')
 <!-- <script type="text/javascript" src="{{ asset('porto-ecommerce/assets/js/cart.js') }}"></script> -->
 <script type="text/javascript">
+    const SEARCH_DOC_URL = "{{ url('ecommerce/search-document') }}";
+
     matchPassword();
     submitLogin();
     submitRegister();
     changeDocument();
+    setupDocumentInput();
 
     function matchPassword() {
         var password = document.getElementById("pwd_reg"),
@@ -622,11 +621,35 @@ fetch('/ecommerce/color-ecommerce')
         confirm_password.onkeyup = validatePassword;
     }
 
+    function startButtonLoading(button, baseText) {
+        if (!button || !button.length) {
+            return function () {};
+        }
+
+        var originalHtml = button.html();
+        var dots = 0;
+
+        button.prop('disabled', true);
+        button.html(baseText);
+
+        var interval = setInterval(function () {
+            dots = (dots + 1) % 4; // 0,1,2,3 puntos
+            button.html(baseText + new Array(dots + 1).join('.'));
+        }, 350);
+
+        return function () {
+            clearInterval(interval);
+            button.prop('disabled', false);
+            button.html(originalHtml);
+        };
+    }
+
     function submitLogin() {
         $('#msg_login').hide();
 
         $('#form_login').submit(function (e) {
             e.preventDefault()
+            var stopLoading = startButtonLoading($(this).find('button[type="submit"]'), 'Ingresando');
             $.ajax({
                 type: "POST",
                 dataType: 'JSON',
@@ -639,10 +662,12 @@ fetch('/ecommerce/color-ecommerce')
                     if (data.success) {
                         location.reload();
                     } else {
+                        stopLoading();
                         $('#msg_login').show();
                     }
                 },
                 error: function (error_data) {
+                    stopLoading();
                     console.log(error_data)
                 }
             });
@@ -655,6 +680,7 @@ fetch('/ecommerce/color-ecommerce')
 
         $('#form_register').submit(function (e) {
             e.preventDefault()
+            var stopLoading = startButtonLoading($(this).find('button[type="submit"]'), 'Registrando');
             $.ajax({
                 type: "POST",
                 dataType: 'JSON',
@@ -667,11 +693,13 @@ fetch('/ecommerce/color-ecommerce')
                     if (data.success) {
                         location.reload();
                     } else {
+                        stopLoading();
                         $('#msg_register').show();
                         $('#msg_register_p').text(data.message)
                     }
                 },
                 error: function (error_data) {
+                    stopLoading();
                     console.log(error_data)
                 }
             });
@@ -686,43 +714,185 @@ fetch('/ecommerce/color-ecommerce')
             });
         }
     }
-    function inputDocument(){
+    function setupDocumentInput(){
         let ruc_reg = document.getElementById('ruc_reg');
         let counter = document.getElementById('counter');
+        let btnVerify = document.getElementById('btn_verify_document');
 
-        if (ruc_reg) {
-            ruc_reg.addEventListener('input', function() {
-                const currentLength = ruc_reg.value.length;
-                const maxLength = parseInt(ruc_reg.getAttribute('maxlength'));
+        if (!ruc_reg) return;
 
-                // Actualizar el texto del contador
-                counter.textContent = `${currentLength}/${maxLength}`;
+        ruc_reg.addEventListener('input', function() {
+            const maxLength = parseInt(ruc_reg.getAttribute('maxlength'));
 
-                // Remover clases previas
-                counter.classList.remove('warning', 'success', 'error');
+            // Limitar la longitud si excede el máximo (type=number ignora maxlength)
+            if (ruc_reg.value.length > maxLength) {
+                ruc_reg.value = ruc_reg.value.slice(0, maxLength);
+            }
 
-                // Agregar clase según el estado
-                if (currentLength === 0) {
-                    // Sin clase adicional para estado inicial
-                } else if (currentLength < maxLength * 0.5) {
-                    // Menos del 50% - sin clase especial
-                } else if (currentLength < maxLength) {
-                    counter.classList.add('warning');
-                } else if (currentLength === maxLength) {
-                    counter.classList.add('success');
-                } else {
-                    counter.classList.add('error');
+            const currentLength = ruc_reg.value.length;
+
+            // Actualizar el texto del contador
+            counter.textContent = `${currentLength}/${maxLength}`;
+
+            // El texto de ayuda solo se muestra cuando el campo está vacío (sin verificar)
+            toggleDocumentHint(currentLength === 0);
+
+            // Remover clases previas
+            counter.classList.remove('warning', 'success', 'error');
+
+            // Si el número cambia y ya no está completo, liberar el nombre bloqueado
+            if (currentLength !== maxLength) {
+                let name_reg = document.getElementById('name_reg');
+                if (name_reg && name_reg.readOnly) {
+                    name_reg.readOnly = false;
+                    name_reg.classList.remove('bg-light');
                 }
+            }
 
-                // Limitar la longitud si excede el máximo
-                if (currentLength > maxLength) {
-                    ruc_reg.value = ruc_reg.value.slice(0, maxLength);
-                    counter.textContent = `${maxLength}/${maxLength}`;
-                    counter.classList.remove('error');
-                    counter.classList.add('success');
-                }
+            // Agregar clase según el estado
+            if (currentLength === 0) {
+                resetDocumentStatus();
+                hideRegisterFields();
+            } else if (currentLength < maxLength * 0.5) {
+                // Menos del 50% - sin clase especial
+            } else if (currentLength < maxLength) {
+                counter.classList.add('warning');
+            } else if (currentLength === maxLength) {
+                counter.classList.add('success');
+                // Verificación automática al completar todos los dígitos
+                verifyDocument();
+            }
+        });
+
+        if (btnVerify) {
+            btnVerify.addEventListener('click', function() {
+                verifyDocument();
             });
         }
+    }
+
+    function toggleDocumentHint(show){
+        let hint = document.getElementById('document_hint');
+        if (!hint) return;
+        hint.classList.toggle('d-none', !show);
+        hint.classList.toggle('d-block', show);
+    }
+
+    function revealRegisterFields(){
+        let wrapper = document.getElementById('register-fields');
+        if (!wrapper) return;
+        wrapper.classList.add('is-visible');
+        toggleDocumentHint(false);
+        wrapper.querySelectorAll('input').forEach(function(input) {
+            if (input.id !== 'name_reg') {
+                input.setAttribute('required', 'required');
+            }
+        });
+        let name_reg = document.getElementById('name_reg');
+        if (name_reg) name_reg.setAttribute('required', 'required');
+    }
+
+    function hideRegisterFields(){
+        let wrapper = document.getElementById('register-fields');
+        if (!wrapper) return;
+        wrapper.classList.remove('is-visible');
+        toggleDocumentHint(true);
+        wrapper.querySelectorAll('input').forEach(function(input) {
+            input.removeAttribute('required');
+        });
+    }
+
+    function resetDocumentStatus(){
+        let status = document.getElementById('document_status');
+        if (status) {
+            status.style.display = 'none';
+            status.textContent = '';
+            status.className = 'd-block mt-1';
+        }
+    }
+
+    function setDocumentStatus(message, type){
+        let status = document.getElementById('document_status');
+        if (!status) return;
+        status.textContent = message;
+        status.className = 'd-block mt-1 ' + (type === 'error' ? 'text-danger' : (type === 'loading' ? 'text-muted' : 'text-success'));
+        status.style.display = 'block';
+    }
+
+    function setDocumentExistsStatus(message){
+        let status = document.getElementById('document_status');
+        if (!status) return;
+        status.className = 'd-block mt-2 alert alert-warning p-3 h4 font-weight-normal';
+        status.innerHTML =
+            '<div class="d-flex align-items-start" style="gap:8px;">' +
+                '<i class="ti ti-info-circle" style="font-size:18px;line-height:1.4;"></i>' +
+                '<div><span>' + message + '</span>' +
+                '<a href="#" id="go_to_login" class="fw-bold text-primary"> Iniciar sesión</a></div>' +
+            '</div>';
+        status.style.display = 'block';
+
+        let goToLogin = document.getElementById('go_to_login');
+        if (goToLogin) {
+            goToLogin.addEventListener('click', function(e) {
+                e.preventDefault();
+                let container = document.getElementById('contenedor-form');
+                if (container) container.classList.remove('active');
+            });
+        }
+    }
+
+    function verifyDocument(){
+        let ruc_reg = document.getElementById('ruc_reg');
+        let name_reg = document.getElementById('name_reg');
+        let btnVerify = document.getElementById('btn_verify_document');
+        if (!ruc_reg) return;
+
+        const number = ruc_reg.value.trim();
+        const maxLength = parseInt(ruc_reg.getAttribute('maxlength'));
+
+        if (number.length !== maxLength) {
+            setDocumentStatus(`Ingrese los ${maxLength} dígitos del documento.`, 'error');
+            return;
+        }
+
+        setDocumentStatus('Consultando...', 'loading');
+        if (btnVerify) btnVerify.disabled = true;
+
+        fetch(`${SEARCH_DOC_URL}/${number}`, {
+            headers: { 'Accept': 'application/json' }
+        })
+            .then(res => res.json())
+            .then(data => {
+                if (data.exists) {
+                    hideRegisterFields();
+                    name_reg.value = '';
+                    name_reg.readOnly = false;
+                    name_reg.classList.remove('bg-light');
+                    setDocumentExistsStatus(data.message);
+                    return;
+                }
+
+                if (data.success && data.name) {
+                    name_reg.value = data.name;
+                    name_reg.readOnly = true;
+                    name_reg.classList.add('bg-light');
+                    setDocumentStatus('✓ ' + data.name, 'success');
+                } else {
+                    name_reg.readOnly = false;
+                    name_reg.classList.remove('bg-light');
+                    setDocumentStatus(data.message || 'No se encontraron datos. Ingrese el nombre manualmente.', 'error');
+                }
+                revealRegisterFields();
+            })
+            .catch(() => {
+                name_reg.readOnly = false;
+                name_reg.classList.remove('bg-light');
+                setDocumentStatus('No se pudo consultar. Ingrese el nombre manualmente.', 'error');
+                revealRegisterFields();
+            })
+            .finally(() => {
+                if (btnVerify) btnVerify.disabled = false;
+            });
     }
 
     document.addEventListener("DOMContentLoaded", function () {

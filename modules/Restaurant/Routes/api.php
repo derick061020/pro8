@@ -21,6 +21,8 @@ if ($hostname) {
         Route::middleware(['auth:api', 'locked.tenant'])->group(function() {
 
             Route::prefix('restaurant')->group(function () {
+
+                Route::get('/initial-data', 'RestaurantController@initialData');
                 Route::get('/items', 'RestaurantController@items');
                 Route::post('/items/price', 'RestaurantController@savePrice');
                 Route::post('/items/restaurant-favorite', 'RestaurantController@setRestaurantFavoriteItem');

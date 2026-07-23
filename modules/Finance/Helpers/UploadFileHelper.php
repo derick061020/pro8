@@ -309,6 +309,17 @@ class UploadFileHelper
                 $constraint->upsize();
             });
 
+            if (self::imageSupportsTransparency($absolutePath)) {
+                $encoded = (string) $image->encode('png');
+                if ($encoded === '') return null;
+
+                return [
+                    'bytes' => $encoded,
+                    'quality' => 100,
+                    'extension' => 'png',
+                ];
+            }
+
             $bestBytes = '';
             $bestQuality = $qualityStart;
 
@@ -330,11 +341,25 @@ class UploadFileHelper
             return [
                 'bytes' => $bestBytes,
                 'quality' => $bestQuality,
+                'extension' => 'jpg',
             ];
         } catch (Exception $e) {
             self::writeErrorLog($e, 'optimizeRasterImageToTargetJpg');
             return null;
         }
+    }
+
+    /**
+     * Indica si el archivo es de un formato que puede contener transparencia (canal alfa).
+     * Se usa para conservar el logo como PNG y no aplanar la transparencia al convertir a JPG.
+     */
+    public static function imageSupportsTransparency(string $absolutePath): bool
+    {
+        $mime = @mime_content_type($absolutePath) ?: '';
+
+        return str_contains($mime, 'png')
+            || str_contains($mime, 'webp')
+            || str_contains($mime, 'gif');
     }
     
     /**

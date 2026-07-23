@@ -26,6 +26,9 @@ class PaymentConfiguration extends ModelTenant
         'password_izipay',
         'publickey_izipay',
         'sha256key_izipay',
+        'enabled_mp',
+        'access_token_mp',
+        'public_key_mp'
     ];
 
     protected $hidden = [
@@ -128,15 +131,30 @@ class PaymentConfiguration extends ModelTenant
             ->select('username_izipay', 'password_izipay', 'publickey_izipay', 'sha256key_izipay')->first()->toArray();
     }
 
-    public function scopeEnabledCheckout($query)
+    /**
+     * Devuelve la pasarela de pago habilitada ('izipay'|'culqi'|'mercadopago') o null si no hay ninguna.
+     */
+    public static function enabledCheckout()
     {
-        $record = $query->where('enabled_izipay', true)->first();
+        $record = static::query()->select('enabled_izipay', 'enabled_culqi', 'enabled_mp')->first();
 
-        if ($record) {
+        if (! $record) {
+            return null;
+        }
+
+        if ($record->enabled_izipay) {
             return 'izipay';
         }
 
-        return 'culqi';
+        if ($record->enabled_culqi) {
+            return 'culqi';
+        }
+
+        if ($record->enabled_mp) {
+            return 'mercadopago';
+        }
+
+        return null;
     }
 
     public function scopeGetPublicKey($query)

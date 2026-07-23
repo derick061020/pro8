@@ -15,12 +15,15 @@ use Illuminate\Support\Str;
 use App\Models\Tenant\Order;
 use App\Models\Tenant\ItemsRating;
 use App\Models\Tenant\ConfigurationEcommerce;
+use App\Models\Tenant\StatusOrder;
 use Modules\Ecommerce\Http\Resources\ItemBarCollection;
 use stdClass;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\Tenant\CulqiEmail;
 use App\Http\Controllers\Tenant\Api\ServiceController;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Cache;
+use Hyn\Tenancy\Contracts\CurrentHostname;
 use Modules\Inventory\Models\InventoryConfiguration;
 use App\Http\Resources\Tenant\OrderCollection;
 use App\Models\Tenant\Promotion;
@@ -36,6 +39,7 @@ use Modules\Ecommerce\Models\Tenant\PickupBranch;
 use App\Models\Tenant\PersonAddress;
 
 use App\Models\System\Configuration as SystemConfiguration;
+use Modules\Ecommerce\Jobs\SendOrderStatusEmail;
 
 
 class EcommerceController extends Controller
@@ -87,6 +91,8 @@ class EcommerceController extends Controller
         // Obtener el modelo Company para meta tags y descripción
         $company = \App\Models\Tenant\Company::first();
 
+        $order = request()->get('order');
+
         // Query base
         $query = Item::where([['apply_store', 1], ['internal_id', '!=', null]]);
 
@@ -95,12 +101,35 @@ class EcommerceController extends Controller
             $query->where('stock', '>', 0);
         }
 
-        $dataPaginate = $query->orderBy('created_at', 'DESC')
-            ->category($category ? $category->id : null)
-            ->paginate(8);
+        // Ordenamiento de productos (issue #151)
+        switch ($order) {
+            case 'name_asc':
+                $query->orderBy('description', 'asc');
+                break;
+            case 'name_desc':
+                $query->orderBy('description', 'desc');
+                break;
+            case 'price_asc':
+                $query->orderBy('sale_unit_price', 'asc');
+                break;
+            case 'price_desc':
+                $query->orderBy('sale_unit_price', 'desc');
+                break;
+            default:
+                $query->orderBy('created_at', 'DESC');
+                break;
+        }
+
+        // Cantidad de productos por página (configurable, por defecto 16)
+        $perPage = isset($preferences['products_per_page']) && in_array((int) $preferences['products_per_page'], [8, 12, 16, 24, 32, 40])
+            ? (int) $preferences['products_per_page']
+            : 16;
+
+        $dataPaginate = $query->category($category ? $category->id : null)
+            ->paginate($perPage);
 
         $configuration = InventoryConfiguration::first();
-        $categories = Category::get();
+        $categories_filtered = Category::has('items')->get();
 
         // Obtener los anuncios publicitarios (spots) activos
         $spots = Promotion::where('apply_restaurant', 0)
@@ -122,8 +151,70 @@ class EcommerceController extends Controller
             'preferences' => $preferences,
             'ecommerceDescription' => $ecommerceDescription,
             'company' => $company,
-            'customLinks' => $customLinks
-        ])->with('categories', $categories);
+            'customLinks' => $customLinks,
+            'category' => $category,
+            'categories' => $categories_filtered,
+            'categories_list' => $categories_filtered
+        ]);
+    }
+
+    /**
+     * Genera el sitemap XML del ecommerce para mejorar el SEO.
+     * Incluye: home, páginas informativas, categorías con productos y
+     * todos los productos publicados (apply_store = 1).
+     */
+    public function sitemap()
+    {
+        $urls = [];
+
+        $urls[] = [
+            'loc'      => route('tenant.ecommerce.index'),
+            'lastmod'  => null,
+            'priority' => '1.0',
+        ];
+
+        $staticRoutes = [
+            'tenant_ecommerce_about_us',
+            'tenant_ecommerce_terms_conditions',
+            'tenant_ecommerce_privacy_policy',
+        ];
+        foreach ($staticRoutes as $name) {
+            $urls[] = [
+                'loc'      => route($name),
+                'lastmod'  => null,
+                'priority' => '0.5',
+            ];
+        }
+
+        $categories = Category::has('items')->get();
+        foreach ($categories as $category) {
+            $slug = Str::slug($category->name, '-');
+            if ($slug === '') {
+                continue;
+            }
+            $urls[] = [
+                'loc'      => route('tenant.ecommerce.category', $slug),
+                'lastmod'  => optional($category->updated_at)->format('Y-m-d'),
+                'priority' => '0.6',
+            ];
+        }
+
+        $items = Item::where([['apply_store', 1], ['internal_id', '!=', null]])
+            ->select('id', 'description', 'updated_at')
+            ->orderBy('id', 'DESC')
+            ->get();
+        foreach ($items as $item) {
+            $slug = Str::slug($item->description);
+            $urls[] = [
+                'loc'      => route('tenant.ecommerce.item', ['id' => $item->id, 'slug' => $slug]),
+                'lastmod'  => optional($item->updated_at)->format('Y-m-d'),
+                'priority' => '0.8',
+            ];
+        }
+
+        return response()
+            ->view('ecommerce::sitemap', ['urls' => $urls])
+            ->header('Content-Type', 'application/xml');
     }
 
     // public function category(Request $request)
@@ -143,10 +234,27 @@ class EcommerceController extends Controller
         return "{$item->description} - {$promotion->name}";
     }
 
-    public function item($slug, $promotion_id = null)
+    public function item(Request $request, $id, $slug = null)
     {
-        $id = (int) $slug;
+        $id = (int) $id;
         $row = Item::find($id);
+
+        if (!$row) {
+            abort(404);
+        }
+
+        $promotion_id = $request->query('promotion');
+
+        $canonical_slug = Str::slug($row->description);
+
+        if ($canonical_slug !== '' && $slug !== $canonical_slug) {
+            $params = ['id' => $id, 'slug' => $canonical_slug];
+            if ($promotion_id) {
+                $params['promotion'] = $promotion_id;
+            }
+            return redirect()->route('tenant.ecommerce.item', $params, 301);
+        }
+
         $exchange_rate_sale = $this->getExchangeRateSale();
         $sale_unit_price = ($row->has_igv) ? $row->sale_unit_price : $row->sale_unit_price*1.18;
 
@@ -177,7 +285,7 @@ class EcommerceController extends Controller
             'attributes' => $row->attributes ? $row->attributes : [],
             'promotion_id' => $promotion_id,
         ];
-        $categories = \Modules\Item\Models\Category::get();
+        $categories = \Modules\Item\Models\Category::has('items')->get();
         return view('ecommerce::items.record', compact('record', 'categories'));
     }
 
@@ -204,7 +312,7 @@ class EcommerceController extends Controller
     public function detailCart()
     {
         $configuration = ConfigurationEcommerce::first();
-        $categories = \Modules\Item\Models\Category::get();
+        $categories = \Modules\Item\Models\Category::has('items')->get();
 
         // Obtener el tipo de descuento global configurado (02 afecta la base, 03 no afecta)
         $systemConfig = Configuration::with('globalDiscountType')->first();
@@ -242,7 +350,7 @@ class EcommerceController extends Controller
     {
         if (auth('ecommerce')->user()) {
             $configuration = ConfigurationEcommerce::first();
-            $categories = \Modules\Item\Models\Category::get();
+            $categories = \Modules\Item\Models\Category::has('items')->get();
             return view('ecommerce::document_list.order', compact('configuration', 'categories'));
         } else {
             return redirect('ecommerce');
@@ -252,7 +360,7 @@ class EcommerceController extends Controller
     public function documentList()
     {
         if (auth('ecommerce')->user()) {
-            $categories = \Modules\Item\Models\Category::get();
+            $categories = \Modules\Item\Models\Category::has('items')->get();
             return view('ecommerce::document_list.document', compact('categories'));
         } else {
             return redirect('ecommerce');
@@ -684,19 +792,28 @@ class EcommerceController extends Controller
                 }
 
                 $user = auth('ecommerce')->user();
-                $order = Order::create([
-                'external_id' => Str::uuid()->toString(),
-                'customer' =>  $request->customer,
-                'shipping_address' => $request->input('shipping_address', ''),
-                'items' =>  $request->items,
-                'total' => $request->precio_culqi,
-                'reference_payment' => $request->input('reference_payment', 'efectivo'),
-                'status_order_id' => 1,
-                'purchase' => $request->purchase
-              ]);
 
-            // Si se envía cupón en la petición, aplicarlo inmediatamente
-            try {
+                $initialOrderStatus = StatusOrder::where('is_order_status', true)->where('is_initial', true)->orderBy('sort_order')->first()
+                    ?: StatusOrder::where('is_order_status', true)->orderBy('sort_order')->first();
+                $initialStatusId = $initialOrderStatus ? $initialOrderStatus->id : null;
+
+                $initialPaymentStatus = StatusOrder::where('is_payment_status', true)->where('is_initial', true)->orderBy('sort_order')->first()
+                    ?: StatusOrder::where('is_payment_status', true)->orderBy('sort_order')->first();
+                $initialPaymentStatusId = $initialPaymentStatus ? $initialPaymentStatus->id : null;
+
+                $order = Order::create([
+                    'external_id' => Str::uuid()->toString(),
+                    'customer' =>  $request->customer,
+                    'shipping_address' => $request->input('shipping_address', ''),
+                    'items' =>  $request->items,
+                    'total' => $request->precio_culqi,
+                    'reference_payment' => $request->input('reference_payment', 'efectivo'),
+                    'status_order_id' => $initialStatusId,
+                    'payment_status_order_id' => $initialPaymentStatusId,
+                    'purchase' => $request->purchase
+                ]);
+
+                // Si se envía cupón en la petición, aplicarlo inmediatamente
                 if ($request->discount_coupon_code || $request->discount_coupon_id) {
                     $coupon = null;
                     if ($request->discount_coupon_id) {
@@ -747,33 +864,39 @@ class EcommerceController extends Controller
                         }
                     }
                 }
-            } catch(\Exception $e) {
-                // No interrumpir el proceso por errores de cupón
+
+                // Encolar notificación por correo si el estado inicial lo requiere
+                if ($initialOrderStatus && ($initialOrderStatus->action_send_email ?? false)) {
+                    dispatch(new SendOrderStatusEmail(
+                        $order->id,
+                        $initialOrderStatus->id,
+                        $this->buildOrderListUrl()
+                    ));
+                }
+
+                $customer_email = $user->email;
+                $document = new stdClass;
+                $document->client = $user->name;
+                $document->product = $request->producto;
+                $document->total = $request->precio_culqi;
+                $document->items = $request->items;
+
+                $this->paymentCashEmail($customer_email, $document);
+
+                //Mail::to($customer_email)->send(new CulqiEmail($document));
+                return [
+                    'success' => true,
+                    'order' => $order
+                ];
+
+            }catch(Exception $e)
+            {
+                return [
+                    'success' => false,
+                    'message' =>  $e->getMessage()
+                ];
             }
-
-            $customer_email = $user->email;
-            $document = new stdClass;
-            $document->client = $user->name;
-            $document->product = $request->producto;
-            $document->total = $request->precio_culqi;
-            $document->items = $request->items;
-
-            $this->paymentCashEmail($customer_email, $document);
-
-            //Mail::to($customer_email)->send(new CulqiEmail($document));
-            return [
-                'success' => true,
-                'order' => $order
-            ];
-
-        }catch(Exception $e)
-        {
-            return [
-                'success' => false,
-                'message' =>  $e->getMessage()
-            ];
         }
-      }
     }
 
     public function paymentCashEmail($customer_email, $document)
@@ -852,15 +975,62 @@ class EcommerceController extends Controller
 
     }
 
+    public function account()
+    {
+        if (auth('ecommerce')->user()) {
+            $identity_document_types = \App\Models\Tenant\Catalogs\IdentityDocumentType::whereActive()->get();
+            $categories = \Modules\Item\Models\Category::get();
+            return view('ecommerce::document_list.account', compact('identity_document_types', 'categories'));
+        } else {
+            return redirect('ecommerce');
+        }
+    }
+
     public function saveDataUser(Request $request)
     {
         $user = auth('ecommerce')->user();
-        if ($request->address) {
-            $user->address = $request->address;
+        
+        $validator = Validator::make($request->all(), [
+            'email' => 'required|email',
+            'first_name' => 'required|string|max:255',
+            'paternal_last_name' => 'required|string|max:255',
+            'maternal_last_name' => 'nullable|string|max:255',
+            'telephone' => 'nullable|string',
+            'address' => 'nullable|string',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => $validator->errors()->first()
+            ]);
         }
-        if ($user->telephone = $request->telephone) {
-            $user->telephone = $request->telephone;
+
+        // Check unique email manually to avoid tenant DB connection issues with generic Validator
+        $verifyEmail = \App\Models\Tenant\Person::where('email', $request->email)
+            ->where('id', '!=', $user->id)
+            ->first();
+
+        if ($verifyEmail) {
+            return response()->json([
+                'success' => false,
+                'message' => 'El correo electrónico ya está registrado por otro usuario.'
+            ]);
         }
+
+        $fullName = trim($request->first_name . ' ' . $request->paternal_last_name . ' ' . $request->maternal_last_name);
+        $user->name = $fullName;
+        $user->email = $request->email;
+        $user->telephone = $request->telephone;
+
+        $contact = $user->contact ? (array)$user->contact : [];
+        $contact['first_name'] = $request->first_name;
+        $contact['paternal_last_name'] = $request->paternal_last_name;
+        $contact['maternal_last_name'] = $request->maternal_last_name;
+        $contact['date_of_birth'] = $request->date_of_birth;
+        $contact['gender'] = $request->gender;
+
+        $user->contact = $contact;
 
         $user->save();
 
@@ -886,13 +1056,76 @@ class EcommerceController extends Controller
             );
         }
 
-        return ['success' => true];
+        return ['success' => true, 'message' => 'Datos actualizados correctamente'];
 
     }
 
     public function searchDocument($type, $number)
     {
         return (new ServiceData)->service($type, $number);
+    }
+
+    /**
+     * Construye la URL absoluta de la lista de pedidos usando el hostname del tenant activo en la request.
+     */
+    private function buildOrderListUrl(): string
+    {
+        $hostname = app(CurrentHostname::class);
+        $fqdn     = $hostname ? $hostname->fqdn : config('app.url');
+        $protocol = config('tenant.force_https') ? 'https' : 'http';
+        return "{$protocol}://{$fqdn}/ecommerce/order_list";
+    }
+
+    /**
+     * Consulta pública de RUC/DNI para autocompletar el nombre / razón social
+     * en el formulario de registro del ecommerce (invitados, sin auth).
+     */
+    public function searchDocumentPublic($number)
+    {
+        $number = preg_replace('/\D/', '', (string) $number);
+
+        if (strlen($number) === 8) {
+            $type = 'dni';
+        } elseif (strlen($number) === 11) {
+            $type = 'ruc';
+        } else {
+            return [
+                'success' => false,
+                'message' => 'El número debe tener 8 dígitos (DNI) u 11 dígitos (RUC).',
+            ];
+        }
+
+        $exists = Person::where('number', $number)->exists();
+
+        if ($exists) {
+            return [
+                'success' => false,
+                'exists' => true,
+                'message' => 'Este documento ya está registrado. Si no tienes acceso a tu cuenta, comunícate con la tienda para recuperarlo o',
+            ];
+        }
+
+        try {
+            $result = $this->searchDocument($type, $number);
+        } catch (\Throwable $e) {
+            return [
+                'success' => false,
+                'message' => 'No se pudo consultar el documento. Intente nuevamente.',
+            ];
+        }
+
+        if (empty($result['success'])) {
+            return [
+                'success' => false,
+                'message' => $result['message'] ?? 'Datos no encontrados.',
+            ];
+        }
+
+        return [
+            'success' => true,
+            'type' => $type,
+            'name' => $result['data']['name'] ?? '',
+        ];
     }
 
     public function getGoogleMaps()
@@ -948,15 +1181,41 @@ class EcommerceController extends Controller
     {
         $config = \App\Models\Tenant\ConfigurationEcommerce::first();
         $terms_conditions = $config ? $config->terms_conditions : null;
-        $categories = \Modules\Item\Models\Category::get();
+        $categories = \Modules\Item\Models\Category::has('items')->get();
         return view('ecommerce::pages_fields.terms_conditions', compact('terms_conditions', 'categories'));
+    }
+
+    public function thankYou($external_id)
+    {
+        $order = Order::where('external_id', $external_id)->firstOrFail();
+        $categories = \Modules\Item\Models\Category::has('items')->get();
+
+        $paymentLabels = [
+            'efectivo'      => 'Efectivo',
+            'yape'          => 'Yape',
+            'transferencia' => 'Transferencia',
+            'culqi'         => 'Tarjeta (VISA)',
+            'paypal'        => 'PayPal',
+        ];
+        $refPayment   = strtolower($order->reference_payment ?? 'efectivo');
+        $paymentLabel = $paymentLabels[$refPayment] ?? ucfirst($refPayment);
+
+        $shipping      = $order->shipping_address ?? '';
+        $isPickup      = stripos($shipping, 'Recojo en tienda') === 0;
+        $deliveryLabel = $isPickup ? $shipping : 'Envío a domicilio';
+
+        $itemsCount = is_countable($order->items) ? count($order->items) : 0;
+
+        return view('ecommerce::cart.thank_you', compact(
+            'order', 'categories', 'paymentLabel', 'deliveryLabel', 'isPickup', 'itemsCount'
+        ));
     }
 
     public function privacyPolicy()
     {
         $config = \App\Models\Tenant\ConfigurationEcommerce::first();
         $privacy_policy = $config ? $config->privacy_policy : null;
-        $categories = \Modules\Item\Models\Category::get();
+        $categories = \Modules\Item\Models\Category::has('items')->get();
         return view('ecommerce::pages_fields.privacy_policy', compact('privacy_policy', 'categories'));
     }
 
@@ -964,7 +1223,7 @@ class EcommerceController extends Controller
     {
         $config = \App\Models\Tenant\ConfigurationEcommerce::first();
         $about_us = $config ? $config->about_us : null;
-        $categories = \Modules\Item\Models\Category::get();
+        $categories = \Modules\Item\Models\Category::has('items')->get();
         return view('ecommerce::pages_fields.about_us', compact('about_us', 'categories'));
     }
 

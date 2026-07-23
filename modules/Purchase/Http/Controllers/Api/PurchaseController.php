@@ -152,14 +152,27 @@ class PurchaseController extends Controller
         $this->setFilename($purchase);
         $this->createPdf($purchase, "a4", $purchase->filename);
 
+        $supplier = $purchase->supplier;
+
         return [
             'success' => true,
             'data' => [
-                'id' => $purchase->id,
-                'number_full' => "{$purchase->series}-{$purchase->number}",
-                'external_id' => $purchase->external_id,
-                'filename' => $purchase->filename,
-                'print_a4' => $purchase->getUrlPrintPdf(),
+                'id'                     => $purchase->id,
+                'state_type_id'          => $purchase->state_type_id,
+                'state_type_description' => $purchase->state_type?->description,
+                'number_full'            => $purchase->number_full,
+                'external_id'            => $purchase->external_id,
+                'filename'               => $purchase->filename,
+                'supplier' => [
+                    'id'     => $purchase->supplier_id,
+                    'name'   => $supplier?->name,
+                    'number' => $supplier?->number,
+                    'email'  => $supplier?->email ?? null,
+                    'phone'  => $supplier?->telephone ?? null,
+                ],
+                'total'        => (float) $purchase->total,
+                'print_a4'     => $purchase->getUrlPrintPdf('a4'),
+                'print_ticket' => $purchase->getUrlPrintPdf('ticket'),
             ],
         ];
     }
@@ -281,7 +294,7 @@ class PurchaseController extends Controller
 
             case 'items':
 
-                $items = Item::whereNotIsSet()->whereIsActive()->orderBy('description')->get(); //whereWarehouse()
+                $items = Item::whereNotIsSet()->whereIsActive()->orderBy('description')->limit(2)->get(); //whereWarehouse()
                 return collect($items)->transform(function($row) {
                     $full_description = ($row->internal_id)?$row->internal_id.' - '.$row->description:$row->description;
                     return [

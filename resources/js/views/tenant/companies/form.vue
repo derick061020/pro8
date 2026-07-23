@@ -95,7 +95,7 @@
                                                 </el-button>
                                             </div>
                                         </div>
-                                        <div 
+                                        <div
                                             v-else
                                             class="d-flex flex-column justify-content-center align-items-center gap-2 p-2 drop-zone"
                                             :class="{'drop-zone-active': isDraggingLogo}"
@@ -119,7 +119,7 @@
                                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-upload" style="margin-top: -2px"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2 -2v-2" /><path d="M7 9l5 -5l5 5" /><path d="M12 4l0 12" /></svg>
                                                 Seleccionar imagen
                                             </el-button>
-                                        </div>                                       
+                                        </div>
                                     </div>
                                     <input
                                         type="file"
@@ -131,7 +131,7 @@
                                     <div class="d-flex justify-content-between align-items-center mt-2">
                                         <div class="sub-title text-muted">
                                             <small>Se recomienda resoluciones 700x300</small>
-                                        </div>                                        
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -170,7 +170,7 @@
                                                 </el-button>
                                             </div>
                                         </div>
-                                        <div 
+                                        <div
                                             v-else
                                             class="d-flex flex-column justify-content-center align-items-center gap-2 p-2 drop-zone"
                                             :class="{'drop-zone-active': isDraggingLogoDark}"
@@ -194,7 +194,7 @@
                                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-upload" style="margin-top: -2px"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2 -2v-2" /><path d="M7 9l5 -5l5 5" /><path d="M12 4l0 12" /></svg>
                                                 Seleccionar imagen
                                             </el-button>
-                                        </div> 
+                                        </div>
                                     </div>
                                     <input
                                         type="file"
@@ -246,7 +246,7 @@
                                                 </el-button>
                                             </div>
                                         </div>
-                                        <div 
+                                        <div
                                             v-else
                                             class="d-flex flex-column justify-content-center align-items-center gap-2 p-2 drop-zone"
                                             :class="{'drop-zone-active': isDraggingFavicon}"
@@ -281,7 +281,7 @@
                                     />
                                     <div class="sub-title text-muted mt-2"><small>Se recomienda una imagen con fondo transparente y cuadrada en PNG</small></div>
                                 </div>
-                            </div>                            
+                            </div>
 
                             <div class="col-md-6 mt-3">
                                 <div class="form-group">
@@ -319,7 +319,7 @@
                                                 </el-button>
                                             </div>
                                         </div>
-                                        <div 
+                                        <div
                                             v-else
                                             class="d-flex flex-column justify-content-center align-items-center gap-2 p-2 drop-zone"
                                             :class="{'drop-zone-active': isDraggingAppLogo}"
@@ -370,7 +370,7 @@
                                     </el-input>
                                     <div class="sub-title text-danger"><small>Se recomienda resoluciones 700x300</small></div>
                                 </div>
-                            </div> -->                                                                                                                
+                            </div> -->
 
                             <div v-if="form.soap_type_id == '02'"
                                  class="col-md-6">
@@ -586,7 +586,6 @@
         </div>
         <TokenRucDni></TokenRucDni>
         <SireConfiguration></SireConfiguration>
-        <tenant-qr-chat></tenant-qr-chat>
     </div>
 </template>
 
@@ -903,7 +902,7 @@ export default {
                     : (type === 'logo_dark'
                         ? 'loading_delete_logo_dark'
                         : (type === 'favicon' ? 'loading_delete_favicon' : 'loading_delete_app_logo'));
-                
+
                 this[loadingVar] = true;
 
                 this.$http.delete('/companies/delete-logo', {
@@ -963,7 +962,7 @@ export default {
         onDrop(event, type) {
             event.preventDefault()
             event.stopPropagation()
-            
+
             if (type === 'logo') this.isDraggingLogo = false
             if (type === 'logo_dark') this.isDraggingLogoDark = false
             if (type === 'favicon') this.isDraggingFavicon = false
@@ -973,13 +972,13 @@ export default {
             if (!files || !files.length) return
 
             const file = files[0]
-            
+
             // Validar tipo de archivo
             if (type === 'favicon' && !file.type.startsWith('image/png')) {
                 this.$message.error('Solo se permiten archivos PNG para el favicon')
                 return
             }
-            
+
             if (type !== 'favicon' && !file.type.startsWith('image/')) {
                 this.$message.error('Solo se permiten archivos de imagen')
                 return

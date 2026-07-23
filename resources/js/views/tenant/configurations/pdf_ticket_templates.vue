@@ -17,7 +17,7 @@
         <div class="card tab-content-default row-new">
             <div class="card-body pb-5">
                 <h5> <i class="fa fa-info-circle"></i>  Seleccione un sucursal para ver su plantilla</h5>
-                <div class="row">
+                <div class="row mx-0">
                     <div class="col-3 form-modern">
                         <label class="control-label">Sucursal</label>
                         <el-select v-model="form.establishment_id"
@@ -220,6 +220,7 @@ export default {
     props: [
         'path_image',
         'typeUser',
+        'establishmentId',
         'establishments'
     ],
 
@@ -239,13 +240,41 @@ export default {
         }
     },
     async created() {
-        await this.$http.get(`/${this.resource}/templates/ticket/records`).then(response => {
-            if (response.data !== '') this.formatos = response.data.formats
-        });
+        try {
+            await this.$http.all([
+                this.$http.get(`/${this.resource}/templates/ticket/refresh`),
+                this.$http.get(`/${this.resource}/addSeeder`)
+            ]);
+        } catch (e) {
+            console.error(e);
+        }
 
-        console.log(this.establishments[0]);
+        await this.getRecords();
+
+        this.selectCurrentEstablishment();
     },
     methods: {
+        getRecords() {
+            return this.$http.get(`/${this.resource}/templates/ticket/records`).then(response => {
+                if (response.data !== '') this.formatos = response.data.formats
+            });
+        },
+        selectCurrentEstablishment() {
+            let current = null;
+            if (this.establishmentId) {
+                current = _.find(this.establishments, { 'id': this.establishmentId });
+            }
+            if (!current && this.establishments.length) {
+                current = this.establishments[0];
+            }
+            if (current) {
+                this.form = {
+                    ...this.form,
+                    establishment_id: current.id,
+                    current_format: current.template_ticket_pdf
+                };
+            }
+        },
         changeFormat(value) {
             this.modalImage = false
             this.form = {

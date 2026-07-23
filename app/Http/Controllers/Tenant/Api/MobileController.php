@@ -10,6 +10,7 @@ use App\Models\Tenant\User;
 use Illuminate\Http\Request;
 use App\Models\Tenant\Person;
 use App\Models\Tenant\Series;
+use App\Services\SeriesResolver;
 use App\Models\Tenant\Company;
 use App\Models\Tenant\PaymentMethodType;
 use App\Models\Tenant\Document;
@@ -115,7 +116,7 @@ class MobileController extends Controller
                 'name' => $row->name,
                 'number' => $row->number,
                 'identity_document_type_id' => $row->identity_document_type_id,
-                'identity_document_type_code' => $row->identity_document_type->code,                
+                'identity_document_type_code' => $row->identity_document_type->code,
                 'identity_document_type_description' => $row->identity_document_type->description,
                 'address' => $row->address,
                 'telephone' => $row->telephone,
@@ -209,6 +210,7 @@ class MobileController extends Controller
                                     'stock' => $row->stock,
                                 ];
                             }),
+                            'favorite' => (bool) $row->favorite,
                         ];
                     });
 
@@ -228,9 +230,10 @@ class MobileController extends Controller
     public function getSeries()
     {
 
-        return Series::where('establishment_id', auth()->user()->establishment_id)
+        return app(SeriesResolver::class)->applyContext(
+                    Series::where('establishment_id', auth()->user()->establishment_id)
                     ->whereIn('document_type_id', ['01', '03', '09', '31'])
-                    ->get()
+                )->get()
                     ->transform(function($row) {
                         return $row->getApiRowResource();
                     });
@@ -240,7 +243,7 @@ class MobileController extends Controller
     public function getSeriesDispatch()
     {
 
-        return Series::whereIn('document_type_id', ['09', '31'])
+        return app(SeriesResolver::class)->applyContext(Series::whereIn('document_type_id', ['09', '31']))
                     ->get()
                     ->transform(function($row) {
                         return $row->getApiRowResource();
@@ -371,6 +374,7 @@ class MobileController extends Controller
                 'has_igv' => (bool) $row->has_igv,
                 'is_set' => (bool) $row->is_set,
                 'aux_quantity' => 1,
+                'favorite' => (bool) $row->favorite,
             ],
         ];
 
@@ -531,6 +535,7 @@ class MobileController extends Controller
                             'has_isc' => (bool)$row->has_isc,
                             'system_isc_type_id' => $row->system_isc_type_id,
                             'percentage_isc' => $row->percentage_isc,
+                            'favorite' => (bool) $row->favorite,
                         ];
                     });
 

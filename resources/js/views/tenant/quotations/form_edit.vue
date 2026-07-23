@@ -47,8 +47,7 @@
                                                    :label="option.description"></el-option>
 
                                     </el-select>
-                                    <small class="form-control-feedback" v-if="errors.customer_id"
-                                           v-text="errors.customer_id[0]"></small>
+
                                 </div>
                                 <div v-if="customer_addresses.length > 0" class="form-group">
                                     <label class="control-label font-weight-bold text-info">Dirección</label>
@@ -218,9 +217,12 @@
 
 
                             </div>
+                            <custom-fields-renderer
+                                ref="customFieldsRenderer"
+                                document-type="quotations"
+                                :form-data.sync="form.custom_fields_data">
+                            </custom-fields-renderer>
                         </div>
-
-
                         <div class="row mt-2">
                             <div class="col-md-12">
                                 <el-collapse v-model="activePanel" accordion>
@@ -648,10 +650,10 @@ import {mapActions, mapState} from "vuex/dist/vuex.mjs";
 import { editableRowItems } from '@mixins/editable-row-items'
 import ItemSearchQuickSale from '@components/items/ItemSearchQuickSale.vue'
 import PackItemDescription from '@components/items/PackItemDescription.vue'
-
+import CustomFieldsRenderer from '@viewsModuleCustomField/custom_fields/custom_field_renderer.vue';
 
 export default {
-    components: {QuotationFormItem, PersonForm, QuotationOptions, Logo, TermsCondition, ItemSearchQuickSale, PackItemDescription},
+    components: {QuotationFormItem, PersonForm, QuotationOptions, Logo, TermsCondition, ItemSearchQuickSale, PackItemDescription, CustomFieldsRenderer},
     props: {
         'resourceId': {
             required: true,
@@ -941,6 +943,7 @@ export default {
                     // this.form.items = dato.items
                     this.form.payments = dato.payments
                     this.form.referential_information = dato.referential_information
+                    this.form.custom_fields_data = dato.custom_fields_data || {}
                     this.changeCustomer()
                     this.form.customer_address_id = dato.customer.address_id
 
@@ -1033,6 +1036,7 @@ export default {
                 },
                 contact: null,
                 phone: null,
+                custom_fields_data: {},
                 seller_id: null
             }
 
@@ -1352,6 +1356,19 @@ export default {
             // if(this.form.date_of_issue > this.form.delivery_date)
             //     return this.$message.error('La fecha de emisión no puede ser posterior a la de entrega');
 
+            if (this.$refs.customFieldsRenderer) {
+                const validation = this.$refs.customFieldsRenderer.validateRequiredFields()
+                if (!validation.valid) {
+                    this.$message.error('Campos personalizados incompletos: ' + validation.errors.join(', '))
+                    return
+                }
+            }
+
+            if (!this.form.customer_id) {
+                this.$message.error('El campo cliente es obligatorio.');
+                return;
+            }
+
             this.loading_submit = true
             await this.$http.post(`/${this.resource}/update`, this.form).then(response => {
                 if (response.data.success) {
@@ -1365,6 +1382,10 @@ export default {
             }).catch(error => {
                 if (error.response.status === 422) {
                     this.errors = error.response.data;
+                    if (this.errors.customer_id) {
+                        this.$message.error(this.errors.customer_id[0]);
+                        delete this.errors.customer_id;
+                    }
                 } else {
                     this.$message.error(error.response.data.message);
                 }

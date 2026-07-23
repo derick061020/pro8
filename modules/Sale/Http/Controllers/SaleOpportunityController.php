@@ -14,6 +14,7 @@ use App\Models\Tenant\Establishment;
 use App\CoreFacturalo\Requests\Inputs\Common\LegendInput;
 use App\Models\Tenant\Item;
 use App\Models\Tenant\Series;
+use App\Services\SeriesResolver;
 use App\Models\Tenant\Catalogs\AffectationIgvType;
 use App\Models\Tenant\Catalogs\DocumentType;
 use Illuminate\Support\Facades\DB;
@@ -167,7 +168,7 @@ class SaleOpportunityController extends Controller
     public function option_tables()
     {
         $establishment = Establishment::where('id', auth()->user()->establishment_id)->first();
-        $series = Series::where('establishment_id',$establishment->id)->get();
+        $series = app(SeriesResolver::class)->applyContext(Series::where('establishment_id',$establishment->id))->get();
         $document_types_invoice = DocumentType::whereIn('id', ['01', '03', '80'])->get();
         $payment_method_types = PaymentMethodType::all();
         $payment_destinations = []; //$this->getPaymentDestinations();

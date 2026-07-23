@@ -14,7 +14,7 @@ class TenantAddDataOperationType0501ToCatOperationTypes extends Migration
     public function up()
     {
         DB::table('cat_operation_types')->insert([
-            ['id' => '0501', 'active' => true, 'exportation' => false, 'description' => 'Compra interna'],
+            ['id' => '0501', 'active' => false, 'exportation' => false, 'description' => 'Compra interna'],
         ]);
     }
 

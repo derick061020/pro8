@@ -13,6 +13,15 @@ export function applyThemeAndShowContent(savedTheme, savedBlackTheme) {
         showContent();
     }, timeoutDuration);
 
+    // Normaliza la estructura anidada de themes.json (ej. "white" -> { light, default })
+    // para que siempre se apliquen variables --* planas.
+    const normalize = (obj) => {
+        if (obj && typeof obj === 'object' && !obj['--primary-color']) {
+            return obj.default || obj.light || obj;
+        }
+        return obj;
+    };
+
     const applyCachedTheme = (themeName, cachePrefix, styleId) => {
         if (!themeName) {
             return false;
@@ -22,8 +31,13 @@ export function applyThemeAndShowContent(savedTheme, savedBlackTheme) {
             return false;
         }
         try {
-            const colors = JSON.parse(cached);
+            const colors = normalize(JSON.parse(cached));
             if (!colors || typeof colors !== 'object') {
+                return false;
+            }
+            // Caché antiguo sin tipografía (ni clara --font-family ni oscura --black-font-family)
+            // -> inválido, forzar refresco desde el JSON
+            if (!colors['--font-family'] && !colors['--black-font-family']) {
                 return false;
             }
             let styleElement = document.getElementById(styleId);
@@ -60,11 +74,11 @@ export function applyThemeAndShowContent(savedTheme, savedBlackTheme) {
 
     if (themeToApply) {
         pendingRequests.push(
-            fetch('/json/themes/themes.json')
+            fetch('/json/themes/themes.json?v=' + Date.now())
                 .then(response => response.json())
                 .then(themes => {
                     if (themes[themeToApply]) {
-                        const colors = themes[themeToApply];
+                        const colors = normalize(themes[themeToApply]);
                         let styleElement = document.getElementById('theme-styles');
                         if (!styleElement) {
                             styleElement = document.createElement('style');
@@ -88,11 +102,11 @@ export function applyThemeAndShowContent(savedTheme, savedBlackTheme) {
 
     if (blackThemeToApply) {
         pendingRequests.push(
-            fetch('/json/themes/black-themes.json')
+            fetch('/json/themes/black-themes.json?v=' + Date.now())
                 .then(response => response.json())
                 .then(themes => {
                     if (themes[blackThemeToApply]) {
-                        const colors = themes[blackThemeToApply];
+                        const colors = normalize(themes[blackThemeToApply]);
                         let styleElement = document.getElementById('black-theme-styles');
                         if (!styleElement) {
                             styleElement = document.createElement('style');

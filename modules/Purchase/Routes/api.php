@@ -7,7 +7,7 @@ if ($hostname) {
         Route::middleware(['auth:api', 'locked.tenant'])->group(function() {
 
             Route::post('purchase/email', 'Api\PurchaseController@email');
-            
+
             Route::prefix('purchases')->group(function () {
                 Route::get('records', 'Api\PurchaseController@records');
                 Route::get('tables', 'Api\PurchaseController@tables');
@@ -18,7 +18,7 @@ if ($hostname) {
                 Route::post('', 'Api\PurchaseController@store');
             });
 
-        }); 
+        });
 
     });
 }

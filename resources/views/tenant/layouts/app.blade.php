@@ -29,6 +29,7 @@
     || $path[0] === 'purchase-orders' && $path[1] === 'create'
     || $path[0] === 'dispatches' && $path[1] === 'create'
     || $path[0] === 'purchases' && $path[1] === 'create') ? 'newinvoice' : ''}}
+        {{ $path[0] === 'home' ? 'page-home' : '' }}
         ">
 
 <head>
@@ -148,6 +149,48 @@
         <link rel="shortcut icon" type="image/png" href="{{ asset($vc_company->favicon) }}" />
     @endif
 
+    @php
+        $themeInlineCss = '';
+        $blackThemeInlineCss = '';
+
+        $themeKey = $visual->sidebar_theme ?: 'white';
+        $themesPath = public_path('json/themes/themes.json');
+        if (is_file($themesPath)) {
+            $themesAll = json_decode(file_get_contents($themesPath), true) ?: [];
+            $colors = $themesAll[$themeKey] ?? $themesAll['white'] ?? null;
+            if (is_array($colors) && !isset($colors['--primary-color'])) {
+                $colors = $colors['default'] ?? $colors['light'] ?? $colors;
+            }
+            if (is_array($colors)) {
+                foreach ($colors as $var => $val) {
+                    if (strpos($var, '--') === 0) {
+                        $themeInlineCss .= $var . ':' . $val . ';';
+                    }
+                }
+            }
+        }
+
+        $blackThemeKey = (property_exists($visual, 'black_theme') && $visual->black_theme) ? $visual->black_theme : 'default';
+        $blackThemesPath = public_path('json/themes/black-themes.json');
+        if (is_file($blackThemesPath)) {
+            $blackAll = json_decode(file_get_contents($blackThemesPath), true) ?: [];
+            $blackColors = $blackAll[$blackThemeKey] ?? $blackAll['default'] ?? null;
+            if (is_array($blackColors)) {
+                foreach ($blackColors as $var => $val) {
+                    if (strpos($var, '--') === 0) {
+                        $blackThemeInlineCss .= $var . ':' . $val . ';';
+                    }
+                }
+            }
+        }
+    @endphp
+    @if($themeInlineCss)
+        <style id="theme-styles">:root{ {!! $themeInlineCss !!} }</style>
+    @endif
+    @if($blackThemeInlineCss)
+        <style id="black-theme-styles">:root{ {!! $blackThemeInlineCss !!} }</style>
+    @endif
+
     <script async src="https://social.buho.la/pixel/y9nonmie9j8dkwha20ct2ua7nwsywi2m"></script>
 </head>
 
@@ -169,6 +212,9 @@
                 {{-- @include('tenant.layouts.partials.sidebar_establishment') --}}
 
                 @include('tenant.layouts.partials.check_last_password_update')
+
+                <tenant-help-drawer></tenant-help-drawer>
+                <tenant-global-help-button></tenant-global-help-button>
 
             </section>
 
@@ -255,6 +301,20 @@
         function parseXMLToJSON(source) {
             let transform = $.xml2json(source);
             return transform
+        }
+
+        function openMozoApp(token) {
+            if (token && token.trim().length > 0) {
+                localStorage.setItem('token', token);
+            }
+            window.open('{{ route("tenant.restaurant.mozo", ["any" => "app"]) }}', '_blank');
+        }
+
+        function openVendeyaApp(token) {
+            if (token && token.trim().length > 0) {
+                localStorage.setItem('token', token);
+            }
+            window.open('{{ route("tenant.restaurant.vendeya", ["any" => "app"]) }}', '_blank');
         }
 
         $(document).ready(function () {

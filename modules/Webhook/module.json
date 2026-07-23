@@ -1,0 +1,11 @@
+{
+    "name": "Webhook",
+    "alias": "webhook",
+    "description": "Webhooks salientes: notifica a URLs externas los eventos del sistema (documentos, compras)",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\Webhook\\Providers\\WebhookServiceProvider"
+    ],
+    "files": []
+}

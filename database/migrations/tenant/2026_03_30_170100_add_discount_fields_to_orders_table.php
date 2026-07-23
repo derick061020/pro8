@@ -12,13 +12,14 @@ class AddDiscountFieldsToOrdersTable extends Migration
             $table->decimal('total_discount', 12, 2)->default(0)->after('total');
             $table->string('discount_coupon_code')->nullable()->after('total_discount');
             $table->unsignedBigInteger('discount_coupon_id')->nullable()->after('discount_coupon_code');
+            $table->boolean('stock_discounted')->default(false)->after('discount_coupon_id');
         });
     }
 
     public function down()
     {
         Schema::table('orders', function (Blueprint $table) {
-            $table->dropColumn(['total_discount', 'discount_coupon_code', 'discount_coupon_id']);
+            $table->dropColumn(['total_discount', 'discount_coupon_code', 'discount_coupon_id', 'stock_discounted']);
         });
     }
 }

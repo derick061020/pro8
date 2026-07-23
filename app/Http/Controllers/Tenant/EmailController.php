@@ -6,7 +6,8 @@
     use App\Models\Tenant\Configuration;
     use App\Models\Tenant\EmailSendLog;
     use Exception;
-    use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Log as FacadesLog;
+use Illuminate\Support\Facades\Mail;
     use Log;
     use Swift_RfcComplianceException;
 
@@ -89,6 +90,21 @@
          */
         protected function SendAMail($mailable)
         {
+
+            if (!Configuration::hasMailConfig()) {
+                $this
+                    ->setError('No hay configuración de correo electrónico')
+                    ->setErrorCode(0)
+                    ->setHasEror(true)
+                    ->setLine(__LINE__);
+                $this->saveError();
+                $this->saveModel();
+
+                FacadesLog::info('No hay configuración de correo electrónico');
+
+                return false;
+            }
+
             Configuration::setConfigSmtpMail();
             $ret = true;
             try {

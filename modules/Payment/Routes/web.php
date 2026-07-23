@@ -45,7 +45,7 @@ if($hostname) {
 
             Route::prefix('payment-gateway')->group(function() {
 
-                Route::get('enabled-checkout', 'PaymentGatewayController@enabledCheckouts')->name('system.enabled.checkouts');
+                Route::get('enabled-checkout', 'PaymentGatewayController@enabledCheckouts')->name('system.enabled.checkouts')->withoutMiddleware(['locked.tenant', 'auth', 'web', 'redirect.level']);
 
                 Route::prefix('culqi')->group(function() {
                     Route::get('record', 'PaymentGatewayController@culqiRecord')->name('tenant.culqi.configuration')->withoutMiddleware(['locked.tenant', 'auth', 'web', 'redirect.level']);
@@ -58,28 +58,38 @@ if($hostname) {
                     Route::post('payment', 'PaymentGatewayController@izipayCreatePayment');
                     Route::post('transaction', 'PaymentGatewayController@izipayTransaction')->name('tenant.izipay.transaction');
                 });
+
+                Route::prefix('mercadopago')->group(function() {
+                    Route::get('record', 'PaymentGatewayController@mercadoPagoRecord')->name('tenant.mercadopago.record')->withoutMiddleware(['locked.tenant', 'auth', 'web', 'redirect.level']);
+                    Route::post('payment', 'PaymentGatewayController@mercadoPagoCreatePayment')->withoutMiddleware(['locked.tenant', 'auth', 'web', 'redirect.level']);
+                });
             });
 
 
         });
     });
 } else {
-        Route::middleware('auth:admin')->group(function () {
+        Route::prefix('')->group(function () {
             Route::prefix('payment-gateway')->group(function() {
 
-                Route::get('enabled-checkout', 'PaymentGatewayController@enabledCheckouts')->name('system.enabled.checkouts');
+                Route::get('enabled-checkout', 'PaymentGatewayController@enabledCheckouts')->name('system.enabled.checkouts')->withoutMiddleware(['locked.tenant', 'web', 'redirect.level', 'auth:admin']);
 
                 Route::prefix('culqi')->group(function() {
                     Route::get('record', 'PaymentGatewayController@culqiRecord')->name('system.culqi.configuration');
                     Route::post('charge', 'PaymentGatewayController@culqiCreateCharge');
                     // Route::post('result', 'PaymentGatewayController@culqiResult')->name('system.culqi.result');
-                });
+                })->withoutMiddleware(['locked.tenant', 'web', 'redirect.level', 'auth:admin']);
 
                 Route::prefix('izipay')->group(function() {
                     Route::get('record', 'PaymentGatewayController@izipayRecord')->name('system.izipay.record');
                     Route::post('payment', 'PaymentGatewayController@izipayCreatePayment');
                     Route::post('transaction', 'PaymentGatewayController@izipayTransaction')->name('tenant.izipay.transaction');
-                });
+                })->withoutMiddleware(['locked.tenant', 'web', 'redirect.level', 'auth:admin']);
+
+                Route::prefix('mercadopago')->group(function() {
+                    Route::get('record', 'PaymentGatewayController@mercadoPagoRecord')->name('system.mercadopago.record');
+                    Route::post('payment', 'PaymentGatewayController@mercadoPagoCreatePayment');
+                })->withoutMiddleware(['locked.tenant', 'web', 'redirect.level', 'auth:admin']);
             });
         });
 

@@ -34,7 +34,7 @@
         <div class="card mb-0 pt-md-0 tab-content-default row-new">
             <div class="">
                 <!-- <h3 class="my-0">Consulta de Documentos</h3> -->
-                <div class="data-table-visible-columns" style="top: 10px;">
+                <div class="data-table-visible-columns">
                     <el-dropdown :hide-on-click="false">
                         <el-button type="secondary">
                             Mostrar columnas<i

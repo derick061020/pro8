@@ -10,7 +10,7 @@
     </div>
     <div class="card tab-content-default row-new mt-0">
       <div class="card-body border-bottom">
-        <el-form :inline="true" :model="form" class="demo-form-inline mb-0 d-flex align-items-end">
+        <el-form :inline="true" :model="form" class="demo-form-inline mb-0 d-flex align-items-end mb-3">
           <el-form-item label="Año" class="label-mt-0">
             <el-select v-model="form.year" @change="setPeriods()">
               <el-option v-for="(year, index) in period_year" :key="index" :label="year.title" :value="year.id" ></el-option>
@@ -25,79 +25,72 @@
             <el-button type="primary" @click="sendPeriod" :disabled="form.period == null">Enviar</el-button>
           </el-form-item>
         </el-form>
-      </div>
-      <div class="card-body border-bottom" v-if="code_ticket !== null">
-        <table class="table table-unstyled mb-0">
-          <tr>
-            <th>Ticket Actual</th>
-            <th>Estado</th>
-            <th class="ps-3">Página</th>
-            <th></th>
-          </tr>
-          <tr>
-            <td>{{ code_ticket }}</td>
-            <td>{{ states[status_ticket] }}</td>
-            <td width="10%">
-              <el-input v-model="page" label="Pagina" size="mini" type="number"></el-input>
-            </td>
-            <td class="text-end">
+
+        <div class="table-responsive" v-if="code_ticket !== null">
+          <table class="table">
+            <tr>
+              <th>Ticket Actual</th>
+              <th>Estado</th>
+              <th class="ps-3">Página</th>
+              <th></th>
+            </tr>
+            <tr>
+              <td>{{ code_ticket }}</td>
+              <td>{{ states[status_ticket] }}</td>
+              <td width="10%">
+                <el-input v-model="page" label="Pagina" size="mini" type="number"></el-input>
+              </td>
+              <td class="text-end">
+                <el-button
+                  type="primary"
+                  @click="queryTicket"
+                  :disabled="code_ticket == null"
+                  class="bg-primary"
+                  size="mini"
+                  :loading="loading_query">
+                  Consultar
+                </el-button>
+              </td>
+            </tr>
+          </table>
+        </div>
+        <div class="table-responsive">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Servicio</th>
+                <th>F. Emisión</th>
+                <th>Tipo Documento</th>
+                <th>Serie</th>
+                <th>Número</th>
+                <th>Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="(row, index) in documents" :key="index" :class="diffRows({ row, rowIndex: index })">
+                <td>{{ row.service }}</td>
+                <td>{{ row.date }}</td>
+                <td>{{ row.document_type }}</td>
+                <td>{{ row.serie }}</td>
+                <td>{{ row.number }}</td>
+                <td>{{ row.total }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="card-footer border-0">
+          <div class="row d-flex align-items-end">
+            <div class="col-6">
               <el-button
-                type="primary"
-                @click="queryTicket"
-                :disabled="code_ticket == null"
-                class="bg-primary"
-                size="mini"
-                :loading="loading_query">
-                Consultar
+                type="success"
+                class=""
+                v-show="type == 'sale'"
+                :disabled="documents.length <= 0"
+                @click="sendAccept"
+                :loading="loading_accept">
+                Aceptar Propuesta
               </el-button>
-            </td>
-          </tr>
-        </table>
-      </div>
-      <div class="card-body">
-        <el-table
-          :data="documents"
-          style="width: 100%"
-          stripe
-          :row-class-name="diffRows">
-          <el-table-column
-            prop="service"
-            label="Servicio">
-          </el-table-column>
-          <el-table-column
-            prop="date"
-            label="F. Emisión">
-          </el-table-column>
-          <el-table-column
-            prop="document_type"
-            label="Tipo Documento">
-          </el-table-column>
-          <el-table-column
-            prop="serie"
-            label="Serie">
-          </el-table-column>
-          <el-table-column
-            prop="number"
-            label="Número">
-          </el-table-column>
-          <el-table-column
-            prop="total"
-            label="Total">
-          </el-table-column>
-        </el-table>
-      </div>
-      <div class="card-footer">
-        <div class="row d-flex align-items-end">
-          <div class="col-6">
-            <el-button
-              type="success"
-              class=""
-              v-show="type == 'sale'"
-              :disabled="documents.length <= 0"
-              @click="sendAccept"
-              :loading="loading_accept">
-              Aceptar Propuesta
-            </el-button>
+            </div>
           </div>
         </div>
       </div>

@@ -4,6 +4,7 @@ namespace Modules\Order\Http\Resources;
 
 use Illuminate\Http\Resources\Json\ResourceCollection;
 use App\Models\Tenant\Series;
+use App\Services\SeriesResolver;
 use App\Models\Tenant\Catalogs\DocumentType;
 
 class OrderNoteDocumentCollection extends ResourceCollection
@@ -17,7 +18,7 @@ class OrderNoteDocumentCollection extends ResourceCollection
     public function toArray($request)
     {
 
-        $all_series = Series::where('establishment_id', auth()->user()->establishment_id)->get();
+        $all_series = app(SeriesResolver::class)->applyContext(Series::where('establishment_id', auth()->user()->establishment_id))->get();
         $all_document_types_invoice = DocumentType::whereIn('id', ['01', '03', '80'])->get();
 
         return $this->collection->transform(function($row, $key) use($all_series, $all_document_types_invoice){

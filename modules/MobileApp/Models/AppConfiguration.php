@@ -18,6 +18,7 @@ class AppConfiguration extends ModelTenant
         'app_mode',
         'direct_print',
         'direct_send_documents_whatsapp',
+        'primary_color',
     ];
 
     protected $casts = [
@@ -44,6 +45,7 @@ class AppConfiguration extends ModelTenant
             'has_igv_31556' => auth()->user() ? auth()->user()->establishment->has_igv_31556 : false,
             'igv_31556_percentage' => config('tenant.igv_31556_percentage'),
             'direct_send_documents_whatsapp' => $this->direct_send_documents_whatsapp,
+            'primary_color' => $this->primary_color,
         ];
     }
 

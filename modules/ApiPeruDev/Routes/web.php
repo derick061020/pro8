@@ -15,6 +15,7 @@ if($current_hostname) {
             //ruta distinta a la version actual
             Route::prefix('service')->group(function () {
                 Route::get('exchange/{date}', 'ServiceController@exchange');
+                Route::get('ruc-establecimientos/{number}', 'ServiceController@establishments');
                 Route::get('{type}/{number}', 'ServiceController@service');
 
                 Route::get('dispatch/send/{external_id}', 'ServiceDispatchController@send');

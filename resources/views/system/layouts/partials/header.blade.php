@@ -26,7 +26,7 @@
     <!-- start: search & user box -->
     <div class="header-right d-flex">
         <div class="d-flex align-items-center justify-content-center me-4">
-            <a class="btn btn-sm btn-outline-primary me-2" href="https://manual.pro8.uio.la/v8.0" target="_BLANK">🎉 Versión 8</a>
+            <a class="btn btn-sm btn-outline-primary me-2" href="https://facturaloperu.com/pro9/" target="_BLANK">🎉 Versión 9.0</a>
             <a class="btn btn-dark btn-sm d-flex align-items-center justify-content-center" href="https://manual.pro8.uio.la" target="_BLANK">
                 <span>Manual</span>
                 <svg  xmlns="http://www.w3.org/2000/svg"  width="20"  height="20"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-book ms-1"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M3 19a9 9 0 0 1 9 0a9 9 0 0 1 9 0" /><path d="M3 6a9 9 0 0 1 9 0a9 9 0 0 1 9 0" /><path d="M3 6l0 13" /><path d="M12 6l0 13" /><path d="M21 6l0 13" /></svg>                
@@ -105,56 +105,63 @@
             }
         }
 
+        // Metadatos de temas: nombre visible, color principal y puntos del swatch
+        const THEME_LIST = [
+            { key:'white',     label:'Clásico',     color:'Azul',        bg:'#f5f8ff', dots:['#3d6bf5','#8aa4f7','#3a4658','#8492a6'] },
+            { key:'corporate', label:'Corporativo', color:'Azul',        bg:'#f4f7fc', dots:['#2d5bb9','#8aa6da','#31435c','#7d8ba3'] },
+            { key:'navy',      label:'Marino',      color:'Azul marino', bg:'#f3f6f9', dots:['#28527a','#7ba0c4','#2b3a4d','#7a8798'] },
+            { key:'slate',     label:'Pizarra',     color:'Gris',        bg:'#f5f6f8', dots:['#4a5b73','#94a1b8','#3a4453','#828d9e'] },
+            { key:'indigo',    label:'Índigo',      color:'Índigo',      bg:'#f5f5fb', dots:['#4a45a8','#9995d6','#37374f','#807e9c'] },
+            { key:'forest',    label:'Bosque',      color:'Verde',       bg:'#f2f8f4', dots:['#2f6d52','#7cb598','#324338','#7a8a80'] },
+            { key:'burgundy',  label:'Borgoña',     color:'Vino',        bg:'#faf4f5', dots:['#8a3c4e','#c78896','#43333a','#94818a'] },
+            { key:'aqua',      label:'Aqua',        color:'Turquesa',    bg:'#f0f9f9', dots:['#0e94a8','#63cdd8','#294a54','#6f9098'] },
+            { key:'acid',      label:'Ácido',       color:'Violeta',     bg:'#f6f4fe', dots:['#6f52e8','#a99ff0','#39335a','#867fa4'] },
+            { key:'cupcake',   label:'Cupcake',     color:'Rosa',        bg:'#fdf5f9', dots:['#db4f8b','#f2a3c4','#4a3340','#9a8290'] },
+            { key:'retro',     label:'Retro',       color:'Ámbar',       bg:'#fbf5e9', dots:['#d1791f','#eec471','#463c30','#8f8371'] },
+            { key:'lemonade',  label:'Limonada',    color:'Verde',       bg:'#f6faec', dots:['#659f2b','#b6d97f','#3f4634','#7f8570'] },
+        ];
+
+        function themeSwatchHtml(t) {
+            return `
+                <span class="theme-swatch" style="background:${t.bg}">
+                    ${t.dots.map(function (c) { return `<i style="background:${c}"></i>`; }).join('')}
+                </span>
+                <span class="theme-row-info">
+                    <span class="theme-row-name">${t.label}</span>
+                    <span class="theme-row-color">${t.color}</span>
+                </span>`;
+        }
+
+        // Actualiza el campo (trigger) para mostrar solo el tema activo
+        function updateThemeTrigger(key) {
+            const t = THEME_LIST.find(function (x) { return x.key === key; }) || THEME_LIST[0];
+            const el = document.getElementById('theme-select-current');
+            if (el) el.innerHTML = themeSwatchHtml(t);
+        }
+
         function loadThemeComponent() {
             const container = document.getElementById('theme-vue-component');
-            
+
+            const rows = THEME_LIST.map(function (t) {
+                return `
+                    <button type="button" class="btn-theme-color theme-row" data-theme="${t.key}" title="${t.label}">
+                        ${themeSwatchHtml(t)}
+                        <i class="fas fa-check theme-row-check"></i>
+                    </button>`;
+            }).join('');
+
             container.innerHTML = `
                 <div id="theme-vue-app">
                     <div class="theme-color-component">
-                        <div class="mt-3 theme-color-selector">
-                            <h5>Selecciona un color de tema:</h5>
-                            <div class="color-selector">
-                                <button
-                                    type="button"
-                                    class="btn-theme-color"
-                                    data-theme="white"
-                                    style="background-color: #b3c5ff;"
-                                ></button>
-                                <button
-                                    type="button"
-                                    class="btn-theme-color"
-                                    data-theme="aqua"
-                                    style="background-color: #90dad9;"
-                                ></button>
-                                <button
-                                    type="button"
-                                    class="btn-theme-color"
-                                    data-theme="acid"
-                                    style="background-color: #c1b1f1;"
-                                ></button>
-                                <button
-                                    type="button"
-                                    class="btn-theme-color"
-                                    data-theme="cupcake"
-                                    style="background-color: #e7dad0;"
-                                ></button>
-                                <button
-                                    type="button"
-                                    class="btn-theme-color"
-                                    data-theme="retro"
-                                    style="background-color: #ebddb7;"
-                                ></button>
-                                <button
-                                    type="button"
-                                    class="btn-theme-color"
-                                    data-theme="lemonade"
-                                    style="background-color: #cddfae;"
-                                ></button>
-                            </div>
-                            
-                            <div id="loading-indicator" class="text-center mt-3" style="display: none;">
-                                <i class="fas fa-spinner fa-spin"></i> Aplicando tema...
-                            </div>
+                        <div class="theme-select" id="theme-select">
+                            <button type="button" class="theme-select-trigger" id="theme-select-trigger">
+                                <span class="theme-select-current" id="theme-select-current"></span>
+                                <i class="fas fa-chevron-down theme-select-caret"></i>
+                            </button>
+                            <div class="theme-select-menu" id="theme-select-menu">${rows}</div>
+                        </div>
+                        <div id="loading-indicator" class="text-center mt-3" style="display: none;">
+                            <i class="fas fa-spinner fa-spin"></i> Aplicando tema...
                         </div>
                     </div>
                 </div>
@@ -164,12 +171,52 @@
                 const style = document.createElement('style');
                 style.id = 'theme-selector-styles';
                 style.innerHTML = `
+                    .theme-select { position: relative; }
+                    .theme-select-trigger {
+                        display: flex; align-items: center; gap: 12px; width: 100%;
+                        padding: 9px 12px; background: var(--light-color);
+                        border: 1px solid var(--accent-color); border-radius: 10px; cursor: pointer;
+                    }
+                    .theme-select-current { display: flex; align-items: center; gap: 12px; flex: 1; }
+                    .theme-select-caret { margin-left: auto; color: var(--muted); transition: transform .2s ease; }
+                    .theme-select.open .theme-select-caret { transform: rotate(180deg); }
+                    .theme-select-menu {
+                        position: absolute; top: calc(100% + 6px); left: 0; right: 0; z-index: 20;
+                        background: #fff; border: 1px solid var(--accent-color); border-radius: 12px;
+                        box-shadow: 0 12px 28px rgba(0,0,0,.12); padding: 6px;
+                        max-height: 340px; overflow-y: auto; display: none;
+                    }
+                    .theme-select.open .theme-select-menu { display: block; }
+
+                    .btn-theme-color.theme-row {
+                        display: flex; align-items: center; gap: 12px;
+                        width: 100%; height: auto; padding: 9px 12px;
+                        background: transparent; border: 1px solid transparent;
+                        border-radius: 10px; cursor: pointer; text-align: left;
+                        transition: background .15s ease, border-color .15s ease;
+                    }
+                    .btn-theme-color.theme-row:hover { background: var(--accent-color); }
+                    .btn-theme-color.theme-row.theme-selected {
+                        background: var(--light-color);
+                        border-color: var(--primary-color);
+                        box-shadow: none;
+                    }
+                    .theme-swatch {
+                        display: grid; grid-template-columns: repeat(2, 1fr); gap: 2px;
+                        width: 34px; height: 34px; padding: 4px; border-radius: 9px;
+                        border: 1px solid rgba(0,0,0,.08); flex-shrink: 0;
+                    }
+                    .theme-swatch i { display: block; width: 100%; height: 100%; border-radius: 50%; }
+                    .theme-row-info { display: flex; flex-direction: column; line-height: 1.2; flex: 1; }
+                    .theme-row-name { font-size: 14px; font-weight: 600; color: var(--dark-color); }
+                    .theme-row-color { font-size: 11px; color: var(--muted); }
+                    .theme-row-check { color: var(--primary-color); font-size: 15px; opacity: 0; }
+                    .btn-theme-color.theme-row.theme-selected .theme-row-check { opacity: 1; }
 
                     @keyframes slideIn {
                         from { transform: translateX(100%); opacity: 0; }
                         to { transform: translateX(0); opacity: 1; }
                     }
-
                     .el-message {
                         position: fixed;
                         top: 20px;
@@ -182,6 +229,22 @@
                     }
                 `;
                 document.head.appendChild(style);
+            }
+
+            // Mostrar el tema activo en el campo y cablear la apertura/cierre del dropdown
+            updateThemeTrigger(localStorage.getItem('current_theme') || 'white');
+            const wrap = document.getElementById('theme-select');
+            const trigger = document.getElementById('theme-select-trigger');
+            const menu = document.getElementById('theme-select-menu');
+            if (trigger && wrap && menu) {
+                trigger.addEventListener('click', function (e) {
+                    e.stopPropagation();
+                    wrap.classList.toggle('open');
+                });
+                menu.addEventListener('click', function () { wrap.classList.remove('open'); });
+                document.addEventListener('click', function (e) {
+                    if (!wrap.contains(e.target)) wrap.classList.remove('open');
+                });
             }
 
             initializeThemeSelector();
@@ -206,7 +269,7 @@
 
         async function loadThemes() {
             try {
-                const response = await fetch("/json/themes/themes.json");
+                const response = await fetch("/json/themes/themes.json?v=" + Date.now());
                 themes = await response.json();
             } catch (error) {
                 console.error("Error loading themes:", error);
@@ -258,6 +321,7 @@
                     button.classList.remove('theme-selected');
                 }
             });
+            updateThemeTrigger(currentTheme);
         }
 
         function showLoading(show) {
@@ -416,6 +480,10 @@
                 if (cachedTheme && cachedColors) {
                     try {
                         const colors = JSON.parse(cachedColors);
+                        // Caché antiguo sin tipografía -> tratarlo como inválido para forzar refresco
+                        if (!colors || !colors['--font-family']) {
+                            return false;
+                        }
                         let styleTag = document.getElementById("theme-styles");
                         if (!styleTag) {
                             styleTag = document.createElement("style");
@@ -460,7 +528,7 @@
                     return;
                 }
                 
-                const themesResponse = await fetch('/json/themes/themes.json');
+                const themesResponse = await fetch('/json/themes/themes.json?v=' + Date.now());
                 const themesData = await themesResponse.json();
                 
                 const colors = themesData[theme];

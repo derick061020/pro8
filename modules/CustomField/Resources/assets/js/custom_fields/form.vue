@@ -33,7 +33,7 @@
 
         <!-- Tipo de campo -->
         <div class="row">
-          <div class="col-md-6">
+          <div class="col-md-4">
             <div
               :class="{'has-danger': errors.type}"
               class="form-group">
@@ -59,7 +59,7 @@
           </div>
 
           <!-- Requerido -->
-          <div class="col-md-6">
+          <div class="col-md-4">
             <div class="form-group">
               <label class="mt-3">
                 Requerido
@@ -69,6 +69,21 @@
                   v-model="form_data.required">
                 </el-switch>
                 <span class="ms-2">{{ form_data.required ? 'Sí' : 'No' }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Mostrar en PDF -->
+          <div class="col-md-4">
+            <div class="form-group">
+              <label class="mt-3">
+                Mostrar en PDF
+              </label>
+              <div class="mt-2">
+                <el-switch
+                  v-model="form_data.show_in_pdf">
+                </el-switch>
+                <span class="ms-2">{{ form_data.show_in_pdf ? 'Sí' : 'No' }}</span>
               </div>
             </div>
           </div>
@@ -137,6 +152,7 @@ export default {
         name: '',
         type: 'text',
         required: false,
+        show_in_pdf: true,
         options: null,
       },
       optionsText: '',
@@ -160,6 +176,7 @@ export default {
         name: '',
         type: 'text',
         required: false,
+        show_in_pdf: true,
         options: null,
       }
       this.optionsText = ''
@@ -171,6 +188,7 @@ export default {
         name: row.name,
         type: row.type,
         required: row.required,
+        show_in_pdf: row.show_in_pdf !== undefined ? row.show_in_pdf : true,
         options: row.options,
       }
 

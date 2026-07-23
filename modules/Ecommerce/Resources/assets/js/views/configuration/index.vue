@@ -52,7 +52,6 @@
                   <div class="form-group" :class="{'has-danger': errors.information_contact_address}">
                     <label class="control-label">
                       Horario de atención
-                      <span class="text-danger">*</span>
                     </label>
                     <el-input v-model="form.information_contact_address"></el-input>
                     <small
@@ -120,7 +119,7 @@
         </div>
       </el-tab-pane>
       <el-tab-pane label="Apariencia">
-        <form autocomplete="off" @submit.prevent="submit">
+        <form autocomplete="off" @submit.prevent="submitColor">
           <div class="form-body">
             <div class="row">
               <div class="col-12 mb-3">
@@ -149,22 +148,90 @@
                   <label class="ms-2 mb-0">Ocultar productos sin stock</label>
                   <small class="d-block text-muted ms-5" style="padding: 0 !important; line-height: 1.5;">Los productos agotados no aparecerán en el catálogo de la tienda</small>
                 </div>
+                <div class="form-group form-modern mb-3">
+                  <label class="control-label">Productos por página</label>
+                  <small class="d-block text-muted mb-2" style="line-height: 1.5;">
+                    Cantidad de productos que se mostrarán en cada página de la lista.
+                  </small>
+                  <el-radio-group class="btn-pagination" v-model="form.products_per_page">
+                    <el-radio-button
+                      v-for="option in products_per_page_options"
+                      :key="option"
+                      :label="option"
+                    >{{ option }}</el-radio-button>
+                  </el-radio-group>
+                </div>
               </div>
               <div class="col-md-6">
                 <div class="form-group form-modern">
-                  <label class="control-label">Color Principal de la Tienda</label>
+                  <label>Color Principal de la Tienda</label>
                   <div class="d-flex align-items-center mt-1">
-                    <input 
-                      type="color" 
-                      v-model="form.color_ecommerce" 
-                      class="form-control form-control-color" 
+                    <input
+                      type="color"
+                      v-model="form.color_ecommerce"
+                      class="form-control form-control-color"
                       style="width: 80px; height: 40px; padding: 2px; cursor: pointer; border: 1px solid #dcdfe6;"
                     >
                     <span class="ms-2 text-muted" style="font-family: monospace;">{{ form.color_ecommerce }}</span>
                   </div>
                 </div>
+                <div class="form-group form-modern mb-3">
+                  <label>Tema del encabezado</label>
+                  <!-- <div class="mt-1">
+                    <el-radio-group v-model="form.header_theme">
+                      <el-radio-button label="light">Claro</el-radio-button>
+                      <el-radio-button label="dark">Oscuro</el-radio-button>
+                    </el-radio-group>
+                  </div> -->
+                  <div class="theme-header">
+                    <button type="button" class="theme-light" :class="{ active: form.header_theme === 'light' }" @click="form.header_theme = 'light'">
+                      <div class="hdr">
+                        <div class="d-flex align-items-center">
+                          <span class="logo"></span>
+                          <span class="name ms-2">Mi Tienda</span>
+                        </div>
+                        <span v-if="form.header_theme === 'light'" class="check-select">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-check"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M5 12l5 5l10 -10" /></svg>
+                        </span>
+                        <span v-else class="cart-light">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-shopping-cart"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M4 19a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" /><path d="M15 19a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" /><path d="M17 17h-11v-14h-2" /><path d="M6 5l14 1l-1 7h-13" /></svg>
+                        </span>
+                      </div>
+                      <div class="body-strip">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                      </div>
+                      <div class="cap text-start ps-2">Claro</div>
+                    </button>
+                  
+                    <button type="button" class="theme-dark" :class="{ active: form.header_theme === 'dark' }" @click="form.header_theme = 'dark'">
+                      <div class="hdr" :style="{ backgroundColor: form.color_ecommerce }">
+                        <div class="d-flex align-items-center">
+                          <span class="logo"></span>
+                          <span class="name ms-2">Mi Tienda</span>
+                        </div>
+                        <span v-if="form.header_theme === 'dark'" class="check-select">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-check"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M5 12l5 5l10 -10" /></svg>
+                        </span>
+                        <span v-else class="cart-dark">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-shopping-cart"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M4 19a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" /><path d="M15 19a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" /><path d="M17 17h-11v-14h-2" /><path d="M6 5l14 1l-1 7h-13" /></svg>
+                        </span>
+                      </div>
+                      <div class="body-strip">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                      </div>
+                      <div class="cap text-start ps-2">Oscuro</div>
+                    </button>
+                  </div>
+                  <small class="d-block text-muted mt-1" style="line-height: 1.5;">
+                    El tema <strong>Claro</strong> muestra el encabezado en blanco. El tema <strong>Oscuro</strong> usa el color principal de la tienda como fondo del encabezado.
+                  </small>
+                </div>
                 <div class="form-group">
-                  <label class="control-label">Logo</label>
+                  <label>Logo</label>
                   <div class="d-flex align-items-start gap-3">
                     <div>
                       <p class="mb-3 text-muted" style="font-size: 0.875rem;">
@@ -306,6 +373,7 @@ export default {
       form: {},
       soap_sends: [],
       soap_types: [],
+      products_per_page_options: [8, 12, 16, 24, 32, 40],
       editors: {
           classic: ClassicEditor
       },
@@ -355,6 +423,8 @@ export default {
           show_stock: parseInt(preferences.show_stock) || 0,
           only_available_products: parseInt(preferences.only_available_products) || 0,
           full_width_banner: parseInt(preferences.full_width_banner) || 0,
+          header_theme: preferences.header_theme || 'light',
+          products_per_page: parseInt(preferences.products_per_page) || 16,
           // campos de páginas personalizadas
           terms_conditions: data.terms_conditions || '',
           privacy_policy: data.privacy_policy || '',
@@ -402,6 +472,8 @@ export default {
         show_stock: 0,
         only_available_products: 0,
         full_width_banner: 0,
+        header_theme: 'light',
+        products_per_page: 16,
         terms_conditions: '',
         privacy_policy: '',
         about_us: '',
@@ -417,7 +489,9 @@ export default {
         show_description: this.form.show_description,
         show_stock: this.form.show_stock,
         only_available_products: this.form.only_available_products,
-        full_width_banner: this.form.full_width_banner
+        full_width_banner: this.form.full_width_banner,
+        header_theme: this.form.header_theme,
+        products_per_page: this.form.products_per_page
       };
       // Eliminar los switches planos para evitar duplicidad
       delete payload.show_description;
@@ -427,6 +501,40 @@ export default {
 
       this.$http
         .post(`/${this.resource}/configuration`, payload)
+        .then(response => {
+          if (response.data.success) {
+            this.$message.success(response.data.message);
+          } else {
+            this.$message.error(response.data.message);
+          }
+        })
+        .catch(error => {
+          if (error.response.status === 422) {
+            this.errors = error.response.data;
+          } else {
+            console.log(error);
+          }
+        })
+        .then(() => {
+          this.loading_submit = false;
+        });
+    },
+    submitColor() {
+      this.loading_submit = true;
+      // La pestaña Apariencia guarda solo color + preferencias por su propia ruta,
+      // sin pasar por la validación de datos de contacto de /ecommerce/configuration.
+      const payload = {
+        id: this.form.id,
+        color_ecommerce: this.form.color_ecommerce,
+        show_description: this.form.show_description,
+        show_stock: this.form.show_stock,
+        only_available_products: this.form.only_available_products,
+        full_width_banner: this.form.full_width_banner,
+        header_theme: this.form.header_theme,
+        products_per_page: this.form.products_per_page
+      };
+      this.$http
+        .post(`/${this.resource}/configuration_color`, payload)
         .then(response => {
           if (response.data.success) {
             this.$message.success(response.data.message);

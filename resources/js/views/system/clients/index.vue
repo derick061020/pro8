@@ -413,6 +413,7 @@
                             <th v-if="columns.usuarios.visible" class="text-center">Usuarios</th>
                             <th v-if="columns.sucursales.visible" class="text-center">Sucursales</th>
                             <th v-if="columns.ventas_mes.visible" class="text-center">Ventas (Mes)</th>
+                            <th v-if="columns.mensajes_whatsapp.visible" class="text-center">Mensajes<br>WhatsApp</th>
                             <th v-if="columns.fecha_creacion.visible" class="text-center">F.Creación</th>
                             <th v-if="columns.consultas_api.visible" class="text-center">Consultas <br>API Peru <br>(mes)</th>
                             <th v-if="columns.notas_venta.visible" class="text-center">Cant. <br>Notas de venta</th>
@@ -605,6 +606,18 @@
                                     :unlimited="row.sales_unlimited"
                                     :quantity="row.monthly_sales_total"
                                     :max_quantity="row.max_sales_limit"
+                                    >
+                                </data-limit-notification>
+
+                            </td>
+
+                            <td v-if="columns.mensajes_whatsapp.visible" class="text-center">
+
+                                <data-limit-notification
+                                    entity_description="mensajes de WhatsApp"
+                                    :unlimited="row.whatsapp_messages_unlimited"
+                                    :quantity="row.count_whatsapp_month"
+                                    :max_quantity="row.max_whatsapp_messages"
                                     >
                                 </data-limit-notification>
 
@@ -1198,6 +1211,10 @@ export default {
                     title: 'Ventas (Mes)',
                     visible: false
                 },
+                mensajes_whatsapp: {
+                    title: 'Mensajes WhatsApp',
+                    visible: true
+                },
                 fecha_creacion: {
                     title: 'F.Creación',
                     visible: true
@@ -1441,7 +1458,12 @@ export default {
         loadColumnVisibility() {
             const savedColumns = localStorage.getItem('columnVisibilityClients');
             if (savedColumns) {
-                this.columns = JSON.parse(savedColumns);
+                const parsed = JSON.parse(savedColumns);
+                Object.keys(this.columns).forEach((key) => {
+                    if (parsed[key] && typeof parsed[key].visible === 'boolean') {
+                        this.columns[key].visible = parsed[key].visible;
+                    }
+                });
             }
         },
         applyFilters() {

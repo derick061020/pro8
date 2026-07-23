@@ -37,6 +37,7 @@
                 <th>Nota de venta</th>
                 <th>Guía de remisión</th>
                 <th>Pedido</th>
+                <th>Cotización</th>
                 <th>Acciones</th>
               </tr>
             </thead>
@@ -74,6 +75,12 @@
                   </el-switch>
                 </td>
                 <td>
+                  <el-switch
+                    v-model="row.enabled_for_quotations"
+                    @change="toggleDocumentStatus(row.id, 'quotations', row.enabled_for_quotations)">
+                  </el-switch>
+                </td>
+                <td>
                   <div class="btn-group" role="group">
                     <button
                       class="btn btn-sm btn-info"
@@ -91,7 +98,7 @@
                 </td>
               </tr>
               <tr v-if="records.length === 0">
-                <td colspan="8" class="text-center text-muted">
+                <td colspan="9" class="text-center text-muted">
                   No hay campos personalizados registrados
                 </td>
               </tr>

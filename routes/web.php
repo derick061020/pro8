@@ -57,6 +57,7 @@ if ($hostname) {
             Route::get('list-vouchers-type', 'Tenant\SettingController@listVouchersType');
             Route::get('list-transfer-reason-types', 'Tenant\SettingController@listTransferReasonTypes');
             Route::get('list-item-affectations', 'Tenant\SettingController@listItemAffectations');
+            Route::get('list-operation-types', 'Tenant\SettingController@listOperationTypes');
 
             Route::get('advanced', 'Tenant\AdvancedController@index')->name('tenant.advanced.index')->middleware('redirect.level');
 
@@ -83,10 +84,10 @@ if ($hostname) {
 
             //Status Orders
             Route::get('statusOrder/records', 'Tenant\StatusOrdersController@records');
-            Route::get('statusOrder/records', 'Tenant\StatusOrdersController@records');
             Route::post('statusOrder/store', 'Tenant\StatusOrdersController@store');
             Route::put('statusOrder/update/{id}', 'Tenant\StatusOrdersController@update');
             Route::delete('statusOrder/destroy/{id}', 'Tenant\StatusOrdersController@destroy');
+            Route::post('statusOrder/reorder', 'Tenant\StatusOrdersController@reorder');
 
             //Company
             Route::get('companies/create', 'Tenant\CompanyController@create')->name('tenant.companies.create')->middleware('redirect.level');
@@ -124,6 +125,20 @@ if ($hostname) {
             Route::get('configurations/record', 'Tenant\ConfigurationController@record');
             Route::post('configurations', 'Tenant\ConfigurationController@store');
             Route::post('configurations/test-email', 'Tenant\ConfigurationController@testEmail');
+
+            // Help Center
+            Route::get('api/help-center/{topic}', 'Tenant\HelpController@show')->where('topic', '.*');
+
+            // WhatsApp Bot
+            Route::get('whatsapp-bot/configuration', 'Tenant\WhatsAppBotController@configuration')->name('tenant.whatsapp_bot.configuration');
+            Route::post('whatsapp-bot/connect', 'Tenant\WhatsAppBotController@connect');
+            Route::get('whatsapp-bot/qr', 'Tenant\WhatsAppBotController@qr');
+            Route::get('whatsapp-bot/state', 'Tenant\WhatsAppBotController@state');
+            Route::post('whatsapp-bot/disconnect', 'Tenant\WhatsAppBotController@disconnect');
+            Route::post('whatsapp-bot/restart', 'Tenant\WhatsAppBotController@restart');
+            Route::post('whatsapp-bot/renew', 'Tenant\WhatsAppBotController@renew');
+            Route::post('whatsapp-bot/toggle-enabled', 'Tenant\WhatsAppBotController@toggleEnabled');
+            Route::post('whatsapp-bot/commands', 'Tenant\WhatsAppBotController@storeCommands');
             Route::post('configurations/apiruc', 'Tenant\ConfigurationController@storeApiRuc');
             Route::post('configurations/icbper', 'Tenant\ConfigurationController@icbper');
             Route::post('configurations/changeFormat', 'Tenant\ConfigurationController@changeFormat');
@@ -203,8 +218,26 @@ if ($hostname) {
             Route::get('series/records/{establishment}/{document_type?}', 'Tenant\SeriesController@records');
             Route::get('series/create', 'Tenant\SeriesController@create');
             Route::get('series/tables', 'Tenant\SeriesController@tables');
+            Route::get('series/next-code', 'Tenant\SeriesController@nextCode');
+            Route::post('series/toggle-dedicated', 'Tenant\SeriesController@toggleDedicated');
             Route::post('series', 'Tenant\SeriesController@store');
+            Route::post('series/{series}/correlative', 'Tenant\SeriesController@updateCorrelative');
             Route::delete('series/{series}', 'Tenant\SeriesController@destroy');
+
+            //Series - grupo dedicado por equipo (contexto)
+            Route::get('series/dedicated-group/current', 'Tenant\SeriesDeviceGroupController@current');
+            Route::post('series/dedicated-group/restore', 'Tenant\SeriesDeviceGroupController@restore');
+
+            //Series - CRUD de grupos de dispositivo
+            Route::get('series/groups/records/{establishment}', 'Tenant\SeriesDeviceGroupController@records');
+            Route::get('series/groups/tables/{establishment}', 'Tenant\SeriesDeviceGroupController@tables');
+            Route::post('series/groups', 'Tenant\SeriesDeviceGroupController@store');
+            Route::post('series/groups/{group}/unbind', 'Tenant\SeriesDeviceGroupController@unbind');
+            Route::delete('series/groups/{group}', 'Tenant\SeriesDeviceGroupController@destroy');
+
+            //Series - vínculo de grupo a equipo desde el perfil del usuario
+            Route::get('series/profile/dedicated-group', 'Tenant\SeriesDeviceGroupController@profileState');
+            Route::post('series/profile/dedicated-group/bind', 'Tenant\SeriesDeviceGroupController@bind');
 
             //Users
             Route::get('users', 'Tenant\UserController@index')->name('tenant.users.index');
@@ -216,6 +249,7 @@ if ($hostname) {
             Route::get('users/records', 'Tenant\UserController@records');
             Route::delete('users/{user}', 'Tenant\UserController@destroy');
             Route::post('users/change-active', 'Tenant\UserController@changeActive');
+            Route::post('users/{user}/toggle-bot', 'Tenant\UserController@toggleBot');
 
             //ChargeDiscounts
             Route::get('charge_discounts', 'Tenant\ChargeDiscountController@index')->name('tenant.charge_discounts.index');
@@ -331,6 +365,7 @@ if ($hostname) {
             Route::get('documents/records', 'Tenant\DocumentController@records');
             Route::post('documents/custom-fields/update', 'Tenant\DocumentController@updateCustomFields');
             Route::get('documents/recordsTotal', 'Tenant\DocumentController@recordsTotal');
+            Route::get('documents/kpis', 'Tenant\DocumentController@kpis');
             Route::get('documents/create', 'Tenant\DocumentController@create')->name('tenant.documents.create')->middleware(['redirect.level', 'tenant.internal.mode']);
             Route::get('documents/create_tensu', 'Tenant\DocumentController@create_tensu')->name('tenant.documents.create_tensu');
             Route::get('documents/{id}/edit', 'Tenant\DocumentController@edit')->middleware(['redirect.level', 'tenant.internal.mode']);
@@ -540,6 +575,10 @@ if ($hostname) {
             // Affectation IGV types
             Route::get('item-affectations-igv/records', 'Tenant\ItemAffectationsIgvController@records');
             Route::get('item-affectations-igv/active/{id}/{active}', 'Tenant\ItemAffectationsIgvController@changeActive');
+
+            // Operation types
+            Route::get('operation-types/records', 'Tenant\OperationTypeController@records');
+            Route::get('operation-types/active/{id}/{active}', 'Tenant\OperationTypeController@changeActive');
 
 
             //Detractions
@@ -858,6 +897,7 @@ if ($hostname) {
     Route::domain($app_url)->group(function () {
         Route::get('login', 'System\LoginController@showLoginForm')->name('login');
         Route::post('login', 'System\LoginController@login');
+        Route::get('plans/api', 'System\Api\PlanController@records')->name('plans');
         Route::post('logout', 'System\LoginController@logout')->name('logout');
         // --- RUTAS NUEVAS PARA RECUPERACIÓN (ADMIN) ---
         // Recuperación de Contraseña (ADMIN)
@@ -867,6 +907,9 @@ if ($hostname) {
         Route::post('password/reset', 'System\Auth\ResetPasswordController@reset')->name('password.update');
         // ----------------------------------------------
         Route::get('phone', 'System\UserController@getPhone');
+
+        // Página pública de Términos y Condiciones (decide según configuración del system).
+        Route::get('terminos-y-condiciones', 'System\TermsController@show')->name('system.terms');
 
         Route::middleware('throttle:30,1')->group(function () {
             Route::get('consultas', 'System\PublicDocumentSearchController@index')->name('system.public_search.index');
@@ -878,6 +921,9 @@ if ($hostname) {
             Route::get('consultas/widget', 'System\PublicDocumentSearchController@widgetInternal')->name('system.public_search.widget.internal');
         });
 
+        Route::get('payment-orders/payment-view/{uuid}', 'System\PaymentOrderController@paymentView')->name('system.payments-view.index');
+
+        Route::post('payment-orders/payment-view/pays', 'System\PaymentOrderController@paymentViewPay');
         Route::get('consultas/embed.js', 'System\PublicDocumentSearchController@embedScript')->name('system.public_search.embed');
 
         Route::prefix('pago')->group(function () {
@@ -905,6 +951,8 @@ if ($hostname) {
             Route::middleware('enable.guest.register')->group(function () {
                 Route::get('/', 'System\GuestRegisterController@index')->name('guest.register.index');
                 Route::post('register', 'System\GuestRegisterController@register');
+                Route::get('check-subdomain/{subdomain}', 'System\GuestRegisterController@checkSubdomain');
+                Route::get('check-ruc/{number}', 'System\GuestRegisterController@checkRuc');
                 Route::post('resend-email', 'System\GuestRegisterController@resendEmail');
                 Route::get('email/verify/{id}/{hash}/{client_id}', 'System\GuestRegisterController@verifyGuestRegisteredEmail')->name('guest-register.verification.verify');
                 Route::get('service/ruc/{number}', 'System\ServiceController@ruc');
@@ -995,6 +1043,7 @@ if ($hostname) {
             Route::get('plans/records', 'System\PlanController@records');
             Route::get('plans/tables', 'System\PlanController@tables');
             Route::get('plans/popular', 'System\PlanController@popular');
+            Route::post('plans/popular/{plan}', 'System\PlanController@setPopular');
             Route::get('plans/record/{plan}', 'System\PlanController@record');
             Route::post('plans', 'System\PlanController@store');
             Route::delete('plans/{plan}', 'System\PlanController@destroy');
@@ -1062,6 +1111,12 @@ if ($hostname) {
             Route::post('configurations', 'System\ConfigurationController@store');
             Route::get('configurations/record', 'System\ConfigurationController@record');
 
+            // Proveedor de IA (compartido por todos los tenants)
+            Route::get('configurations/openai', 'System\ConfigurationController@openAiConfig');
+            Route::post('configurations/openai', 'System\ConfigurationController@storeOpenAiConfig');
+            Route::post('configurations/openai/test', 'System\ConfigurationController@testOpenAiConnection');
+            Route::post('configurations/openai/models', 'System\ConfigurationController@listOpenAiModels');
+
             // Visual theme configuration routes
             Route::post('configurations/visual-theme', 'System\ConfigurationController@storeVisualTheme');
             Route::get('configurations/visual-theme', 'System\ConfigurationController@getVisualTheme');
@@ -1086,8 +1141,12 @@ if ($hostname) {
             Route::get('configurations/apkurl', 'System\ConfigurationController@apkurl');
             Route::post('configurations/emails', 'System\ConfigurationController@emails');
             Route::post('configurations/emails/test', 'System\ConfigurationController@testEmail');
-            Route::post('configurations/qrapi', 'System\ConfigurationController@qrapi');
+            Route::post('configurations/evolution-server', 'System\ConfigurationController@evolutionServer');
             Route::post('configurations/google-maps', 'System\ConfigurationController@googleMaps');
+
+            // Términos y Condiciones
+            Route::get('configurations/terms', 'System\ConfigurationController@getTerms');
+            Route::post('configurations/terms', 'System\ConfigurationController@storeTerms');
 
             Route::get('configurations/update-tenant-discount-type-base', 'System\ConfigurationController@updateTenantDiscountTypeBase');
 

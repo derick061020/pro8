@@ -88,7 +88,7 @@ class ViewServiceProvider extends ServiceProvider
             'Modules\Ecommerce\Http\ViewComposers\FeaturedProductsViewComposer'
         );
         view()->composer(
-            'ecommerce::layouts.partials_ecommerce.featured_products_bottom',
+            ['ecommerce::layouts.partials_ecommerce.featured_products_bottom', 'ecommerce::layouts.layout_ecommerce_item.record'],
             'Modules\Ecommerce\Http\ViewComposers\FeaturedProductsViewComposer'
         );
         view()->composer(

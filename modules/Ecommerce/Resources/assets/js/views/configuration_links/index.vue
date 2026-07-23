@@ -245,6 +245,13 @@ export default {
         customised_link_two: "", // Link 2
         title_three_customised_link: "", // Título 3
         customised_link_three: "", // Link 3
+        tag_shipping: "",
+        tag_dollar: "",
+        tag_support: "",
+        link_facebook: "",
+        link_youtube: "",
+        link_tiktok: "",
+        link_instagram: "",
       },
     };
   },
@@ -287,6 +294,13 @@ export default {
         customised_link_two: "",
         title_three_customised_link: "",
         customised_link_three: "",
+        tag_shipping: "",
+        tag_dollar: "",
+        tag_support: "",
+        link_facebook: "",
+        link_youtube: "",
+        link_tiktok: "",
+        link_instagram: "",
         publicidad_activa: false,
         publicidad_texto: "",
         publicidad_color_fondo: "#000000",

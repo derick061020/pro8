@@ -1,0 +1,17 @@
+{
+    "apiSsl": "https://",
+    "apiUrl": "empresa001.pro8dev001.test",
+    "isStoreEnabled": "false",
+    "brandName": "Vendeya.pe",
+    "Primary": "#ff7d00",
+    "Secondary": "#d5e8e8",
+    "Background": "#eef5f5",
+    "White": "#ffffff",
+    "Text": "#004850",
+    "lightText": "#a2a5b9",
+    "darkPrimary": "#121c22",
+    "darkSecondary": "#1c2a32",
+    "darkrAccent": "#253945",
+    "darkBackground": "#1b262c",
+    "darkText": "#a9a9b2"
+}

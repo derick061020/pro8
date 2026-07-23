@@ -519,12 +519,12 @@
         {{-- @foreach($document->additional_information as $information)
         @endforeach --}}
     </tr>
+    @if ($document->referential_information)
     <tr>
         <td>
             <strong>Información adicional: </strong>
         </td>
     </tr>
-    @if ($document->referential_information)
     <tr>
         <td>{{ $document->referential_information }}</td>
     </tr>
@@ -539,6 +539,8 @@
     </tr>
     <br><br>
 </table>
+
+
 <br>
 <table class="full-width">
 <tr>
@@ -557,5 +559,33 @@
     </tr>
 
 </table>
+
+@if ($document->custom_fields_data && count((array)$document->custom_fields_data) > 0)
+<br>
+<table class="full-width">
+    @foreach ($document->custom_fields_data as $field_slug => $field_value)
+        @php
+            $custom_field = \Modules\CustomField\Models\CustomField::where('slug', $field_slug)->first();
+            if ($custom_field && !$custom_field->show_in_pdf) {
+                continue;
+            }
+            $field_name = ($custom_field) ? $custom_field->name : str_replace('_', ' ', ucfirst($field_slug));
+        @endphp
+        <tr>
+            <td width="30%" class="font-bold">
+                {{ $field_name }}
+            </td>
+            <td width="2%">:</td>
+            <td>
+                @if (is_array($field_value))
+                    {{ implode(', ', $field_value) }}
+                @else
+                    {{ $field_value }}
+                @endif
+            </td>
+        </tr>
+    @endforeach
+</table>
+@endif
 </body>
 </html>

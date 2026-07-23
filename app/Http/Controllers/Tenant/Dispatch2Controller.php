@@ -16,6 +16,7 @@ use App\Models\Tenant\Catalogs\{
     Country
 };
 use Illuminate\Http\Request;
+use App\Services\SeriesResolver;
 use App\Models\Tenant\{
     Establishment,
     Dispatch,
@@ -135,7 +136,7 @@ class Dispatch2Controller extends Controller
         $countries = Country::whereActive()->get();
         $districts = District::whereActive()->get();
         $establishments = Establishment::all();
-        $series = Series::all();
+        $series = app(SeriesResolver::class)->applyContext(Series::query())->get();
         
         return compact('establishments', 'customers', 'series', 'transportModeTypes', 'transferReasonTypes', 'unitTypes', 'countries', 'departments', 'provinces', 'districts', 'identityDocumentTypes', 'items');
     }

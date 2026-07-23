@@ -1,0 +1,14 @@
+{
+    "/documents/create": {
+        "title": "Nuevo Comprobante",
+        "summary": "En esta sección puedes generar Facturas, Boletas, Notas de Crédito y Débito. Utiliza los atajos de teclado (como F2 para productos) para acelerar tu proceso. Recuerda verificar el Tipo de Operación y la Moneda antes de emitir."
+    },
+    "/items": {
+        "title": "Catálogo de Productos",
+        "summary": "Administra tus productos y servicios. Aquí puedes gestionar precios, stock inicial, almacenes y código de barras. Puedes importar masivamente tus productos usando la plantilla Excel."
+    },
+    "/persons/customers": {
+        "title": "Gestión de Clientes",
+        "summary": "Agrega y edita los datos de tus clientes. Puedes buscar directamente por RUC/DNI para autocompletar la información desde los servidores de SUNAT/RENIEC."
+    }
+}

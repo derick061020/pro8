@@ -20,6 +20,13 @@ if($current_hostname) {
                 Route::get('/configuration', 'QrApiController@getConfig')->name('tenant.qrchat.configuration');
                 Route::post('/configuration/update', 'QrApiController@updateConfig');
 
+                Route::post('/connect', 'QrApiController@connect');
+                Route::get('/qr', 'QrApiController@qr');
+                Route::get('/state', 'QrApiController@state');
+                Route::post('/disconnect', 'QrApiController@disconnect');
+                Route::post('/restart', 'QrApiController@restart');
+                Route::post('/renew', 'QrApiController@renew');
+
                 Route::post('/encode', 'QrApiController@encodeBase64');
                 Route::post('/send-message', 'QrApiController@sendMessage');
             });

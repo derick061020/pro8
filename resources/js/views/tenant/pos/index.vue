@@ -261,7 +261,7 @@
                             >
                                 <div
                                     :style="{ backgroundColor: item.color }"
-                                    class="card-body pointer rounded-0"
+                                    class="card-body pointer"
                                     style="font-weight: bold;color: white;font-size: 18px;"
                                 >
                                     {{ item.name }}
@@ -306,7 +306,7 @@
                                         class="text-muted mb-0 "
                                         style="display: flex; justify-content: space-between; align-items: center;"
                                     >
-                                        <small style="width: 45%;">{{
+                                        <small class="text-primary" style="width: 45%;">{{
                                             item.internal_id
                                         }}</small>
                                         <el-tooltip
@@ -329,7 +329,11 @@
                                         <small
                                             class="measuring-unit text-end"
                                             style="width: 45%;"
-                                            >{{ item.unit_type_id }}</small
+                                            >
+                                            <el-tag type="primary" size="mini">
+                                                {{ item.unit_type_id }}
+                                            </el-tag>
+                                            </small
                                         >
 
                                         <!-- <el-popover v-if="item.warehouses" placement="right" width="280"  trigger="hover">
@@ -344,13 +348,13 @@
                                         v-if="
                                             configuration.show_complete_name_pos
                                         "
-                                        class="font-weight-semibold mb-0 d-flex justify-content-center"
+                                        class="font-weight-semibold mb-0 d-flex justify-content-center product-name-description "
                                     >
                                         {{ item.description }}
                                     </span>
                                     <span
                                         v-else
-                                        class="font-weight-semibold mb-0 d-flex justify-content-center"
+                                        class="font-weight-semibold mb-0 d-flex justify-content-center product-name-description "
                                     >
                                         {{ item.description.substring(0, 50) }}
                                     </span>
@@ -896,23 +900,23 @@
                                         {{ form.total_unaffected }}
                                     </td>
                                 </tr>
-                                <tr v-if="form.total_taxed > 0" class="m-0">
+                                <tr v-if="form.total_taxed > 0 && !isNrus" class="m-0">
                                     <td>OP.GRAVADA</td>
                                     <td class="text-end font-weight-semibold">
                                         {{ currency_type.symbol }}
                                         {{ form.total_taxed }}
                                     </td>
                                 </tr>
-                                <tr v-if="form.total_igv > 0" class="m-0">
+                                <tr v-if="form.total_igv > 0 && !isNrus" class="m-0">
                                     <td>IGV</td>
                                     <td class="text-end font-weight-semibold">
                                         {{ currency_type.symbol }}
                                         {{ form.total_igv }}
                                     </td>
                                 </tr>
-                                <template v-if="form.has_retention">
+                                <template v-if="form.has_retention && !isNrus">
                                     <tr v-if="form.retention && form.retention.amount > 0" class="m-0">
-                                        <td>M. RETENCIÓN 
+                                        <td>M. RETENCIÓN
                                                     ({{
                                                         configuration.igv_retention_percentage
                                                                     }}%):
@@ -923,7 +927,7 @@
                                         </td>
                                     </tr>
                                 </template>
-                                <tr v-if="form.total_isc > 0" class="m-0">
+                                <tr v-if="form.total_isc > 0 && !isNrus" class="m-0">
                                     <td>ISC</td>
                                     <td class="text-end font-weight-semibold">
                                         {{ currency_type.symbol }}
@@ -1387,6 +1391,9 @@ export default {
             }
         },
         ...mapState(["config"]),
+        isNrus: function() {
+            return !!(this.config && this.config.is_nrus);
+        },
         canSeeHistoryPurchase: function() {
             if (this.typeUser !== "admin") {
                 return this.configuration.pos_history;
@@ -1742,6 +1749,7 @@ export default {
             this.items[index].sale_unit_price = price.price;
             this.items[index].unit_type_id = price.unit_type_id;
             this.items[index].presentation = price
+            this.ChangeSelectedPrice()
             this.$message.success("Precio seleccionado");
         },
         clickWarehouseDetail(item) {

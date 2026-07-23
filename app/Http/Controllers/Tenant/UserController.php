@@ -216,6 +216,7 @@ class UserController extends Controller
         $user->personal_email = $request->personal_email;
         $user->corporate_email = $request->corporate_email;
         $user->personal_cell_phone = $request->personal_cell_phone;
+        $user->bot_enabled = (bool) $request->bot_enabled;
         $user->corporate_cell_phone = $request->corporate_cell_phone;
         $user->date_of_birth = $request->date_of_birth;
         $user->contract_date = $request->contract_date;
@@ -325,5 +326,35 @@ class UserController extends Controller
         {
             return $this->generalResponse(false, $e->getMessage());
         }
+    }
+
+    public function toggleBot(Request $request, $userId)
+    {
+        $request->validate(['bot_enabled' => 'required|boolean']);
+        $user = User::findOrFail($userId);
+
+        if ($user->locked) {
+            return [
+                'success' => false,
+                'message' => 'Usuario suspendido: no se puede habilitar el bot.',
+                'bot_enabled' => (bool) $user->bot_enabled,
+            ];
+        }
+        if (empty($user->personal_cell_phone) && (bool) $request->bot_enabled) {
+            return [
+                'success' => false,
+                'message' => 'Falta N° celular personal para habilitar el bot.',
+                'bot_enabled' => (bool) $user->bot_enabled,
+            ];
+        }
+
+        $user->bot_enabled = (bool) $request->bot_enabled;
+        $user->save();
+
+        return [
+            'success' => true,
+            'message' => $user->bot_enabled ? 'Bot habilitado para ' . $user->name : 'Bot deshabilitado para ' . $user->name,
+            'bot_enabled' => (bool) $user->bot_enabled,
+        ];
     }
 }

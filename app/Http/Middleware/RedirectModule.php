@@ -130,13 +130,15 @@
             elseif (
                 $firstLevel == "cuenta") {
                 $group = "cuenta";
-            } ///* Module configuration */
+            } ///* Module establishments (Usuarios/Locales & Series) */
             elseif (
                 $firstLevel == "users" ||
-                $firstLevel == "establishments"||
-                in_array($firstLevel, ['list-platforms', 'list-cards', 'list-currencies', 'list-bank-accounts', 'list-banks', 'list-attributes', 'list-detractions', 'list-units', 'list-payment-methods', 'list-incomes', 'list-payments', 'company_accounts', 'list-vouchers-type',     'companies', 'advanced', 'tasks', 'inventories','bussiness_turns','offline-configurations','series-configurations','configurations', 'login-page', 'list-settings'])) {
+                $firstLevel == "establishments") {
                 $group = "establishments";
-                // $group = "configuration";
+            } ///* Module configuration (Configuraciones globales) */
+            elseif (
+                in_array($firstLevel, ['list-platforms', 'list-cards', 'list-currencies', 'list-bank-accounts', 'list-banks', 'list-attributes', 'list-detractions', 'list-units', 'list-payment-methods', 'list-incomes', 'list-payments', 'company_accounts', 'list-vouchers-type',     'companies', 'advanced', 'tasks', 'inventories','bussiness_turns','offline-configurations','series-configurations','configurations', 'login-page', 'list-settings'])) {
+                $group = "configuration";
             }//
             elseif (
                 $firstLevel == "companies") {
@@ -222,7 +224,7 @@
                 $group = "transports";
             }elseif ($firstLevel == "origin_addresses") {
                 $group = "origin_addresses";
-            }elseif ($firstLevel == "advanced_purchase_settlements") { 
+            }elseif ($firstLevel == "advanced_purchase_settlements") {
                 $group = "advanced_purchase_settlements";
             }elseif ($firstLevel == "advanced_order_forms") {
                 $group = "advanced_order_forms";
@@ -230,8 +232,8 @@
                 $group = "account_summary";
             }elseif ($firstLevel == "ecommerce_items") {
                 $group = "ecommerce_items";
-            }elseif ($firstLevel == "restaurant" || 
-            ($firstLevel == "restaurant" && $secondLevel == "list")|| 
+            }elseif ($firstLevel == "restaurant" ||
+            ($firstLevel == "restaurant" && $secondLevel == "list")||
             ($firstLevel == "restaurant" && $secondLevel == "orders")||
             ($firstLevel == "restaurant" && $secondLevel == "promotions")||
             ($firstLevel == "restaurant" && $secondLevel == "configuration")) {
@@ -245,7 +247,7 @@
             || $firstLevel == "machine-type-production"
             || $firstLevel == "workers") {
                 $group = "production_app";
-            }elseif ($firstLevel == "live-app") {
+            }elseif ($firstLevel == "app") {
                 $group = "apps";
             }elseif ($firstLevel == "list-extras") {
                 $group = "app_2_generator";
@@ -255,7 +257,7 @@
             return $group;
         }
 
-        
+
         /**
          *
          * @param  string $level
@@ -266,7 +268,7 @@
         {
             return in_array($level, $options);
         }
-        
+
 
         /**
          * @param $modules

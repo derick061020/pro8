@@ -1,4 +1,4 @@
-<div class="widget widget-featured mt-2">
+<div class="widget widget-featured mt-2 d-none">
             <h3 class="widget-title">Productos Destacados</h3>
 
             <div class="widget-body">
@@ -19,7 +19,7 @@
                         @foreach ($row3 as $item)
                         <div class="product product-sm">
                             <figure class="product-image-container">
-                                <a href="/ecommerce/item/{{ $item->id }}-{{ \Illuminate\Support\Str::slug($item->description) }}" class="product-image">
+                                <a href="/ecommerce/item/{{ $item->id }}/{{ \Illuminate\Support\Str::slug($item->description) }}" class="product-image">
                                     @php
                                         $itemImagePath = ($item->image && $item->image !== 'imagen-no-disponible.jpg')
                                             ? asset('storage/uploads/items/'.$item->image)
@@ -30,7 +30,7 @@
                             </figure>
                             <div class="product-details">
                                 <h2 class="product-title">
-                                    <a href="/ecommerce/item/{{ $item->id }}-{{ \Illuminate\Support\Str::slug($item->description) }}">{{$item->description}}</a>
+                                    <a href="/ecommerce/item/{{ $item->id }}/{{ \Illuminate\Support\Str::slug($item->description) }}">{{$item->description}}</a>
                                 </h2>
                                 <div class="ratings-container">
                                     <div class="product-ratings">
@@ -54,7 +54,7 @@
                         @foreach ($row3inverse as $item)
                         <div class="product product-sm">
                             <figure class="product-image-container">
-                                <a href="/ecommerce/item/{{ $item->id }}-{{ \Illuminate\Support\Str::slug($item->description) }}" class="product-image">
+                                <a href="/ecommerce/item/{{ $item->id }}/{{ \Illuminate\Support\Str::slug($item->description) }}" class="product-image">
                                     @php
                                         $itemImagePath = ($item->image && $item->image !== 'imagen-no-disponible.jpg')
                                             ? asset('storage/uploads/items/'.$item->image)
@@ -65,7 +65,7 @@
                             </figure>
                             <div class="product-details">
                                 <h2 class="product-title">
-                                    <a href="/ecommerce/item/{{ $item->id }}-{{ \Illuminate\Support\Str::slug($item->description) }}">{{$item->description}}</a>
+                                    <a href="/ecommerce/item/{{ $item->id }}/{{ \Illuminate\Support\Str::slug($item->description) }}">{{$item->description}}</a>
                                 </h2>
                                 <div class="ratings-container">
                                     <div class="product-ratings">

@@ -16,7 +16,7 @@
             </ul>
             <div class="container">
                 <ul id="scrollContainer" class="menu restaurante sf-arrows sf-js-enabled" style="touch-action: pan-y;">
-                @foreach ($categories as $category)
+                @foreach ($categories_list as $category)
                     @php $categorySlug = \Illuminate\Support\Str::slug($category->name, '-'); @endphp
                     <li class="menu-item ecommerce {{ $currentCategorySlug == $categorySlug ? 'selected-category' : '' }}" style="cursor:pointer;" onclick="window.location='{{ route('tenant.ecommerce.category', $categorySlug) }}'">
                         <a href="{{ route('tenant.ecommerce.category', $categorySlug) }}">
@@ -24,7 +24,7 @@
                                 <img class="category-logo" src="{{ asset('storage/uploads/categories/'. $category->image) }}" alt="{{$category->name}}" draggable="false">
                             @else
                                 <img class="category-logo" src="{{ asset('logo/Image_not_available.png') }}" alt="{{$category->name}}" draggable="false">
-                            @endif  
+                            @endif
                             {{ $category->name }}
                         </a>
                     </li>
@@ -79,7 +79,7 @@ container.addEventListener('mousemove', (e) => {
 // };
 // // console.log(images);
 
-// //mostar las imagenes del array images dentro de una etiqueta img que esta dentro de un li 
+// //mostar las imagenes del array images dentro de una etiqueta img que esta dentro de un li
 // const lis = document.querySelectorAll('.menu li a');
 // lis.forEach((li, index) => {
 //     const category = li.textContent.trim();

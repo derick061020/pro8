@@ -14,6 +14,8 @@ class Promotion extends ModelTenant
         'status',
         'image',
         'item_id',
+        'category_id',
+        'custom_link',
         'apply_restaurant',
         'spot_url'
     ];

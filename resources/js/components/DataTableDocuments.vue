@@ -2,11 +2,11 @@
     <div>
         <div class="row ">
 
-            <div class="col-md-12 col-lg-12 col-xl-12 py-0 filter-invoice">
+            <div class="col-md-12 col-lg-12 col-xl-12 py-0 filter-invoice mb-2">
 
                 <div class="d-flex col-12 p-0 px-1">
                     <div class="col-lg-9 col-md-8 col-sm-12 mb-2 p-0">
-                        <div class="form-group filter-content d-flex align-items-center flex-wrap">
+                        <div class="form-group filter-content d-flex align-items-end flex-wrap">
                             <el-button
                                 type="secondary"
                                 class="btn-show-filter btn-show-filter-invoice mb-2 ms-2"
@@ -15,10 +15,24 @@
                             >
                                 {{ see_more ? "Ocultar filtros" : "Mostrar filtros" }}
                             </el-button>
-                            <el-button v-if="hasActiveFilters" class="submit ms-2 mb-2" type="info" @click.prevent="cleanInputs"  icon="el-icon-refresh">Limpiar </el-button>                            
+                            <el-button v-if="hasActiveFilters" class="submit ms-2 mb-2" type="info" @click.prevent="cleanInputs"  icon="el-icon-refresh">Limpiar </el-button>  
+                            <div class="d-flex align-items-end justify-content-start ms-2 mb-2">
+                                <div class="d-flex align-items-end gap-1">
+                                    <span class="bg-tickets legend-cube d-flex" style="margin-bottom: 2px;"></span>
+                                    <span style="line-height: normal;">Boletas</span>
+                                </div>
+                                <div class="d-flex align-items-end ms-3 gap-1">
+                                    <span class="bg-invoices legend-cube d-flex" style="margin-bottom: 2px;"></span>
+                                    <span style="line-height: normal;">Facturas</span>
+                                </div>
+                                <div class="d-flex align-items-end ms-3 gap-1">
+                                    <span class="bg-credit-notes legend-cube d-flex" style="margin-bottom: 2px;"></span>
+                                    <span style="line-height: normal;">Notas de crédito</span>
+                                </div>
+                            </div>                          
                         </div>
                     </div>
-                    <div class="col-lg-2 col-md-3 col-sm-12 text-end">
+                    <div class="col-lg-3 col-md-4 col-sm-12 text-end">
                         <slot name="showhide"></slot>
                     </div>
                 </div>
@@ -219,6 +233,11 @@
 <style>
 .font-custom{
     font-size:15px !important
+}
+.legend-cube {
+    width: 15px;
+    height: 15px;
+    border-radius: 3px;
 }
 </style>
 <script>

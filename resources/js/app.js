@@ -83,6 +83,11 @@ import VueClipboard from 'vue-clipboard2'
 Vue.use(VueClipboard)
 
 
+import VueApexCharts from 'vue-apexcharts'
+Vue.use(VueApexCharts)
+Vue.component('apexchart', VueApexCharts)
+
+
 import moment from 'moment';
 
 // Formato de fecha/hora configurable por el usuario (Configuración general > formato).

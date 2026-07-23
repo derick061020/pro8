@@ -1,12 +1,14 @@
 <template>
     <div>
         <template v-if="from === 'admin'">
-            <system-checkout-culqi  :form="_form" v-if="type === 'culqi' && up" />
-            <system-checkout-izipay :form="_form" v-else-if="type === 'izipay' && up" />
+            <system-checkout-culqi @submit="submitChild"  :form="_form" v-if="type === 'culqi' && up" />
+            <system-checkout-izipay @submit="submitChild" :form="_form" v-else-if="type === 'izipay' && up" />
+            <system-checkout-mercadopago @submit="submitChild" :form="_form" v-else-if="type === 'mercadopago' && up" />
         </template>
         <template v-else>
-            <tenant-checkout-izipay  :form="_form" v-if="type === 'izipay' && up" />
-            <tenant-checkout-culqi  :form="_form" v-else-if="type === 'culqi' && up" />
+            <tenant-checkout-izipay @submit="submitChild"  :form="_form" v-if="type === 'izipay' && up" />
+            <tenant-checkout-culqi @submit="submitChild"  :form="_form" v-else-if="type === 'culqi' && up" />
+            <tenant-checkout-mercadopago @submit="submitChild" :form="_form" v-else-if="type === 'mercadopago' && up" />
         </template>
     </div>
 
@@ -90,14 +92,19 @@ export default {
         enabledCheckout(){
             this.$http.get(`${this.resource}/enabled-checkout`)
                 .then( response => {
-                    console.log(response.data);
                     this.type = response.data.checkout
                     this.isTenant = response.data.is_tenant
 
                     this.transform();
                     this.up = true;
+                    this.$emit('loaded', this.type);
                 })
-        }, 
+                .catch( () => {
+                    this.type = null;
+                    this.up = true;
+                    this.$emit('loaded', null);
+                })
+        },
         transform() {
 
             
@@ -123,8 +130,22 @@ export default {
                     email: this.form.customer.email,
                     order: this.form.order_id
                 }
+            } else if (this.type === 'mercadopago') {
+                this._form = {
+                    amount: this.form.amount,
+                    currency: this.form.currency,
+                    description: this.form.description,
+                    orderId: this.form.order_id || this.form.orderId,
+                    customer: {
+                        name: this.form.customer.name,
+                        email: this.form.customer.email,
+                    }
+                }
             }
-        }
+        },
+        submitChild(data) {
+            this.$emit('submit', data);
+        },
 
     }
 }

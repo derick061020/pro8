@@ -53,8 +53,14 @@
                 :class="{ 'has-danger': errors.output_time }"
             >
                 <label class="control-label">Hora de salida</label>
-                <el-input v-model="form.output_time" placeholder="HH:MM">
-                </el-input>
+                <el-time-picker
+                    v-model="form.output_time"
+                    format="HH:mm"
+                    value-format="HH:mm"
+                    placeholder="Seleccione hora"
+                    :picker-options="{ format: 'HH:mm' }"
+                >
+                </el-time-picker>
                 <small
                     class="form-control-feedback"
                     v-if="errors.output_time"

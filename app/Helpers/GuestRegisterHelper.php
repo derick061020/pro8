@@ -31,9 +31,8 @@ class GuestRegisterHelper
                 throw new Exception("Email inválido o vacío: " . var_export($email, true));
             }
             $signed_url = $this->generateSignedUrl($id, $email, $client_id);
-            $payment_url = $payment_uuid ? route('payment.public.show', ['uuid' => $payment_uuid]) : null;
 
-            $class = new VerifyGuestRegisterMail($signed_url, $payment_url);
+            $class = new VerifyGuestRegisterMail($signed_url);
 
             $config = Configuration::first();
             

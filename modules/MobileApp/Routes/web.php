@@ -8,34 +8,30 @@ if($current_hostname)
 
         Route::middleware(['auth','redirect.module', 'locked.tenant','check.email.verified'])->group(function () {
 
-            Route::prefix('live-app')->group(function() {
+            Route::get('/live-app', 'LiveAppController@index')->name('tenant.liveapp.index');
 
-                Route::get('/', 'LiveAppController@index')->name('tenant.liveapp.index');
-                // Route::get('/premium', 'LiveAppController@premium')->name('tenant.liveapp.premium');
-                Route::get('/configuration', 'LiveAppController@configuration')->name('tenant.liveapp.configuration');
-            });
+            Route::prefix('app')->group(function() {
 
+                Route::get('/configuration', 'AppConfigurationController@view')->name('tenant.liveapp.configuration');
 
-            Route::prefix('app-configurations')->group(function () {
+                Route::prefix('configurations')->group(function () {
+                    Route::get('', 'AppConfigurationController@record');
+                    Route::post('', 'AppConfigurationController@store');
+                });
 
-                Route::get('record', 'AppConfigurationController@record');
-                Route::post('', 'AppConfigurationController@store');
-
-            });
-
-            Route::prefix('app-permissions')->group(function () {
-
-                Route::get('record/{user_id}', 'AppPermissionController@record');
-                Route::get('tables', 'AppPermissionController@tables');
-                Route::post('', 'AppPermissionController@store');
+                Route::prefix('permissions')->group(function () {
+                    Route::get('record/{user_id}', 'AppPermissionController@record');
+                    Route::get('tables', 'AppPermissionController@tables');
+                    Route::post('', 'AppPermissionController@store');
+                });
 
             });
 
         });
 
-            Route::prefix('report-app')->group(function() {
-                Route::get('pdf-general-sale', 'LiveAppController@pdfReportGeneralSale');
-            });
+        Route::prefix('report-app')->group(function() {
+            Route::get('pdf-general-sale', 'LiveAppController@pdfReportGeneralSale');
+        });
     });
 
 }

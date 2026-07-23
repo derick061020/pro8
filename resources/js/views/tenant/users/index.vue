@@ -38,6 +38,8 @@
                             <th>Perfil</th>
                             <th>Api Token</th>
                             <th>Sucursal</th>
+                            <th>Teléfono</th>
+                            <th>Bot</th>
                             <th></th>
                         </tr>
                         </thead>
@@ -75,6 +77,20 @@
                                 </button>
                             </td>
                             <td>{{ row.establishment_description }}</td>
+                            <td>{{ row.personal_cell_phone || '—' }}</td>
+                            <td>
+                                <span v-if="row.locked" class="badge badge-danger" style="background:#dc3545;color:#fff;padding:3px 7px;border-radius:4px;font-size:11px;">Suspendido</span>
+                                <span v-else-if="row.bot_enabled" class="badge" style="background:#28a745;color:#fff;padding:3px 7px;border-radius:4px;font-size:11px;">Activo</span>
+                                <span v-else class="badge" style="background:#6c757d;color:#fff;padding:3px 7px;border-radius:4px;font-size:11px;">Inactivo</span>
+                                <button
+                                    v-if="!row.locked && typeUser === 'admin'"
+                                    type="button"
+                                    class="btn btn-link btn-xs p-0 ms-1"
+                                    :title="row.bot_enabled ? 'Deshabilitar bot' : 'Habilitar bot'"
+                                    @click.prevent="toggleBot(row)">
+                                    <i :class="row.bot_enabled ? 'fa fa-toggle-on' : 'fa fa-toggle-off'"></i>
+                                </button>
+                            </td>
                             <td class="text-end">
                                 <button
                                     v-if="typeUser === 'admin' && row.active"
@@ -236,7 +252,22 @@
             {
                 this.changeActive(`/${this.resource}/change-active`, { active, id })
                     .then(() => this.$eventHub.$emit('reloadData'))
-            },            
+            },
+            async toggleBot(row) {
+                const newValue = !row.bot_enabled
+                try {
+                    const { data } = await this.$http.post(`/${this.resource}/${row.id}/toggle-bot`, { bot_enabled: newValue })
+                    if (data.success) {
+                        row.bot_enabled = data.bot_enabled
+                        this.$message({ message: data.message, type: 'success' })
+                    } else {
+                        this.$message({ message: data.message || 'No se pudo actualizar', type: 'error' })
+                    }
+                } catch (e) {
+                    this.$message({ message: 'Error al actualizar el bot', type: 'error' })
+                }
+            },
+
             maskToken(token) {
                 if (!token) return ''
                 if (token.length <= 6) return token

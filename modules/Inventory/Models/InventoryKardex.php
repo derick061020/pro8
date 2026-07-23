@@ -178,6 +178,12 @@ class InventoryKardex extends ModelTenant
             // 'item' => $item->getCollectionData(),
             'item_warehouse_price' => $price,
             'warehouse' => $warehouseName,
+            'input' => null,
+            'output' => null,
+            'balance' => 0,
+            'type_transaction' => null,
+            'date_of_register'=> null,
+            'guide_id' => null,
         ];
         $inventory_kardexable = $this->inventory_kardexable;
         $qty = $this->quantity;
@@ -187,7 +193,7 @@ class InventoryKardex extends ModelTenant
         $data['output'] = $output_set;
         switch ($this->inventory_kardexable_type) {
 
-            case $models[0]: //venta
+            case $models[0]: //venta DOCUMENT
 
 
                 $cpe_input = ($qty > 0) ? (isset($inventory_kardexable->sale_note_id) || isset($inventory_kardexable->order_note_id) || isset($inventory_kardexable->sale_notes_relateds) ? "-" : $qty) : "-";
@@ -234,13 +240,13 @@ class InventoryKardex extends ModelTenant
                 $data['order_note_asoc'] = isset($inventory_kardexable->order_note_id) ? optional($inventory_kardexable)->order_note->number_full : "-";
                 break;
 
-            case $models[1]:
+            case $models[1]: // PURCHASE
                 $data['balance'] = $balance += $qty;
                 $data['number'] = optional($inventory_kardexable)->series . '-' . optional($inventory_kardexable)->number;
                 $data['type_transaction'] = ($qty < 0) ? "Anulación Compra" : "Compra";
                 $data['date_of_issue'] = isset($inventory_kardexable->date_of_issue) ? $inventory_kardexable->date_of_issue->format('Y-m-d') : '';
                 break;
-            case $models[2]: // Nota de venta
+            case $models[2]: // Nota de venta SALENOTE
 
                 if(isset($inventory_kardexable->order_note_id))
                 {
@@ -260,7 +266,7 @@ class InventoryKardex extends ModelTenant
                 // $data['type_transaction'] = "Nota de venta";
                 $data['date_of_issue'] = isset($inventory_kardexable->date_of_issue) ? $inventory_kardexable->date_of_issue->format('Y-m-d') : '';
                 break;
-            case $models[3]:
+            case $models[3]: // INVENTORY
             {
                 $transaction = '';
                 $input = '';
@@ -286,15 +292,18 @@ class InventoryKardex extends ModelTenant
                 $data['date_of_issue'] = isset($inventory_kardexable->date_of_issue) ? $inventory_kardexable->date_of_issue->format('Y-m-d') : '';
                 $data['guide_id'] = null;
             
-                $guide = Guide::query()->where('id', $inventory_kardexable->guide_id)->first();
+                // $guide = Guide::query()->where('id', $inventory_kardexable->guide_id)->first();
+                $guide = $inventory_kardexable->guide;
                 if($guide) {
                     $data['number'] = $guide->series.'-'.$guide->number;
                     $data['date_of_issue'] = $guide->date_of_issue->format('Y-m-d');
                     $data['guide_id'] = $guide->id;
                 }
             
-                $inventory_transfer = InventoryTransfer::query()->where('id', $inventory_kardexable->inventories_transfer_id)->first();
+                // $inventory_transfer = InventoryTransfer::query()->where('id', $inventory_kardexable->inventories_transfer_id)->first();
+                $inventory_transfer = $inventory_kardexable->inventories_transfer;
                 if($inventory_transfer) {
+                    $inventory_transfer = $inventory_transfer->first();
                     $data['number'] = $inventory_transfer->series.'-'.$inventory_transfer->number;
                     $data['date_of_issue'] = $inventory_transfer->created_at->format('Y-m-d');
                 }
@@ -327,7 +336,7 @@ class InventoryKardex extends ModelTenant
                 }
                 break;
             }
-            case $models[4]:
+            case $models[4]: //ORDERNOTE
                 $data['balance'] = $balance += $qty;
                 $data['number'] = optional($inventory_kardexable)->prefix . '-' . optional($inventory_kardexable)->id;
                 $data['type_transaction'] = ($qty < 0) ? "Pedido" : "Anulación Pedido";

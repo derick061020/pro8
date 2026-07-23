@@ -1,9 +1,9 @@
 <template>
-    <el-dialog 
-      :title="titleDialog" 
-      :visible="showDialog" 
-      @close="close" 
-      @open="create" 
+    <el-dialog
+      :title="titleDialog"
+      :visible="showDialog"
+      @close="close"
+      @open="create"
       :close-on-click-modal="false"
     >
         <form autocomplete="off" @submit.prevent="submit" v-loading="loading">
@@ -36,7 +36,7 @@
             </div>
             <div class="form-actions text-right mt-4">
                 <el-button class="second-buton" @click.prevent="close()">Cancelar</el-button>
-                <el-button type="primary" native-type="submit" :loading="loading_submit">Guardar</el-button>
+                <el-button type="primary" native-type="submit" :loading="loading_submit" class="ms-1">Guardar</el-button>
             </div>
         </form>
     </el-dialog>
@@ -52,7 +52,7 @@
             return {
                 loading_submit: false,
                 titleDialog: null,
-                resource: 'app-permissions',
+                resource: 'app/permissions',
                 errors: {},
                 form: {},
                 app_configuration: {},
@@ -66,7 +66,7 @@
         },
         methods: {
             async getTables(){
-                
+
                 this.loading = true
                 await this.$http.get(`/${this.resource}/tables`)
                     .then(response => {
@@ -121,18 +121,18 @@
                     let selected_module = 0
 
                     this.pos_document_types.forEach(value => {
-                        
+
                         const find_selected_module = _.some(this.form.app_modules, { value: value, checked: true})
 
                         if(find_selected_module) selected_module++
                     })
-                    
+
                     if(selected_module === 0)
                     {
                         return {
                             success: false,
                             message: 'Si tiene configurado el modo POS, debe habilitar al menos una opción: Factura, Boleta o Nota de venta.'
-                        } 
+                        }
                     }
                 }
 

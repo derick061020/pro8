@@ -12,6 +12,7 @@
     use App\Models\Tenant\Person;
     use App\Models\Tenant\SaleNote;
     use App\Models\Tenant\Series;
+    use App\Services\SeriesResolver;
     use App\Http\Controllers\Controller;
     use Exception;
     use Illuminate\Database\Eloquent\HigherOrderBuilderProxy;
@@ -30,7 +31,7 @@
         public function tables()
         {
             $establishment = Establishment::query()->where('id', auth()->user()->establishment_id)->first();
-            $series = Series::query()->where('establishment_id', $establishment->id)->get();
+            $series = app(SeriesResolver::class)->applyContext(Series::query()->where('establishment_id', $establishment->id))->get();
             $document_types = [
                 ['id' => '01', 'name' => 'Factura'],
                 ['id' => '03', 'name' => 'Boleta'],

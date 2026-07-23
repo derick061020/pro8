@@ -60,6 +60,9 @@
             font-size: 18px;
             font-weight: bold;
         }
+        body.has-announcement-bar .header-search-wrapper {
+            top: 40px;
+        }
     </style>
     <div id="announcement-bar" class="announcement-bar">
         <div class="container text-center position-relative">
@@ -79,12 +82,14 @@
                 bar.style.display = 'none';
                 localStorage.setItem('hide_announcement_bar', 'true');
                 document.body.style.paddingTop = '0px';
+                document.body.classList.remove('has-announcement-bar');
             }
         }
         document.addEventListener('DOMContentLoaded', function() {
             const bar = document.getElementById('announcement-bar');
             if (bar && !localStorage.getItem('hide_announcement_bar')) {
                 bar.style.display = 'block';
+                document.body.classList.add('has-announcement-bar');
                 // Adjust body padding to prevent overlapping the header
                 document.body.style.paddingTop = bar.offsetHeight + 'px';
             }

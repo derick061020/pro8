@@ -27,37 +27,62 @@
                                v-text="errors.enable_guest_register[0]"></small>
                     </div>
                 </div>
-                <!-- URL de registro simplificada (visible solo cuando está habilitado) -->
+
                 <div class="col-md-6" v-if="form.enable_guest_register">
                     <label class="control-label">
-                        URL de registro
+                        Validar RUC en el registro
                         <el-tooltip class="item"
-                                    content="Enlace simplificado para compartir con potenciales clientes. Redirige al formulario de registro."
+                                    content="Si está activo, el RUC deberá existir en SUNAT (validación obligatoria). Si está desactivado, se permite registrar con un RUC ficticio."
                                     effect="dark"
                                     placement="top-start">
                             <i class="fa fa-info-circle"></i>
                         </el-tooltip>
                     </label>
-                    <div class="form-group">
+                    <div :class="{'has-danger': errors.validate_ruc_register}"
+                         class="form-group">
+                        <el-switch v-model="form.validate_ruc_register"
+                                   active-text="Si"
+                                   inactive-text="No"
+                                   @change="submit"></el-switch>
+                        <small v-if="errors.validate_ruc_register"
+                               class="form-control-feedback"
+                               v-text="errors.validate_ruc_register[0]"></small>
+                    </div>
+                </div>
+                
+                <!-- URL de registro simplificada (visible solo cuando está habilitado) -->
+                <div class="col-md-6" v-if="form.enable_guest_register">
+                    <div class="form-group mb-0 position-relative">
+                        <label class="control-label">
+                            URL de registro
+                            <el-tooltip class="item"
+                                        content="Enlace simplificado para compartir con potenciales clientes. Redirige al formulario de registro."
+                                        effect="dark"
+                                        placement="top-start">
+                                <i class="fa fa-info-circle"></i>
+                            </el-tooltip>
+                        </label>
                         <el-input v-model="registerUrl" readonly>
-                            <el-button slot="append" @click="copyUrl" icon="el-icon-document-copy">Copiar</el-button>
                         </el-input>
+                        <span class="url-copy-icon" @click="copyUrl">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-copy"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M7 9.667a2.667 2.667 0 0 1 2.667 -2.667h8.666a2.667 2.667 0 0 1 2.667 2.667v8.666a2.667 2.667 0 0 1 -2.667 2.667h-8.666a2.667 2.667 0 0 1 -2.667 -2.667l0 -8.666" /><path d="M4.012 16.737a2.005 2.005 0 0 1 -1.012 -1.737v-10c0 -1.1 .9 -2 2 -2h10c.75 0 1.158 .385 1.5 1" /></svg>
+                        </span>
                         <small class="text-success" v-if="urlCopied">¡URL copiada al portapapeles!</small>
                     </div>
                 </div>
 
                 <!-- Selector de plan para nuevos registrados -->
                 <div class="col-md-6" v-if="form.enable_guest_register">
-                    <label class="control-label">
-                        Plan por defecto para nuevos registrados
-                        <el-tooltip class="item"
-                                    content="Selecciona qué plan se asignará automáticamente a los nuevos usuarios que se registren."
-                                    effect="dark"
-                                    placement="top-start">
-                            <i class="fa fa-info-circle"></i>
-                        </el-tooltip>
-                    </label>
                     <div :class="{'has-danger': errors.guest_register_plan_id}" class="form-group">
+                        <label class="control-label">
+                            Plan por defecto para nuevos registrados
+                            <el-tooltip class="item"
+                                        content="Selecciona qué plan se asignará automáticamente a los nuevos usuarios que se registren."
+                                        effect="dark"
+                                        placement="top-start">
+                                <i class="fa fa-info-circle"></i>
+                            </el-tooltip>
+                        </label>
                         <el-select v-model="form.guest_register_plan_id" @change="submit" style="width: 100%;" placeholder="Seleccione un plan">
                             <el-option
                                 v-for="plan in allPlans"
@@ -71,8 +96,9 @@
                                v-text="errors.guest_register_plan_id[0]"></small>
                     </div>
                 </div>
+
                 <div class="col-md-6">
-                    
+
                     <label class="control-label">
                         Mostrar publicidad
                         <el-tooltip class="item"
@@ -165,6 +191,7 @@ export default {
             loadedPlans: [],
             form: {
                 enable_guest_register: true,
+                validate_ruc_register: true,
                 regex_password_client: false,
                 tenant_show_ads: false,
                 tenant_image_ads: null,
@@ -256,6 +283,7 @@ export default {
                 .then(response => {
                     const data = response.data;
                     this.form.enable_guest_register = data.enable_guest_register;
+                    this.form.validate_ruc_register = data.validate_ruc_register;
                     this.form.regex_password_client = data.regex_password_client;
                     this.form.tenant_show_ads = data.tenant_show_ads;
                     this.form.tenant_image_ads = data.tenant_image_ads;
@@ -282,6 +310,7 @@ export default {
             this.errors = {}
             this.form = {
                 enable_guest_register: true,
+                validate_ruc_register: true,
                 regex_password_client: false,
                 tenant_show_ads: false,
                 tenant_image_ads: null,

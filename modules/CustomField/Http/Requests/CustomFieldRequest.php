@@ -32,6 +32,8 @@ class CustomFieldRequest extends FormRequest
             'enabled_for_sale_notes' => 'boolean',
             'enabled_for_dispatches' => 'boolean',
             'enabled_for_order_notes' => 'boolean',
+            'enabled_for_quotations' => 'boolean',
+            'show_in_pdf' => 'boolean',
         ];
     }
 

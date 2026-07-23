@@ -240,6 +240,25 @@
                                 v-text="errors.locked_emission[0]">
                             </small>
                         </div>
+                        <div v-if="form.plan_id && !selectedPlanWhatsappUnlimited"
+                             :class="{'has-danger': errors.whatsapp_messages_limit_override}"
+                             class="form-group">
+                            <label class="control-label">
+                                Límite de mensajes de WhatsApp para este cliente
+                            </label>
+                            <el-input
+                                v-model="form.whatsapp_messages_limit_override"
+                                :placeholder="`Usar el del plan (${selectedPlanWhatsappLimit})`">
+                            </el-input>
+                            <small class="form-text text-muted d-block">
+                                Vacío = usa el límite del plan. Mínimo {{ selectedPlanWhatsappLimit }}. Se resetea al renovar.
+                            </small>
+                            <small
+                                v-if="errors.whatsapp_messages_limit_override"
+                                class="form-control-feedback d-block"
+                                v-text="errors.whatsapp_messages_limit_override[0]">
+                            </small>
+                        </div>
                     </div>
                     <h4 class="mt-4">
                         Información de contacto
@@ -301,14 +320,16 @@
                         name="1"
                         title="Módulos">
                         <div class="row">
-                            <span class="ms-4">Giro de negocio <small>(opcional)</small></span>
+                            <span>Giro de negocio <small>(opcional)</small></span>
                             <div class="col-12">
                                 <el-radio-group v-model="business" @change="changeModules">
+                                    <el-radio v-if="business === 0" :label="0">Personalizado</el-radio>
                                     <el-radio :label="5">Completo</el-radio>
                                     <el-radio :label="1">Básico</el-radio>
                                     <el-radio :label="2">Farmacia</el-radio>
                                     <el-radio :label="3">Hotel</el-radio>
                                     <el-radio :label="4">Restaurante</el-radio>
+                                    <el-radio v-if="showNrusBusinessOption" :label="6">NRUS</el-radio>
                                 </el-radio-group>
                             </div>
                             <div class="col-md-6">
@@ -319,7 +340,7 @@
                                     <el-tree
                                         ref="tree"
                                         :check-strictly="true"
-                                        :data="modules"
+                                        :data="visibleModules"
                                         :props="defaultProps"
                                         accordion
                                         highlight-current
@@ -337,7 +358,7 @@
                                     <el-tree
                                         ref="Apptree"
                                         :check-strictly="true"
-                                        :data="apps"
+                                        :data="visibleApps"
                                         :props="defaultAppsProps"
                                         accordion
                                         highlight-current
@@ -797,10 +818,62 @@ export default {
             soap_password: null,
             collapse: 1,
             business: null,
+            applyingBusinessModules: false,
+            nrusSpec: {
+                modules: {
+                    7: '*',
+                    2: '*',
+                    1: ['1-1', '1-2', '1-5', '1-8', '1-15', '1-84'],
+                    17: '*',
+                    18: '*',
+                    8: '*',
+                    12: ['12-16'],
+                    52: '*',
+                    4: '*',
+                },
+                apps: {
+                    11: '*',
+                    14: '*',
+                    5: '*',
+                    53: '*',
+                },
+            },
             regex_password_client: false,
             loading_test: false,
             global_smtp_config: {},
         }
+    },
+    computed: {
+        visibleModules() {
+            if (this.business === 6) {
+                return this.modules.filter(m => this.nrusSpec.modules[m.id] !== undefined);
+            }
+            return this.modules;
+        },
+        visibleApps() {
+            if (this.business === 6) {
+                return this.apps.filter(m => this.nrusSpec.apps[m.id] !== undefined);
+            }
+            return this.apps;
+        },
+        selectedPlan() {
+            return this.plans.find(p => p.id === this.form.plan_id);
+        },
+        selectedPlanBusiness() {
+            return Number(this.selectedPlan && this.selectedPlan.module_permissions && this.selectedPlan.module_permissions.business);
+        },
+        showNrusBusinessOption() {
+            if (!this.selectedPlan) return true;
+            if (this.selectedPlanBusiness === 6) return true;
+
+            return this.planMeetsNrusLimits(this.selectedPlan);
+        },
+        selectedPlanWhatsappUnlimited() {
+            return !!(this.selectedPlan && this.selectedPlan.whatsapp_messages_unlimited);
+        },
+        selectedPlanWhatsappLimit() {
+            return this.selectedPlan ? this.selectedPlan.whatsapp_messages_limit : 0;
+        },
     },
     updated() {
         // Set default values ​​for multiple selection trees
@@ -838,6 +911,7 @@ export default {
     },
     methods: {
         FixChildren(currentObj, treeStatus) {
+            this.markCustomBusiness()
             let element = this.$refs.tree
             if (currentObj !== undefined) {
                 let selected = treeStatus.checkedKeys.indexOf(currentObj.id) // -1 is unchecked
@@ -852,6 +926,7 @@ export default {
             }
         },
         FixAppChildren(currentObj, treeStatus) {
+            this.markCustomBusiness()
             let element = this.$refs.Apptree
             if (currentObj !== undefined) {
                 let selected = treeStatus.checkedKeys.indexOf(currentObj.id) // -1 is unchecked
@@ -864,6 +939,10 @@ export default {
                     }
                 }
             }
+        },
+        markCustomBusiness() {
+            if (this.applyingBusinessModules || this.business === 6 || this.business === 0) return;
+            this.business = 0;
         },
         //funcion fusion fixchildren
         FixSameValueToChild(treeList, isSelected, element) {
@@ -900,7 +979,8 @@ export default {
                 price: 0,
                 plan_period_id: 1,
                 locked_emission: false,
-                type: null,
+                whatsapp_messages_limit_override: null,
+                type: 'admin',
                 is_update: false,
                 modules: [],
                 apps: [],
@@ -930,6 +1010,7 @@ export default {
             if (this.form.plan_id) {
                 let plan = this.plans.find(p => p.id === this.form.plan_id);
                 this.form.price = plan.pricing;
+                this.ensureVisibleBusinessOption();
 
                  if (plan.module_permissions) {
                     if (this.form.is_update) {
@@ -948,8 +1029,24 @@ export default {
                 }
             }
         },
+        planMeetsNrusLimits(plan) {
+            const salesLimit = Number(plan.sales_limit);
+            const establishmentsLimit = Number(plan.establishments_limit);
+            const exceedsSalesLimit = plan.sales_unlimited || (!isNaN(salesLimit) && salesLimit > 8000);
+            const exceedsEstablishmentsLimit = plan.establishments_unlimited || (!isNaN(establishmentsLimit) && establishmentsLimit > 1);
+
+            return !exceedsSalesLimit && !exceedsEstablishmentsLimit;
+        },
+        ensureVisibleBusinessOption() {
+            if (this.business !== 6 || this.showNrusBusinessOption) return;
+
+            this.business = null;
+            if (this.$refs.tree) this.$refs.tree.setCheckedKeys([]);
+            if (this.$refs.Apptree) this.$refs.Apptree.setCheckedKeys([]);
+        },
         applyPlanModules(permissions) {
-            this.business = permissions.business || null;
+            this.business = permissions.business ?? null;
+            this.ensureVisibleBusinessOption();
             const preSelecteds = [];
             const preAppSelecteds = [];
             
@@ -981,8 +1078,10 @@ export default {
                 })
             });
 
+            this.applyingBusinessModules = true;
             if (this.$refs.tree) this.$refs.tree.setCheckedKeys(preSelecteds);
             if (this.$refs.Apptree) this.$refs.Apptree.setCheckedKeys(preAppSelecteds);
+            this.applyingBusinessModules = false;
         },
         create() {
             if (this.recordId) {
@@ -1012,9 +1111,11 @@ export default {
                         preAppSelecteds.push(c.id);
                     });
                 });
+                this.applyingBusinessModules = true;
                 setTimeout(() => {
                     this.$refs.tree.setCheckedKeys(preSelecteds);
                     this.$refs.Apptree.setCheckedKeys(preAppSelecteds);
+                    this.applyingBusinessModules = false;
                 }, 1000);
             }
 
@@ -1024,6 +1125,8 @@ export default {
                         this.$refs.tree.setCheckedKeys([]);
                         this.$refs.Apptree.setCheckedKeys([]);
                         this.form = response.data.data;
+                        this.business = this.form.business ?? null;
+                        this.ensureVisibleBusinessOption();
                         this.form.is_update = true;
                         const preSelecteds = [];
                         const preSelectedsModules = this.form.modules;
@@ -1056,9 +1159,11 @@ export default {
                         });
 
 
+                        this.applyingBusinessModules = true;
                         setTimeout(() => {
                             this.$refs.tree.setCheckedKeys(preSelecteds);
                             this.$refs.Apptree.setCheckedKeys(preAppSelecteds);
+                            this.applyingBusinessModules = false;
                         }, 1000);
                     })
             }
@@ -1092,6 +1197,7 @@ export default {
             })
             this.form.modules = modules;
             this.form.levels = levels;
+            this.form.business = this.business;
             this.form.regex_password_client = this.regex_password_client
 
             if (modules.length < 1) {
@@ -1160,6 +1266,19 @@ export default {
             this.form.name = data.name;
         },
         changeModules() {
+            if (this.business === 0) return;
+
+            this.applyingBusinessModules = true;
+            if (this.business === 6) {
+                this.$nextTick(() => {
+                    const treeKeys = this.buildNrusKeys(this.modules, this.nrusSpec.modules);
+                    const appKeys = this.buildNrusKeys(this.apps, this.nrusSpec.apps);
+                    if (this.$refs.tree) this.$refs.tree.setCheckedKeys(treeKeys);
+                    if (this.$refs.Apptree) this.$refs.Apptree.setCheckedKeys(appKeys);
+                    this.applyingBusinessModules = false;
+                });
+                return;
+            }
             var group = {
                 modules: [],
                 levels: [],
@@ -1193,11 +1312,28 @@ export default {
                 group.apps = this.getIds(this.apps);
             }
 
-            this.$refs.tree.setCheckedKeys([
-                ...group.modules,
-                ...group.levels
-            ]);
-            this.$refs.Apptree.setCheckedKeys(group.apps);
+            this.$nextTick(() => {
+                this.$refs.tree.setCheckedKeys([
+                    ...group.modules,
+                    ...group.levels
+                ]);
+                this.$refs.Apptree.setCheckedKeys(group.apps);
+                this.applyingBusinessModules = false;
+            });
+        },
+        buildNrusKeys(treeData, spec) {
+            const keys = [];
+            treeData.forEach(m => {
+                const allowed = spec[m.id];
+                if (allowed === undefined) return;
+                keys.push(m.id);
+                (m.childrens || []).forEach(c => {
+                    if (allowed === '*' || allowed.includes(c.id)) {
+                        keys.push(c.id);
+                    }
+                });
+            });
+            return keys;
         },
         getIds(modules) {
             const preSelecteds = [];

@@ -284,6 +284,8 @@ use Illuminate\Support\Facades\Log;
             'dashboard_general',
             'dashboard_clients',
             'dashboard_products',
+            'dashboard_goal_enabled',
+            'dashboard_goal_amount',
             'affect_all_documents',
             'quantity_sales_notes',
             'regex_password_user',
@@ -334,6 +336,14 @@ use Illuminate\Support\Facades\Log;
             'qr_api_url',
             'qr_api_apiKey',
             'qr_api_enable',
+            'qr_api_instance',
+            'qr_api_connected_phone',
+            'qr_api_profile_name',
+            'qr_api_connection_state',
+            'qr_api_connected_at',
+            'qr_api_webhook_token',
+            'qr_api_use_bot_instance',
+            'qr_api_pdf_format',
             'show_seller_in_pdf',
             'show_bank_accounts_in_pdf',
             'enabled_price_items_dispatch',
@@ -343,6 +353,7 @@ use Illuminate\Support\Facades\Log;
             'available_cash_report_seller',
             'from_guest_register',
             'was_verified_guest_user',
+            'date_of_due_test_days',
             'restaurant_tip_factor',
             'enable_consigned',
             'price1_label',
@@ -350,12 +361,29 @@ use Illuminate\Support\Facades\Log;
             'price3_label',
             'enable_weight_in_dispatches',
             'auto_send_pdf_email',
+            'enable_help_center',
+            'enable_interactive_tours',
+            'enable_guided_tours',
             'before_day_creation_suscription_order',
             'printer_name_documents',
             'enabled_guarantee_fund',
+            'evolution_instance',
+            'evolution_connected_phone',
+            'evolution_profile_name',
+            'evolution_enabled',
+            'evolution_owner_user_id',
+            'whatsapp_bot_enabled',
+            'evolution_webhook_token',
+            'evolution_connection_state',
+            'evolution_connected_at',
+            'bot_trigger_command',
+            'bot_exit_command',
+            'bot_pause_command',
+            'bot_session_ttl_minutes',
         ];
 
         protected $casts = [
+            'whatsapp_bot_enabled' => 'boolean',
             'quotation_allow_seller_generate_sale' => 'boolean',
             'allow_edit_unit_price_to_seller' => 'boolean',
             'seller_can_create_product' => 'boolean',
@@ -503,6 +531,7 @@ use Illuminate\Support\Facades\Log;
             'available_cash_report_seller' => 'bool',
             'from_guest_register' => 'bool',
             'was_verified_guest_user' => 'bool',
+            'date_of_due_test_days' => 'date',
             'enable_consigned' => 'bool',
             'enable_weight_in_dispatches' => 'bool',
             'enabled_guarantee_fund' => 'bool',
@@ -515,6 +544,24 @@ use Illuminate\Support\Facades\Log;
             'smtp_password',
 
         ];
+
+        /**
+         * Atributos derivados agregados a la serialización del modelo,
+         * para que `is_nrus` esté disponible en cualquier vista/JSON que reciba la configuración.
+         */
+        protected $appends = [
+            'is_nrus',
+        ];
+
+        /**
+         * Accessor para exponer si la empresa es del giro NRUS.
+         *
+         * @return bool
+         */
+        public function getIsNrusAttribute(): bool
+        {
+            return $this->isNrus();
+        }
 
         /**
          * Relation to the catalog of charge/discount types for the global discount.
@@ -586,6 +633,43 @@ use Illuminate\Support\Facades\Log;
         }
 
         /**
+         * Verifica que exista una configuración de correo válida (SMTP del tenant
+         * o la configuración de correo del sistema).
+         *
+         * @return bool  true si hay una configuración completa, false en caso contrario
+         */
+        public static function hasMailConfig()
+        {
+            $config = self::first();
+
+            if (
+                !empty($config) &&
+                !empty($config->smtp_host) &&
+                !empty($config->smtp_port) &&
+                !empty($config->smtp_user) &&
+                !empty($config->smtp_password) &&
+                !empty($config->smtp_encryption)
+            ) {
+                return true;
+            }
+
+            $system = SystemConfiguration::first();
+
+            if (
+                !empty($system) &&
+                !empty($system->mail_host) &&
+                !empty($system->mail_port) &&
+                !empty($system->mail_username) &&
+                !empty($system->mail_password) &&
+                !empty($system->mail_encryption)
+            ) {
+                return true;
+            }
+
+            return false;
+        }
+
+        /**
          * Devuelve un json con las propiedades excluidas
          *
          * @return string
@@ -633,6 +717,7 @@ use Illuminate\Support\Facades\Log;
             } catch (\Throwable $e) {}
             $skins = Skin::all()->filter(fn($s) => !$hiddenFilenames->contains($s->filename))->values();
             return [
+                'is_nrus' => $this->isNrus(),
                 'id' => $this->id,
                 'company' => $company,
                 'establishment' => $establishment,
@@ -761,6 +846,8 @@ use Illuminate\Support\Facades\Log;
                 'dashboard_general' => (bool)$this->dashboard_general,
                 'dashboard_clients' => (bool)$this->dashboard_clients,
                 'dashboard_products' => (bool)$this->dashboard_products,
+                'dashboard_goal_enabled' => (bool)$this->dashboard_goal_enabled,
+                'dashboard_goal_amount' => (float)$this->dashboard_goal_amount,
                 'affect_all_documents' => (bool)$this->affect_all_documents,
                 'restrict_series_selection_seller' => $this->restrict_series_selection_seller,
                 'enabled_point_system' => $this->enabled_point_system,
@@ -799,9 +886,11 @@ use Illuminate\Support\Facades\Log;
                 'qrchat_app_key' => $this->qrchat_app_key,
                 'qrchat_auth_key' => $this->qrchat_auth_key,
                 'qrchat_enable' => $this->qrchat_enable,
-                'qr_api_url_ws' => $this->qr_api_url,
-                'qr_api_key_ws' => $this->qr_api_apiKey,
-                'qr_api_enable_ws' => $this->qr_api_enable,
+                'qr_api_enable_ws' => (bool) $this->qr_api_enable,
+                'qr_api_use_bot_instance' => (bool) ($this->qr_api_use_bot_instance ?? false),
+                'qr_api_pdf_format' => $this->qr_api_pdf_format ?? 'ticket',
+                'qr_api_instance' => $this->qr_api_instance,
+                'evolution_instance' => $this->evolution_instance,
                 'enable_list_product' => $this->enable_list_product,
                 'show_seller_in_pdf' => $this->show_seller_in_pdf,
                 'show_bank_accounts_in_pdf' => $this->show_bank_accounts_in_pdf,
@@ -974,6 +1063,27 @@ use Illuminate\Support\Facades\Log;
         {
             if (empty($this->is_pharmacy)) $this->is_pharmacy = false;
             return (bool)$this->is_pharmacy;
+        }
+
+        /**
+         * Indica si la empresa fue creada con el giro de negocio NRUS,
+         * en base al plan almacenado en la configuración (module_permissions.business === 6).
+         *
+         * @return bool
+         */
+        public function isNrus(): bool
+        {
+            $plan = $this->plan;
+            if (is_null($plan) || !isset($plan->module_permissions)) {
+                return false;
+            }
+
+            $module_permissions = $plan->module_permissions;
+            $business = is_array($module_permissions)
+                ? ($module_permissions['business'] ?? null)
+                : ($module_permissions->business ?? null);
+
+            return (int)$business === 6;
         }
 
         /**
@@ -2676,7 +2786,7 @@ use Illuminate\Support\Facades\Log;
          */
         public static function getDataToCheckGuestEmail()
         {
-            return self::select(['from_guest_register', 'was_verified_guest_user'])->firstOrFail();
+            return self::select(['from_guest_register', 'was_verified_guest_user', 'date_of_due_test_days'])->firstOrFail();
         }
 
         /**
@@ -2685,5 +2795,15 @@ use Illuminate\Support\Facades\Log;
         public function applyCheckGuestEmail()
         {
             return $this->from_guest_register && !$this->was_verified_guest_user;
+        }
+
+        public function isTestDaysExpired()
+        {
+            if (!$this->date_of_due_test_days) {
+                return false;
+            }
+
+            return Carbon::parse($this->date_of_due_test_days)->startOfDay()
+                ->lessThanOrEqualTo(Carbon::now()->startOfDay());
         }
     }

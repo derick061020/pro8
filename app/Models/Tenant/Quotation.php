@@ -74,6 +74,7 @@ class Quotation extends ModelTenant
         'seller_id',
         'total_igv_free',
         'subtotal',
+        'custom_fields_data',
     ];
 
     public static function boot()
@@ -88,6 +89,7 @@ class Quotation extends ModelTenant
         'date_of_issue' => 'date',
         // 'date_of_due' => 'date',
         // 'delivery_date' => 'date',
+        'custom_fields_data' => 'array',
     ];
 
     public function getEstablishmentAttribute($value)
@@ -288,6 +290,38 @@ class Quotation extends ModelTenant
         return $query->where('changed', false);
     }
 
+    /**
+     *
+     * Filtrar por estado de la cotización
+     *
+     * @param Builder $query
+     * @param string|null $state_type_id
+     * @return Builder
+     */
+    public function scopeFilterByStateType($query, $state_type_id)
+    {
+        if ($state_type_id !== null) {
+            $query->where('state_type_id', $state_type_id);
+        }
+        return $query;
+    }
+
+    /**
+     *
+     * Filtrar por estado de cambios (modificado/no modificado)
+     *
+     * @param Builder $query
+     * @param bool|null $changed
+     * @return Builder
+     */
+    public function scopeFilterByChanged($query, $changed)
+    {
+        if ($changed !== null) {
+            $query->where('changed', (bool) $changed);
+        }
+        return $query;
+    }
+
     public function contract()
     {
         return $this->hasOne(Contract::class);
@@ -300,9 +334,9 @@ class Quotation extends ModelTenant
         ]);
     }
 
-    
+
     /**
-     * 
+     *
      * Verificar si tiene documentos válidos
      *
      * @return bool
@@ -419,6 +453,7 @@ class Quotation extends ModelTenant
             'updated_at' => $row->updated_at->format('Y-m-d H:i:s'),
             'print_ticket' => $row->getUrlPrintPdf('ticket'),
             'filename' => $row->filename,
+            'custom_fields_data' => $row->custom_fields_data,
         ];
     }
 
@@ -574,9 +609,9 @@ class Quotation extends ModelTenant
         return $query->whereFilterWithOutRelations();
     }
 
-    
+
     /**
-     * 
+     *
      * Tipo de transaccion para caja
      *
      * @return string
@@ -588,7 +623,7 @@ class Quotation extends ModelTenant
 
 
     /**
-     * 
+     *
      * Tipo de documento para caja
      *
      * @return string
@@ -598,9 +633,9 @@ class Quotation extends ModelTenant
         return $this->getTable();
     }
 
-    
+
     /**
-     * 
+     *
      * Datos para resumen diario de operaciones
      *
      * @return array
@@ -628,7 +663,7 @@ class Quotation extends ModelTenant
         return 0;
     }
 
-    
+
     /**
      *
      * Obtener total de pagos en transferencia
@@ -642,9 +677,9 @@ class Quotation extends ModelTenant
         return 0;
     }
 
-    
+
     /**
-     * 
+     *
      * Validar si tiene estado permitido para calculos/etc
      *
      * @return bool
@@ -653,10 +688,10 @@ class Quotation extends ModelTenant
     {
         return in_array($this->state_type_id, self::STATE_TYPES_ACCEPTED, true);
     }
-    
+
 
     /**
-     * 
+     *
      * Validar que no tenga comprobantes asociados
      *
      * @param  Builder $query

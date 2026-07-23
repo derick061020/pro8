@@ -7,9 +7,11 @@ use Illuminate\Http\Response;
 use Illuminate\Routing\Controller;
 use App\Models\Tenant\Document;
 use App\Models\Tenant\Catalogs\DocumentType;
+use App\Models\Tenant\Configuration;
 use App\Models\Tenant\Establishment;
 use App\Models\Tenant\Series;
 use App\Models\Tenant\StateType;
+use App\Services\SeriesCodeGenerator;
 use Modules\Document\Models\SeriesConfiguration;
 use Modules\Document\Http\Requests\SeriesConfigurationsRequest;
 use App\Models\Tenant\Dispatch;
@@ -60,9 +62,15 @@ class SeriesConfigurationController extends Controller
     {
 
         $establishmentId = auth()->user()->establishment_id;
-        $document_types = DocumentType::whereIn('id', ['01', '03', '07', '08','09', '31'])->get();
+        $document_type_ids = ['01', '03', '07', '08','09', '31'];
 
-        $series = Series::whereIn('document_type_id', ['01', '03','07', '08','09', '31'])
+        if ((bool) optional(Configuration::first())->isNrus()) {
+            $document_type_ids = array_values(array_intersect($document_type_ids, SeriesCodeGenerator::nrusDocumentTypeIds()));
+        }
+
+        $document_types = DocumentType::whereIn('id', $document_type_ids)->get();
+
+        $series = Series::whereIn('document_type_id', $document_type_ids)
                         ->where('establishment_id', $establishmentId)
                         ->doesntHave('series_configurations')
                         // ->doesntHave('documents')

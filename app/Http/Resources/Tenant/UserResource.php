@@ -56,6 +56,7 @@ class UserResource extends JsonResource {
             'personal_email' => $this->personal_email,
             'corporate_email' => $this->corporate_email,
             'personal_cell_phone' => $this->personal_cell_phone,
+            'bot_enabled' => (bool) $this->bot_enabled,
             'corporate_cell_phone' => $this->corporate_cell_phone,
             'date_of_birth' => $this->date_of_birth,
             'contract_date' => $this->contract_date,

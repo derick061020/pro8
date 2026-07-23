@@ -1,6 +1,17 @@
 <template>
-    <div class="kr-izipay-container">
-        <el-button type="primary" :loading="loading" :disabled="disabled" @click.prevent="submit">Pagar con izipay</el-button>
+    <div class="kr-izipay-container checkout-pay">
+        <button
+            type="button"
+            class="checkout-pay__btn checkout-pay__btn--izipay"
+            :disabled="disabled || loading"
+            @click.prevent="submit"
+        >
+            <span class="checkout-pay__label">
+                <span v-if="loading" class="checkout-pay__spinner"></span>
+                {{ loading ? 'Cargando…' : 'Pagar con izipay' }}
+            </span>
+            <span v-if="!loading" class="checkout-pay__amount">{{ formattedAmount }}</span>
+        </button>
         <div class="kr-izipay-container-inner" >
 
         </div>
@@ -61,6 +72,14 @@ export default {
     computed: {
         resource() {
             return this.endpointPrefix;
+        },
+        formattedAmount() {
+            const amount = Number(this.form.amount || 0) / 100;
+            const symbol = this.form.currency === 'USD' ? '$' : 'S/';
+            return `${symbol} ${amount.toLocaleString('es-PE', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            })}`;
         }
     },
     // computed: {
@@ -122,7 +141,7 @@ export default {
                 .then(async (response) => {
 
                     let formToken = response.data.formToken;
-                    if (response.data.success) {
+                    if (response.data.success && formToken) {
 
                         let container = document.querySelector('.kr-izipay-container-inner');
                         let embedded = document.createElement('div');
@@ -141,9 +160,12 @@ export default {
                         })
                         KR.openPopin()
                     } else {
-                        
+                        this.$message.error('No se pudo iniciar el pago con Izipay. Verifica que las credenciales configuradas sean válidas.');
                     }
-                    
+
+                })
+                .catch(() => {
+                    this.$message.error('Ocurrió un error al iniciar el pago con Izipay. Intenta nuevamente.');
                 })
 
         },
@@ -156,7 +178,8 @@ export default {
                         if (response.data.success) {
                             this.$emit('submit', {
                                 status : response.data.result.answer.status,
-                                customer: this.form._customer
+                                customer: this.form._customer,
+                                data: response.data
                             });
                             this.$message.success('Pago realizado con éxito');
                             KR.closePopin();
@@ -184,3 +207,64 @@ export default {
 
 }
 </script>
+
+<style scoped>
+.checkout-pay {
+    width: 100%;
+}
+.checkout-pay__btn {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    width: 100%;
+    padding: 14px 20px;
+    border: none;
+    border-radius: 10px;
+    color: #fff;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+.checkout-pay__btn:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18);
+}
+.checkout-pay__btn:active:not(:disabled) {
+    transform: translateY(0);
+}
+.checkout-pay__btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+.checkout-pay__btn--izipay {
+    background: linear-gradient(135deg, #e2204e 0%, #c1001e 100%);
+    box-shadow: 0 4px 12px rgba(193, 0, 30, 0.25);
+}
+.checkout-pay__label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.checkout-pay__amount {
+    font-size: 16px;
+    font-weight: 700;
+    background: rgba(255, 255, 255, 0.2);
+    padding: 4px 12px;
+    border-radius: 6px;
+    white-space: nowrap;
+}
+.checkout-pay__spinner {
+    width: 14px;
+    height: 14px;
+    border: 2px solid rgba(255, 255, 255, 0.4);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: checkout-spin 0.7s linear infinite;
+}
+@keyframes checkout-spin {
+    to { transform: rotate(360deg); }
+}
+</style>

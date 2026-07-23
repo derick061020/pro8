@@ -28,12 +28,128 @@ use Modules\Restaurant\Services\RestaurantStockService;
 use Illuminate\Support\Facades\DB;
 use Modules\ApiPeruDev\Data\ServiceData;
 use App\Models\Tenant\Person;
-
-
+use App\Models\Tenant\Configuration;
+use App\Models\Tenant\Company;
+use Modules\BusinessTurn\Models\BusinessTurn;
+use Modules\MobileApp\Models\AppConfiguration;
 
 
 class RestaurantController extends Controller
 {
+    /**
+     * Vista publica de mozo
+     */
+    public function public()
+    {
+        return view('restaurant::mozo.index');
+    }
+
+    public function config()
+    {
+        return $this->buildConfigResponse([
+            'brandName' => 'Mozo.pe',
+            'Primary' => '#32a56a',
+            'Secondary' => '#f58f00',
+            'Accent' => '#115733',
+            'Background' => '#f4f5f6',
+            'Text' => '#1d3a3a',
+            'lightText' => '#a2a5b9',
+            'darkPrimary' => '#222225',
+            'darkSecondary' => '#27272a',
+            'darkAccent' => '#313135',
+            'darkBackground' => '#3b3b40',
+            'darkLightText' => '#d0d2dc'
+        ]);
+    }
+
+    /**
+     * Vista publica de vendeya
+     */
+    public function publicVendeya()
+    {
+        return view('restaurant::vendeya.index');
+    }
+
+    public function configVendeya()
+    {
+        return $this->buildConfigResponse([
+            'brandName' => 'Vendeya.pe',
+            'Primary' => '#ff7d00',
+            'Secondary' => '#d5e8e8',
+            'Background' => '#eef5f5',
+            'White' => '#ffffff',
+            'Text' => '#004850',
+            'lightText' => '#a2a5b9',
+            'darkPrimary' => '#121c22',
+            'darkSecondary' => '#1c2a32',
+            'darkrAccent' => '#253945',
+            'darkBackground' => '#1b262c',
+            'darkText' => '#a9a9b2'
+        ]);
+    }
+
+    /**
+     * Construye la respuesta JSON de configuración de las apps (mozo, vendeya),
+     * combinando los datos dinámicos del tenant con el branding propio de cada app.
+     */
+    private function buildConfigResponse(array $branding)
+    {
+        try {
+            $currentHostname = app(\Hyn\Tenancy\Contracts\CurrentHostname::class)?->fqdn;
+            $fqdn = $currentHostname ?: request()->getHost();
+            $protocol = request()->getScheme() . '://';
+
+            return response()->json(array_merge([
+                'apiSsl' => $protocol,
+                'apiUrl' => $fqdn,
+                'isStoreEnabled' => 'false',
+            ], $branding));
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al obtener configuración: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function initialData()
+    {
+        $company = Company::active();
+        $configuration = Configuration::first();
+        $business_turn_tap = BusinessTurn::where('value','tap')->first();
+        $user = auth()->user();
+
+        return [
+            'success' => true,
+            'name' => $user->name,
+            'email' => $user->email,
+            'establishment_id' => $user->establishment->id,
+            'seriedefault' => $user->series_id,
+            'token' => $user->api_token,
+            'restaurant_role_id' => $user->restaurant_role_id,
+            'restaurant_role_code' => $user->restaurant_role_id ? $user->restaurant_role->code : null,
+            'ruc' => $company->number,
+            'app_logo' => $company->app_logo,
+            'app_logo_base64' => '',
+            'company' => [
+                'name' => $company->name,
+                'address' => $user->establishment->department->description.', '.$user->establishment->province->description.', '.$user->establishment->district->description.', '.$user->establishment->address,
+                'phone' => $user->establishment->telephone,
+                'email' => $user->establishment->email,
+                'enable_list_product' => !$configuration->enable_list_product,
+                'qr_api_enable_ws' => $configuration->qr_api_enable,
+                'qr_api_url_ws' => $configuration->qr_api_url,
+                'qr_api_key_ws' => $configuration->qr_api_apiKey,
+                'url_logo' => ($company->logo)?asset('storage/uploads/logos/'.$company->logo):'',
+                'logo_base64' => $company->logo ? 'data:image/png;base64,' . base64_encode(file_get_contents(public_path('storage/uploads/logos/' . $company->logo))) : '',
+                'is_business_turn_tap' => ($business_turn_tap)?$business_turn_tap->active:0,
+            ],
+            'app_configuration' => optional(AppConfiguration::first())->getRowResource(),
+            'permission_edit_item_prices' => $user->permission_edit_item_prices,
+            'sellerId' => $user->id,
+        ];
+    }
+
     /**
      * Descripción general reutilizable para meta tags y otros lugares
      */
@@ -182,10 +298,27 @@ class RestaurantController extends Controller
     }
 
 
-    public function item($slug, $promotion_id = null)
+    public function item(Request $request, $id, $slug = null)
     {
-        $id = (int) $slug;
+        $id = (int) $id;
         $row = Item::find($id);
+
+        if (!$row) {
+            abort(404);
+        }
+
+        $promotion_id = $request->query('promotion');
+
+        $canonical_slug = Str::slug($row->description);
+
+        if ($canonical_slug !== '' && $slug !== $canonical_slug) {
+            $params = ['id' => $id, 'slug' => $canonical_slug];
+            if ($promotion_id) {
+                $params['promotion'] = $promotion_id;
+            }
+            return redirect()->route('restaurant.item', $params, 301);
+        }
+
         $exchange_rate_sale = $this->getExchangeRateSale();
         $sale_unit_price = ($row->has_igv) ? $row->sale_unit_price : $row->sale_unit_price*1.18;
 

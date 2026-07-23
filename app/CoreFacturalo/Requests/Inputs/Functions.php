@@ -12,11 +12,12 @@ class Functions
 {
     public static function newNumber($soap_type_id, $document_type_id, $series, $number, $model)
     {
+        // Marca la serie como en uso al asignarle número en emisión (§4.7).
+        Series::markInUse($document_type_id, $series);
 
         if ($number === '#') {
 
             $document = $model::select('number')
-                                    ->where('soap_type_id', $soap_type_id)
                                     ->where('document_type_id', $document_type_id)
                                     ->where('series', $series)
                                     ->orderBy('number', 'desc')
@@ -56,8 +57,7 @@ class Functions
 
     public static function validateUniqueDocument($soap_type_id, $document_type_id, $series, $number, $model)
     {
-        $document = $model::where('soap_type_id', $soap_type_id)
-                        ->where('document_type_id', $document_type_id)
+        $document = $model::where('document_type_id', $document_type_id)
                         ->where('series', $series)
                         ->where('number', $number)
                         ->first();

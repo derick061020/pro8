@@ -22,7 +22,16 @@ class ActionInput
             'send_email' => self::sendEmail($actions, $inputs, $configuration),
             'send_xml_signed' => self::sendXmlSigned($actions, $inputs, $configuration),
             'format_pdf' => self::formatPdf($actions, $inputs, $configuration),
+            // Impresión automática server-side (app mozo): evita el 2do roundtrip
+            'auto_print' => self::autoPrint($actions),
+            'name_printer' => Functions::valueKeyInArray($actions, 'name_printer', null),
+            'client_public_ip' => Functions::valueKeyInArray($actions, 'client_public_ip', null),
         ];
+    }
+
+    private static function autoPrint($actions)
+    {
+        return (bool) Functions::valueKeyInArray($actions, 'auto_print', false);
     }
 
     private static function sendEmail($actions, $inputs, $configuration)

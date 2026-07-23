@@ -322,6 +322,7 @@ export default {
     props: [
         'path_image',
         'typeUser',
+        'establishmentId',
         'establishments'
     ],
 
@@ -361,12 +362,46 @@ export default {
         }
     },
     async created() {
-        await this.$http.get(`/${this.resource}/getFormats`).then(response => {
-            if (response.data !== '') this.formatos = response.data.formats
-            // if (response.data !== '') this.formatos = response.data.filter(r => this.image(r.formats))
-        });
+        try {
+            await this.$http.all([
+                this.$http.get(`/${this.resource}/templates/ticket/refresh`),
+                this.$http.get(`/${this.resource}/addSeeder`)
+            ]);
+        } catch (e) {
+            console.error(e);
+        }
+
+        await this.getFormats();
+
+        this.selectCurrentEstablishment();
     },
     methods: {
+        getFormats() {
+            return this.$http.get(`/${this.resource}/getFormats`).then(response => {
+                if (response.data !== '') {
+                    this.formatos = (response.data.formats || []).filter(f => f.name !== 'nrus')
+                }
+            });
+        },
+        selectCurrentEstablishment() {
+            let current = null;
+            if (this.establishmentId) {
+                current = _.find(this.establishments, { 'id': this.establishmentId });
+            }
+            if (!current && this.establishments.length) {
+                current = this.establishments[0];
+            }
+            if (current) {
+                this.form = {
+                    ...this.form,
+                    establishment_id: current.id,
+                    current_format: current.template_pdf
+                };
+                if (current.template_pdf === 'Plantilla_personalizable') {
+                    this.loadColumnsConfigFromServer(current.id);
+                }
+            }
+        },
         changeFormat(value) {
             this.modalImage = false
             this.form = {

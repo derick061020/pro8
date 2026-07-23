@@ -134,12 +134,15 @@ class Company extends ModelTenant
             if (!$optimized || empty($optimized['bytes'])) return;
 
             $optimizedBytes = (string) $optimized['bytes'];
+            $ext = $optimized['extension'] ?? 'jpg';
 
-            // Si el archivo ya es jpg, sobreescribimos; si no, creamos nuevo con extensión .jpg.
+            // Si la extensión resultante coincide con la actual, sobreescribimos en el mismo archivo;
+            // si cambia (p. ej. png->jpg), creamos uno nuevo con la extensión correcta.
             $pathInfo = pathinfo($absolutePath);
-            $newFilename = $pathInfo['filename'] . '.jpg';
+            $currentExt = strtolower($pathInfo['extension'] ?? '');
+            $newFilename = $pathInfo['filename'] . '.' . $ext;
 
-            if (str_ends_with(strtolower($filename), '.jpg') || str_ends_with(strtolower($filename), '.jpeg')) {
+            if ($currentExt === $ext || ($currentExt === 'jpeg' && $ext === 'jpg')) {
                 file_put_contents($absolutePath, $optimizedBytes);
                 return;
             }

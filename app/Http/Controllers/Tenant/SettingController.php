@@ -139,6 +139,11 @@
             return view('tenant.settings.list_item_affectations');
         }
 
+        public function listOperationTypes()
+        {
+            return view('tenant.settings.list_operation_types');
+        }
+
         /**
          * @return Factory|Application|View
          */

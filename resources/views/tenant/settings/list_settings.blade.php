@@ -89,6 +89,9 @@
                     <li>
                         <a href="{{route('tenant_ecommerce_configuration')}}"><i class="ti ti-shopping-cart"></i>Tienda Virtual/Restaurante</a>
                     </li>
+                    <li>
+                        <a href="{{route('tenant.whatsapp_bot.configuration')}}"><i class="ti ti-brand-whatsapp"></i>WhatsApp</a>
+                    </li>
                 </ul>
             </div>
         </div>
@@ -111,6 +114,11 @@
                     </li>
                     <li>
                         <a href="{{url('list-item-affectations')}}"><i class="ti ti-percentage"></i>Listado de afectación por producto
+                            <sup style="background: #ffc300;padding: 3px 3px;border-radius: 4px;">Nuevo</sup>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{{url('list-operation-types')}}"><i class="ti ti-list-check"></i>Listado de tipos de operacion
                             <sup style="background: #ffc300;padding: 3px 3px;border-radius: 4px;">Nuevo</sup>
                         </a>
                     </li>
@@ -180,8 +188,16 @@
                         {{-- <li>
                             <a href="{{route('tenant.offline_configurations.index')}}"><i class="ti ti-cloud-off"></i>Modo offline</a>
                         </li> --}}
+                        {{-- Etapa 8 (deprecación visual): la numeración/correlativo ahora se gestiona por serie
+                             en Establecimientos → Series. La vista global (tenant.series_configurations.*) y el
+                             consumo del correlativo (Functions::newNumber + SeriesConfiguration) se mantienen
+                             intactos; aquí solo se redirige el acceso y se avisa con un badge/tooltip. --}}
                         <li>
-                            <a href="{{route('tenant.series_configurations.index')}}"><i class="ti ti-hash"></i>Numeración de facturación</a>
+                            <a href="{{route('tenant.establishments.index')}}"
+                               title="La numeración ahora se configura en cada serie, desde Establecimientos → Series.">
+                                <i class="ti ti-hash"></i>Numeración de facturación
+                                <span class="badge badge-info">Ahora en Series</span>
+                            </a>
                         </li>
                     @endif
                     <li>
@@ -213,6 +229,14 @@
                     <li>
                         <a href="{{route('tenant.custom-fields.index')}}">
                             <i class="ti ti-forms"></i>Campos personalizados
+                            <sup style="background: #ffc300;padding: 3px 3px;border-radius: 4px;">Nuevo</sup>
+                        </a>
+                    </li>
+                    @endif
+                    @if (Route::has('tenant.webhooks.index') && in_array('webhooks', $vc_modules))
+                    <li>
+                        <a href="{{route('tenant.webhooks.index')}}">
+                            <i class="ti ti-share"></i>Webhooks
                             <sup style="background: #ffc300;padding: 3px 3px;border-radius: 4px;">Nuevo</sup>
                         </a>
                     </li>
