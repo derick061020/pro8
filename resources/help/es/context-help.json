@@ -1,0 +1,107 @@
+{
+    "locale": "es",
+    "version": 1,
+    "topics": [
+        {
+            "id": "productos-servicios-listado-y-alta",
+            "path_patterns": ["/items"],
+            "title": "Productos y servicios",
+            "summary_lines": [
+                "En el listado puedes buscar y filtrar ítems, revisar precios, stock (si aplica) y si están habilitados para ventas.",
+                "Desde aquí suelen estar las acciones masivas: importación/exportación, etiquetas o códigos de barras según tu configuración.",
+                "Para dar de alta un producto o servicio abre el formulario nuevo registro: completa datos base (descripción, unidad, tipo de ítem), tributación IGV y precios antes de usarlo en facturación o POS.",
+                "Si tu rubro exige códigos de producto SUNAT u otros datos regulatorios, complétalos para evitar rechazos al emitir comprobantes."
+            ],
+            "source_doc_repo_relative": "docs/modulos/esenciales/productos-servicios/01-Lista-de-productos.md · docs/modulos/esenciales/productos-servicios/03-productos-creacion-basica.md",
+            "manual_full_url": "https://manual.pro8.uio.la/modulos/esenciales/productos-servicios/01-Lista-de-productos"
+        },
+        {
+            "id": "ventas-lista-comprobantes",
+            "path_patterns": ["/documents"],
+            "title": "Lista de comprobantes",
+            "summary_lines": [
+                "Consulta todos los CPE emitidos con filtros por fecha, cliente, tipo y estado (registrado, envío pendiente, anulado, etc.).",
+                "Desde la grilla puedes abrir el PDF/XML, reintentar envío a SUNAT/OSE o acciones permitidas según permisos.",
+                "Usa la búsqueda y columnas configurables para auditar ventas sin entrar documento por documento.",
+                "Si necesitas corregir un comprobante ya emitido, revisa en el manual el flujo de notas o anulaciones según el caso."
+            ],
+            "source_doc_repo_relative": "docs/modulos/esenciales/ventas/2-lista-de-comprobantes.md",
+            "manual_full_url": "https://manual.pro8.uio.la/modulos/esenciales/ventas/2-lista-de-comprobantes"
+        },
+        {
+            "id": "ventas-punto-de-venta",
+            "path_patterns": ["/pos_full", "/pos/fast", "/pos/garage", "/pos"],
+            "title": "Punto de venta (POS)",
+            "summary_lines": [
+                "El POS agiliza ventas en mostrador: selección de ítems, cliente opcional, medios de pago y emisión del comprobante.",
+                "Verifica serie/correlativo, tipo de documento y ambiente (demo/producción) antes de cobrar.",
+                "Si manejas stock, confirma que los descuentos y cantidades respetan la configuración de inventario.",
+                "Las variantes rápidas o taller tienen la misma base POS con flujos adaptados; revisa permisos del usuario si falta alguna opción."
+            ],
+            "source_doc_repo_relative": "docs/modulos/esenciales/ventas/4-puntos-de-venta.md",
+            "manual_full_url": "https://manual.pro8.uio.la/modulos/esenciales/ventas/4-puntos-de-venta"
+        },
+        {
+            "id": "clientes-listado-y-alta",
+            "path_patterns": ["/persons/customers"],
+            "title": "Clientes",
+            "summary_lines": [
+                "Aquí registras y mantienes clientes (personas jurídicas y naturales) que usarás en facturación y cobranzas.",
+                "Para alta individual completa documento de identidad, razón social o nombres, dirección fiscal y correo si envías PDF/XML.",
+                "Los datos deben coincidir con SUNAT para el tipo de comprobante (ej. RUC para factura a empresa).",
+                "El listado permite filtrar, exportar y editar; revisa límites de crédito o observaciones si tu proceso los usa."
+            ],
+            "source_doc_repo_relative": "docs/modulos/esenciales/clientes/01-clientes-creacion-individual.md",
+            "manual_full_url": "https://manual.pro8.uio.la/modulos/esenciales/clientes/01-clientes-creacion-individual"
+        },
+        {
+            "id": "dashboard-resumen",
+            "path_patterns": ["/dashboard"],
+            "title": "Dashboard",
+            "summary_lines": [
+                "Vista general de ventas, comprobantes y notas de venta.",
+                "Los gráficos y totales respetan los filtros de fecha y permisos del usuario.",
+                "Usa esta pantalla para detectar tendencias rápidas antes de entrar al detalle en cada módulo."
+            ],
+            "source_doc_repo_relative": "(sincronizar con buho-docs cuando exista la página equivalente)",
+            "manual_full_url": "https://manual.pro8.uio.la/modulos/dashboard"
+        },
+        {
+            "id": "ventas-nuevo-comprobante",
+            "path_patterns": ["/documents/create", "/documents/create_tensu"],
+            "title": "Nuevo comprobante",
+            "summary_lines": [
+                "Emisión de comprobantes electrónicos (factura, boleta, etc.) ante SUNAT/OSE según tu configuración.",
+                "Define cliente, tipo de documento, serie, moneda, fecha y condición de pago.",
+                "Agrega ítems con cantidades, precios y afectación IGV; luego genera el XML/PDF y envía según tu flujo.",
+                "Retenciones, detracciones y campos SUNAT aparecen solo cuando aplican al tipo de operación."
+            ],
+            "source_doc_repo_relative": "modulos/esenciales/ventas/nuevo-comprobante.md",
+            "manual_full_url": "https://manual.pro8.uio.la/modulos/esenciales/ventas/nuevo-comprobante"
+        },
+        {
+            "id": "nota-electronica",
+            "path_patterns": ["/documents/note"],
+            "title": "Nota electrónica",
+            "summary_lines": [
+                "Documentos que modifican o referencian un comprobante ya emitido (notas de crédito/débito según corresponda).",
+                "Normalmente debes asociar la nota al documento de origen y respetar las reglas de SUNAT para el tipo de nota.",
+                "Revisa montos, motivos y series antes de generar y enviar."
+            ],
+            "source_doc_repo_relative": "(definir en buho-docs / mismo esquema que ventas)",
+            "manual_full_url": null
+        },
+        {
+            "id": "configuracion-avanzada",
+            "path_patterns": ["/advanced"],
+            "title": "Configuración avanzada",
+            "summary_lines": [
+                "Opciones globales del tenant: formato de PDF, correo, POS, reportes, comportamiento de usuarios, etc.",
+                "Los cambios suelen aplicarse de inmediato; algunos afectan a todos los usuarios del establecimiento.",
+                "Si no estás seguro de un interruptor, prueba primero en DEMO o documenta el cambio para el equipo."
+            ],
+            "source_doc_repo_relative": "(sincronizar con buho-docs)",
+            "manual_full_url": "https://manual.pro8.uio.la/modulos/configuracion-y-mas/configuracion-globales/empresa/avanzado"
+        }
+    ]
+}

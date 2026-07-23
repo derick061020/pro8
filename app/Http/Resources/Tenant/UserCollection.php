@@ -50,7 +50,8 @@ class UserCollection extends ResourceCollection
                 'is_multi_user' => $row->is_multi_user,
                 'locked' => (bool) $row->locked,
                 'active' => (bool) $row->active,
-
+                'personal_cell_phone' => $row->personal_cell_phone,
+                'bot_enabled' => (bool) $row->bot_enabled,
             ];
         })->sortBy('id');
     }

@@ -124,6 +124,7 @@ if ($hostname) {
     Route::domain(env('APP_URL_BASE'))->group(function () {
 
         Route::post('login', 'System\Api\AuthController@login');
+        // Route::get('plans', 'System\Api\PlanController@records');
 
         Route::middleware(['auth:system_api'])->group(function () {
 

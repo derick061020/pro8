@@ -6,6 +6,7 @@ use Exception;
 use App\Models\Tenant\Order;
 use Illuminate\Http\Request;
 use App\Models\Tenant\Series;
+use App\Services\SeriesResolver;
 
 use App\Http\Controllers\Controller;
 use App\Models\Tenant\Establishment;
@@ -41,7 +42,7 @@ class OrderController extends Controller
     public function tables()
     {
       $establishments = Establishment::where('id', auth()->user()->establishment_id)->get();
-      $series = collect(Series::all())->transform(function($row) {
+      $series = collect(app(SeriesResolver::class)->applyContext(Series::query())->get())->transform(function($row) {
           return [
               'id' => $row->id,
               'contingency' => (bool) $row->contingency,

@@ -1,5 +1,5 @@
-@extends('ecommerce::layouts.layout_ecommerce_cart.index')
-@section('content')
+@extends('ecommerce::layouts.layout_account')
+@section('account_content')
 
 <style>
     .table-loader {
@@ -32,46 +32,66 @@
 .status-rejected {
     color: #c2410c;
 }
+.table.table-cart tr th{
+    text-align: left;
+    font-size: 11.5px;
+    font-weight: 700;
+    letter-spacing: .05em;
+    text-transform: uppercase;
+    color: var(--subtitle-color);
+    padding: 14px 26px !important;
+    background: #fafbfc;
+    border-bottom: 1px solid var(--line);
+    border-radius: 0 !important;
+}
 </style>
 <div id="app">
-    <div class="mb-2 mt-4">
+    <div class="panel-head">
+        <span class="panel-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" height="20" width="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"></path><path d="M14 3v4a1 1 0 0 0 1 1h4"></path><path d="M19 12v7a1.78 1.78 0 0 1 -3.1 1.4a1.65 1.65 0 0 0 -2.6 0a1.65 1.65 0 0 1 -2.6 0a1.65 1.65 0 0 0 -2.6 0a1.78 1.78 0 0 1 -3.1 -1.4v-14a2 2 0 0 1 2 -2h7l5 5v4.25"></path></svg>
+        </span>
         <div>
-            <h2 class="mb-0">Listado de Comprobantes</h4>
+            <h2 class="m-0">Mis comprobantes</h2>
+            <p class="m-0">Revisa el estado y los detalles de tus comprobantes.</p>
         </div>
     </div>
-    <div class="col-lg-12">
-        <div class="cart-table-container position-relative">
-            <div class="dropdown dropdown-table d-flex justify-content-between align-items-center">
-                <div class="d-flex align-items-center mt-1">                    
+    <div class="">
+        <div>
+            <div class="dropdown dropdown-table d-flex justify-content-between align-items-center filters">
+                <div class="d-flex align-items-end">                    
                     <template v-if="filterId == 1">
-                        <span>
-                            Fecha de inicio
-                        </span>
-                        <el-date-picker
-                            v-model="filters.date_of_start"
-                            type="date"
-                            placeholder="Seleccionar fecha"
-                            size="small"
-                            style="width: 200px; margin-left: 8px;"
-                            format="dd/MM/yyyy"
-                            value-format="yyyy-MM-dd"
-                            clearable>
-                        </el-date-picker>
-                        <span style="margin-left: 10px">
-                            Fecha de fin
-                        </span>
-                        <el-date-picker
-                            v-model="filters.date_of_end"
-                            type="date"
-                            placeholder="Seleccionar fecha"
-                            size="small"
-                            style="width: 200px; margin-left: 8px;"
-                            format="dd/MM/yyyy"
-                            value-format="yyyy-MM-dd"
-                            clearable>
-                        </el-date-picker>
+                        <div class="d-flex flex-column">
+                            <span>
+                                Fecha de inicio
+                            </span>
+                            <el-date-picker
+                                v-model="filters.date_of_start"
+                                type="date"
+                                placeholder="Seleccionar fecha"
+                                size="small"
+                                style="width: 200px;"
+                                format="dd/MM/yyyy"
+                                value-format="yyyy-MM-dd"
+                                clearable>
+                            </el-date-picker>
+                        </div>
+                        <div class="d-flex flex-column">
+                            <span style="margin-left: 10px">
+                                Fecha de fin
+                            </span>
+                            <el-date-picker
+                                v-model="filters.date_of_end"
+                                type="date"
+                                placeholder="Seleccionar fecha"
+                                size="small"
+                                style="width: 200px; margin-left: 8px;"
+                                format="dd/MM/yyyy"
+                                value-format="yyyy-MM-dd"
+                                clearable>
+                            </el-date-picker>
+                        </div>
                         <button
-                            class="btn btn-filter-search ml-2 p-0"
+                            class="btn-filter-search ml-2 p-0"
                             @click="getRecords()"
                             type="button"
                             aria-label="Buscar">
@@ -79,34 +99,36 @@
                         </button>
                     </template>
                     <template v-else-if="filterId == 2">
-                        <span>
-                            Por estado:
-                        </span>
-                        <el-select 
-                            v-model="filters.state_type_id" 
-                            placeholder="Seleccionar estado"
-                            size="small"
-                            style="width: 200px; margin-left: 8px;"
-                            class="select-state"
-                            @change="getRecords()"
-                            clearable>
-                            <el-option
-                                label="Todos"
-                                value="all">
-                            </el-option>
-                            <el-option
-                                label="Aceptados"
-                                value="05">
-                            </el-option>
-                            <el-option
-                                label="Rechazados"
-                                value="09">
-                            </el-option>
-                            <el-option
-                                label="Anulados"
-                                value="11">
-                            </el-option>
-                        </el-select>
+                        <div class="d-flex flex-column">
+                            <span>
+                                Por estado:
+                            </span>
+                            <el-select 
+                                v-model="filters.state_type_id" 
+                                placeholder="Seleccionar estado"
+                                size="small"
+                                style="width: 200px; margin-left: 8px;"
+                                class="select-state"
+                                @change="getRecords()"
+                                clearable>
+                                <el-option
+                                    label="Todos"
+                                    value="all">
+                                </el-option>
+                                <el-option
+                                    label="Aceptados"
+                                    value="05">
+                                </el-option>
+                                <el-option
+                                    label="Rechazados"
+                                    value="09">
+                                </el-option>
+                                <el-option
+                                    label="Anulados"
+                                    value="11">
+                                </el-option>
+                            </el-select>
+                        </div>
                     </template>                
                 </div>
 
@@ -122,7 +144,7 @@
                   <li><a @click="filterId = 2; filters={state_type_id: 'all'}; getRecords()" href="#">Estado</a></li>
                 </ul>
             </div>        
-            <table class="table table-cart">
+            <table class="table table-cart rounded-0">
                 <thead>
                     <tr>
                         <th class="product-col">Emisión</th>
@@ -143,7 +165,7 @@
                                 @{{ row.status }}
                             </span>
                         </td>
-                        <td>S/ @{{ row.total }}</td>
+                        <td class="text-success">S/ @{{ row.total }}</td>
                         <td class="text-right">
                             <template v-if="row.download_pdf || row.download_xml">
                                 <el-dropdown trigger="click" placement="bottom-end">

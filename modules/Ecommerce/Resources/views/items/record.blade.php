@@ -56,6 +56,7 @@
                     <i class="icon-plus"></i>
                 </span>
             </div>
+            @if($record->images->count() > 0)
             <div class="prod-thumbnail row owl-dots" id='carousel-custom-dots'>
                 <div class="col-3 owl-dot">
                     <img src="{{ $mainImagePath }}" alt="{{ $record->description }}" />
@@ -80,6 +81,7 @@
                     <img src="assets/images/products/zoom/product-4.jpg" />
                 </div> -->
             </div>
+            @endif
         </div><!-- End .col-lg-7 -->
 
         <div class="col-lg-5 col-md-6">
@@ -239,9 +241,9 @@
             <a class="nav-link" onclick="getRating('{{ $record->id}}')" id="product-tab-reviews" data-toggle="tab" href="#product-reviews-content" role="tab"
                 aria-controls="product-reviews-content" aria-selected="false">Reviews</a>
         </li>
-        <li class="nav-item">
+        {{-- <li class="nav-item">
             <a class="nav-link" id="product-tab-especTecn" data-toggle="tab" href="#product-especTecn-content" role="tab" aria-controls="product-especTecn-content" aria-selected="true">Especificaciones Técnicas</a>
-        </li>
+        </li> --}}
     </ul>
     <div class="tab-content">
         <div class="tab-pane fade show active" id="product-desc-content" role="tabpanel"

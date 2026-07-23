@@ -313,6 +313,9 @@
     @foreach($document->custom_fields_data as $field_slug => $field_value)
         @php
             $custom_field = \Modules\CustomField\Models\CustomField::where('slug', $field_slug)->first();
+            if ($custom_field && !$custom_field->show_in_pdf) {
+                continue;
+            }
             $field_name = $custom_field ? $custom_field->name : $field_slug;
         @endphp
         <tr>

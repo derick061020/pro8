@@ -1,6 +1,6 @@
 <img src="icon_pro5.png" width="120">
 
-# **Facturador PRO 8**
+# **Facturador PRO 9**
 
 ## Términos y condiciones del uso de este repositorio
 
@@ -18,7 +18,7 @@
 
 [Windows ](https://manual.pro8.uio.la/devs/despliegue/plataformas/windows "Clic")
 <br>
-[Docker - Linux](https://manual.pro8.uio.la/devs/despliegue/plataformas/docker-linux "Clic")
+[Docker - Linux](https://git.buho.la/-/snippets/79 "Clic")
 <br>
 [Linux - SSL](https://manual.pro8.uio.la/devs/despliegue/seguridad/instalar-ssl "Clic")
 <br>
@@ -36,7 +36,7 @@ Linux - Ubuntu 20 - 24 - Docker - SSL opcional<br>
 
 -   Docker - Comandos manuales
 
-[Con Docker](https://manual.pro8.uio.la/devs/despliegue/mantenimiento/actualizar-migrar "Clic")
+[Con Docker](https://git.buho.la/-/snippets/79/raw/main/update_all.sh "Clic")
 <br>
 
 ### Manuales de actualización de SSL gratuito

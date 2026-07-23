@@ -16,6 +16,7 @@ use App\Models\Tenant\Item;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use App\Models\Tenant\Series;
+use App\Services\SeriesResolver;
 use App\Models\Tenant\Company;
 
 // use App\Models\Tenant\Warehouse;
@@ -70,6 +71,17 @@ class SaleNoteController extends Controller
         $force_create_if_not_exist = isset($request['force_create_if_not_exist']) ? (bool)$request['force_create_if_not_exist'] : false;
         $request['force_create_if_not_exist'] = $force_create_if_not_exist;
 
+        // Acciones de impresión directa (mismo contrato que el flujo de documentos):
+        // wrapper "acciones" en español; campos nuevos en inglés.
+        $acciones = (array) $request->input('acciones', []);
+        $actions = [
+            'format_pdf'       => $acciones['formato_pdf'] ?? 'a4',
+            'auto_print'       => (bool) ($acciones['auto_print'] ?? false),
+            'name_printer'     => $acciones['name_printer'] ?? null,
+            'client_public_ip' => $acciones['client_public_ip'] ?? null,
+        ];
+        $print_result = ['auto_printed' => false, 'print_order_id' => null, 'reason' => null];
+
         $data = [];
         if ($request['force_create_if_not_exist']) {
             // Se saca de tenant, para que pueda guardar el item correctamente.
@@ -77,7 +89,7 @@ class SaleNoteController extends Controller
             $data = $this->mergeData($request);
         }
 
-        DB::connection('tenant')->transaction(function () use ($request, $data) {
+        DB::connection('tenant')->transaction(function () use ($request, $data, $actions, &$print_result) {
             if (!$request['force_create_if_not_exist']) {
                 $data = $this->mergeData($request);
             }
@@ -119,7 +131,10 @@ class SaleNoteController extends Controller
             }
 
             $this->setFilename();
-            $this->createPdf($this->sale_note, 'a4', $this->sale_note->filename);
+            // El formato lo decide el cliente desde el payload (default a4).
+            $this->createPdf($this->sale_note, $actions['format_pdf'], $this->sale_note->filename);
+            // Impresión directa: reutiliza el PDF recién generado, sin regenerar.
+            $print_result = $this->generatePrintOrder($actions);
         });
 
         return [
@@ -131,15 +146,19 @@ class SaleNoteController extends Controller
                 'filename' => $this->sale_note->filename,
                 'print_ticket' => $this->sale_note->getUrlPrintPdf('ticket'),
             ],
+            // Resultado de la impresión automática server-side. Si auto_printed=true,
+            // el cliente NO debe ejecutar su flujo de descarga+base64+POST.
+            'print' => $print_result,
             'links' => [
                 'pdf' => url('')."/downloads/salenote/sale_note/{$this->sale_note->external_id}"
             ],
             'data_ws' => [
-                'message_text' => "Su comprobante de pago electrónico {$this->sale_note->number_full} ha sido generado correctamente, puede revisarlo en el siguiente enlace: ".url('')."/print/document/{$this->sale_note->external_id}/a4"."",
+                'message_text' => "Su comprobante de pago electrónico {$this->sale_note->number_full} ha sido generado correctamente, puede revisarlo en el siguiente enlace: ".url('')."/print/document/{$this->sale_note->external_id}/ticket"."",
                 "pdf_a4_filename" => url('')."/api/document-file/salenote/{$this->sale_note->external_id}/a4",
+                "pdf_ticket_filename" => url('')."/api/document-file/salenote/{$this->sale_note->external_id}/ticket",
                 "full_filename" => $this->sale_note->filename.".pdf",
                 "customer_telephone" => optional($this->sale_note->person)->telephone
-            ] 
+            ]
         ];
     }
 
@@ -318,6 +337,72 @@ class SaleNoteController extends Controller
         $this->sale_note->filename = join('-', $name);
         $this->sale_note->unique_filename = $this->sale_note->filename; //campo único para evitar duplicados
         $this->sale_note->save();
+    }
+
+    /**
+     * Crea una orden de impresión server-side para la app mozo, evitando el
+     * segundo roundtrip (descargar PDF, convertir a base64 y consumir /print-orders).
+     *
+     * Reutiliza el PDF que createPdf ya generó (formato del payload), almacenado
+     * bajo el file_type 'sale_note'. El PrintOrderObserver lo publica en Redis.
+     *
+     * Activación: acciones.auto_print === true.
+     *
+     * @param  array $actions
+     * @return array{auto_printed: bool, print_order_id: int|null, reason: string|null}
+     */
+    private function generatePrintOrder($actions)
+    {
+        $result = ['auto_printed' => false, 'print_order_id' => null, 'reason' => null];
+
+        if (empty($actions['auto_print'])) {
+            $result['reason'] = 'disabled';
+            return $result;
+        }
+
+        // Validación de impresión local: misma regla que PrintOrderController@store.
+        // Un fallo aquí NO interrumpe la nota de venta: degrada al fallback del mozo.
+        $config = \Modules\Restaurant\Models\RestaurantConfiguration::first();
+        if ($config && $config->print_local_enabled && $config->printer_public_ip) {
+            $clientIp = $actions['client_public_ip'] ?? null;
+            if ($clientIp !== $config->printer_public_ip) {
+                $result['reason'] = 'ip_mismatch';
+                return $result;
+            }
+        }
+
+        // Resolver impresora: la enviada o la predeterminada
+        $printerName = $actions['name_printer'] ?? null;
+        if (empty($printerName)) {
+            $default = \Modules\Restaurant\Models\Printer::where('active', true)
+                ->where('is_default', true)
+                ->first();
+            if (!$default) {
+                $result['reason'] = 'no_printer';
+                return $result;
+            }
+            $printerName = $default->name;
+        }
+
+        try {
+            // El PDF ya fue generado por createPdf en el formato del payload y
+            // almacenado bajo 'sale_note'. Se reutiliza tal cual, sin regenerar.
+            $pdf_b64 = base64_encode($this->getStorage($this->sale_note->filename, 'sale_note'));
+
+            $order = \Modules\Restaurant\Models\PrintOrder::create([
+                'name_printer' => $printerName,
+                'status'       => 0,
+                'pdf_b64'      => $pdf_b64,
+            ]);
+
+            $result['auto_printed']   = true;
+            $result['print_order_id'] = $order->id;
+        } catch (\Throwable $e) {
+            Log::error("SaleNote generatePrintOrder: error generando orden de impresión — {$e->getMessage()}");
+            $result['reason'] = 'error';
+        }
+
+        return $result;
     }
 
     public function toPrint($external_id, $format)
@@ -534,9 +619,10 @@ class SaleNoteController extends Controller
 
     public function series()
     {
-        return Series::where('establishment_id', auth()->user()->establishment_id)
+        return app(SeriesResolver::class)->applyContext(
+            Series::where('establishment_id', auth()->user()->establishment_id)
             ->where('document_type_id', '80')
-            ->get()
+        )->get()
             ->transform(function ($row) {
                 return $row->getApiRowResource();
             });

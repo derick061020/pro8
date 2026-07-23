@@ -1,0 +1,1810 @@
+.radius {
+  border-radius: 10px;
+}.radius {
+  border-radius: 10px;
+}.v-flex {
+  display: var(--2c5d33dd);
+  flex-direction: var(--547e1a23);
+  flex-wrap: var(--7779a726);
+  justify-content: var(--97eaae68);
+  align-items: var(--09038384);
+  align-content: var(--61083912);
+  row-gap: var(--d6245ac2);
+  column-gap: var(--60f25cbd);
+}export default "\n.is-dark .table th {\r\n  border-color: #121c22 !important;\n}\n.is-dark .payments-metod-tr td {\r\n  background-color: #1c2a32 !important;\n}\r\n".content-buttons-payment {
+  margin-left: 0px !important;
+}
+.button.v-button {
+  padding: 8px 20px 8px 20px;
+}
+.is-dark .thead-border-bottom,
+.is-dark .thead-border-bottom tr th {
+  border-color: var(--dark-primary) !important;
+}
+.is-dark .btn-state {
+  background-color: var(--dark-accent) !important;
+  color: var(--dark-light-text);
+}
+.is-dark .btn-state:hover {
+  color: #ffff;
+}
+.is-dark .is-primary {
+  background-color: var(--primary) !important;
+  color: #fff;
+}
+.is-dark .column-table-payment {
+  background-color: var(--dark-secondary);
+}.truncate-content[data-v-3f95b9f9] {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.truncate-content p[data-v-3f95b9f9],
+.truncate-content span[data-v-3f95b9f9],
+.truncate-content b[data-v-3f95b9f9] {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: block;
+}
+.truncate-content span[data-v-3f95b9f9] {
+  display: flex;
+  max-width: 100%;
+}.btn-finishing {
+  width: 100%;
+  margin: 0px;
+}
+.btn-finishing span {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}@charset "UTF-8";
+.mini-btn {
+  min-height: 35px !important;
+  font-size: 0.8rem !important;
+  margin: 0px;
+  margin-top: 2px;
+}
+.btn-sm {
+  height: 25px !important;
+  padding: 0px 8px !important;
+}
+.column.y-space {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+.column.y-space button {
+  align-self: flex-end;
+}
+.btn-finishing {
+  width: 100%;
+  margin: 0px;
+}
+.btn-finishing span {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.items-count span {
+  color: var(--dark-text) !important;
+  text-transform: capitalize !important;
+  font-weight: 600 !important;
+}
+.item-name {
+  font-size: 0.85rem;
+  font-weight: 700;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  /* Máximo 2 líneas */
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.1;
+  min-height: 32px;
+}
+.input-price {
+  background-color: #ffff;
+  border: none !important;
+  text-align: right !important;
+}
+.quantity-container {
+  background-color: var(--background);
+  border-radius: 12px;
+  height: 25px;
+}
+.quantity-container input.input-quantity {
+  background-color: transparent;
+  height: 100%;
+  width: 60px;
+  border-color: transparent;
+  text-align: right;
+}
+.quantity-container input.input-quantity:focus {
+  background-color: #ffff !important;
+}
+.quantity-container:focus-within .second-buton,
+.quantity-container:hover .second-buton {
+  background-color: var(--danger--light-color) !important;
+}
+.quantity-container:focus-within .primary-buton,
+.quantity-container:hover .primary-buton {
+  background-color: rgba(56, 224, 149, 0.33) !important;
+}
+.food-delivery-dashboard .right .cart-items .item:hover .quantity-container {
+  background-color: #ffff !important;
+}
+.quantity-container .second-buton {
+  border-radius: 12px 0 0 12px !important;
+  background-color: transparent !important;
+  transition: none;
+}
+.quantity-container .second-buton:hover {
+  background-color: var(--danger--dark-color) !important;
+  color: var(--danger--light-color) !important;
+}
+.quantity-container .primary-buton {
+  border-radius: 0 12px 12px 0 !important;
+  background-color: transparent !important;
+  transition: none;
+}
+.quantity-container .primary-buton:hover {
+  background-color: var(--primary--dark-color) !important;
+  color: #ddfff0 !important;
+}
+.unit-label {
+  color: oklch(from var(--dark-text) l c h/0.6);
+  font-size: 0.65rem;
+  margin: 0 0 2px 3px;
+  white-space: nowrap;
+  text-transform: uppercase;
+  line-height: 0.65rem;
+}
+.btn-remove-product {
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px !important;
+  padding: 0 !important;
+  opacity: 0;
+}
+.btn-remove-product:hover {
+  background-color: var(--danger--dark-color) !important;
+  color: var(--danger--light-color) !important;
+}
+.item:hover .btn-remove-product {
+  opacity: 1;
+}
+.btn-remove-product span {
+  height: 100%;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+}
+.food-delivery-dashboard .right .cart-items .item:hover,
+.food-delivery-dashboard .right .cart-items .item:focus-within {
+  background: var(--background) !important;
+}
+.is-dark .quantity-container {
+  background-color: var(--dark-accent) !important;
+}
+.is-dark .food-delivery-dashboard .right .cart-items .item:hover .quantity-container {
+  background-color: var(--dark-accent) !important;
+}
+.is-dark .food-delivery-dashboard .right .cart-items .item:hover .quantity-container .second-buton {
+  background-color: transparent !important;
+}
+.is-dark .food-delivery-dashboard .right .cart-items .item:hover .quantity-container .primary-buton {
+  background-color: transparent !important;
+}
+.item-price-total {
+  max-width: 100px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  display: block;
+}/*! _widgets-lists.scss | Vuero | Css ninja 2020-2021 */
+/* ==========================================================================
+List Widgets Styles
+========================================================================== */
+/*
+    1. List Widget Base
+    2. List Widget V1
+    3. List Widget V2
+    4. List Widget V3
+    5. Media Queries
+*/
+/* ==========================================================================
+1. List Widget Base
+========================================================================== */
+.list-widget {
+  flex: 1;
+  display: inline-block;
+  width: 100%;
+  padding: 20px;
+  background-color: var(--white);
+  border-radius: 16px;
+  border: 1px solid var(--fade-grey-dark-3);
+  transition: all 0.3s;
+  padding: 30px;
+}
+.list-widget.has-margin-bottom {
+  margin-bottom: 1.5rem;
+}
+.list-widget.is-flat {
+  box-shadow: none;
+}
+.list-widget.is-raised {
+  box-shadow: var(--light-box-shadow);
+}
+.list-widget.is-primary {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: var(--primary--color-invert);
+}
+.list-widget.is-primary .title,
+.list-widget.is-primary .subtitle,
+.list-widget.is-primary h1,
+.list-widget.is-primary h2,
+.list-widget.is-primary h3,
+.list-widget.is-primary h4,
+.list-widget.is-primary p {
+  color: var(--smoke-white) !important;
+}
+.list-widget.is-secondary {
+  background: var(--secondary) !important;
+  border-color: var(--secondary) !important;
+}
+.list-widget.is-secondary .title,
+.list-widget.is-secondary .subtitle,
+.list-widget.is-secondary h1,
+.list-widget.is-secondary h2,
+.list-widget.is-secondary h3,
+.list-widget.is-secondary h4,
+.list-widget.is-secondary p {
+  color: var(--smoke-white) !important;
+}
+.list-widget.is-info {
+  background: var(--info) !important;
+  border-color: var(--info) !important;
+}
+.list-widget.is-info .title,
+.list-widget.is-info .subtitle,
+.list-widget.is-info h1,
+.list-widget.is-info h2,
+.list-widget.is-info h3,
+.list-widget.is-info h4,
+.list-widget.is-info p {
+  color: var(--smoke-white) !important;
+}
+.list-widget.is-success {
+  background: var(--success) !important;
+  border-color: var(--success) !important;
+}
+.list-widget.is-success .title,
+.list-widget.is-success .subtitle,
+.list-widget.is-success h1,
+.list-widget.is-success h2,
+.list-widget.is-success h3,
+.list-widget.is-success h4,
+.list-widget.is-success p {
+  color: var(--smoke-white) !important;
+}
+.list-widget.is-warning {
+  background: var(--warning) !important;
+  border-color: var(--warning) !important;
+}
+.list-widget.is-warning .title,
+.list-widget.is-warning .subtitle,
+.list-widget.is-warning h1,
+.list-widget.is-warning h2,
+.list-widget.is-warning h3,
+.list-widget.is-warning h4,
+.list-widget.is-warning p {
+  color: var(--smoke-white) !important;
+}
+.list-widget.is-danger {
+  background: var(--danger) !important;
+  border-color: var(--danger) !important;
+}
+.list-widget.is-danger .title,
+.list-widget.is-danger .subtitle,
+.list-widget.is-danger h1,
+.list-widget.is-danger h2,
+.list-widget.is-danger h3,
+.list-widget.is-danger h4,
+.list-widget.is-danger p {
+  color: var(--smoke-white) !important;
+}
+.list-widget .card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.list-widget .card-head .left,
+.list-widget .card-head .right {
+  display: flex;
+  align-items: center;
+}
+.list-widget .card-head .left .title {
+  font-size: 1.2rem;
+  font-weight: 500;
+}
+.list-widget .card-head .right {
+  justify-content: flex-end;
+}
+.list-widget .card-inner {
+  padding-top: 1.75rem;
+}
+.list-widget:not(:last-child) {
+  margin-bottom: 1.5rem;
+}
+.list-widget.is-straight {
+  flex: 1;
+  display: inline-block;
+  width: 100%;
+  padding: 20px;
+  background-color: var(--white);
+  border-radius: var(--radius-large);
+  border: 1px solid var(--fade-grey-dark-3);
+  transition: all 0.3s;
+}
+.list-widget.is-straight.has-margin-bottom {
+  margin-bottom: 1.5rem;
+}
+.list-widget.is-straight.is-flat {
+  box-shadow: none;
+}
+.list-widget.is-straight.is-raised {
+  box-shadow: var(--light-box-shadow);
+}
+.list-widget.is-straight.is-primary {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: var(--primary--color-invert);
+}
+.list-widget.is-straight.is-primary .title,
+.list-widget.is-straight.is-primary .subtitle,
+.list-widget.is-straight.is-primary h1,
+.list-widget.is-straight.is-primary h2,
+.list-widget.is-straight.is-primary h3,
+.list-widget.is-straight.is-primary h4,
+.list-widget.is-straight.is-primary p {
+  color: var(--smoke-white) !important;
+}
+.list-widget.is-straight.is-secondary {
+  background: var(--secondary) !important;
+  border-color: var(--secondary) !important;
+}
+.list-widget.is-straight.is-secondary .title,
+.list-widget.is-straight.is-secondary .subtitle,
+.list-widget.is-straight.is-secondary h1,
+.list-widget.is-straight.is-secondary h2,
+.list-widget.is-straight.is-secondary h3,
+.list-widget.is-straight.is-secondary h4,
+.list-widget.is-straight.is-secondary p {
+  color: var(--smoke-white) !important;
+}
+.list-widget.is-straight.is-info {
+  background: var(--info) !important;
+  border-color: var(--info) !important;
+}
+.list-widget.is-straight.is-info .title,
+.list-widget.is-straight.is-info .subtitle,
+.list-widget.is-straight.is-info h1,
+.list-widget.is-straight.is-info h2,
+.list-widget.is-straight.is-info h3,
+.list-widget.is-straight.is-info h4,
+.list-widget.is-straight.is-info p {
+  color: var(--smoke-white) !important;
+}
+.list-widget.is-straight.is-success {
+  background: var(--success) !important;
+  border-color: var(--success) !important;
+}
+.list-widget.is-straight.is-success .title,
+.list-widget.is-straight.is-success .subtitle,
+.list-widget.is-straight.is-success h1,
+.list-widget.is-straight.is-success h2,
+.list-widget.is-straight.is-success h3,
+.list-widget.is-straight.is-success h4,
+.list-widget.is-straight.is-success p {
+  color: var(--smoke-white) !important;
+}
+.list-widget.is-straight.is-warning {
+  background: var(--warning) !important;
+  border-color: var(--warning) !important;
+}
+.list-widget.is-straight.is-warning .title,
+.list-widget.is-straight.is-warning .subtitle,
+.list-widget.is-straight.is-warning h1,
+.list-widget.is-straight.is-warning h2,
+.list-widget.is-straight.is-warning h3,
+.list-widget.is-straight.is-warning h4,
+.list-widget.is-straight.is-warning p {
+  color: var(--smoke-white) !important;
+}
+.list-widget.is-straight.is-danger {
+  background: var(--danger) !important;
+  border-color: var(--danger) !important;
+}
+.list-widget.is-straight.is-danger .title,
+.list-widget.is-straight.is-danger .subtitle,
+.list-widget.is-straight.is-danger h1,
+.list-widget.is-straight.is-danger h2,
+.list-widget.is-straight.is-danger h3,
+.list-widget.is-straight.is-danger h4,
+.list-widget.is-straight.is-danger p {
+  color: var(--smoke-white) !important;
+}
+.list-widget.is-straight .card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.list-widget.is-straight .card-head .left,
+.list-widget.is-straight .card-head .right {
+  display: flex;
+  align-items: center;
+}
+.list-widget.is-straight .card-head .left .title {
+  font-size: 1.2rem;
+  font-weight: 500;
+}
+.list-widget.is-straight .card-head .right {
+  justify-content: flex-end;
+}
+.list-widget.is-straight .card-inner {
+  padding-top: 1.75rem;
+}
+.list-widget.tabbed-widget .widget-head .tabbed-controls {
+  position: relative;
+  display: flex;
+  min-width: 140px;
+  height: 32px;
+  background: var(--widget-grey-dark-2);
+  font-family: var(--font);
+  border-radius: 8px;
+}
+.list-widget.tabbed-widget .widget-head .tabbed-controls .tabbed-control {
+  position: relative;
+  width: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 0.9rem;
+  color: var(--light-text);
+  z-index: 1;
+}
+.list-widget.tabbed-widget .widget-head .tabbed-controls .tabbed-control.is-active {
+  color: var(--smoke-white);
+}
+.list-widget.tabbed-widget .widget-head .tabbed-controls .tabbed-control.is-active:first-child ~ .tabbed-naver {
+  margin-left: 0;
+}
+.list-widget.tabbed-widget .widget-head .tabbed-controls .tabbed-control.is-active:nth-child(2) ~ .tabbed-naver {
+  margin-left: 50%;
+}
+.list-widget.tabbed-widget .widget-head .tabbed-controls .tabbed-naver {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 50%;
+  height: 100%;
+  border-radius: 8px;
+  background: var(--primary);
+  margin-left: 0;
+  transition: all 0.3s;
+  z-index: 0;
+}
+.list-widget.tabbed-widget .inner-list-wrapper {
+  display: none;
+  animation: fadeInLeft 0.5s;
+}
+.list-widget.tabbed-widget .inner-list-wrapper.is-active {
+  display: block;
+}
+.list-widget .widget-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 32px;
+  margin-bottom: 10px;
+}
+.list-widget .widget-head h3 {
+  color: var(--dark-text);
+  font-size: 1.1rem;
+  font-weight: 500;
+}
+.list-widget .inner-list {
+  padding: 10px 0;
+}
+.list-widget .inner-list .inner-list-item + .inner-list-item {
+  margin-top: 24px;
+}
+.is-dark .list-widget {
+  background: var(--dark-sidebar-light-6);
+  border-color: var(--dark-sidebar-light-12);
+}
+.is-dark .list-widget .v-avatar img {
+  border-color: var(--dark-sidebar-light-6) !important;
+}
+.is-dark .list-widget .avatar-stack .v-avatar {
+  border-color: var(--dark-sidebar-light-6) !important;
+}
+.is-dark .list-widget .avatar-stack .v-avatar .avatar.is-more .inner {
+  border-color: var(--dark-sidebar-light-6) !important;
+}
+.is-dark .list-widget.tabbed-widget .widget-head .tabbed-controls {
+  background: var(--dark-sidebar-light-3);
+}
+.is-dark .list-widget.tabbed-widget .widget-head .tabbed-controls .tabbed-naver {
+  background: var(--primary);
+}
+/* ==========================================================================
+2. List Widget V1
+========================================================================== */
+.list-widget.list-widget-v1 .go-icon {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 36px;
+  width: 36px;
+  border-radius: var(--radius-rounded);
+  background: var(--widget-grey);
+  color: var(--light-text);
+}
+.list-widget.list-widget-v1 .go-icon::before {
+  content: attr(data-content);
+  position: absolute;
+  left: -45px;
+  font-family: var(--font);
+  font-size: 0.95rem;
+  font-weight: 500;
+}
+.list-widget.list-widget-v1 .go-icon.is-squared {
+  border-radius: 10px;
+}
+.list-widget.list-widget-v1 .go-icon.is-up::before {
+  color: var(--green);
+}
+.list-widget.list-widget-v1 .go-icon.is-down::before {
+  color: var(--red);
+}
+.list-widget.list-widget-v1 .go-icon svg {
+  height: 16px;
+  width: 16px;
+  stroke-width: 3px;
+}
+.is-dark .list-widget.list-widget-v1 .go-icon {
+  background: var(--dark-sidebar-light-3);
+  border: 1px solid var(--dark-sidebar-light-12);
+}
+/* ==========================================================================
+3. List Widget V2
+========================================================================== */
+.list-widget.list-widget-v2 .image-icon {
+  height: 40px;
+  width: 40px;
+}
+/* ==========================================================================
+4. List Widget V3
+========================================================================== */
+.list-widget.list-widget-v3 .icon-timeline .timeline-item {
+  position: relative;
+  display: flex;
+  padding-bottom: 30px;
+}
+.list-widget.list-widget-v3 .icon-timeline .timeline-item::after {
+  content: "";
+  position: absolute;
+  top: 36px;
+  left: 18px;
+  width: 1px;
+  height: calc(100% - 36px);
+  border-left: 1px solid var(--fade-grey-dark-3);
+}
+.list-widget.list-widget-v3 .icon-timeline .timeline-item .timeline-icon {
+  position: relative;
+  height: 36px;
+  width: 36px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: var(--white);
+  border: 1px solid var(--fade-grey-dark-3);
+  border-radius: var(--radius-rounded);
+  color: var(--light-text);
+  box-shadow: var(--light-box-shadow);
+}
+.list-widget.list-widget-v3 .icon-timeline .timeline-item .timeline-icon::after {
+  content: "";
+  position: absolute;
+  top: 17px;
+  left: 40px;
+  width: 20px;
+  height: 1px;
+  border-top: 1px solid var(--fade-grey-dark-3);
+}
+.list-widget.list-widget-v3 .icon-timeline .timeline-item .timeline-icon.is-squared {
+  border-radius: 10px;
+}
+.list-widget.list-widget-v3 .icon-timeline .timeline-item .timeline-icon.is-squared img {
+  border-radius: 10px;
+}
+.list-widget.list-widget-v3 .icon-timeline .timeline-item .timeline-icon.is-primary {
+  background: var(--primary);
+  border-color: var(--primary);
+  box-shadow: var(--primary-box-shadow) svg;
+  box-shadow-color: var(--smoke-white);
+}
+.list-widget.list-widget-v3 .icon-timeline .timeline-item .timeline-icon.is-info {
+  background: var(--info);
+  border-color: var(--info);
+  box-shadow: var(--info-box-shadow);
+}
+.list-widget.list-widget-v3 .icon-timeline .timeline-item .timeline-icon.is-info svg {
+  color: var(--smoke-white);
+}
+.list-widget.list-widget-v3 .icon-timeline .timeline-item .timeline-icon.is-success {
+  background: var(--success);
+  border-color: var(--success);
+  box-shadow: var(--success-box-shadow);
+}
+.list-widget.list-widget-v3 .icon-timeline .timeline-item .timeline-icon.is-success svg {
+  color: var(--smoke-white);
+}
+.list-widget.list-widget-v3 .icon-timeline .timeline-item .timeline-icon.is-orange {
+  background: var(--orange);
+  border-color: var(--orange);
+  box-shadow: var(--orange-box-shadow);
+}
+.list-widget.list-widget-v3 .icon-timeline .timeline-item .timeline-icon.is-orange svg {
+  color: var(--smoke-white);
+}
+.list-widget.list-widget-v3 .icon-timeline .timeline-item .timeline-icon.is-yellow {
+  background: var(--yellow);
+  border-color: var(--yellow);
+}
+.list-widget.list-widget-v3 .icon-timeline .timeline-item .timeline-icon.is-yellow svg {
+  color: var(--smoke-white);
+}
+.list-widget.list-widget-v3 .icon-timeline .timeline-item .timeline-icon img {
+  display: block;
+  height: 28px;
+  width: 28px;
+  border-radius: var(--radius-rounded);
+}
+.list-widget.list-widget-v3 .icon-timeline .timeline-item .timeline-icon svg {
+  height: 16px;
+  width: 16px;
+  stroke-width: 1.6px;
+}
+.list-widget.list-widget-v3 .icon-timeline .timeline-item .timeline-content {
+  margin-left: 34px;
+  line-height: 1.2;
+}
+.list-widget.list-widget-v3 .icon-timeline .timeline-item .timeline-content span {
+  font-size: 0.85rem;
+  color: var(--light-text);
+}
+.list-widget.list-widget-v3 .icon-timeline .timeline-item .timeline-content p {
+  font-family: var(--font-alt);
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--dark-text);
+}
+/* ==========================================================================
+5. Media Queries
+========================================================================== */
+.is-dark .list-widget.list-widget-v3 .icon-timeline .timeline-item::after {
+  border-color: var(--dark-sidebar-light-12) !important;
+}
+.is-dark .list-widget.list-widget-v3 .icon-timeline .timeline-item .timeline-icon:not(.is-primary):not(.is-info):not(.is-success):not(.is-orange):not(.is-yellow) {
+  background: var(--dark-sidebar-light-3) !important;
+  border-color: var(--dark-sidebar-light-12) !important;
+}
+.is-dark .list-widget.list-widget-v3 .icon-timeline .timeline-item .timeline-icon::after {
+  border-color: var(--dark-sidebar-light-12) !important;
+}
+.is-dark .list-widget.list-widget-v3 .icon-timeline .timeline-item .timeline-icon.is-primary {
+  background: var(--primary);
+  border-color: var(--primary);
+  box-shadow: var(--primary-box-shadow) svg;
+  box-shadow-color: var(--smoke-white);
+}
+.is-dark .list-widget.list-widget-v3 .icon-timeline .timeline-item .timeline-content p {
+  color: var(--dark-dark-text);
+}
+:root {
+  --primary-color: #15616d;
+  --dark-color: #001524;
+  --light-color: #eef5f5;
+  --light2-color: #d5e8e8;
+  --primary: #ff7d00;
+  --border: #d5e8e8;
+  --fade-grey-dark-3: #d5e8e8;
+}
+.view-wrapper {
+  background: var(--background);
+}
+.navbar-navbar {
+  background: var(--secondary);
+  border-bottom: none;
+}
+p {
+  color: var(--dark-text);
+}
+.is-dark p {
+  color: var(--dark-dark-text);
+}
+.input,
+.textarea,
+.select select {
+  border-color: var(--secondary);
+}
+.input:hover,
+.textarea:hover,
+.select select:hover,
+.is-hovered.input,
+.is-hovered.textarea,
+.select select.is-hovered,
+select:focus {
+  border-color: var(--light-text);
+}
+.is-dark .item-name strong,
+.is-dark .item-price {
+  color: var(--dark-light-text) !important;
+}
+.is-dark .item-internalid {
+  color: var(--light-text) !important;
+}
+.is-dark .item-price-list {
+  color: var(--primary) !important;
+}
+.barcode-icon.active svg path {
+  stroke: var(--primary);
+}
+b,
+strong {
+  font-weight: bold;
+}
+table {
+  font-family: arial, sans-serif;
+  border-collapse: collapse;
+  width: 100%;
+}
+td,
+th {
+  border: 1px solid #dddddd;
+  text-align: left;
+  padding: 8px;
+}
+tr:nth-child(even) {
+  background-color: #dddddd;
+}
+.food-delivery-dashboard {
+  display: flex;
+}
+.food-delivery-dashboard.is-navbar {
+  margin-top: 30px;
+}
+.food-delivery-dashboard.is-navbar > .right .sticky-panel {
+  height: calc(100% - 120px) !important;
+}
+.food-delivery-dashboard.is-navbar > .right .sticky-panel.is-stretched {
+  height: calc(100% - 120px);
+  top: 100px;
+}
+.food-delivery-dashboard .left {
+  width: 70%;
+}
+.food-delivery-dashboard .left .left-header {
+  display: flex;
+  align-items: center;
+  padding: 10px;
+  border-radius: 16px;
+  background: var(--primary-light-32);
+  font-family: var(--font);
+}
+.food-delivery-dashboard .left .left-header .header-image {
+  position: relative;
+  height: 150px;
+  width: 280px;
+}
+.food-delivery-dashboard .left .left-header .header-image img {
+  position: absolute;
+  top: -40px;
+  left: -30px;
+  display: block;
+}
+.food-delivery-dashboard .left .left-header .header-meta {
+  margin-left: 0;
+  margin-bottom: 20px;
+}
+.food-delivery-dashboard .left .left-header .header-meta h3 {
+  font-family: var(--font-alt);
+  font-weight: 700;
+  font-size: 1.6rem;
+}
+.food-delivery-dashboard .left .left-header .header-meta p {
+  font-weight: 400;
+  color: var(--primary-dark-14);
+  margin-bottom: 8px;
+}
+.food-delivery-dashboard .left .left-header .header-meta .action-link span {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  margin-right: 6px;
+}
+.food-delivery-dashboard .left .left-header .header-meta .action-link i {
+  font-size: 12px;
+}
+.food-delivery-dashboard .left .left-body .restaurants .restaurants-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 20px 0;
+  font-family: var(--font);
+}
+.food-delivery-dashboard .left .left-body .restaurants .restaurants-toolbar .left h3 {
+  font-family: var(--font-alt);
+  color: var(--dark-text);
+  font-size: 1.3rem;
+  font-weight: 600;
+}
+.food-delivery-dashboard .left .left-body .restaurants .restaurants-toolbar .right {
+  display: flex;
+  justify-content: flex-end;
+}
+.food-delivery-dashboard .left .left-body .food-pills {
+  position: relative;
+}
+.food-delivery-dashboard .left .left-body .food-pills .food-pills-inner .food-pill {
+  outline: none;
+  text-align: center;
+  height: 50px;
+  background: var(--white);
+  border: 1px solid var(--fade-grey-dark-3);
+  border-radius: 15px;
+  margin: 0 5px;
+  cursor: pointer;
+  transition: all 0.3s;
+  white-space: nowrap;
+}
+.food-delivery-dashboard .left .left-body .food-pills .food-pills-inner .food-pill.is-active {
+  background: var(--primary);
+  border-color: var(--primary);
+}
+.food-delivery-dashboard .left .left-body .food-pills .food-pills-inner .food-pill.is-active .food-pill-icon {
+  border-color: var(--primary);
+}
+.food-delivery-dashboard .left .left-body .food-pills .food-pills-inner .food-pill.is-active > span {
+  color: var(--smoke-white);
+}
+.food-delivery-dashboard .left .left-body .food-pills .food-pills-inner .food-pill .food-pill-icon {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 60px;
+  height: 80px;
+  background: var(--white);
+  border: 1px solid var(--fade-grey-dark-3);
+  border-radius: 500px;
+}
+.food-delivery-dashboard .left .left-body .food-pills .food-pills-inner .food-pill .food-pill-icon img {
+  display: flex;
+  height: 26px;
+  width: 26px;
+}
+.food-delivery-dashboard .left .left-body .food-pills .food-pills-inner .food-pill span {
+  font-family: var(--font);
+  font-weight: 500;
+  padding-top: 12px;
+  display: block;
+  transition: color 0.3s;
+  padding-left: 12px;
+  padding-right: 12px;
+}
+.food-delivery-dashboard .left .left-body .food-pills .tns-slider:focus {
+  outline: none !important;
+}
+.food-delivery-dashboard .left .left-body .food-pills .tns-slider .active {
+  background: var(--primary);
+  border-color: var(--primary);
+}
+.food-delivery-dashboard .left .left-body .food-pills .tns-slider .active .food-pill-icon {
+  border-color: var(--primary);
+}
+.food-delivery-dashboard .left .left-body .food-pills .tns-slider .active > span {
+  color: var(--smoke-white);
+}
+.food-delivery-dashboard .left .left-body .food-pills .slick-prev::before,
+.food-delivery-dashboard .left .left-body .food-pills .slick-next::before {
+  color: var(--muted-grey);
+}
+.food-delivery-dashboard .left .left-body .food-pills .slick-custom {
+  position: absolute;
+  top: -50px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border: 1px solid transparent;
+  width: 30px;
+  height: 30px;
+  background: transparent;
+  border-radius: 100px;
+  cursor: pointer;
+  color: var(--light-text);
+  transition: all 0.3s;
+  z-index: 25;
+  outline: none !important;
+}
+.food-delivery-dashboard .left .left-body .food-pills .slick-custom.is-prev {
+  right: 30px;
+}
+.food-delivery-dashboard .left .left-body .food-pills .slick-custom.is-prev i {
+  position: relative;
+  left: -1px;
+}
+.food-delivery-dashboard .left .left-body .food-pills .slick-custom.is-next {
+  right: 0;
+}
+.food-delivery-dashboard .left .left-body .food-pills .slick-custom.is-next i {
+  position: relative;
+  right: -1px;
+}
+.food-delivery-dashboard .left .left-body .food-pills .slick-custom:hover {
+  border-color: var(--fade-grey-dark-4);
+  background: var(--white);
+  box-shadow: var(--light-box-shadow);
+}
+.food-delivery-dashboard .left .left-body .food-pills .slick-custom svg {
+  height: 16px;
+  width: 16px;
+  color: var(--primary);
+  transition: all 0.3s;
+}
+.food-delivery-dashboard .left .left-body .restaurants-list {
+  padding: 30px 0;
+}
+.food-delivery-dashboard .left .left-body .restaurants-list .restaurants-list-item {
+  flex: 1;
+  display: inline-block;
+  width: 100%;
+  padding: 20px;
+  background-color: var(--white);
+  border-radius: 16px;
+  border: 1px solid var(--fade-grey-dark-3);
+  transition: all 0.3s;
+  position: relative;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  background-color: var(--white);
+  border: 2px solid transparent;
+  transition: none;
+}
+.food-delivery-dashboard .left .left-body .restaurants-list .restaurants-list-item.has-margin-bottom {
+  margin-bottom: 1.5rem;
+}
+.food-delivery-dashboard .left .left-body .restaurants-list .restaurants-list-item.is-flat {
+  box-shadow: none;
+}
+.food-delivery-dashboard .left .left-body .restaurants-list .restaurants-list-item.is-raised {
+  box-shadow: var(--light-box-shadow);
+}
+.food-delivery-dashboard .left .left-body .restaurants-list .restaurants-list-item.is-primary {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: var(--primary--color-invert);
+}
+.food-delivery-dashboard .left .left-body .restaurants-list .restaurants-list-item.is-primary .title,
+.food-delivery-dashboard .left .left-body .restaurants-list .restaurants-list-item.is-primary .subtitle,
+.food-delivery-dashboard .left .left-body .restaurants-list .restaurants-list-item.is-primary h1,
+.food-delivery-dashboard .left .left-body .restaurants-list .restaurants-list-item.is-primary h2,
+.food-delivery-dashboard .left .left-body .restaurants-list .restaurants-list-item.is-primary h3,
+.food-delivery-dashboard .left .left-body .restaurants-list .restaurants-list-item.is-primary h4,
+.food-delivery-dashboard .left .left-body .restaurants-list .restaurants-list-item.is-primary p {
+  color: var(--smoke-white) !important;
+}
+.food-delivery-dashboard .left .left-body .restaurants-list .restaurants-list-item.is-secondary {
+  background: var(--secondary) !important;
+  border-color: var(--secondary) !important;
+}
+.food-delivery-dashboard .left .left-body .restaurants-list .restaurants-list-item.is-secondary .title,
+.food-delivery-dashboard .left .left-body .restaurants-list .restaurants-list-item.is-secondary .subtitle,
+.food-delivery-dashboard .left .left-body .restaurants-list .restaurants-list-item.is-secondary h1,
+.food-delivery-dashboard .left .left-body .restaurants-list .restaurants-list-item.is-secondary h2,
+.food-delivery-dashboard .left .left-body .restaurants-list .restaurants-list-item.is-secondary h3,
+.food-delivery-dashboard .left .left-body .restaurants-list .restaurants-list-item.is-secondary h4,
+.food-delivery-dashboard .left .left-body .restaurants-list .restaurants-list-item.is-secondary p {
+  color: var(--smoke-white) !important;
+}
+.food-delivery-dashboard .left .left-body .restaurants-list .restaurants-list-item.is-info {
+  background: var(--info) !important;
+  border-color: var(--info) !important;
+}
+.food-delivery-dashboard .left .left-body .restaurants-list .restaurants-list-item.is-info .title,
+.food-delivery-dashboard .left .left-body .restaurants-list .restaurants-list-item.is-info .subtitle,
+.food-delivery-dashboard .left .left-body .restaurants-list .restaurants-list-item.is-info h1,
+.food-delivery-dashboard .left .left-body .restaurants-list .restaurants-list-item.is-info h2,
+.food-delivery-dashboard .left .left-body .restaurants-list .restaurants-list-item.is-info h3,
+.food-delivery-dashboard .left .left-body .restaurants-list .restaurants-list-item.is-info h4,
+.food-delivery-dashboard .left .left-body .restaurants-list .restaurants-list-item.is-info p {
+  color: var(--smoke-white) !important;
+}
+.food-delivery-dashboard .left .left-body .restaurants-list .restaurants-list-item.is-success {
+  background: var(--success) !important;
+  border-color: var(--success) !important;
+}
+.food-delivery-dashboard .left .left-body .restaurants-list .restaurants-list-item.is-success .title,
+.food-delivery-dashboard .left .left-body .restaurants-list .restaurants-list-item.is-success .subtitle,
+.food-delivery-dashboard .left .left-body .restaurants-list .restaurants-list-item.is-success h1,
+.food-delivery-dashboard .left .left-body .restaurants-list .restaurants-list-item.is-success h2,
+.food-delivery-dashboard .left .left-body .restaurants-list .restaurants-list-item.is-success h3,
+.food-delivery-dashboard .left .left-body .restaurants-list .restaurants-list-item.is-success h4,
+.food-delivery-dashboard .left .left-body .restaurants-list .restaurants-list-item.is-success p {
+  color: var(--smoke-white) !important;
+}
+.food-delivery-dashboard .left .left-body .restaurants-list .restaurants-list-item.is-warning {
+  background: var(--warning) !important;
+  border-color: var(--warning) !important;
+}
+.food-delivery-dashboard .left .left-body .restaurants-list .restaurants-list-item.is-warning .title,
+.food-delivery-dashboard .left .left-body .restaurants-list .restaurants-list-item.is-warning .subtitle,
+.food-delivery-dashboard .left .left-body .restaurants-list .restaurants-list-item.is-warning h1,
+.food-delivery-dashboard .left .left-body .restaurants-list .restaurants-list-item.is-warning h2,
+.food-delivery-dashboard .left .left-body .restaurants-list .restaurants-list-item.is-warning h3,
+.food-delivery-dashboard .left .left-body .restaurants-list .restaurants-list-item.is-warning h4,
+.food-delivery-dashboard .left .left-body .restaurants-list .restaurants-list-item.is-warning p {
+  color: var(--smoke-white) !important;
+}
+.food-delivery-dashboard .left .left-body .restaurants-list .restaurants-list-item.is-danger {
+  background: var(--danger) !important;
+  border-color: var(--danger) !important;
+}
+.food-delivery-dashboard .left .left-body .restaurants-list .restaurants-list-item.is-danger .title,
+.food-delivery-dashboard .left .left-body .restaurants-list .restaurants-list-item.is-danger .subtitle,
+.food-delivery-dashboard .left .left-body .restaurants-list .restaurants-list-item.is-danger h1,
+.food-delivery-dashboard .left .left-body .restaurants-list .restaurants-list-item.is-danger h2,
+.food-delivery-dashboard .left .left-body .restaurants-list .restaurants-list-item.is-danger h3,
+.food-delivery-dashboard .left .left-body .restaurants-list .restaurants-list-item.is-danger h4,
+.food-delivery-dashboard .left .left-body .restaurants-list .restaurants-list-item.is-danger p {
+  color: var(--smoke-white) !important;
+}
+.food-delivery-dashboard .left .left-body .restaurants-list .restaurants-list-item .card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.food-delivery-dashboard .left .left-body .restaurants-list .restaurants-list-item .card-head .left,
+.food-delivery-dashboard .left .left-body .restaurants-list .restaurants-list-item .card-head .right {
+  display: flex;
+  align-items: center;
+}
+.food-delivery-dashboard .left .left-body .restaurants-list .restaurants-list-item .card-head .left .title {
+  font-size: 1.2rem;
+  font-weight: 500;
+}
+.food-delivery-dashboard .left .left-body .restaurants-list .restaurants-list-item .card-head .right {
+  justify-content: flex-end;
+}
+.food-delivery-dashboard .left .left-body .restaurants-list .restaurants-list-item .card-inner {
+  padding-top: 1.75rem;
+}
+.food-delivery-dashboard .left .left-body .restaurants-list .restaurants-list-item:hover {
+  box-shadow: 0 5px 25px rgba(45, 128, 91, 0.1) !important;
+  border: 2px solid var(--primary);
+}
+.food-delivery-dashboard .left .left-body .restaurants-list .restaurants-list-item .image-container {
+  position: relative;
+  z-index: 1;
+}
+.food-delivery-dashboard .left .left-body .restaurants-list .restaurants-list-item .image-container > img {
+  display: block;
+  object-fit: contain;
+  border-radius: 14px 14px 14px 0;
+  min-height: 120px;
+  max-height: 160px;
+  width: 100%;
+  height: 200px;
+  padding: 10px;
+}
+.food-delivery-dashboard .left .left-body .restaurants-list .restaurants-list-item .image-container .timer {
+  position: absolute;
+  bottom: 10px;
+  left: 10px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 50px;
+  width: 50px;
+  border-radius: 12px;
+  background: var(--primary);
+  border: 1px solid var(--primary);
+  font-family: var(--font);
+  text-align: center;
+}
+.food-delivery-dashboard .left .left-body .restaurants-list .restaurants-list-item .image-container .timer span {
+  display: block;
+}
+.food-delivery-dashboard .left .left-body .restaurants-list .restaurants-list-item .image-container .timer span:first-child {
+  font-size: 1.3rem;
+  color: var(--smoke-white);
+  font-weight: 600;
+  line-height: 1;
+}
+.food-delivery-dashboard .left .left-body .restaurants-list .restaurants-list-item .image-container .timer span:nth-child(2) {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  color: var(--primary-light-40);
+}
+.food-delivery-dashboard .left .left-body .restaurants-list .restaurants-list-item .meta-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+  padding: 5px 5px;
+  z-index: 2;
+}
+.food-delivery-dashboard .left .left-body .restaurants-list .restaurants-list-item .meta-container .meta-icon {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 46px;
+  min-width: 46px;
+  height: 46px;
+  max-height: 46px;
+  background: var(--white);
+  border: 1px solid var(--fade-grey-dark-3);
+  border-radius: 500px;
+}
+.food-delivery-dashboard .left .left-body .restaurants-list .restaurants-list-item .meta-container .meta-icon img {
+  display: flex;
+  height: 22px;
+  width: 22px;
+}
+.food-delivery-dashboard .left .left-body .restaurants-list .restaurants-list-item .meta-container .meta-content {
+  margin-left: 8px;
+  font-family: var(--font);
+  line-height: 1.3;
+  width: 100%;
+}
+.food-delivery-dashboard .left .left-body .restaurants-list .restaurants-list-item .meta-container .meta-content .meta-price {
+  color: var(--primary);
+}
+.food-delivery-dashboard .left .left-body .restaurants-list .restaurants-list-item .meta-container .meta-content h4 {
+  font-family: var(--font-alt);
+  font-size: 0.85rem;
+  color: var(--dark-text);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  line-height: 1.2;
+  height: 34px;
+}
+.food-delivery-dashboard .left .left-body .restaurants-list .restaurants-list-item .meta-container .meta-content p {
+  display: flex;
+  align-items: center;
+}
+.food-delivery-dashboard .left .left-body .restaurants-list .restaurants-list-item .meta-container .meta-content p .fa-circle {
+  font-size: 5px;
+  margin: 0 10px;
+}
+.food-delivery-dashboard .left .left-body .restaurants-list .restaurants-list-item .meta-container .meta-content p .fa-star {
+  position: relative;
+  top: -1px;
+  font-size: 12px;
+  color: #fab82a;
+}
+.food-delivery-dashboard .left .left-body .restaurants-list .restaurants-list-item .meta-container .meta-content p .fa-star + span {
+  color: var(--dark-text);
+}
+.food-delivery-dashboard .right .cart-items .item:hover {
+  background: var(--background);
+}
+.food-delivery-dashboard > .right {
+  width: 30%;
+  padding: 0 0 0 20px;
+}
+.food-delivery-dashboard > .right .sticky-panel {
+  position: fixed;
+  height: calc(100% - 100px);
+  transition: all 0.3s;
+  min-width: 300px;
+  width: 28%;
+  max-width: 28%;
+}
+.food-delivery-dashboard > .right .sticky-panel.is-stretched {
+  height: calc(100% - 30px);
+  top: 10px;
+}
+.food-delivery-dashboard > .right .sticky-panel .icon-toolbar-widget {
+  width: 100%;
+}
+.food-delivery-dashboard > .right .sticky-panel .side-section {
+  display: none;
+  animation: fadeInLeft 0.5s;
+}
+.food-delivery-dashboard > .right .sticky-panel .side-section.is-active {
+  display: block;
+}
+.food-delivery-dashboard > .right .sticky-panel .cart-widget {
+  height: calc(100%);
+}
+.food-delivery-dashboard > .right .sticky-panel .cart-widget .section-placeholder {
+  height: calc(100% - 160px);
+}
+.food-delivery-dashboard > .right .sticky-panel .cart-widget .section-placeholder img {
+  max-width: 90px;
+  margin: 0 auto 10px auto;
+}
+.food-delivery-dashboard > .right .sticky-panel .cart-widget .cart-items {
+  height: calc(100% - 99px);
+  border-bottom: 1px solid var(--secondary);
+  overflow-y: auto;
+}
+.food-delivery-dashboard > .right .sticky-panel .cart-widget .cart-items .item {
+  border-bottom: 2px dotted var(--secondary);
+}
+.food-delivery-dashboard > .right .sticky-panel .cart-widget .cart-items .item strong {
+  color: var(--dark-text);
+}
+.food-delivery-dashboard > .right .sticky-panel .cart-widget .cart-items .item p {
+  color: var(--dark-text);
+}
+.food-delivery-dashboard > .right .sticky-panel .cart-widget .cart-items .cart-item {
+  align-items: center;
+}
+.food-delivery-dashboard > .right .sticky-panel .cart-widget .cart-items .cart-item .price {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+.food-delivery-dashboard > .right .sticky-panel .cart-widget .cart-button .total {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 5px;
+}
+.food-delivery-dashboard > .right .sticky-panel .cart-widget .cart-button .total span {
+  font-family: var(--font);
+  margin: 0;
+}
+.food-delivery-dashboard > .right .sticky-panel .cart-widget .cart-button .total span:first-child {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--light-text);
+  text-transform: uppercase;
+}
+.food-delivery-dashboard > .right .sticky-panel .cart-widget .cart-button .total span:nth-child(2) {
+  color: var(--dark-text);
+  font-weight: 600;
+  font-size: 0.8rem;
+}
+.is-dark .restaurants-list-item {
+  border: 2px solid transparent !important;
+}
+.is-dark .restaurants-list-item:hover {
+  border-color: var(--secondary) !important;
+}
+.is-dark .is-sticky {
+  background-color: var(--dark-background);
+}
+.is-dark .tabs-list {
+  background-color: var(--dark-accent);
+  border: none;
+}
+.is-dark .food-delivery-dashboard .left .left-header {
+  background: var(--dark-sidebar-light-2) !important;
+}
+.is-dark .food-delivery-dashboard .left .left-header .header-meta h3 {
+  color: var(--dark-dark-text);
+}
+.is-dark .food-delivery-dashboard .left .left-header .header-meta p {
+  color: var(--primary);
+}
+.is-dark .food-delivery-dashboard .left .left-body .restaurants .restaurants-toolbar .left h3 {
+  color: var(--dark-dark-text);
+}
+.is-dark .food-delivery-dashboard .left .left-body .restaurants .food-pills .food-pills-inner .food-pill {
+  background: var(--dark-sidebar-light-2) !important;
+  border-color: var(--dark-sidebar-light-12) !important;
+}
+.is-dark .food-delivery-dashboard .left .left-body .restaurants .food-pills .food-pills-inner .food-pill span {
+  color: var(--dark-dark-text);
+}
+.is-dark .food-delivery-dashboard .left .left-body .restaurants .food-pills .food-pills-inner .food-pill.active {
+  background: var(--primary) !important;
+  border-color: var(--primary) !important;
+}
+.is-dark .food-delivery-dashboard .left .left-body .restaurants .food-pills .food-pills-inner .food-pill.active span {
+  color: var(--white);
+}
+.is-dark .food-delivery-dashboard .left .left-body .restaurants .food-pills .food-pills-inner .food-pill .food-pill-icon {
+  background: var(--fade-grey-light-3);
+  border-color: var(--fade-grey-light-3);
+}
+.is-dark .food-delivery-dashboard .left .left-body .restaurants .food-pills .food-pills-inner .slick-slide.slick-current {
+  background: var(--primary) !important;
+  border-color: var(--primary) !important;
+}
+.is-dark .food-delivery-dashboard .left .left-body .restaurants .food-pills .food-pills-inner .slick-slide.slick-current .food-pill-icon {
+  border-color: var(--primary) !important;
+}
+.is-dark .food-delivery-dashboard .left .left-body .restaurants .food-pills .food-pills-inner .slick-slide.slick-current span {
+  color: var(--smoke-white);
+}
+.is-dark .food-delivery-dashboard .left .left-body .restaurants .food-pills .food-pills-inner .slick-custom:hover {
+  border-color: var(--dark-sidebar-light-2);
+  background: var(--dark-sidebar-light-2);
+  box-shadow: var(--light-box-shadow);
+}
+.is-dark .food-delivery-dashboard .left .left-body .restaurants .restaurants-list .restaurants-list-item {
+  background: var(--dark-secondary);
+  border-color: var(--dark-secondary);
+  border: none;
+  border: none;
+}
+.is-dark .food-delivery-dashboard .left .left-body .restaurants .restaurants-list .restaurants-list-item .image-container .timer {
+  background: var(--primary);
+  border-color: var(--primary);
+}
+.is-dark .food-delivery-dashboard .left .left-body .restaurants .restaurants-list .restaurants-list-item .image-container .timer span:nth-child(2) {
+  color: var(--primary-light-18);
+}
+.is-dark .food-delivery-dashboard .left .left-body .restaurants .restaurants-list .restaurants-list-item .meta-container .meta-icon {
+  background: var(--fade-grey-light-3);
+  border-color: var(--fade-grey-light-3);
+}
+.is-dark .food-delivery-dashboard .left .left-body .restaurants .restaurants-list .restaurants-list-item .meta-container .meta-content h4 {
+  color: var(--dark-light-text);
+}
+.is-dark .food-delivery-dashboard .left .left-body .restaurants .restaurants-list .restaurants-list-item .meta-container .meta-content p .fa-star {
+  color: var(--primary);
+}
+.is-dark .food-delivery-dashboard .right .cart-items .item:hover {
+  background: var(--dark-background);
+}
+.is-dark .food-delivery-dashboard .right .cart-widget .cart-items {
+  border-color: var(--dark-primary) !important;
+}
+.is-dark .food-delivery-dashboard .right .cart-widget .cart-items .item {
+  border-bottom: 2px dotted var(--dark-primary);
+}
+.is-dark .food-delivery-dashboard .right .cart-widget .cart-button .total span:first-child {
+  color: var(--light-text);
+}
+.is-dark .food-delivery-dashboard .right .cart-widget .cart-button .total span:nth-child(2) {
+  color: var(--dark-light-text);
+}
+/* ==========================================================================
+new styles
+========================================================================== */
+input[type=number]::-webkit-inner-spin-button,
+input[type=number]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type=number] {
+  -moz-appearance: textfield;
+}
+input[type=number]::-ms-clear {
+  display: none;
+}
+.input-quantity {
+  font-size: 16px;
+  width: 70px;
+  text-align: center;
+  border: 1px solid #f9f9f9;
+  color: var(--dark-text);
+  height: 24px;
+}
+.control.has-icon .input:focus + .form-icon svg {
+  color: #15616d !important;
+}
+.is-dark .input-quantity {
+  background-color: var(--dark-accent);
+  color: #ffff;
+  border: none !important;
+  min-height: 27px;
+}
+.is-dark .btn-add-payment {
+  background-color: var(--dark-accent) !important;
+  color: var(--dark-light-text) !important;
+}
+.is-dark .toolbar-link:hover {
+  background: #1a272f !important;
+  border-radius: 50%;
+}
+.is-dark .btn-more-product {
+  color: #2d805b !important;
+  background: var(--dark-accent) !important;
+  border-color: var(--dark-accent) !important;
+}
+.is-dark .text-finishing {
+  color: #ffff;
+}
+.uk-slider-items:not(.uk-grid) {
+  cursor: grab;
+}
+@media only screen and (max-width: 1024px) {
+.is-sticky {
+    width: 93% !important;
+}
+}
+@media only screen and (max-width: 865px) {
+.cart-widget {
+    box-shadow: 0 -6px 20px -2px rgba(0, 0, 0, 0.432);
+}
+}
+@media only screen and (max-width: 767px) {
+.food-delivery-dashboard {
+    flex-direction: column;
+}
+.food-delivery-dashboard .left,
+.food-delivery-dashboard .right {
+    width: 100%;
+    padding: 0;
+}
+.food-delivery-dashboard .left .left-header {
+    flex-direction: column;
+    text-align: center;
+}
+.food-delivery-dashboard .left .left-header .header-image img {
+    left: 0;
+}
+.food-delivery-dashboard .left .restaurants-list .restaurants-list-item .image-container img {
+    min-height: 120px !important;
+    max-height: 120px !important;
+}
+.food-delivery-dashboard .right .sticky-panel {
+    position: static;
+    width: 100% !important;
+}
+.tab-list-container,
+.barcode-icon {
+    display: none !important;
+}
+.search-conteiner {
+    padding-right: 0px !important;
+    margin-right: 0px !important;
+}
+.search-conteiner .input-container {
+    padding-right: 0px !important;
+    margin-right: -13px !important;
+}
+.food-delivery-dashboard .left .restaurants-list .columns {
+    display: flex;
+}
+.food-delivery-dashboard .left .left-body .restaurants-list .restaurants-list-item .meta-container .meta-content h4 {
+    font-size: 0.85rem;
+    height: 34px;
+}
+.price-name-description {
+    font-size: 0.85rem;
+}
+}
+@media only screen and (min-width: 768px) and (max-width: 1024px) and (orientation: portrait) {
+.food-delivery-dashboard {
+    flex-direction: column;
+}
+.food-delivery-dashboard .left,
+.food-delivery-dashboard .right {
+    width: 100%;
+    padding: 0;
+}
+.food-delivery-dashboard .left .restaurants-list .columns {
+    display: flex;
+}
+.food-delivery-dashboard .left .restaurants-list .columns .column {
+    min-width: 50%;
+}
+.food-delivery-dashboard .left .restaurants-list .restaurants-list-item .image-container img {
+    min-height: 220px !important;
+    max-height: 220px !important;
+}
+.food-delivery-dashboard .right .sticky-panel {
+    position: static;
+    width: 100% !important;
+}
+}
+@media only screen and (min-width: 768px) and (max-width: 1024px) and (orientation: landscape) {
+.food-delivery-dashboard .left .left-body .restaurants-list .restaurants-list-item .image-container > img {
+    min-height: 120px !important;
+    max-height: 120px !important;
+}
+.food-delivery-dashboard .right .sticky-panel {
+    max-width: 255px;
+}
+}
+.list-table sub {
+  background: #e8e8e8;
+  padding: 0 4px;
+  border-radius: 4px;
+  font-weight: 900;
+}
+/**
+  * responsive cart
+  */
+.cart-bottom-fixed {
+  position: fixed;
+  bottom: 5px;
+  z-index: 2;
+  max-width: 100%;
+  box-sizing: border-box;
+  width: 100%;
+}
+/* mobile */
+@media only screen and (max-width: 767px) {
+.m-custom {
+    margin-left: -2rem;
+}
+}
+@media only screen and (min-width: 768px) and (max-width: 1024px) and (orientation: portrait) {
+.m-custom {
+    margin-left: -3.5rem;
+}
+.cart-bottom-fixed {
+    width: 95%;
+}
+.sticky-panel {
+    max-width: 200px !important;
+}
+}
+@media only screen and (min-width: 768px) and (max-width: 1024px) and (orientation: landscape) {
+.sticky-panel {
+    max-width: 250px !important;
+    min-width: 200px !important;
+}
+.is-sticky {
+    width: 66.8% !important;
+}
+}
+.clients-content {
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+}
+.clients-content .client-select {
+  width: 80% !important;
+}
+.clients-content .add-client {
+  display: flex;
+  align-items: center;
+  justify-content: end;
+  width: auto !important;
+  padding-left: 1.5rem;
+}
+@media only screen and (max-width: 866px) {
+.is-sticky {
+    width: 91.6% !important;
+    background-color: #105833;
+}
+.cart-widget {
+    padding: 10px;
+    height: 100%;
+}
+.cart-bottom-fixed {
+    height: 35%;
+    padding: 0px;
+}
+.cart-bottom-fixed .columns-new {
+    height: 100%;
+    margin-top: 10px;
+}
+.cart-item-new {
+    height: 80px !important;
+    border-bottom: 2px dotted #e6e6e6;
+}
+.cart-items-new {
+    height: 80%;
+}
+.cart-button-new {
+    height: 20%;
+}
+.content-btn-delete-product {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.product-description {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: 0.85rem;
+}
+}
+@media only screen and (max-width: 767px) {
+.is-sticky {
+    width: 98.5% !important;
+    background-color: #105833;
+}
+}
+@media only screen and (max-width: 492px) {
+.container-payment-all {
+    padding: 0px;
+}
+.content-buttons-payment {
+    width: 100%;
+}
+.content-buttons-payment-all {
+    width: 60%;
+    display: flex;
+    justify-content: space-between;
+}
+.content-buttons-payment-all .btn-container {
+    flex: 1;
+    width: 33%;
+    text-align: center;
+}
+.type-document {
+    min-width: 30%;
+    padding-left: 0.5rem !important;
+}
+.btn-state {
+    width: 100%;
+}
+.clients-content .add-client {
+    padding-left: 0.5rem;
+}
+}
+.input-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.search-conteiner {
+  width: 88%;
+}
+.input {
+  padding-left: 35px !important;
+  padding-right: 45px;
+  height: 43px !important;
+  margin-left: -10px !important;
+}
+.barcode-toggle {
+  display: none;
+}
+.form-icon {
+  margin-left: -8px;
+  margin-top: 3px;
+}
+.barcode-icon {
+  position: absolute;
+  right: 24px;
+  margin-top: -2px;
+  transform: translateY(-50%);
+  cursor: pointer;
+  z-index: 2;
+  display: block;
+}
+.barcode-icon svg path {
+  stroke: var(--light-text);
+  transition: stroke 0.3s ease;
+}
+.searchCategory-content {
+  display: flex;
+  justify-content: start;
+  align-items: center;
+  width: 101%;
+  height: 50px;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  margin-left: -6px;
+}
+.searchCategory-content .tooltip-text {
+  visibility: hidden;
+  width: max-content;
+  background-color: #333;
+  color: #fff;
+  text-align: center;
+  padding: 5px;
+  border-radius: 4px;
+  font-size: 12px;
+  position: absolute;
+  bottom: -35px;
+  left: 98%;
+  transform: translateX(-50%);
+  white-space: wrap;
+  z-index: 10;
+  opacity: 0;
+  transition: opacity 0.5s ease-in-out, visibility 0.5s ease-in-out;
+  padding-left: -20px !important;
+}
+.searchCategory-content .barcode-icon:hover + .tooltip-text {
+  visibility: visible;
+  opacity: 1;
+}
+.tabs li a svg {
+  height: 20px;
+  width: 20px;
+}
+.tabs-list {
+  background: var(--white);
+  border: 1px solid var(--secondary);
+  border-radius: 50px;
+  height: 43px;
+  transform: translateY(-4px);
+  margin-right: 2px;
+}
+.is-sticky {
+  position: fixed;
+  top: 54px;
+  z-index: 10;
+  width: 69.5%;
+  background-color: var(--background);
+  height: 90px;
+  transform: translateY(0);
+  box-shadow: 0 12px 10px -10px rgba(0, 0, 0, 0.1);
+  transition: box-shadow 0.3s ease-in-out, transform 0.3s ease-in-out;
+}
+.is-sticky .search-conteiner {
+  padding-right: 8px !important;
+}
+.searchCategory-content:not(.is-sticky) {
+  transform: translateY(-10px);
+}
+.product-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 185px), 1fr));
+  gap: 1rem;
+}
+@media (max-width: 420px) {
+.product-container {
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 140px), 1fr));
+    gap: 0.6rem;
+}
+}
+.product-container-limited {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 185px), 205px));
+}
+.image-container button {
+  display: none;
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  z-index: 10;
+  padding: 0 4px !important;
+  border-radius: 15px;
+  opacity: 0.5;
+}
+.image-container button:hover {
+  opacity: 1;
+  color: var(--primary) !important;
+}
+.restaurants-list-item:hover .image-container button {
+  display: block !important;
+}
+.image-container button.favorite {
+  display: block !important;
+  opacity: 1;
+  color: var(--primary);
+}
+.image-container button.favorite:hover {
+  color: #a3a5a7 !important;
+}
+.restaurants-list-item.adding {
+  opacity: 0.5;
+  pointer-events: none;
+}
+.restaurants-list-item.adding:after {
+  content: "Actualizando...";
+  position: absolute;
+  top: 0;
+  z-index: 2;
+  width: 100%;
+  text-align: center;
+  color: #001524;
+  background: rgba(255, 255, 255, 0.9);
+  height: 100%;
+  border-radius: 12px;
+}

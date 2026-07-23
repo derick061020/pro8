@@ -12,7 +12,7 @@
             <div class="row">
                 <div class="col-lg-12 col-md-12 col-sm-12 container-tabs">
                     <el-tabs v-model="activeName">
-                        <el-tab-pane label="A4" name="first">
+                        <el-tab-pane label="A4" name="first" v-if="!isNrus">
                             <iframe :src="`${form.print_a4}?cache_bust=${Date.now()}`" width="100%" height="400px"/>
                         </el-tab-pane>
                         <el-tab-pane label="Ticket 80mm" name="fourth" v-if="ShowTicket80">
@@ -24,7 +24,7 @@
                         <el-tab-pane label="Ticket 50mm" name="fifth" v-if="ShowTicket50">
                             <iframe :src="`${form.print_ticket_50}?cache_bust=${Date.now()}`" type="application/pdf" width="100%" height="400px"/>
                         </el-tab-pane>
-                        <el-tab-pane label="A5" name="second">
+                        <el-tab-pane label="A5" name="second" v-if="!isNrus">
                             <iframe :src="`${form.print_a5}?cache_bust=${Date.now()}`" type="application/pdf" width="100%" height="400px"/>
                         </el-tab-pane>
                     </el-tabs>
@@ -49,12 +49,12 @@
                 </div>
                 <div class="col-12 container-btns text-center d-none">
                     <br><br>
-                    <a :href="`https://docs.google.com/viewer?url=${form.print_a4}?format=pdf`" class="btn mx-3 btn-primary btn-lg" target="_BLANK">
+                    <a v-if="!isNrus" :href="`https://docs.google.com/viewer?url=${form.print_a4}?format=pdf`" class="btn mx-3 btn-primary btn-lg" target="_BLANK">
                         <i class="far fa-file-pdf"></i>
                         <br>
                         <span>PDF A4</span>
                     </a>
-                    <a :href="`https://docs.google.com/viewer?url=${form.print_a5}?format=pdf`" class="btn btn-primary mx-3 btn-lg" target="_BLANK">
+                    <a v-if="!isNrus" :href="`https://docs.google.com/viewer?url=${form.print_a5}?format=pdf`" class="btn btn-primary mx-3 btn-lg" target="_BLANK">
                         <i class="far fa-file-pdf"></i>
                         <br>
                         <span>PDF A5</span>
@@ -105,7 +105,8 @@
                     <QrApi 
                         colClass="col-md-6"
                         :wsPhone="form.customer_telephone"
-                        :wsFile="form.pdf_a4_filename"
+                        :wsFile="form.print_ticket"
+                        :wsFileA4="form.print_a4"
                         :wsDocument="form.number"
                         :wsMessage="form.message_text"
                         :wsData="form.pdf_a4_data"
@@ -185,6 +186,9 @@ export default {
         ...mapState([
             'config',
         ]),
+        isNrus() {
+            return !!(this.config && this.config.is_nrus);
+        },
         ShowTicket58() {
             const value = this.config && this.config.show_ticket_58 !== undefined && this.config.show_ticket_58 !== null ? this.config.show_ticket_58 : false;
             console.log('ShowTicket58:', value);
@@ -219,6 +223,10 @@ export default {
             }
         },
         create() {
+            // En NRUS no hay A4/A5; seleccionar la primera pestaña de ticket disponible
+            if (this.isNrus) {
+                this.activeName = this.ShowTicket80 ? 'fourth' : (this.ShowTicket58 ? 'third' : (this.ShowTicket50 ? 'fifth' : 'first'));
+            }
             this.$http.get(`/${this.resource}/record/${this.recordId}`)
                 .then(response => {
                     this.form = response.data.data

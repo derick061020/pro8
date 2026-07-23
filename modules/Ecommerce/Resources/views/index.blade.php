@@ -8,19 +8,38 @@
                 $tagid = Request::segment(3);
             @endphp
 
-            @if(!$tagid)
+            @if(!$tagid && !isset($category))
                 @include('ecommerce::layouts.partials_ecommerce.home_slider')
+            @endif
+            @if(isset($category))
+                <div class="row">
+                    <div class="col-12 text-center py-5">
+                        {{-- Usamos su clase oficial, pero le añadimos un estilo local solo para el tamaño --}}
+                        <h1 class="title-category text-uppercase" style="font-size: 2.5rem; letter-spacing: 2px;">
+                            {{ $category->name }}
+                        </h1>
+                    </div>
+                </div>
             @endif
             <div class="row py-4 mx-0">
                 @include('ecommerce::layouts.partials_ecommerce.categories')
             </div>
+                {{-- @include('ecommerce::layouts.partials_ecommerce.featured_products') --}}
             <div class="row py-4">
-            <div class="container">
-                <h1 class="title-category">Explora nuestros productos</h1>
+                <div class="container d-flex justify-content-between align-items-center">
+                    <h1 class="title-category m-0">Explora nuestros productos</h1>
+
+                    <div class="filter-sort">
+                        <select class="" onchange="location = this.value;" style="width: 200px;">
+                            <option value="{{ request()->fullUrlWithQuery(['order' => 'name_asc']) }}" {{ request('order') == 'name_asc' ? 'selected' : '' }}>Nombre: A - Z</option>
+                            <option value="{{ request()->fullUrlWithQuery(['order' => 'name_desc']) }}" {{ request('order') == 'name_desc' ? 'selected' : '' }}>Nombre: Z - A</option>
+                            <option value="{{ request()->fullUrlWithQuery(['order' => 'price_asc']) }}" {{ request('order') == 'price_asc' ? 'selected' : '' }}>Precio: Menor a Mayor</option>
+                            <option value="{{ request()->fullUrlWithQuery(['order' => 'price_desc']) }}" {{ request('order') == 'price_desc' ? 'selected' : '' }}>Precio: Mayor a Menor</option>
+                        </select>
+                    </div>
                 </div>
             </div>
-                {{-- @include('ecommerce::layouts.partials_ecommerce.featured_products') --}}
-            <div class="row row-sm">
+                <div class="row row-sm">
                 @include('ecommerce::layouts.partials_ecommerce.list_products')
             </div>
             <div class="row row-sm mt-0">

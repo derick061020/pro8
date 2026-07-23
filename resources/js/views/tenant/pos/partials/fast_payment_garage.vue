@@ -17,148 +17,132 @@
               :searchFromBarcode="searchFromBarcode"
         ></table-items>
 
-        <div class="col-12 p-0">
-            <div class="row m-0 pt-2 pb-0">
-                <div class="col-md-4 d-flex px-0">
-                    <div class="col-md-6">
-                        <el-select v-model="form.document_type_id" size="small" @change="filterSeries" class="">
-                            <el-option label="FACTURA" value="01"></el-option>
-                            <el-option label="BOLETA" value="03"></el-option>
-                            <el-option label="N. VENTA" value="80"></el-option>
-                        </el-select>
-                    </div>
-                    <div class="col-md-6">
-                        <el-select v-model="form.series_id" class="" style="height: 30px;">
-                            <el-option v-for="option in series"
-                                       :key="option.id"
-                                       :label="option.number"
-                                       :value="option.id">
-                            </el-option>
-                        </el-select>
-                    </div>
-                </div>
-                <div class="col-md-8 d-flex padding-top-mb padding-x-mb">
-                    <div class="col-md-10 p-0">
-                        <el-select
-                            ref="select_person"
-                            v-model="form.customer_id"
-                            filterable
-                            placeholder="Cliente"
-                            @change="changeCustomer"
-                            @keyup.native="keyupCustomer"
-                            @keyup.enter.native="keyupEnterCustomer"
-                            @focus="focusClienteSelect=true"
-                            @blur="focusClienteSelect=false"
-                        >
-                            <el-option
-                                v-for="option in all_customers"
-                                :key="option.id"
-                                :label="option.description"
-                                :value="option.id"
-                            ></el-option>
-                        </el-select>
-                    </div>
-                    <div class="col-md-2">
-                        <div class="btn-group d-flex h-100" role="group">
-                            <a
-                                class="btn btn-sm btn-default w-100 d-flex align-items-center justify-content-center"
-                                @click.prevent="showDialogNewPerson = true"
-                            >
-                                <i class="fas fa-plus fa-wf"></i>
-                            </a>
-                            <!-- <a
-                                class="btn btn-sm btn-default w-100 d-flex align-items-center justify-content-center"
-                                @click="clickDeleteCustomer"
-                            >
-                                <i class="fas fa-trash fa-wf"></i>
-                            </a>                         -->
-                        </div>
-                    </div>
-                </div>
+        <div class="col-12 p-0 fp-payment-panel">
+
+            <!-- Botones de acción (arriba del monto) -->
+            <div class="fp-action-row px-3 pt-2 pb-1 d-flex" style="gap:8px">
+                <button
+                    v-if="!disabledDiscountForSeller"
+                    class="fp-action-btn flex-grow-1"
+                    :class="{'fp-action-btn--on': enabled_discount}"
+                    @click="userTouchedDiscount = true; toggleDiscount()"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-tag"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M6.5 7.5a1 1 0 1 0 2 0a1 1 0 1 0 -2 0" /><path d="M3 6v5.172a2 2 0 0 0 .586 1.414l7.71 7.71a2.41 2.41 0 0 0 3.408 0l5.592 -5.592a2.41 2.41 0 0 0 0 -3.408l-7.71 -7.71a2 2 0 0 0 -1.414 -.586h-5.172a3 3 0 0 0 -3 3" /></svg>
+                    {{ enabled_discount ? 'Quitar Dto.' : 'Descuento' }}
+                </button>
+                <button class="fp-action-btn flex-grow-1" @click="clickAddPayment()">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-cash"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M7 15h-3a1 1 0 0 1 -1 -1v-8a1 1 0 0 1 1 -1h12a1 1 0 0 1 1 1v3" /><path d="M7 10a1 1 0 0 1 1 -1h12a1 1 0 0 1 1 1v8a1 1 0 0 1 -1 1h-12a1 1 0 0 1 -1 -1l0 -8" /><path d="M12 14a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" /></svg>
+                    Pagos
+                </button>
+                <button v-if="businessTurns.active" class="fp-action-btn" @click="openPlateNumberDialog" title="Agregar Placa">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M7 17m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"/><path d="M17 17m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"/><path d="M5 17h-2v-6l2 -5h9l4 5h1a2 2 0 0 1 2 2v4h-2m-4 0h-6m-6 -6h15m-6 0v-5"/></svg>
+                </button>
             </div>
-            <div class="row d-flex align-items-end mb-1 mx-0">
-                <div class="col-md-4 position-relative">
-                    <span slot="prepend" style="px-1" class="currency-symbol-span fast-payment">{{ currencyTypeActive.symbol }}</span>
-                    <div class="form-group amount-container">
-                        <label class="control-label mb-0">Ingrese monto</label>
-                        <el-input ref="enter_amount"
-                                  v-model="enter_amount"
-                                  @input="enterAmount()"
-                                  @keyup.enter.native="keyupEnterAmount()">
-                        </el-input>
+
+            <!-- Monto + descuento + vuelto -->
+            <div class="fp-amount-row px-1 pt-1 pb-1 d-flex align-items-end" style="gap:8px">
+                <div class="flex-grow-1 fp-field-wrap" v-if="enabled_discount">
+                    <label class="fp-field-label mb-0">
+                        Descuento ({{ discount_type === '01' ? currencyTypeActive.symbol : '%' }})
+                    </label>
+                    <div class="position-relative">
+                        <span class="fp-sym">{{ discount_type === '01' ? currencyTypeActive.symbol : '%' }}</span>
+                        <el-input
+                            v-model="discount_amount"
+                            size="small"
+                            min="0"
+                            @input="userTouchedDiscount = true; inputDiscountAmount()"
+                            @blur="normalizeDiscountAmount()"
+                            class="fp-amount-inp"
+                        />
                     </div>
                 </div>
-                <div class="col-md-4 position-relative" v-if="enabled_discount">
-                    <span slot="prepend" style="px-1" class="currency-symbol-span">{{
-                        (discount_type === '01') ? currencyTypeActive.symbol : '%'
-                    }}
+                <div class="flex-grow-1 fp-field-wrap">
+                    <label class="fp-field-label mb-0">Ingrese monto</label>
+                    <div class="position-relative">
+                        <span class="fp-sym">{{ currencyTypeActive.symbol }}</span>
+                        <el-input
+                            ref="enter_amount"
+                            v-model="enter_amount"
+                            size="small"
+                            @input="userTouchedAmount = true; enterAmount()"
+                            @keyup.enter.native="keyupEnterAmount()"
+                            class="fp-amount-inp"
+                        />
+                    </div>
+                </div>
+                <div class="fp-change-wrap text-center">
+                    <small class="fp-field-label d-block" :class="difference < 0 ? 'text-danger' : 'text-success'">
+                        {{ difference < 0 ? 'Faltante' : 'Vuelto' }}
+                    </small>
+                    <span class="fp-change-val" :class="difference < 0 ? 'text-danger' : 'text-success'">
+                        {{ currencyTypeActive.symbol }} {{ isNaN(parseFloat(difference)) ? difference : Number(difference).toFixed(2) }}
                     </span>
-                    <div class="form-group amount-container">
-                        <label class="control-label mb-0">Descuento
-                            ({{ (discount_type === '01') ? 'Monto' : 'Porcentaje' }})</label>
-                        <el-input v-model="discount_amount"
-                                  @input="inputDiscountAmount()">
-                        </el-input>
-                    </div>
-                </div>
-                <div class="col-md-4 padding-top-mb">
-                    <div :class="{'has-danger': difference < 0}"
-                         class="form-group">
-                        <div class="turned-container-pos">
-                            <label class="control-label mb-0 w-100 text-center mt-1"
-                               v-text="(difference <0) ? 'Faltante' :'Vuelto'"></label>
-                        <!-- <el-input v-model="difference" :disabled="true">
-                            <template slot="prepend">{{currencyTypeActive.symbol}}</template>
-                        </el-input> -->
-                            <h4 class="control-label mb-0 font-weight-semibold m-0 text-center m-b-0">
-                                {{ currencyTypeActive.symbol }} {{ difference }}
-                            </h4>
-                        </div>
-                    </div>
                 </div>
             </div>
-            <div class="row px-2 pt-3 col-12">
-                <div class="col-md-8 d-flex px-0">
-                    <div class="col-md-6 px-2" v-if="!disabledDiscountForSeller">
-                        <el-button
-                            class="btn-warning w-100"
-                            @click="toggleDiscount">
-                            {{ enabled_discount ? 'Quitar Descuento' : 'Agregar Descuento' }}
-                        </el-button>
+
+            <!-- Totales -->
+            <div class="fp-totals px-3 pt-2">
+                <template v-if="form.total_plastic_bag_taxes > 0">
+                    <div class="fp-total-row d-flex justify-content-between py-1">
+                        <span class="fp-total-label">Subtotal</span>
+                        <span class="fp-total-val">{{ currencyTypeActive.symbol }} {{ Number(form.total_taxed).toFixed(2) }}</span>
                     </div>
-                    <div class="col-md-6 px-2">
-                        <el-button
-                            class="btn-primary w-100"
-                            @click="clickAddPayment()">
-                            Agregar Pagos
-                        </el-button>
+                    <div class="fp-total-row d-flex justify-content-between py-1" v-if="!isNrus">
+                        <span class="fp-total-label">IGV (18%)</span>
+                        <span class="fp-total-val">{{ currencyTypeActive.symbol }} {{ Number(form.total_igv).toFixed(2) }}</span>
                     </div>
-                </div>
-                <div class="col-md-4 padding-top-mb px-1" v-if="businessTurns.active">
-                    <el-button
-                        class="btn-info w-100 px-2"
-                        @click="openPlateNumberDialog">
-                        Agregar Placa
-                    </el-button>
-                </div>
-            </div>
-            <!-- <div class="row mt-3 pos-payment-line">
-                <template v-for="(pay,index) in form.payments">
-                    <div :key="pay.id"
-                         class="col-lg-1">
-                        <label>{{ index + 1 }}.-</label>
+                    <div class="fp-total-row d-flex justify-content-between py-1">
+                        <span class="fp-total-label">Descuento</span>
+                        <span class="fp-total-val text-danger">{{ currencyTypeActive.symbol }} {{ Number(form.total_discount).toFixed(2) }}</span>
                     </div>
-                    <div :key="pay.id"
-                         class="col-lg-6">
-                        <label>{{ getDescriptionPaymentMethodType(pay.payment_method_type_id) }}</label>
-                    </div>
-                    <div :key="pay.id"
-                         class="col-lg-5">
-                        <label><strong>{{ currencyTypeActive.symbol }}
-                            {{ pay.payment }}</strong> </label>
+                    <div class="fp-total-row d-flex justify-content-between py-1">
+                        <span class="fp-total-label">ICBPER</span>
+                        <span class="fp-total-val">{{ currencyTypeActive.symbol }} {{ Number(form.total_plastic_bag_taxes).toFixed(2) }}</span>
                     </div>
                 </template>
-            </div> -->
+                <template v-else>
+                    <div class="fp-total-row d-flex justify-content-between py-1">
+                        <span class="fp-total-label">Subtotal</span>
+                        <span class="fp-total-val">{{ currencyTypeActive.symbol }} {{ Number(form.total_taxed).toFixed(2) }}</span>
+                    </div>
+                    <div class="fp-total-row d-flex justify-content-between py-1" v-if="!isNrus">
+                        <span class="fp-total-label">IGV (18%)</span>
+                        <span class="fp-total-val">{{ currencyTypeActive.symbol }} {{ Number(form.total_igv).toFixed(2) }}</span>
+                    </div>
+                    <div class="fp-total-row d-flex justify-content-between py-1">
+                        <span class="fp-total-label">Descuento</span>
+                        <span class="fp-total-val text-danger">{{ currencyTypeActive.symbol }} {{ Number(form.total_discount).toFixed(2) }}</span>
+                    </div>
+                </template>
+                <!-- Gran total -->
+                <div class="fp-grand d-flex justify-content-between align-items-center pt-2 pb-1">
+                    <span class="fp-grand-label">Total</span>
+                    <span class="fp-grand-amount">{{ currencyTypeActive.symbol }} {{ Number(form.total).toFixed(2) }}</span>
+                </div>
+            </div>
+
+            <!-- Botón Pagar -->
+            <div class="px-1 pt-1 pb-1">
+                <el-button
+                    :disabled="button_payment"
+                    :loading="loading_submit"
+                    class="fp-pay-btn w-100"
+                    @click="clickPayment"
+                >
+                    Pagar
+                </el-button>
+            </div>
+
+            <!-- Cancelar -->
+            <div class="px-1 pb-2">
+                <button class="fp-cancel-btn btn btn-link w-100" @click="clickCancel">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-trash-x"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M4 7h16" /><path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2 -2l1 -12" /><path d="M9 7v-3a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v3" /><path d="M10 12l4 4m0 -4l-4 4" /></svg>
+                    Cancelar Venta
+                </button>
+            </div>
+
+            <!-- Dialog Placa -->
             <template>
                 <el-dialog
                     title="Agregar Placa"
@@ -170,69 +154,25 @@
                             <div class="form-group">
                                 <label class="control-label mb-0">Número de Placa</label>
                                 <template v-if="config_tap.save_plates_client">
-                                <a
-                                        v-if="!btn_save_plates"
-                                        href="#"
-                                        @click.prevent="
-                                            btn_save_plates = true
-                                        "
-                                    >
-                                        [+ Nuevo]
-                                    </a>
-                                <a
-                                        v-else
-                                        href="#"
-                                        @click.prevent="
-                                            btn_save_plates = false
-                                        "
-                                    >
-                                        [ Cancelar]
-                                    </a>
+                                    <a v-if="!btn_save_plates" href="#" @click.prevent="btn_save_plates = true">[+ Nuevo]</a>
+                                    <a v-else href="#" @click.prevent="btn_save_plates = false">[ Cancelar]</a>
                                 </template>
                                 <template v-if="!config_tap.save_plates_client">
                                     <el-input v-model="form.plate_number" type="text">
-                                        <el-tooltip
-                                            slot="append"
-                                            placement="right"
-                                            >
-                                                <div
-                                                    slot="content"
-                                                    v-html="
-                                                        messageBoxPlate
-                                                    "
-                                                    >
-                                                </div>
-                                            <el-button :disabled="!Boolean(form.customer_id)" v-if="btn_save_plates" @click="savePlates"  icon="el-icon-folder-add"></el-button>
+                                        <el-tooltip slot="append" placement="right" v-if="btn_save_plates">
+                                            <div slot="content" v-html="messageBoxPlate"></div>
+                                            <el-button :disabled="!Boolean(form.customer_id)" @click="savePlates" icon="el-icon-folder-add"></el-button>
                                         </el-tooltip>
                                     </el-input>
                                 </template>
                                 <template v-else>
-                                    <el-select
-                                        v-if="!btn_save_plates"
-                                        v-model="form.plate_number"
-                                        filterable
-                                        placeholder="Seleccione Placa"
-                                    >
-                                        <el-option
-                                            v-for="option in current_plates"
-                                            :key="option"
-                                            :label="option.value"
-                                            :value="option.value"
-                                        ></el-option>
+                                    <el-select v-if="!btn_save_plates" v-model="form.plate_number" filterable placeholder="Seleccione Placa">
+                                        <el-option v-for="option in current_plates" :key="option" :label="option.value" :value="option.value"></el-option>
                                     </el-select>
                                     <el-input v-else v-model="form.plate_number" type="text">
-                                        <el-tooltip
-                                            slot="append"
-                                            placement="right"
-                                            >
-                                                <div
-                                                    slot="content"
-                                                    v-html="
-                                                        messageBoxPlate
-                                                    "
-                                                    >
-                                                </div>
-                                            <el-button :disabled="!Boolean(form.customer_id)" v-if="btn_save_plates" @click="savePlates"  icon="el-icon-folder-add"></el-button>
+                                        <el-tooltip slot="append" placement="right" v-if="btn_save_plates">
+                                            <div slot="content" v-html="messageBoxPlate"></div>
+                                            <el-button :disabled="!Boolean(form.customer_id)" @click="savePlates" icon="el-icon-folder-add"></el-button>
                                         </el-tooltip>
                                     </el-input>
                                 </template>
@@ -245,113 +185,6 @@
                     </span>
                 </el-dialog>
             </template>
-            <div class="px-2">
-                <div>
-                    <template v-if="form.total_plastic_bag_taxes > 0">
-                        <div class="row m-0 p-0 h-17 d-flex align-items-center">
-                            <div class="col-6 py-1">
-                                <p class="font-weight-semibold mb-0">SUBTOTAL</p>
-                            </div>
-                            <div class="col-6 py-1 text-end">
-                                <p class="font-weight-semibold mb-0">
-                                    {{ currencyTypeActive.symbol }}
-                                    {{ form.total_taxed }}
-                                </p>
-                            </div>
-                        </div>
-                        <div class="row m-0 p-0 h-17 d-flex align-items-center">
-                            <div class="col-6 py-1">
-                                <p class="font-weight-semibold mb-0">IGV</p>
-                            </div>
-                            <div class="col-6 py-1 text-end">
-                                <p class="font-weight-semibold mb-0">
-                                    {{ currencyTypeActive.symbol }}
-                                    {{ form.total_igv }}
-                                </p>
-                            </div>
-                        </div>
-                        <div class="row m-0 p-0 h-17 d-flex align-items-center">
-                            <div class="col-6 py-1">
-                                <p class="font-weight-semibold mb-0">ICBPER</p>
-                            </div>
-                            <div class="col-6 py-1 text-end">
-                                <p class="font-weight-semibold mb-0">
-                                    {{ currencyTypeActive.symbol }}
-                                    {{ form.total_plastic_bag_taxes }}
-                                </p>
-                            </div>
-                        </div>
-                    </template>
-                    <template v-else>
-                        <div class="row m-0 p-0 h-25 d-flex align-items-center">
-                            <div class="col-6 py-1">
-                                <p class="font-weight-semibold mb-0">SUBTOTAL</p>
-                            </div>
-                            <div class="col-6 py-1 text-end">
-                                <p class="font-weight-semibold mb-0">
-                                    {{ currencyTypeActive.symbol }} {{ form.total_taxed }}
-                                </p>
-                            </div>
-                        </div>
-                        <div class="row m-0 p-0 h-25 d-flex align-items-center">
-                            <div class="col-6 py-1">
-                                <p class="font-weight-semibold mb-0">IGV</p>
-                            </div>
-                            <div class="col-6 py-1 text-end">
-                                <p class="font-weight-semibold mb-0">
-                                    {{ currencyTypeActive.symbol }}{{ form.total_igv }}
-                                </p>
-                            </div>
-                        </div>
-                    </template>
-                    <!-- <div class="row m-0 p-0 h-25 d-flex align-items-center">
-                        <div class="col-sm-6 py-2">
-                            <p class="font-weight-semibold mb-0">TOTAL</p>
-                        </div>
-                        <div class="col-sm-6 py-2 text-right">
-                            <p class="font-weight-semibold mb-0">{{ currencyTypeActive.symbol }} {{ form.total }}</p>
-                        </div>
-                    </div> -->
-                    <div class="column m-0 p-0 h-25">
-                        <div class="col-lg-12 p-0">
-                            <!-- <button :disabled="button_payment"
-                                    class="btn btn-block btn-primary"
-                                    @click="clickPayment">PAGAR
-                            </button> -->
-
-                            <el-button
-                                :disabled="button_payment"
-                                :loading="loading_submit"
-                                class="submit btn btn-block py-3 text-white w-100"
-                                :class="{'btn-warning': form.total > 0, 'bg-dark': form.total <= 0}"
-                                @click="clickPayment"
-                            >
-                                PAGAR
-                                <b class="font-weight-semibold mb-0">{{ currencyTypeActive.symbol }} {{ form.total }}</b>
-                                <i class="fas fa-wallet ms-2"></i>
-                            </el-button>
-
-                        </div>
-                        <div class="col-lg-12 p-2">
-                            <!-- <button class="btn btn-block btn-danger"
-                                    @click="clickCancel">CANCELAR
-                            </button> -->
-
-                            <!-- <el-button
-                                :loading="loading_submit_cancel"
-                                class="submit btn btn-block btn-danger"
-                                @click="clickCancel"
-                            >
-                                CANCELAR
-                            </el-button> -->
-                            <button class="btn btn-link text-danger btn-block w-100"
-                                :loading="loading_submit_cancel"
-                                @click="clickCancel">Cancelar Compra
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
         </div>
         <person-form
                 :showDialog.sync="showDialogNewPerson"
@@ -397,41 +230,19 @@
     width: 80px !important;
 }
 
-.card {
-    margin-bottom: 2px;
-}
-
-.card-body {
-    padding: 10px;
-}
-
-.h-40 {
-    height: 40% !important;
-}
-
-.h-60 {
-    height: 60% !important;
-}
-
-.el-input-group__prepend {
-    padding-right: 10px;
-    padding-left: 10px;
-}
+/* ── POS · Venta Rápida — Panel de pago ───────────────────────
+   Los estilos `.fp-*` (panel de pago: tabs documento, totales,
+   botón Pagar, Cancelar, Descuento/Pagos, montos) viven en
+   storage/app/public/skins/tu-quipu.css
+   No duplicar aquí. */
 
 .el-radio-button--small .el-radio-button__inner {
     padding: 9px 6px;
     font-size: 10px;
 }
 
-.el-switch__label * {
-    font-size: .65rem;
-}
-
 .el-radio-button {
     margin-bottom: 0px;
-}
-.border-bottom {
-    border-bottom: 1px solid transparent !important;
 }
 </style>
 
@@ -508,19 +319,27 @@ export default {
             loading_submit_cancel: false,
             show_discount: false,
             userSelectedDocType: false,
+            userTouchedDiscount: false,
+            userTouchedAmount: false,
         }
     },
     watch: {
+        series(newSeries) {
+            this.$emit('series-filtered', newSeries.length);
+        },
         customer: {
             handler(valueNew, valueOld) {
                 if (!_.isNull(valueNew)) {
-                    this.enabled_discount = valueNew.has_discount;
-                    this.discount_type = valueNew.discount_type;
-                    this.discount_amount = valueNew.discount_amount;
+                    if (!this.userTouchedDiscount) {
+                        this.enabled_discount = valueNew.has_discount;
+                        this.discount_type = valueNew.discount_type;
+                        this.discount_amount = valueNew.discount_amount;
+                    }
                 } else {
                     this.enabled_discount = false;
                     this.discount_type = '01';
                     this.discount_amount = 0;
+                    this.userTouchedDiscount = false;
                 }
 
                 const index = this.all_customers.findIndex(cliente => cliente.id === valueNew.id);
@@ -529,9 +348,6 @@ export default {
                     this.form.customer_id = (valueNew) ? valueNew.id : null;
                 }
                 this.inputDiscountAmount();
-                // if (this.enabled_discount) {
-                //     this.inputDiscountAmount();
-                // }
             }
         },
     },
@@ -567,6 +383,10 @@ export default {
         this.checkPaymentGarage()
     },
     computed: {
+        isNrus()
+        {
+            return !!((this.configuration && this.configuration.is_nrus) || (this.config && this.config.is_nrus));
+        },
         disabledDiscountForSeller()
         {
             return this.configuration.restrict_seller_discount && this.typeUser === 'seller';
@@ -633,6 +453,9 @@ export default {
                 if (this.configuration.default_document_type_80) {
                     this.form.document_type_id = "80";
                 } else if (this.configuration.default_document_type_03) {
+                    this.form.document_type_id = "03";
+                } else if (this.isNrus) {
+                    // NRUS no emite Factura, siempre Boleta
                     this.form.document_type_id = "03";
                 } else {
                     this.form.document_type_id =
@@ -703,6 +526,12 @@ export default {
         },
         handleFn113() {
             const code = this.form.document_type_id
+            if (this.isNrus) {
+                // En NRUS solo Boleta (03) y N. Venta (80); se omite Factura
+                this.form.document_type_id = (code == '03') ? '80' : '03'
+                this.filterSeries()
+                return
+            }
             if (code == '01') {
                 this.form.document_type_id = '03'
             } else if (code == '03') {
@@ -763,6 +592,12 @@ export default {
                 this.reCalculateTotal()
             }
         },
+        normalizeDiscountAmount() {
+            if (this.discount_amount === '' || this.discount_amount === null || isNaN(parseFloat(this.discount_amount))) {
+                this.discount_amount = 0
+                this.inputDiscountAmount()
+            }
+        },
         inputDiscountAmount() {
             if (this.enabled_discount) {
                 if (this.discount_amount && !isNaN(this.discount_amount) && parseFloat(this.discount_amount) > 0) {
@@ -783,11 +618,11 @@ export default {
             return (not_exonerated) ? false : true
         },
         async discountGlobal() {
-
-            // console.log('discountGlobal');
-            // let is_exonerated = this.isExonerated()
-            // let is_exonerated = false
-            // console.log(this.discount_type);
+            const existingIdx = this.form.discounts.findIndex(d => d.discount_type_id === '03')
+            if (existingIdx > -1) {
+                this.form.discounts.splice(existingIdx, 1)
+            }
+            this.form.total_discount = 0
 
             let base = parseFloat(this.form.total)
             let global_discount = parseFloat(this.discount_amount)
@@ -796,12 +631,10 @@ export default {
                 global_discount = _.round(base * global_discount / 100, 2);
             }
 
-            let amount = global_discount
-            let factor = _.round(amount / base, 5)
+            if (!isNaN(global_discount) && global_discount > 0) {
 
-            let discount = _.find(this.form.discounts, {'discount_type_id': '03'})
-
-            if (global_discount > 0 && !discount) {
+                let amount = global_discount
+                let factor = _.round(amount / base, 5)
 
                 this.form.total_discount = _.round(amount, 2)
                 this.form.total = _.round(this.form.total - amount, 2)
@@ -816,9 +649,36 @@ export default {
 
             }
 
+            if (!this.userTouchedAmount) {
+                this.enter_amount = this.form.total
+                this.syncEnterAmount()
+                return
+            }
+
             this.difference = this.enter_amount - this.form.total
-            // this.difference = this.enter_amount - this.form.total_payable_amount
-            // console.log(this.form.discounts)
+        },
+        syncEnterAmount() {
+            const value = parseFloat(this.enter_amount) || 0
+
+            if (this.form.payments && this.form.payments.length > 0) {
+                const ind = this.form.payments.length - 1
+                this.form.payments[ind].payment = value
+
+                const r_item = _.last(this.payments)
+                if (r_item) {
+                    r_item.payment = value
+                }
+
+                let acum_payment = 0
+                this.form.payments.forEach((item) => {
+                    acum_payment += parseFloat(item.payment)
+                })
+                this.amount = acum_payment
+            } else {
+                this.amount = value
+            }
+
+            this.inputAmount()
         },
         reCalculateTotal() {
 
@@ -1141,12 +1001,37 @@ export default {
         },
         async clickCancel() {
 
+            try {
+                await this.$confirm(
+                    '¿Desea cancelar la venta? Se eliminarán todos los productos, el cliente seleccionado y los pagos ingresados.',
+                    'Cancelar Venta',
+                    {
+                        confirmButtonText: 'Sí, cancelar',
+                        cancelButtonText: 'No',
+                        type: 'warning'
+                    }
+                )
+            } catch (e) {
+                return
+            }
+
             this.loading_submit_cancel = true
             await this.sleep(400);
             this.loading_submit_cancel = false
+
+            this.enabled_discount = false
+            this.discount_amount = 0
+            this.discount_type = '01'
+            this.userTouchedDiscount = false
+            this.enter_amount = 0
+            this.amount = 0
+            this.userTouchedAmount = false
+            this.difference = 0
+            this.payments = []
             this.cleanLocalStoragePayment()
-            // this.$eventHub.$emit('cancelSaleGarage')
-            //console.info('cli cancel fas_payment')
+
+            this.$eventHub.$emit('cancelSaleGarage')
+            this.$message.success('Venta cancelada')
 
         },
         async events() {
@@ -1223,14 +1108,30 @@ export default {
         async clickPayment() {
             // if(this.has_card && !this.form_payment.card_brand_id) return this.$message.error('Seleccione una tarjeta');
 
+            if (this.rowsItems < 1) {
+                return this.$message.warning('Debe agregar productos antes de pagar');
+            }
+
+            if (!this.form.customer_id) {
+                this.$emit('customer-required');
+                return this.$message.warning('Debe seleccionar un cliente');
+            }
+
+            if (this.form.document_type_id === '01') {
+                const customer = _.find(this.all_customers, { id: this.form.customer_id });
+                if (customer && customer.identity_document_type_id !== '6') {
+                    return this.$message.warning('Para emitir factura el cliente debe tener RUC');
+                }
+            }
+
             if (this.businessTurns.active) {
                 if (this.form.document_type_id == '01' && !this.form.plate_number) {
                     return this.$message.warning('Debe ingresar placa');
                 }
             }
 
-            if (this.rowsItems < 1) {
-                return this.$message.warning('Debe agregar productos');
+            if (this.button_payment) {
+                return this.$message.warning('El monto a pagar es menor al total');
             }
 
             let unit_type_notAllowed = ['ZZ','NIU'];
@@ -1466,6 +1367,12 @@ export default {
         },
         checkPaymentGarage(total = null) {
             let amount = total ? total: this.form.total
+
+            if (!this.form.items || this.form.items.length === 0) {
+                this.userTouchedAmount = false
+                this.enter_amount = 0
+            }
+
             this.inputDiscountAmount()
 
             if (!this.form.items || this.form.items.length < 1) {
@@ -1477,16 +1384,16 @@ export default {
 
             if (this.form.payments.length == 0) {
                 this.$refs.componentMultiplePaymentGarage.clickAddPayment(amount)
-                this.setAmount(this.form.total)
+                this.setAmount(effectiveAmount)
             } else if (this.form.payments.length == 1) {
 
-                this.form.payments[0].payment = this.form.total
+                this.form.payments[0].payment = effectiveAmount
 
                 if (this.payments.length == 0) {
                     this.payments = this.form.payments
                 }
 
-                this.setAmount(this.form.total)
+                this.setAmount(effectiveAmount)
 
             } else {
                 // multiples pagos no controlados

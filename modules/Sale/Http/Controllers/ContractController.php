@@ -15,6 +15,7 @@ use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use App\Models\Tenant\Person;
 use App\Models\Tenant\Series;
+use App\Services\SeriesResolver;
 use App\Models\Tenant\Company;
 use Mpdf\Config\FontVariables;
 use App\CoreFacturalo\Template;
@@ -176,7 +177,7 @@ class ContractController extends Controller
     public function option_tables()
     {
         $establishment = Establishment::where('id', auth()->user()->establishment_id)->first();
-        $series = Series::where('establishment_id',$establishment->id)->get();
+        $series = app(SeriesResolver::class)->applyContext(Series::where('establishment_id',$establishment->id))->get();
         $document_types_invoice = DocumentType::whereIn('id', ['01', '03'])->get();
         $payment_method_types = PaymentMethodType::all();
         $payment_destinations = $this->getPaymentDestinations();

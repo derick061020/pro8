@@ -108,7 +108,7 @@ class DocumentResource extends JsonResource
             'response_message' => $response_message,
             'response_type' => $response_type,
             'customer_telephone' => optional($document->person)->telephone,
-            'message_text' => "Su comprobante de pago electrónico {$this->number_full} ha sido generado correctamente, puede revisarlo en el siguiente enlace: ".url('')."/print/document/{$this->external_id}/a4"."",
+            'message_text' => "Su comprobante de pago electrónico {$this->number_full} ha sido generado correctamente, puede revisarlo en el siguiente enlace: ".url('')."/print/document/{$this->external_id}/ticket"."",
             'sales_note' => $nvs,
 
             'send_to_pse' => $document->send_to_pse,

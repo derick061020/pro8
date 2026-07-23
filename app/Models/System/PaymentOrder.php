@@ -6,6 +6,7 @@ use Carbon\Carbon;
 use Hyn\Tenancy\Traits\UsesSystemConnection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
 
 class PaymentOrder extends Model
@@ -78,7 +79,11 @@ class PaymentOrder extends Model
             'diff_notification' => $date_of_notification, 
             'created_by' => $this->created_by,
             'description' => $this->description ?? 'Pago de servicio',
-        ];
+            // La ruta solo existe en el dominio del sistema; en contexto tenant no esta registrada
+            'url_view' => ($this->order_state_id !== 2 && Route::has('system.payments-view.index'))
+                ? route('system.payments-view.index', ['uuid' => $this->uuid])
+                : null
+        ]; 
 
     }
 

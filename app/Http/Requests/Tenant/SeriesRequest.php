@@ -61,7 +61,7 @@ class SeriesRequest extends FormRequest
                     else
                     {
                         $regex = 'regex:"^([F][A-Z0-9]{3})?$"';
-                        $this->advanced_message = ' - Formato del campo: [F][A-Z0-9]{3}, Ejemplo: F001';
+                        $this->advanced_message = ' - Formato del campo: [F][A-Z0-9]{3}, Ejemplo: FF01';
                     }
                     
                     $advanced_validations[] = $regex;
@@ -78,7 +78,7 @@ class SeriesRequest extends FormRequest
                     else
                     {
                         $regex = 'regex:"^([B][A-Z0-9]{3})?$"';
-                        $this->advanced_message = ' - Formato del campo: [B][A-Z0-9]{3}, Ejemplo: B001';
+                        $this->advanced_message = ' - Formato del campo: [B][A-Z0-9]{3}, Ejemplo: BB01';
                     }
                     
                     $advanced_validations[] = $regex;

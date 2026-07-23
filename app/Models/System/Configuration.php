@@ -25,11 +25,13 @@ class Configuration extends Model
         'token_apiruc',
         'ruc_api_provider',
         'apk_url',
+        'openai_api_key',
+        'openai_model',
         'login',
         'use_login_global',
         'enable_guest_register',
         'guest_register_plan_id',
-        'enable_guest_register',
+        'validate_ruc_register',
         'regex_password_client',
         'tenant_show_ads',
         'tenant_image_ads',
@@ -42,6 +44,8 @@ class Configuration extends Model
         'qr_api_token',
         'google_maps_api_key',
         'qr_api_msg',
+        'evolution_server_url',
+        'evolution_server_apikey',
         'active_cron',
         'hour_generate_payment_order',
         'day_before_due',
@@ -52,16 +56,24 @@ class Configuration extends Model
         'sha256key_izipay',
         'enabled_izipay',
         'enabled_culqi',
+        'enabled_mp',
+        'access_token_mp',
+        'public_key_mp',
+        'terms_mode',
+        'terms_content',
+        'terms_url',
     ];
 
-    
+
     protected $casts = [
         'regex_password_client' => 'boolean',
         'tenant_show_ads' => 'boolean',
         'enable_guest_register' => 'boolean', // Añadir aquí
+        'validate_ruc_register' => 'boolean',
         'active_cron' => 'boolean',
         'enabled_izipay' => 'boolean',
         'enabled_culqi' => 'boolean',
+        'enabled_mp' => 'boolean',
     ];
 
 
@@ -181,14 +193,29 @@ class Configuration extends Model
             ->select('username_izipay', 'password_izipay', 'publickey_izipay', 'sha256key_izipay')->first()->toArray();
     }
 
-    public function scopeEnabledCheckout($query)
+    /**
+     * Devuelve la pasarela de pago habilitada ('izipay'|'culqi'|'mercadopago') o null si no hay ninguna.
+     */
+    public static function enabledCheckout()
     {
-        $record = $query->where('enabled_izipay', true)->first();
+        $record = static::query()->select('enabled_izipay', 'enabled_culqi', 'enabled_mp')->first();
 
-        if ($record) {
+        if (! $record) {
+            return null;
+        }
+
+        if ($record->enabled_izipay) {
             return 'izipay';
         }
 
-        return 'culqi';
+        if ($record->enabled_culqi) {
+            return 'culqi';
+        }
+
+        if ($record->enabled_mp) {
+            return 'mercadopago';
+        }
+
+        return null;
     }
 }

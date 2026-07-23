@@ -41,6 +41,19 @@ class PlanController extends Controller
         ];
     }
 
+    public function setPopular($plan)
+    {
+        DB::connection('system')->transaction(function () use ($plan) {
+            Plan::query()->update(['is_popular' => false]);
+            Plan::findOrFail($plan)->update(['is_popular' => true]);
+        });
+
+        return [
+            'success' => true,
+            'message' => 'Plan marcado como Popular'
+        ];
+    }
+
     public function tables()
     {
         $plan_documents = PlanDocument::all(); 

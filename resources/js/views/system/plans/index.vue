@@ -12,18 +12,28 @@
             </div>
         </header>
         
-                <div class="pricing-table row no-gutters mt-3 mb-3 d-flex justify-content-center">
+                <div class="pricing-table row no-gutters mt-3 mb-3 d-flex justify-content-center mx-0">
 					
                     <template v-for="(row, index) in records">
 
                         <div  class="col-lg-3 col-sm-6 text-center pb-4" style="padding:10px;" :key="index">
-							<div class="plan most-popular h-100 d-flex flex-column">
+							<div class="plan most-popular h-100 d-flex flex-column plan-card">
                                 <div class="d-flex align-items-center">
                                     <h3 class="text-start fw-semibold">{{row.name}}</h3>
-                                    <span v-if="row.locked" class="tag-popular d-flex align-items-center ms-2">
+                                    <span v-if="row.is_popular" class="tag-popular d-flex align-items-center ms-2">
                                         <svg  xmlns="http://www.w3.org/2000/svg"  width="16"  height="16"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-bolt"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M13 3l0 7l6 0l-8 11l0 -7l-6 0l8 -11" /></svg>
-                                        Default
+                                        Popular
                                     </span>
+                                    <button
+                                        v-else
+                                        type="button"
+                                        class="tag-popular tag-popular-ghost d-flex align-items-center ms-2"
+                                        :disabled="loadingPopularPlanId === row.id"
+                                        @click.stop.prevent="markAsPopular(row)"
+                                    >
+                                        <svg  xmlns="http://www.w3.org/2000/svg"  width="16"  height="16"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-bolt"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M13 3l0 7l6 0l-8 11l0 -7l-6 0l8 -11" /></svg>
+                                        Marcar popular
+                                    </button>
                                 </div>
                                 <div>
                                     <span class="d-flex justify-content-start fw-bold mt-3">
@@ -71,6 +81,15 @@
                                         Total ventas mensuales S/{{row.sales_limit}}
                                     </p>
 
+                                    <p class="key-features" v-if="row.whatsapp_messages_unlimited">
+                                        <svg  xmlns="http://www.w3.org/2000/svg"  width="18"  height="18"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-circle-check text-success me-1"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0" /><path d="M9 12l2 2l4 -4" /></svg>
+                                        Mensajes de WhatsApp ilimitados
+                                    </p>
+                                    <p class="key-features" v-else>
+                                        <svg  xmlns="http://www.w3.org/2000/svg"  width="18"  height="18"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-circle-check text-success me-1"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0" /><path d="M9 12l2 2l4 -4" /></svg>
+                                        {{row.whatsapp_messages_limit}} mensajes de WhatsApp
+                                    </p>
+
                                 </div>
 								<!-- <ul>
  
@@ -92,11 +111,11 @@
 								</ul>                                 -->
                                 <div v-if="!row.locked" class="col-12 d-flex justify-content-center mt-auto">
                                     <button type="button" class="btn waves-effect waves-light btn-xs btn-danger col-6 me-1" style="margin-left:6px;" @click.prevent="clickDelete(row.id)">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-trash"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M4 7l16 0" /><path d="M10 11l0 6" /><path d="M14 11l0 6" /><path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2 -2l1 -12" /><path d="M9 7v-3a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v3" /></svg>
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-trash" style="margin-top: -2px;"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M4 7l16 0" /><path d="M10 11l0 6" /><path d="M14 11l0 6" /><path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2 -2l1 -12" /><path d="M9 7v-3a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v3" /></svg>
                                         Eliminar plan
                                     </button>
                                     <button type="button" class="btn waves-effect waves-light btn-xs btn-primary col-6 ms-1"  @click.prevent="clickCreate(row.id)">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-edit"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M7 7h-1a2 2 0 0 0 -2 2v9a2 2 0 0 0 2 2h9a2 2 0 0 0 2 -2v-1" /><path d="M20.385 6.585a2.1 2.1 0 0 0 -2.97 -2.97l-8.415 8.385v3h3l8.385 -8.415z" /><path d="M16 5l3 3" /></svg>
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-edit" style="margin-top: -2px;"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M7 7h-1a2 2 0 0 0 -2 2v9a2 2 0 0 0 2 2h9a2 2 0 0 0 2 -2v-1" /><path d="M20.385 6.585a2.1 2.1 0 0 0 -2.97 -2.97l-8.415 8.385v3h3l8.385 -8.415z" /><path d="M16 5l3 3" /></svg>
                                         Editar plan
                                     </button>
                                 </div>
@@ -129,7 +148,8 @@
                 recordId: null,
                 records: [],                
                 plan_documents: [] ,
-                aux:[]
+                aux:[],
+                loadingPopularPlanId: null
             }
         },
         created() {            
@@ -169,7 +189,56 @@
                 this.destroy(`/${this.resource}/${id}`).then(() =>
                     this.$eventHub.$emit('reloadData')
                 )
+            },
+            markAsPopular(row) {
+                if (row.is_popular || this.loadingPopularPlanId) return
+
+                this.loadingPopularPlanId = row.id
+                this.$http.post(`/${this.resource}/popular/${row.id}`)
+                    .then(response => {
+                        if (response.data.success) {
+                            this.$message.success(response.data.message)
+                            this.records = this.records.map(plan => ({
+                                ...plan,
+                                is_popular: plan.id === row.id
+                            }))
+                        } else {
+                            this.$message.error(response.data.message)
+                        }
+                    })
+                    .catch(error => {
+                        console.log(error.response)
+                    })
+                    .then(() => {
+                        this.loadingPopularPlanId = null
+                    })
             }
         }
     }
 </script>
+
+<style>
+.plan-card .tag-popular-ghost {
+    border: 1px dashed color-mix(in srgb, var(--accent-color) 80%, #000);
+    background: transparent;
+    cursor: pointer;
+    font: inherit;
+    opacity: 0;
+    outline: none;
+    transition: opacity .15s ease;
+    color: color-mix(in srgb, var(--accent-color) 80%, #000);
+}
+
+.plan-card:hover .tag-popular-ghost {
+    opacity: 1;
+}
+
+.plan-card .tag-popular-ghost:hover {
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+}
+
+.plan-card .tag-popular-ghost:disabled {
+    cursor: wait;
+}
+</style>

@@ -3,6 +3,7 @@
 namespace Modules\Inventory\Helpers;
 
 use App\Models\Tenant\Series;
+use App\Services\SeriesResolver;
 use Modules\Inventory\Entities\Guide\GuideEntity;
 use Modules\Inventory\Entities\Guide\GuideItemEntity;
 use Modules\Inventory\Models\Guide;
@@ -31,9 +32,10 @@ class GuideStore
         //'U3': 'Guía de Salida Almacén'
         //'U3': 'Guía de Transferencia Almacén'
 
-        $series = Series::query()
+        // Series filtradas por contexto (oculta dedicadas / restringe al grupo activo). Ver SeriesResolver.
+        $series = app(SeriesResolver::class)->applyContext(Series::query()
             ->where('establishment_id', $data['establishment_id'])
-            ->where('document_type_id', $data['document_type_id'])
+            ->where('document_type_id', $data['document_type_id']))
             ->first();
 
         if(is_null($series)) throw new Exception("No se encontró una serie para el tipo de documento {$data['document_type_id']}, registre la serie en Establecimientos/Series");

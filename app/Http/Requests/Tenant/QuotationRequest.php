@@ -27,6 +27,10 @@ class QuotationRequest extends FormRequest
 			'date_of_issue' => [
 				'required',
 			],
+			'custom_fields_data' => [
+				'nullable',
+				'array',
+			],
 		];
 	}
 }

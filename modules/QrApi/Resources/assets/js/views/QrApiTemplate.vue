@@ -4,12 +4,13 @@
             <template slot="prepend">+51</template>
             <template slot="append">
                 <el-tooltip class="item"
-                    content="Requiere configuración de tokens en módulo de empresa"
+                    :content="disabledReason"
                     effect="dark"
-                    placement="top-start">
+                    placement="top-start"
+                    :disabled="!canSend ? false : true">
                     <el-button
                         @click="sendQrChat"
-                        :disabled="button_disable"
+                        :disabled="!canSend"
                         :loading="loading_submit">
                         Enviar <i class="fab fa-whatsapp"></i>
                     </el-button>
@@ -26,46 +27,45 @@
 
 import {mapState} from "vuex/dist/vuex.mjs";
 export default {
-    props: ['colClass','wsPhone','wsFile','wsDocument','wsMessage', 'wsData', 'wsConfig'],
+    props: ['colClass','wsPhone','wsFile','wsFileA4','wsDocument','wsMessage', 'wsData', 'wsConfig'],
     data() {
         return {
             form: {},
             errors: {},
-            button_disable: true,
             loading_submit: false,
             resource: 'qrapi'
-            // text: 'Su comprobante de pago electrónico F001-4 ha sido generado correctamente',
         }
     },
-      computed: {
-        ...mapState([
-            'config',
-        ]),
-
-        wsUrl() {
-            if (this.wsConfig && this.wsConfig.qr_api_url_ws) {
-                return this.wsConfig.qr_api_url_ws;
-            }
-            return this.config.qr_api_url_ws;
+    computed: {
+        ...mapState(['config']),
+        effectiveConfig() {
+            return (this.wsConfig && Object.keys(this.wsConfig).length) ? this.wsConfig : this.config;
         },
-        wsApiKey(){
-            if (this.wsConfig && this.wsConfig.qr_api_key_ws) {
-                return this.wsConfig.qr_api_key_ws;
+        effectiveInstance() {
+            const c = this.effectiveConfig;
+            return c.qr_api_use_bot_instance ? c.evolution_instance : c.qr_api_instance;
+        },
+        canSend() {
+            return !!this.effectiveConfig.qr_api_enable_ws && !!this.effectiveInstance;
+        },
+        resolvedWsFile() {
+            if (this.effectiveConfig.qr_api_pdf_format === 'a4' && this.wsFileA4) {
+                return this.wsFileA4;
             }
-            return this.config.qr_api_key_ws;
-        }
-
-    },
-    mounted(){
-        this.enableSend()
+            return this.wsFile;
+        },
+        disabledReason() {
+            if (!this.effectiveConfig.qr_api_enable_ws) {
+                return 'El envío por QR Api está deshabilitado. Actívalo en Configuración → WhatsApp.';
+            }
+            if (!this.effectiveInstance) {
+                return 'No hay un WhatsApp conectado para QR Api. Conecta uno en Configuración → WhatsApp.';
+            }
+            return 'Enviar comprobante por WhatsApp';
+        },
     },
 
     methods: {
-        enableSend() {
-            if(this.config.qr_api_url_ws != '' && this.config.qr_api_key_ws != '') {
-                this.button_disable = false
-            }
-        },
         async sendQrChat() {
             this.loading_submit = true
             if (this.wsPhone == '') {
@@ -73,7 +73,7 @@ export default {
             }
 
             const {extension_only, filename_only} = this.wsData;
-            this.convertFileToBase64(this.wsFile)
+            this.convertFileToBase64(this.resolvedWsFile)
                 .then(file_encode64 => {
 
                     this.setForm(file_encode64, `${filename_only}.${extension_only}`)
@@ -85,7 +85,8 @@ export default {
                             }
                         })
                         .catch(error => {
-                            return this.$message.error('No se puede enviar')
+                            const message = error.response?.data?.message || 'No se puede enviar'
+                            return this.$message.error(message)
                         })
                         .finally(() => {
                             this.loading_submit = false

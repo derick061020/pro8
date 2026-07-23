@@ -182,11 +182,7 @@
                                             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-user-plus"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0" /><path d="M16 19h6" /><path d="M19 16v6" /><path d="M6 21v-2a4 4 0 0 1 4 -4h4" /></svg>
                                         </span>
                                     </template>
-                                    <small
-                                        class="form-control-feedback"
-                                        v-if="errors.customer_id"
-                                        v-text="errors.customer_id[0]"
-                                    ></small>
+
                                 </div>
                             </div>
 
@@ -1281,7 +1277,7 @@
 
                                 <p
                                     class="text-end"
-                                    v-if="form.total_exportation > 0"
+                                    v-if="form.total_exportation > 0 && !isNrus"
                                 >
                                     OP.EXPORTACIÓN: {{ currency_type.symbol }}
                                     {{ form.total_exportation }}
@@ -1309,12 +1305,12 @@
                                 </p>
                                 <p
                                     class="text-end"
-                                    v-if="form.total_taxed > 0"
+                                    v-if="form.total_taxed > 0 && !isNrus"
                                 >
                                     OP.GRAVADA: {{ currency_type.symbol }}
                                     {{ form.total_taxed }}
                                 </p>
-                                <p class="text-end" v-if="form.total_igv > 0">
+                                <p class="text-end" v-if="form.total_igv > 0 && !isNrus">
                                     IGV: {{ currency_type.symbol }}
                                     {{ form.total_igv }}
                                 </p>
@@ -2208,6 +2204,9 @@ export default {
             return _.filter(this.payment_method_types, { is_credit: false });
         },
         ...mapState(["config"]),
+        isNrus: function() {
+            return !!(this.config && this.config.is_nrus);
+        },
         sms_periodo: function() {
             let text = "";
             let type = this.form.type_period;
@@ -3485,6 +3484,11 @@ export default {
                 this.form.terms_condition = this.config.terms_condition_sale;
             }
 
+            if (!this.form.customer_id) {
+                this.$message.error('El campo cliente es obligatorio.');
+                return false;
+            }
+
             if (this.$refs.customFieldsRenderer) {
                 const validation = this.$refs.customFieldsRenderer.validateRequiredFields()
                 if (!validation.valid) {
@@ -3549,6 +3553,10 @@ export default {
                 .catch(error => {
                     if (error.response.status === 422) {
                         this.errors = error.response.data;
+                        if (this.errors.customer_id) {
+                            this.$message.error(this.errors.customer_id[0]);
+                            delete this.errors.customer_id;
+                        }
                     } else {
                         this.$message.error(error.response.data.message);
                     }

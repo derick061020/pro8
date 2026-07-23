@@ -11,6 +11,7 @@ use App\Models\Tenant\Person;
 use App\Models\Tenant\Catalogs\AffectationIgvType;
 use App\Models\Tenant\Establishment;
 use App\Models\Tenant\Series;
+use App\Services\SeriesResolver;
 use App\Models\Tenant\PaymentMethodType;
 use App\Models\Tenant\CardBrand;
 use App\Models\Tenant\Catalogs\CurrencyType;
@@ -193,9 +194,11 @@ class PosController extends Controller
     public function payment_tables()
     {
 
-        $series = Series::whereIn('document_type_id', ['01', '03', '80'])
-            ->where([['establishment_id', auth()->user()->establishment_id], ['contingency', false]])
-            ->get();
+        // Series filtradas por contexto (oculta dedicadas / restringe al grupo activo). Ver SeriesResolver.
+        $series = app(SeriesResolver::class)->applyContext(
+            Series::whereIn('document_type_id', ['01', '03', '80'])
+                ->where([['establishment_id', auth()->user()->establishment_id], ['contingency', false]])
+        )->get();
 
         $payment_method_types = PaymentMethodType::NotCredit()->get();
         $cards_brand = CardBrand::all();

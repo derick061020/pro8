@@ -80,6 +80,7 @@ class Client extends Model
         'token',
         'locked',
         'locked_emission',
+        'whatsapp_messages_limit_override',
         'locked_tenant',
         'locked_users',
         'plan_id',
@@ -137,6 +138,7 @@ class Client extends Model
         'smtp_port' => 'int',
         'locked_create_establishments' => 'boolean',
         'restrict_sales_limit' => 'boolean',
+        'whatsapp_messages_limit_override' => 'integer',
         'enable_list_product' => 'boolean',
         'from_guest_register' => 'boolean',
     ];
@@ -347,11 +349,14 @@ class Client extends Model
         return isset($this->price) ? $this->price : $this->plan->pricing;
     }
 
-    public function createPayemtnOrder($description = null, $created_by = 'Sistema')
+    /**
+     * @param array $extras ['tenant_created' => bool] Si se está creando la orden de pago en el momento de crear al cliente
+     */
+    public function createPayemtnOrder($description = null, $created_by = 'Sistema', $extras = [])
     {
         $price = $this->getPricePlan();
 
-        $payments_order = PaymentOrder::create([
+        $data =  [
             'order' => str_pad((PaymentOrder::count() + 1), 6, '0', STR_PAD_LEFT),
             'date_of_due' => $this->ending_billing_cycle,
             'amount' => $price,
@@ -359,7 +364,19 @@ class Client extends Model
             'client_id' => $this->id,
             'description' => $description,
             'created_by' => $created_by,
-        ]);
+        ];
+
+        if (isset($extras['tenant_created']) && $extras['tenant_created']) {
+            if ($this->plan->test_days_enabled && $this->plan->test_days > 0) {
+                $data['date_of_due'] = Carbon::now()->addDays($this->plan->test_days)->toDateString();
+            }
+        }
+
+        if (isset($extras['order_state_id']) && $extras['order_state_id']) {
+            $data['order_state_id'] = $extras['order_state_id'];
+        }
+
+        $payments_order = PaymentOrder::create($data);
 
         return $payments_order;
 
@@ -376,14 +393,17 @@ class Client extends Model
     }
 
 
-    public function getVariablesWs()
+    public function getVariablesWs(PaymentOrder $order = null)
     {
         $ending = $this->ending_billing_cycle;
         return [
-            '@variable_nombre' => $this->name,
-            '@variable_plan' => $this->plan->name,
-            '@variable_precios' => $this->getPricePlan(),
-            '@variable_fecha_vencimiento' => $ending
+            '{{ cliente }}' => $this->name,
+            '{{ plan_nombre }}' => $this->plan->name,
+            '{{ order_total }}' => $this->getPricePlan(),
+            '@variable_fecha_vencimiento' => $ending,
+            '{{ order_payment_url }}' => route('system.payments-view.index', [
+                'uuid' => optional($order)->uuid
+            ])
         ];
     }
 
@@ -408,7 +428,7 @@ class Client extends Model
                         'message' =>  "El cliente no tiene un número de WhatsApp configurado.",
                     ];
                 }
-                $variablesWs = $model->client->getVariablesWs();
+                $variablesWs = $model->client->getVariablesWs($model);
                 $msg = $confg->qr_api_msg;
 
                 foreach ($variablesWs as $key => $value) {

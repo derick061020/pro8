@@ -39,7 +39,7 @@
                                 <td>{{ row.description }}</td>
                                 <td class="text-start">{{ row.code }}</td>
                                 <td class="text-center"><button type="button" class="btn waves-effect waves-light btn-xs btn-warning"
-                                    @click.prevent="clickSeries(row.id)">Series</button></td>
+                                    @click.prevent="clickSeries(row)">Series</button></td>
                                 <td class="text-end">
                                     <button type="button" class="btn btn-xs btn-info btn-shad me-1" @click.prevent="clickCreate(row.id)">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-edit"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M7 7h-1a2 2 0 0 0 -2 2v9a2 2 0 0 0 2 2h9a2 2 0 0 0 2 -2v-1" /><path d="M20.385 6.585a2.1 2.1 0 0 0 -2.97 -2.97l-8.415 8.385v3h3l8.385 -8.415" /><path d="M16 5l3 3" /></svg>
@@ -52,7 +52,7 @@
                             </tbody>
                         </table>
                     </div>
-                </div>                
+                </div>
                 <!-- <div class="row">
                     <div class="col">
                         <button type="button" class="btn btn-custom btn-sm  mt-2 mr-2" v-if="typeUser != 'integrator'" @click.prevent="clickCreate()"><i class="fa fa-plus-circle"></i> Nuevo</button>
@@ -62,7 +62,8 @@
             <establishments-form :showDialog.sync="showDialog"
                                 :recordId="recordId"></establishments-form>
             <establishment-series :showDialog.sync="showDialogSeries"
-                                :establishmentId="recordId"></establishment-series>
+                                :establishmentId="recordId"
+                                :establishment="seriesEstablishment"></establishment-series>
         </div>
     </div>
 </template>
@@ -85,6 +86,7 @@
                 records: [],
                 showDialogSeries: false,
                 establishment: null,
+                seriesEstablishment: null,
                 showLeftShadow: false,
                 showRightShadow: false,
             }
@@ -108,10 +110,10 @@
             checkScrollShadows() {
                 const el = this.$refs.scrollContainer;
                 if (!el) return;
-                
+
                 const scrollLeft = el.scrollLeft;
                 const scrollRight = el.scrollWidth - el.clientWidth - scrollLeft;
-                
+
                 this.showLeftShadow = scrollLeft > 1;
                 this.showRightShadow = scrollRight > 1;
             },
@@ -125,8 +127,9 @@
                 this.recordId = recordId
                 this.showDialog = true
             },
-            clickSeries(recordId = null) {
-                this.recordId = recordId
+            clickSeries(row = null) {
+                this.recordId = row ? row.id : null
+                this.seriesEstablishment = row
                 this.showDialogSeries = true
             },
             clickDelete(id) {

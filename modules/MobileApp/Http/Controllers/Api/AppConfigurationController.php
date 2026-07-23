@@ -7,18 +7,20 @@ use Modules\MobileApp\Http\Resources\Api\AppConfigurationResource;
 use Modules\MobileApp\Http\Requests\Api\AppConfigurationRequest;
 use Modules\MobileApp\Models\AppConfiguration;
 use App\Models\Tenant\{
-    Company
+    Company,
+    Configuration
 };
+use Illuminate\Support\Facades\Cache;
 
 
 class AppConfigurationController extends Controller
 {
-    
+
     /**
-     * 
+     *
      * Usado en:
      * AppConfigurationController - web
-     * 
+     *
      * @return AppConfigurationResource
      */
     public function record()
@@ -26,9 +28,9 @@ class AppConfigurationController extends Controller
         return new AppConfigurationResource(AppConfiguration::firstOrFail());
     }
 
-    
+
     /**
-     * 
+     *
      * Actualizar configuracion de la app
      *
      * @param  AppConfigurationRequest $request
@@ -49,10 +51,10 @@ class AppConfigurationController extends Controller
             'data' => $record->getRowResource(),
         ];
     }
-    
-    
+
+
     /**
-     * 
+     *
      * Obtener parametros iniciales de configuracion
      *
      * @return array
@@ -74,5 +76,18 @@ class AppConfigurationController extends Controller
         ];
     }
 
-    
+    public function app_json()
+    {
+        $data = Cache::remember('app_json', now()->addHours(12), function () {
+            $record = AppConfiguration::firstOrFail();
+
+            return [
+                'primary_color' => $record->primary_color ?? '#020F3C',
+                'app_logo'      => Company::getAppUrlLogo(),
+                'name'          => Company::first()->trade_name,
+            ];
+        });
+
+        return response()->json($data);
+    }
 }

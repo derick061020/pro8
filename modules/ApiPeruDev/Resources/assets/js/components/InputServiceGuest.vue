@@ -43,7 +43,7 @@
         data() {
             return {
                 loading: false,
-                resource_base: 'guest-register/service',
+                resource_base: 'register/service',
                 resource: null,
                 maxLength: 20,
                 buttonText: null

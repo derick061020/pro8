@@ -200,11 +200,6 @@
                                     <span class="btn-add-new" @click.prevent="personRecordId = null; showDialogNewPerson = true" title="Agregar nuevo cliente">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-user-plus"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0" /><path d="M16 19h6" /><path d="M19 16v6" /><path d="M6 21v-2a4 4 0 0 1 4 -4h4" /></svg>
                                     </span>
-                                    <small
-                                        class="form-control-feedback"
-                                        v-if="errors.customer_id"
-                                        v-text="errors.customer_id[0]"
-                                    ></small>
                                 </div>
                             </div>
                             <!-- <div class="col-lg-2">
@@ -1708,6 +1703,11 @@ export default {
                 }
             }
 
+            if (!this.form.customer_id) {
+                this.$message.error('El campo cliente es obligatorio.');
+                return false;
+            }
+
             this.loading_submit = true;
 
             // await this.changePaymentMethodType(false)
@@ -1725,6 +1725,10 @@ export default {
                 .catch(error => {
                     if (error.response.status === 422) {
                         this.errors = error.response.data;
+                        if (this.errors.customer_id) {
+                            this.$message.error(this.errors.customer_id[0]);
+                            delete this.errors.customer_id;
+                        }
                     } else {
                         this.$message.error(error.response.data.message);
                     }

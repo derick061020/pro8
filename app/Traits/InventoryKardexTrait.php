@@ -48,12 +48,14 @@ trait InventoryKardexTrait
 
     public function saveItemWarehouse($item_id, $establishment_id, $stock, $warehouse_id = null){
 
-        $item_warehouse = ItemWarehouse::create([
-            'item_id' => $item_id,
-            'warehouse_id' => ($warehouse_id) ? $warehouse_id : $this->getWarehouseId($establishment_id),
-            'stock' => $stock
-            ]);
-
+        // firstOrCreate (no create directo) para evitar duplicar (item_id, warehouse_id).
+        // Sin esto, si la fila ya existe se generan duplicados que rompen updateStock()
+        // — firstOrNew toma solo la primera y deja la otra colgando con stock fantasma.
+        $w_id = $warehouse_id ?: $this->getWarehouseId($establishment_id);
+        ItemWarehouse::firstOrCreate(
+            ['item_id' => $item_id, 'warehouse_id' => $w_id],
+            ['stock' => $stock]
+        );
     }
 
 

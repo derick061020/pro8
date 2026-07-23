@@ -7,6 +7,8 @@
     }
 
     #map {
+        height: 400px;
+        width: 100%;
         border-radius: 8px;
         border: 2px solid #e0e0e0;
     }
@@ -19,12 +21,6 @@
     #addressModal .modal-title {
         font-weight: 600;
         color: #333;
-    }
-
-    #addressModal .form-group label {
-        font-weight: 500;
-        color: #555;
-        margin-bottom: 8px;
     }
 
     #addressModal .close {
@@ -47,6 +43,91 @@
     .card-body-h-auto {
         min-height: auto !important;
     }
+
+    .collapse-arrow {
+        margin-left: auto;
+        transition: transform 0.25s ease;
+        flex-shrink: 0;
+    }
+
+    .btn[aria-expanded="false"] .collapse-arrow {
+        transform: rotate(-90deg);
+    }
+
+    /* Aceptación de términos y condiciones */
+    .terms {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin: 14px 0 12px;
+        cursor: pointer;
+        user-select: none;
+        line-height: 1.35;
+        font-size: 13px
+    }
+
+    .terms input[type="checkbox"] {
+        position: absolute;
+        opacity: 0;
+        width: 0;
+        height: 0;
+        pointer-events: none;
+    }
+
+    .terms .box {
+        flex-shrink: 0;
+        width: 24px;
+        height: 24px;
+        border-radius: 7px;
+        border: 2px solid #d5dbe0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
+        transition: background-color .15s ease, border-color .15s ease, transform .12s ease;
+    }
+
+    .terms .box svg {
+        opacity: 0;
+        transform: scale(.6);
+        transition: opacity .15s ease, transform .15s ease;
+    }
+
+    .terms--checked .box svg {
+        opacity: 1;
+        transform: scale(1);
+    }
+
+    .terms-txt a:hover {
+        text-decoration: underline;
+    }
+
+    /* Desktop - una fila */
+    .items-cart {
+        display: grid;
+        grid-template-columns: 80px 1fr auto auto auto;
+        grid-template-areas: "thumb info quantity total delete";
+        align-items: center;
+        gap: 10px;
+        padding: 10px 0;
+        border-bottom: 1px solid #eee;
+    }
+
+    .items-cart .thumb { grid-area: thumb; }
+    .items-cart .info { grid-area: info; }
+    .items-cart .modern-quantity-container { grid-area: quantity; }
+    .items-cart .total { grid-area: total; }
+    .items-cart .delete-item-btn { grid-area: delete; }
+
+    /* Móvil - dos filas */
+    @media (max-width: 576px) {
+        .items-cart {
+            grid-template-columns: 70px 1fr auto auto auto;
+            grid-template-areas:
+                "thumb info info info info"
+                "thumb quantity quantity total delete";
+        }
+    }
 </style>
 @endpush
 
@@ -62,235 +143,293 @@
     $googleMapsApiKey = app(Modules\Ecommerce\Http\Controllers\EcommerceController::class)->getGoogleMaps();
     $globalDiscountTypeId = $global_discount_type_id ?? null;
 @endphp
-<h2 class="my-4" style="font-weight: 900;">Finalizar compra</h2>
+<h2 class="my-4 mt-4" style="font-weight: 900;">Finalizar compra</h2>
 <div class="row" id="app">
     <div class="col-md-8 mb-3">
-        <div class="card">
-            <button type="button" class="btn btn-link btn-block text-left p-0" data-toggle="collapse" data-target="#cartCollapse" style="text-decoration: none; display: block;">
-                <div class="card-header d-flex align-items-center bg-white border-bottom-0" style="cursor: pointer;">
-                    <svg clip-rule="evenodd"
-                        fill-rule="evenodd"
-                        height="24"
-                        stroke-linejoin="round"
-                        stroke-miterlimit="2"
-                        viewBox="0 0 512 512" width="24" xmlns="http://www.w3.org/2000/svg" id="fi_4893746">
-                        <path d="m211.892 383.468c24.344 0 44.108 19.764 44.108 44.108s-19.764 44.108-44.108 44.108-44.108-19.764-44.108-44.108 19.764-44.108 44.108-44.108zm176.22 0c24.344 0 44.108 19.764 44.108 44.108s-19.764 44.108-44.108 44.108-44.108-19.764-44.108-44.108 19.764-44.108 44.108-44.108zm-288.464-273.226s63.534 222.705 63.534 222.705c6.591 23.103 27.703 39.034 51.727 39.034h157.478c33.502 0 61.98-24.47 67.023-57.59 4.821-31.664 11.838-77.75 17.065-112.081 2.869-18.84-2.626-37.994-15.046-52.449-12.42-14.454-30.529-22.769-49.586-22.769h-235.394l-8.72-30.567c-7.633-26.757-32.085-45.209-59.91-45.209-23.033 0-51.825 0-51.825 0-13.798 0-25 11.202-25 25s11.202 25 25 25h51.825c5.494 0 10.321 3.643 11.829 8.926zm71.066 66.85h221.129c4.482 0 8.741 1.956 11.663 5.355 2.921 3.4 4.213 7.905 3.539 12.337 0 0-17.066 112.081-17.066 112.081-1.323 8.693-8.798 15.116-17.592 15.116h-157.478c-1.693 0-3.181-1.122-3.645-2.751 0 0-40.55-142.138-40.55-142.138z"/>
-                    </svg>
-                    <span class="ml-2 font-weight-bold">Tu carrito</span>
+        <div class="card card-cart">
+            <button type="button" class="btn btn-link btn-block text-left p-0" data-toggle="collapse" data-target="#cartCollapse" aria-expanded="true" style="text-decoration: none; display: block;">
+                <div class="card-header d-flex align-items-center bg-white border-bottom-0 card-cart-header" style="cursor: pointer;">
+                    <span class="icon-card cart">
+                        <svg clip-rule="evenodd"
+                            fill-rule="evenodd"
+                            height="24"
+                            stroke-linejoin="round"
+                            stroke-miterlimit="2"
+                            viewBox="0 0 512 512" width="24" xmlns="http://www.w3.org/2000/svg" id="fi_4893746">
+                            <path d="m211.892 383.468c24.344 0 44.108 19.764 44.108 44.108s-19.764 44.108-44.108 44.108-44.108-19.764-44.108-44.108 19.764-44.108 44.108-44.108zm176.22 0c24.344 0 44.108 19.764 44.108 44.108s-19.764 44.108-44.108 44.108-44.108-19.764-44.108-44.108 19.764-44.108 44.108-44.108zm-288.464-273.226s63.534 222.705 63.534 222.705c6.591 23.103 27.703 39.034 51.727 39.034h157.478c33.502 0 61.98-24.47 67.023-57.59 4.821-31.664 11.838-77.75 17.065-112.081 2.869-18.84-2.626-37.994-15.046-52.449-12.42-14.454-30.529-22.769-49.586-22.769h-235.394l-8.72-30.567c-7.633-26.757-32.085-45.209-59.91-45.209-23.033 0-51.825 0-51.825 0-13.798 0-25 11.202-25 25s11.202 25 25 25h51.825c5.494 0 10.321 3.643 11.829 8.926zm71.066 66.85h221.129c4.482 0 8.741 1.956 11.663 5.355 2.921 3.4 4.213 7.905 3.539 12.337 0 0-17.066 112.081-17.066 112.081-1.323 8.693-8.798 15.116-17.592 15.116h-157.478c-1.693 0-3.181-1.122-3.645-2.751 0 0-40.55-142.138-40.55-142.138z"/>
+                        </svg>
+                    </span>
+                    <span class="ml-2 font-weight-bold title-card">Tu carrito</span>
+                    <span class="head-summary">
+                        <template v-if="records.length > 0">
+                            <b>@{{ records.length }} @{{ records.length === 1 ? 'producto' : 'productos' }}</b>
+                            <span class="head-summary-sep">·</span>
+                            <span class="head-summary-amt">S/ @{{ summary.total }}</span>
+                        </template>
+                        <span v-else class="head-summary-warn">Carrito vacío</span>
+                    </span>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="collapse-arrow" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2b2b2b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M6 9l6 6l6 -6" /></svg>
                 </div>
             </button>
 
             <div id="cartCollapse" class="collapse show">
-                <div class="card-body border-top card-body-h-auto">
-                    <div class="row" v-if="records.length > 0">
-                        <div v-for="(row, index) in records" class="col-12" :key="row.id">
-                            <div class="row align-items-center">
-                                <div class="col-md-2">
-                                    <figure class="product-image-container m-0">
-                                        <a href="#" class="product-image">
-                                            <img class="image-product w-100" :src="(row.image && row.image !== 'imagen-no-disponible.jpg') ? '{{ $itemsBasePath }}' + '/' + row.image : '{{ $defaultImagePath }}'" :alt="row.description || 'Producto sin imagen'">
-                                        </a>
-                                    </figure>
-                                </div>
-                                <div class="col-md-7">
-                                    <h5 class="product-title m-0">
-                                        <a href="#">@{{ row.description }}</a>
-                                    </h5>
-                                    <span class="price text-muted">
-                                        @{{ row.currency_type_symbol }} @{{ row.sale_unit_price }}
-                                    </span>
-                                </div>
-                                <div class="col-md-3 text-right">
-                                    <button type="button" @click="deleteItem(row.id, index)" class="btn btn-sm btn-link text-muted px-0">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M4 7l16 0" /><path d="M10 11l0 6" /><path d="M14 11l0 6" /><path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2 -2l1 -12" /><path d="M9 7v-3a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v3" /></svg>
+                <div class="card-cart-body">
+                    <div v-if="records.length > 0">
+                        <div v-for="(row, index) in records" class="items-cart" :key="row.id">
+                            <div class="thumb">
+                                <figure class="product-image-container m-0">
+                                    <a href="#" class="product-image">
+                                        <img class="image-product w-100" :src="(row.image && row.image !== 'imagen-no-disponible.jpg') ? '{{ $itemsBasePath }}' + '/' + row.image : '{{ $defaultImagePath }}'" :alt="row.description || 'Producto sin imagen'">
+                                    </a>
+                                </figure>
+                            </div>
+
+                            <div class="info">
+                                <h5 class="product-title m-0">
+                                    <a href="#">@{{ row.description }}</a>
+                                </h5>
+                                <span class="price text-muted">
+                                    @{{ row.currency_type_symbol }} @{{ row.sale_unit_price }}
+                                </span>
+                            </div>
+
+                            <div class="input-group input-group-sm modern-quantity-container w-auto">
+                                <div class="input-group-prepend">
+                                    <button class="btn btn-outline-secondary btn-input-group" type="button" @click.stop.prevent="decrementQuantity(row)">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M5 12l14 0" /></svg>
                                     </button>
-                                    <div class="input-group input-group-sm">
-                                        <div class="input-group-prepend">
-                                            <button class="btn btn-outline-secondary btn-input-group" type="button" @click.stop.prevent="decrementQuantity(row)">
-                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M5 12l14 0" /></svg>
-                                            </button>
-                                        </div>
-                                        <input class="input-quantity form-control text-center" :data-product="row.id" type="number" v-model.number="row.cantidad">
-                                        <div class="input-group-append">
-                                            <button class="btn btn-outline-secondary btn-input-group" type="button" @click.stop.prevent="incrementQuantity(row)">
-                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 5l0 14" /><path d="M5 12l14 0" /></svg>
-                                            </button>
-                                        </div>
-                                    </div>
-                                    <strong>@{{ row.currency_type_symbol }} @{{ (row.sale_unit_price * row.cantidad).toFixed(2) }}</strong>
+                                </div>
+                                <input class="input-quantity form-control text-center" :data-product="row.id" type="number" v-model.number="row.cantidad">
+                                <div class="input-group-append">
+                                    <button class="btn btn-outline-secondary btn-input-group" type="button" @click.stop.prevent="incrementQuantity(row)">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 5l0 14" /><path d="M5 12l14 0" /></svg>
+                                    </button>
                                 </div>
                             </div>
+
+                            <strong class="total">@{{ row.currency_type_symbol }} @{{ (row.sale_unit_price * row.cantidad).toFixed(2) }}</strong>
+
+                            <button type="button" @click="deleteItem(row.id, index)" class="btn btn-sm btn-link text-muted px-0 delete-item-btn">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M4 7l16 0" /><path d="M10 11l0 6" /><path d="M14 11l0 6" /><path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2 -2l1 -12" /><path d="M9 7v-3a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v3" /></svg>
+                            </button>
+
                         </div>
                     </div>
-                    <div v-else class="alert alert-info mb-0">
-                        Tu carrito está vacío
+                    <div v-else class="cart-empty">
+                        <span class="cart-empty-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6.331 8h11.339a2 2 0 0 1 1.977 2.304l-1.255 8.152a3 3 0 0 1 -2.966 2.544h-6.852a3 3 0 0 1 -2.966 -2.544l-1.255 -8.152a2 2 0 0 1 1.977 -2.304z"/><path d="M9 11v-5a3 3 0 0 1 6 0v5"/></svg>
+                        </span>
+                        <p class="cart-empty-title">Tu carrito está vacío</p>
+                        <p class="cart-empty-text">Agrega productos para continuar con tu compra.</p>
+                        <a href="/ecommerce" class="cart-empty-btn">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+                            Ver productos
+                        </a>
                     </div>
                 </div>
 
-                <div class="card-footer bg-light">
+                <div class="card-footer card-cart-footer border-0">
                     <div class="row">
                         <div class="col-6">
-                            <a href="/ecommerce" class="btn btn-light btn-sm text-muted text-capitalize">
+                            <a href="/ecommerce" class="text-muted text-capitalize">
                                 <i class="fa fa-arrow-left"></i>
                                 Continuar Comprando
                             </a>
                         </div>
                         <div class="col-6 text-right" v-if="records.length > 0">
-                            <a href="#" @click="clearShoppingCart" class="btn btn-light btn-sm text-danger text-capitalize">Limpiar Carrito</a>
+                            <a href="#" @click="clearShoppingCart" class="text-danger text-capitalize">Limpiar Carrito</a>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <div class="card" v-if="records.length > 0">
-            <button type="button" class="btn btn-link btn-block text-left p-0" data-toggle="collapse" data-target="#deliveryCollapse" style="text-decoration: none; display: block;">
-                <div class="card-header d-flex align-items-center bg-white border-bottom-0" style="cursor: pointer;">
-                    <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="24"
-                        height="24"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="#2b2b2b"
-                        stroke-width="1.75"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        >
-                        <path d="M7 17m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" />
-                        <path d="M17 17m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" />
-                        <path d="M5 17h-2v-4m-1 -8h11v12m-4 0h6m4 0h2v-6h-8m0 -5h5l3 5" />
-                        <path d="M3 9l4 0" />
-                    </svg>
-                    <span class="ml-2 font-weight-bold">Datos de envio</span>
+        <div class="card card-cart" v-if="records.length > 0">
+            <button type="button" class="btn btn-link btn-block text-left p-0" data-toggle="collapse" data-target="#deliveryCollapse" aria-expanded="true" style="text-decoration: none; display: block;">
+                <div class="card-header d-flex align-items-center bg-white border-bottom-0 card-cart-header" style="cursor: pointer;">
+                    <span class="icon-card">
+                        <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="24"
+                            height="24"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="#2b2b2b"
+                            stroke-width="1.75"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            >
+                            <path d="M7 17m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" />
+                            <path d="M17 17m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" />
+                            <path d="M5 17h-2v-4m-1 -8h11v12m-4 0h6m4 0h2v-6h-8m0 -5h5l3 5" />
+                            <path d="M3 9l4 0" />
+                        </svg>
+                    </span>
+                    <span class="ml-2 font-weight-bold title-card">Datos de envio</span>
+                    <span class="head-summary">
+                        <template v-if="isPickupMode">
+                            <b v-if="selectedPickupBranch">@{{ selectedPickupBranch.name }}</b>
+                            <span v-else class="head-summary-warn">Elige sucursal</span>
+                        </template>
+                        <template v-else-if="form_contact.address || form_contact.telephone">
+                            <span class="head-summary-addr" v-if="form_contact.address">@{{ form_contact.address }}</span>
+                            <span class="head-summary-sep" v-if="form_contact.address && form_contact.telephone">·</span>
+                            <b v-if="form_contact.telephone">@{{ form_contact.telephone }}</b>
+                        </template>
+                        <span v-else class="head-summary-warn">Falta completar</span>
+                    </span>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="collapse-arrow" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2b2b2b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M6 9l6 6l6 -6" /></svg>
                 </div>
             </button>
             <div id="deliveryCollapse" class="collapse show">
-                <div class="card-body border-top card-body-h-auto">
-                    <div class="row">
-                        <template v-if="records.length > 0">
-                            {{-- Switch: Recojo en tienda (solo si está habilitado en configuración) --}}
-                            <div class="col-6 mb-2" v-if="enableStorePickup">
-                                <div class="d-flex align-items-center">
-                                    <label class="mb-0 mr-2 font-weight-bold" style="cursor:pointer;" @click="togglePickupMode">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="mr-1" style="vertical-align:middle;"><path d="M3 9l9 -7 9 7v11a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-                                        Recojo en tienda
-                                    </label>
-                                    <div
-                                        @click="togglePickupMode"
-                                        style="cursor:pointer; display:inline-flex; align-items:center; width:44px; height:24px; border-radius:12px; padding:2px; transition:background 0.2s;"
-                                        :style="isPickupMode ? 'background:#ff6600;' : 'background:#ccc;'"
-                                    >
-                                        <div style="width:20px; height:20px; border-radius:50%; background:#fff; transition:transform 0.2s; box-shadow:0 1px 3px rgba(0,0,0,0.3);"
-                                            :style="isPickupMode ? 'transform:translateX(20px);' : 'transform:translateX(0);'"
-                                        ></div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-6 text-right">
-                                <button class="btn btn-light btn-sm text-muted text-capitalize" @click="openAddressModal">@{{ form_contact.address ? 'Cambiar dirección' : 'Agregar dirección' }}</button>
-                            </div>
+                <div class="card-body card-body-h-auto card-cart-body ship-body">
 
+                    {{-- Switch: Recojo en tienda (solo si está habilitado en configuración) --}}
+                    <div class="pickup-switch" v-if="enableStorePickup">
+                        {{-- <label class="pickup-switch-label" @click="togglePickupMode">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9 -7 9 7v11a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                            Recojo en tienda
+                        </label>
+                        <button type="button" class="switch" :class="{ 'switch--on': isPickupMode }" @click="togglePickupMode" :aria-pressed="isPickupMode ? 'true' : 'false'" aria-label="Activar recojo en tienda">
+                            <span class="switch-knob"></span>
+                        </button> --}}
+                        <label
+                            class="option-card send-mode"
+                            :class="{ 'option-card--active': !isPickupMode }"
+                        >
+                            <span class="icon-delivery">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentcolor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"></path> <path d="M17 17m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"></path> <path d="M5 17h-2v-4m-1 -8h11v12m-4 0h6m4 0h2v-6h-8m0 -5h5l3 5"></path> <path d="M3 9l4 0"></path></svg>
+                            </span>
+                            <span class="option-card-body">
+                                <strong>Envío a domicilio</strong>
+                                <span class="option-card-sub">Llega a tu dirección</span>
+                            </span>
+                            <input
+                                type="radio"
+                                name="delivery_mode"
+                                style="margin-left: auto"
+                                :checked="!isPickupMode"
+                                @change="setPickupMode(false)"
+                            >
+                        </label>
+                        <label
+                            class="option-card send-mode"
+                            :class="{ 'option-card--active': isPickupMode }"
+                        >
+                            <span class="icon-delivery">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l1-5h16l1 5"></path><path d="M4 9v11a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1V9"></path><path d="M3 9h18"></path><path d="M9 21v-6h6v6"></path></svg>
+                            </span>
+                            <span class="option-card-body">
+                                <strong>Recojo en tienda</strong>
+                                <span class="option-card-sub">Gratis · tú lo retiras</span>
+                            </span>
+                            <input
+                                type="radio"
+                                name="delivery_mode"
+                                style="margin-left: auto"
+                                :checked="isPickupMode"
+                                @change="setPickupMode(true)"
+                            >
+                        </label>
+                    </div>
+
+                    <div class="ship-grid">
+                        {{-- Columna izquierda: dirección de entrega o sucursal de recojo --}}
+                        <div class="ship-col">
                             {{-- Modo recojo en tienda: radio buttons de sucursales --}}
-                            <div class="col-12" v-if="isPickupMode">
-                                <div v-if="pickupBranches.length === 0" class="alert alert-info py-2 mb-0">
+                            <template v-if="isPickupMode">
+                                <span class="field-label">Selecciona una sucursal</span>
+                                <div v-if="pickupBranches.length === 0" class="ship-alert ship-alert--info">
                                     No hay sucursales de recojo configuradas.
                                 </div>
-                                <div v-else>
-                                    <label class="font-weight-bold d-block mb-1">Selecciona una sucursal:</label>
-                                    <div
+                                <div v-else class="option-list">
+                                    <label
                                         v-for="branch in pickupBranches"
                                         :key="branch.id"
-                                        class="d-flex align-items-start border rounded px-3 py-2 mb-1"
-                                        :style="selectedPickupBranch && selectedPickupBranch.id === branch.id ? 'border-color:#ff6600 !important; background:#fff8f4;' : ''"
-                                        @click="selectPickupBranch(branch)"
-                                        style="cursor:pointer;"
+                                        class="option-card"
+                                        :class="{ 'option-card--active': selectedPickupBranch && selectedPickupBranch.id === branch.id }"
                                     >
                                         <input
                                             type="radio"
                                             :value="branch.id"
                                             :checked="selectedPickupBranch && selectedPickupBranch.id === branch.id"
                                             @change="selectPickupBranch(branch)"
-                                            class="mt-1 mr-2"
-                                            style="cursor:pointer; accent-color:#ff6600; flex-shrink:0;"
                                         >
-                                        <div>
+                                        <span class="option-card-body">
                                             <strong>@{{ branch.name }}</strong>
-                                            <div class="text-muted" style="font-size:0.875rem;" v-if="branch.address">@{{ branch.address }}</div>
-                                        </div>
-                                    </div>
+                                            <span class="option-card-sub" v-if="branch.address">@{{ branch.address }}</span>
+                                        </span>
+                                    </label>
                                 </div>
-                            </div>
-                        </template>
+                            </template>
 
-                        <div class="col-6">
-                            <label class="font-weight-bold mb-1" style="">
-                                Teléfono de contacto
-                            </label>
-                            <input
-                                type="tel"
-                                v-model="form_contact.telephone"
-                                class="form-control form-control-sm"
-                                placeholder="Ej: 987654321"
-                                maxlength="15"
-                                required
-                            >
-                        </div>
+                            {{-- Modo delivery normal --}}
+                            <template v-else>
+                                <span class="field-label">Dirección de entrega</span>
+                                <button v-if="!form_contact.address" type="button" class="addr-btn" @click="openAddressModal">
+                                    <span class="plus">+</span>
+                                    Agregar dirección
+                                </button>
+                                <div v-else class="addr-card">
+                                    <span class="addr-card-icon">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7 -9 13 -9 13s-9 -6 -9 -13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                                    </span>
+                                    <div class="addr-card-info">
+                                        <strong>@{{ form_contact.address }}</strong>
+                                        <span class="addr-card-sub">@{{ ubigeoLabel }}</span>
+                                    </div>
+                                    <button type="button" class="addr-change" @click="openAddressModal">Cambiar</button>
+                                </div>
 
-                        {{-- Modo delivery normal --}}
-                        <template v-if="!isPickupMode">
-                            <div class="col-8">
-                                <label class="font-weight-bold mb-1" v-if="form_contact.address">
-                                    Dirección
-                                </label>
-                                <ul class="mb-0">
-                                    <li>@{{ form_contact.address }}</li>
-                                    <li>@{{ ubigeoLabel }} </li>
-                                </ul>
-                            </div>
-                            <div class="col-12">
-                                <!-- Mensaje sin cobertura de delivery -->
-                                <div v-if="deliveryMessage != ''" class="alert alert-warning text-left py-2 px-3 mb-0" role="alert">
+                                {{-- Mensaje sin cobertura de delivery --}}
+                                <div v-if="deliveryMessage != ''" class="ship-alert ship-alert--warn" role="alert">
                                     <strong>&#9888; Sin cobertura:</strong> @{{ deliveryMessage }}
                                 </div>
 
-                                <!-- Opciones de envío: mostrar cuando hay múltiples zonas disponibles -->
-                                <div v-if="availableDeliveryZones.length > 1" class="mt-2">
-                                    <label class="font-weight-bold d-block mb-1">Opciones de envío:</label>
-                                    <div
+                                {{-- Opciones de envío: mostrar cuando hay múltiples zonas disponibles --}}
+                                <div v-if="availableDeliveryZones.length > 1" class="option-list mt-2">
+                                    <span class="field-label">Opciones de envío</span>
+                                    <label
                                         v-for="zone in availableDeliveryZones"
                                         :key="zone.id"
-                                        class="d-flex align-items-center justify-content-between border rounded px-3 py-2 mb-1"
-                                        :style="deliveryZone && deliveryZone.id === zone.id ? 'border-color:#ff6600 !important; background:#fff8f4;' : 'cursor:pointer;'"
-                                        @click="selectDeliveryZone(zone)"
-                                        style="cursor:pointer;"
+                                        class="option-card option-card--row"
+                                        :class="{ 'option-card--active': deliveryZone && deliveryZone.id === zone.id }"
                                     >
-                                        <div class="d-flex align-items-center">
+                                        <span class="option-card-left">
                                             <input
                                                 type="radio"
                                                 :value="zone.id"
                                                 :checked="deliveryZone && deliveryZone.id === zone.id"
                                                 @change="selectDeliveryZone(zone)"
-                                                class="mr-2"
-                                                style="cursor:pointer; accent-color:#ff6600;"
                                             >
                                             <span>@{{ zone.name }}</span>
-                                        </div>
-                                        <strong class="text-dark">S/ @{{ parseFloat(zone.price).toFixed(2) }}</strong>
-                                    </div>
+                                        </span>
+                                        <strong class="option-card-price">S/ @{{ parseFloat(zone.price).toFixed(2) }}</strong>
+                                    </label>
                                 </div>
 
-                                <!-- Una sola zona disponible: mostrar informativo -->
-                                <div v-else-if="availableDeliveryZones.length === 1 && deliveryZone" class="mt-2">
-                                    <small class="text-success">
-                                        <i class="fa fa-check-circle"></i>
-                                        Envío disponible: <strong>@{{ deliveryZone.name }}</strong> &mdash; S/ @{{ parseFloat(deliveryZone.price).toFixed(2) }}
-                                    </small>
+                                {{-- Una sola zona disponible: mostrar informativo --}}
+                                <div v-else-if="availableDeliveryZones.length === 1 && deliveryZone" class="ship-note ship-note--ok mt-2">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5 -5"/></svg>
+                                    Envío disponible: <strong>@{{ deliveryZone.name }}</strong> &mdash; S/ @{{ parseFloat(deliveryZone.price).toFixed(2) }}
                                 </div>
-                            </div>
-                        </template>
-                        {{-- fin modo delivery --}}
+                            </template>
+                        </div>
 
+                        {{-- Columna derecha: teléfono de contacto --}}
+                        <div class="ship-col">
+                            <span class="field-label">Teléfono de contacto</span>
+                            <input
+                                type="tel"
+                                v-model="form_contact.telephone"
+                                class="input"
+                                placeholder="Ej: 987 654 321"
+                                maxlength="15"
+                                inputmode="numeric"
+                                required
+                            >
+                            <p class="hint">Te escribiremos por aquí para coordinar la entrega.</p>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -298,73 +437,123 @@
 
         @if($enable_electronic_documents)
             {{-- Modo documentos electrónicos: solo lectura, tipo inferido del número del usuario --}}
-            <div class="card">
-                <button type="button" class="btn btn-link btn-block text-left p-0" data-toggle="collapse" data-target="#documentyCollapse" style="text-decoration: none; display: block;">
-                    <div class="card-header d-flex align-items-center bg-white border-bottom-0" style="cursor: pointer;">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2b2b2b" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M14 3v4a1 1 0 0 0 1 1h4" />
-                            <path d="M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2z" />
-                            <path d="M9 17h6" />
-                            <path d="M9 13h6" />
-                        </svg>
-                        <span class="ml-2 font-weight-bold">Datos del comprobante</span>
+            <div class="card card-cart">
+                <button type="button" class="btn btn-link btn-block text-left p-0" data-toggle="collapse" data-target="#documentyCollapse" aria-expanded="true" style="text-decoration: none; display: block;">
+                    <div class="card-header d-flex align-items-center bg-white border-bottom-0 card-cart-header" style="cursor: pointer;">
+                        <span class="icon-card">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2b2b2b" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M14 3v4a1 1 0 0 0 1 1h4" />
+                                <path d="M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2z" />
+                                <path d="M9 17h6" />
+                                <path d="M9 13h6" />
+                            </svg>
+                        </span>
+                        <span class="ml-2 font-weight-bold title-card">Datos del comprobante</span>
+                        <span class="head-summary">
+                            <b v-if="invoiceTypeLabel">@{{ invoiceTypeLabel }}</b>
+                            <template v-if="user && user.number">
+                                <span class="head-summary-sep" v-if="invoiceTypeLabel">·</span>
+                                <span>@{{ user.number }}</span>
+                            </template>
+                        </span>
+                        <svg xmlns="http://www.w3.org/2000/svg" class="collapse-arrow" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2b2b2b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M6 9l6 6l6 -6" /></svg>
                     </div>
                 </button>
                 <div id="documentyCollapse" class="collapse show">
-                    <div class="card-body border-top card-body-h-auto">
-                        <ul class="list-unstyled mb-0">
-                            <li><span class="text-muted">Cliente:</span> <strong>@{{ user.name }}</strong></li>
-                            <li><span class="text-muted">Documento:</span> <strong>@{{ user.number }}</strong></li>
-                            <li><span class="text-muted">Tipo de doc.:</span> <strong>@{{ invoiceTypeLabel }}</strong></li>
+                    <div class="card-body card-body-h-auto card-cart-body">
+                        <ul class="doc-list">
+                            <li><span>Cliente</span> <strong>@{{ user.name }}</strong></li>
+                            <li><span>Documento</span> <strong>@{{ user.number }}</strong></li>
+                            <li><span>Tipo de doc.</span> <strong>@{{ invoiceTypeLabel }}</strong></li>
                         </ul>
                     </div>
                 </div>
             </div>
         @endif
 
-        <div class="card" v-if="records.length > 0">
-            <button type="button" class="btn btn-link btn-block text-left p-0" data-toggle="collapse" data-target="#paymentCollapse" style="text-decoration: none; display: block;">
-                <div class="card-header d-flex align-items-center bg-white border-bottom-0" style="cursor: pointer;">
-                    <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="24"
-                        height="24"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="#2b2b2d"
-                        stroke-width="1.75"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        >
-                        <path d="M3 5m0 3a3 3 0 0 1 3 -3h12a3 3 0 0 1 3 3v8a3 3 0 0 1 -3 3h-12a3 3 0 0 1 -3 -3z" />
-                        <path d="M3 10l18 0" />
-                        <path d="M7 15l.01 0" />
-                        <path d="M11 15l2 0" />
-                    </svg>
-                    <span class="ml-2 font-weight-bold">Método de pago</span>
+        <div class="card card-cart" v-if="records.length > 0">
+            <button type="button" class="btn btn-link btn-block text-left p-0" data-toggle="collapse" data-target="#paymentCollapse" aria-expanded="true" style="text-decoration: none; display: block;">
+                <div class="card-header d-flex align-items-center bg-white border-bottom-0 card-cart-header" style="cursor: pointer;">
+                    <span class="icon-card">
+                        <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="24"
+                            height="24"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="#2b2b2d"
+                            stroke-width="1.75"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            >
+                            <path d="M3 5m0 3a3 3 0 0 1 3 -3h12a3 3 0 0 1 3 3v8a3 3 0 0 1 -3 3h-12a3 3 0 0 1 -3 -3z" />
+                            <path d="M3 10l18 0" />
+                            <path d="M7 15l.01 0" />
+                            <path d="M11 15l2 0" />
+                        </svg>
+                    </span>
+                    <span class="ml-2 font-weight-bold title-card">Método de pago</span>
+                    <span class="head-summary">
+                        @guest('ecommerce')
+                            <span class="head-summary-warn">Inicia sesión</span>
+                        @else
+                            <b v-if="selectedPaymentMethod === 'culqi'">Tarjeta (VISA)</b>
+                            <b v-else-if="selectedPaymentMethod === 'cash'">Efectivo</b>
+                            <b v-else-if="selectedPaymentMethod === 'yape'">Yape</b>
+                            <b v-else-if="selectedPaymentMethod === 'transfer'">Transferencia</b>
+                            <b v-else-if="selectedPaymentMethod === 'paypal'">PayPal</b>
+                            <span v-else class="head-summary-warn">Elige un método</span>
+                        @endguest
+                    </span>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="collapse-arrow" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2b2b2b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M6 9l6 6l6 -6" /></svg>
                 </div>
             </button>
             <div id="paymentCollapse" class="collapse show">
-                <div class="card-body border-top card-body-h-auto">
+                <div class="card-body card-body-h-auto card-cart-body">
                     @guest('ecommerce')
-                    <p class="text-muted mb-0"><a href="{{route('tenant_ecommerce_login')}}">Inicia sesión</a> para seleccionar un método de pago.</p>
+                    <div class="login-note">
+                        <span class="login-note-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+                        </span>
+                        <p><a href="{{route('tenant_ecommerce_login')}}" class="login-link">Inicia sesión</a> para seleccionar y guardar tu método de pago.</p>
+                    </div>
                     @elseauth('ecommerce')
-                    <div class="btn-group btn-group-toggle d-block" role="group">
-                        <label class="btn btn-outline-primary d-block" :class="{ active: selectedPaymentMethod === 'culqi' }">
-                            <input type="radio" v-model="selectedPaymentMethod" value="culqi" autocomplete="off"> Pagar con VISA
+                    <div class="pay-methods" role="radiogroup">
+                        <label class="pay-method" :class="{ 'pay-method--active': selectedPaymentMethod === 'culqi' }">
+                            <input type="radio" v-model="selectedPaymentMethod" value="culqi" autocomplete="off">
+                            <span class="pay-method-ic">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+                            </span>
+                            <span class="pay-method-label">Pagar con tarjeta (VISA)</span>
                         </label>
-                        <label class="btn btn-outline-primary d-block mt-2" :class="{ active: selectedPaymentMethod === 'cash' }">
-                            <input type="radio" v-model="selectedPaymentMethod" value="cash" autocomplete="off"> Pagar con EFECTIVO
+                        <label class="pay-method" :class="{ 'pay-method--active': selectedPaymentMethod === 'cash' }">
+                            <input type="radio" v-model="selectedPaymentMethod" value="cash" autocomplete="off">
+                            <span class="pay-method-ic">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2"/></svg>
+                            </span>
+                            <span class="pay-method-label">Pagar con efectivo</span>
                         </label>
-                        <label v-if="enableYape" class="btn btn-outline-primary d-block mt-2" :class="{ active: selectedPaymentMethod === 'yape' }">
-                            <input type="radio" v-model="selectedPaymentMethod" value="yape" autocomplete="off"> Pagar con YAPE
+                        <label v-if="enableYape" class="pay-method" :class="{ 'pay-method--active': selectedPaymentMethod === 'yape' }">
+                            <input type="radio" v-model="selectedPaymentMethod" value="yape" autocomplete="off">
+                            <span class="pay-method-ic">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="2" width="12" height="20" rx="2"/><line x1="11" y1="18" x2="13" y2="18"/></svg>
+                            </span>
+                            <span class="pay-method-label">Pagar con Yape</span>
                         </label>
-                        <label v-if="enableTransfer" class="btn btn-outline-primary d-block mt-2" :class="{ active: selectedPaymentMethod === 'transfer' }">
-                            <input type="radio" v-model="selectedPaymentMethod" value="transfer" autocomplete="off"> Transferencia Bancaria
+                        <label v-if="enableTransfer" class="pay-method" :class="{ 'pay-method--active': selectedPaymentMethod === 'transfer' }">
+                            <input type="radio" v-model="selectedPaymentMethod" value="transfer" autocomplete="off">
+                            <span class="pay-method-ic">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V10l7 -5l7 5v11"/><path d="M9 21v-6h6v6"/></svg>
+                            </span>
+                            <span class="pay-method-label">Transferencia bancaria</span>
                         </label>
                         @if($information->script_paypal)
-                        <label class="btn btn-outline-primary d-block mt-2" :class="{ active: selectedPaymentMethod === 'paypal' }">
-                            <input type="radio" v-model="selectedPaymentMethod" value="paypal" autocomplete="off"> PayPal
+                        <label class="pay-method" :class="{ 'pay-method--active': selectedPaymentMethod === 'paypal' }">
+                            <input type="radio" v-model="selectedPaymentMethod" value="paypal" autocomplete="off">
+                            <span class="pay-method-ic">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M7 11l1 -7h6a3 3 0 0 1 0 6h-4"/><path d="M5 20l1.5 -9h5a3 3 0 0 1 0 6h-4"/></svg>
+                            </span>
+                            <span class="pay-method-label">PayPal</span>
                         </label>
                         @endif
                     </div>
@@ -375,193 +564,255 @@
     </div><!-- End .col-lg-8 -->
 
     <div class="col-md-4">
+      <div class="summary-sticky">
         <div class="cart-summary">
-            <h3>Resumen</h3>
-            <table class="table table-totals">
-                <tbody>
+            <div class="sum-head"><h3>Resumen</h3></div>
+            <div class="sum-body">
+                <table class="table table-totals">
+                    <tbody>
 
-                    <tr v-if="summary.total_exonerated > 0">
-                        <td>OP.EXONERADAS</td>
-                        <td>S/ @{{ summary.total_exonerated }}</td>
-                    </tr>
-                    <tr v-if="summary.total_taxed > 0">
-                        <td>OP.GRAVADA</td>
-                        <td>S/ @{{ summary.total_taxed }}</td>
-                    </tr>
-                    <tr v-if="summary.total_igv > 0">
-                        <td>IGV</td>
-                        <td>S/ @{{ summary.total_igv }}</td>
-                    </tr>
-                    <tr v-if="appliedCoupon && appliedCoupon.code">
-                        <td>
-                            Cupon <span class="badge badge-dark">@{{ appliedCoupon.code }}</span><br>
-                            <button class="btn btn-sm btn-link text-danger" @click="removeCoupon">Eliminar Cupon</button>
-                        </td>
-                        <td>
-                            S/ @{{ appliedCoupon.discount }}
-                        </td>
-                    </tr>
-                    <tr v-if="deliveryZone && parseFloat(deliveryZone.price) > 0">
-                        <td>Envío <small class="text-muted">(@{{ deliveryZone.name }})</small></td>
-                        <td>S/ @{{ summary.delivery }}</td>
-                    </tr>
-                </tbody>
-                <tfoot>
-                    <tr>
-                        <td>Total</td>
-                        <td>S/ @{{summary.total}}</td>
-                    </tr>
-                </tfoot>
-            </table>
+                        <tr v-if="summary.total_exonerated > 0">
+                            <td>Op. exoneradas</td>
+                            <td>S/ @{{ summary.total_exonerated }}</td>
+                        </tr>
+                        <tr v-if="summary.total_taxed > 0">
+                            <td>Op. gravada</td>
+                            <td>S/ @{{ summary.total_taxed }}</td>
+                        </tr>
+                        <tr v-if="summary.total_igv > 0">
+                            <td>IGV (18%)</td>
+                            <td>S/ @{{ summary.total_igv }}</td>
+                        </tr>
+                        <tr v-if="appliedCoupon && appliedCoupon.code">
+                            <td>
+                                Cupón <span class="badge badge-dark">@{{ appliedCoupon.code }}</span>
+                                <button class="coupon-remove" @click="removeCoupon">Eliminar</button>
+                            </td>
+                            <td>
+                                &minus; S/ @{{ appliedCoupon.discount }}
+                            </td>
+                        </tr>
+                        <tr v-if="deliveryZone && parseFloat(deliveryZone.price) > 0">
+                            <td>Envío <small class="text-muted">(@{{ deliveryZone.name }})</small></td>
+                            <td>S/ @{{ summary.delivery }}</td>
+                        </tr>
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <td>Total</td>
+                            <td>S/ @{{summary.total}}</td>
+                        </tr>
+                    </tfoot>
+                </table>
 
-            <!-- Coupon input and applied coupon display -->
-            <div class="coupon-block mt-3">
-                <div class="input-group">
-                    <input v-model="couponField" type="text" class="form-control" placeholder="Código de cupón">
-                    <div class="input-group-append">
-                        <button class="btn btn-primary" @click="applyCoupon" :disabled="couponLoading">Aplicar</button>
+                <!-- Coupon input and applied coupon display -->
+                <div class="coupon-block">
+                    <div class="coupon">
+                        <input v-model="couponField" type="text" class="input" placeholder="Código de cupón">
+                        <button class="coupon-btn" @click="applyCoupon" :disabled="couponLoading">Aplicar</button>
                     </div>
+                    <small class="coupon-msg text-danger" v-if="couponMessage">@{{ couponMessage }}</small>
                 </div>
+                <label class="terms" :class="{ 'terms--checked': acceptedTerms }" id="termsLabel">
+                  <input type="checkbox" id="termsCheck" v-model="acceptedTerms">
+                  <span class="box"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></span>
+                  <span class="terms-txt">He leído y acepto los <a href="#" data-modal-open="termsModal" @click.prevent>Términos y Condiciones</a>.</span>
+                </label>
+                <div class="checkout-methods">
+                    @guest('ecommerce')
+                    <a href="{{route('tenant_ecommerce_login')}}" class="pay-btn login-link culqi" :class="{ disabled: !acceptedTerms }">Pagar con VISA</a>
+                    <a href="{{route('tenant_ecommerce_login')}}" class="pay-btn pay-btn--ghost login-link" :class="{ disabled: !acceptedTerms }">Pagar con efectivo</a>
 
-                <small class="text-danger" v-if="couponMessage">@{{ couponMessage }}</small>
+                    @elseauth('ecommerce')
+                        <button v-if="selectedPaymentMethod !== 'paypal'" class="pay-btn" :class="{ disabled: !acceptedTerms }" :disabled="!selectedPaymentMethod || !acceptedTerms" @click="executePayment">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+                            Pagar
+                        </button>
+
+                    @endauth
+
+                </div><!-- End .checkout-methods -->
+
+                <div class="trust">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                    Pago 100% seguro y protegido
+                </div>
+                <div class="cards-row px-5">
+                    <img src="{{ asset('porto-ecommerce/assets/images/payments-bordered.svg') }}" alt="payment methods" class="footer-payments">
+                </div>
             </div>
-
-            <div class="checkout-methods text-center">
-                @guest('ecommerce')
-                <a href="{{route('tenant_ecommerce_login')}}" class="btn btn-block btn-sm btn-primary login-link culqi">Pagar
-                    con VISA</a>
-                <a href="{{route('tenant_ecommerce_login')}}" class="btn btn-block btn-sm btn-primary login-link">Pagar
-                    con EFECTIVO</a>
-                <a style="margin-left:15%" href="{{route('tenant_ecommerce_login')}}"
-                    class="btn btn-block btn-sm login-link">
-                    <img src="{{ asset('porto-ecommerce/assets/images/btn_buynowCC_LG.gif') }}" alt="">
-                </a>
-
-                @elseauth('ecommerce')
-                    <button v-if="selectedPaymentMethod !== 'paypal'" class="btn btn-block btn-primary mt-2" :disabled="!selectedPaymentMethod" @click="executePayment">Pagar</button>
-
-                @endauth
-
-            </div><!-- End .checkout-methods -->
+            <div class="secure-foot">Transacción cifrada · IGV incluido según ley peruana</div>
         </div><!-- End .cart-summary -->
+      </div><!-- End .summary-sticky -->
     </div><!-- End .col-lg-4 -->
 
     <!-- Modal de Dirección -->
     <div class="modal fade" id="addressModal" tabindex="-1" role="dialog" aria-labelledby="addressModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-lg" role="document" style="max-width: 800px;">
+        <div class="modal-dialog modal-lg" role="document">
             <div class="modal-content">
-                <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 15px; background-color: #f8f9fa; border-bottom: 1px solid #dee2e6;">
-                    <h5 style="font-size: 1.25rem; margin: 0; font-weight: 500; color: #333;">Confirmar dirección</h5>
-                    <button type="button" @click="closeAddressModal()" aria-label="Close" style="background: none; border: none; font-size: 1.5rem; line-height: 1; cursor: pointer; padding: 0; margin: 0; color: #000; opacity: 0.5;">
-                        <span aria-hidden="true">&times;</span>
+                <div class="modal-header h-auto">
+                    <h3 class="modal-title">Confirmar dirección</h3>
+                    <button type="button" class="close" @click="closeAddressModal()" aria-label="Close">
+                        <span aria-hidden="true">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-x"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M18 6l-12 12" /><path d="M6 6l12 12" /></svg>
+                        </span>
                     </button>
                 </div>
-                <div>
+
+                <div class="modal-body p-2">
                     @if(!empty($googleMapsApiKey))
-                        <div id="map" style="height: 400px; width: 100%; margin: 0px;"></div>
-                    @else
-                        <br>
+                        <div id="map"></div>
                     @endif
-                    <div style="padding: 15px 15px 15px 15px;">
+
+                    <div class="p-3">
                         @if(empty($googleMapsApiKey))
-                            <div style="margin-bottom: 10px;">
-                                <div style="display: flex; gap: 10px;">
-                                    <div style="flex: 1;">
-                                        <label for="department" style="display: block; margin-bottom: 5px; font-weight: 500; color: #555; width: 100%;">Departamento</label>
-                                        <select v-model="selectedDepartment" @change="updateProvinces" name="department" id="department" style="padding: 8px 12px; border: 1px solid #ced4da; border-radius: 4px; font-size: 14px; background-color: #fff; width: 100%;">
-                                            <option value="">Seleccione departamento</option>
-                                            <option v-for="department in departments" :key="department.value" :value="department.value">
-                                                @{{ department.label }}
-                                            </option>
-                                        </select>
-                                    </div>
-                                    <div style="flex: 1;">
-                                        <label for="province" style="display: block; margin-bottom: 5px; font-weight: 500; color: #555; width: 100%;">Provincia</label>
-                                        <select v-model="selectedProvince" @change="updateDistricts" name="province" id="province" style="padding: 8px 12px; border: 1px solid #ced4da; border-radius: 4px; font-size: 14px; background-color: #fff; width: 100%;">
-                                            <option value="">Seleccione provincia</option>
-                                            <option v-for="province in provinces" :key="province.value" :value="province.value">
-                                                @{{ province.label }}
-                                            </option>
-                                        </select>
-                                    </div>
-                                    <div style="flex: 1;">
-                                        <label for="district" style="display: block; margin-bottom: 5px; font-weight: 500; color: #555; width: 100%;">Distrito</label>
-                                        <select v-model="selectedDistrict" @change="checkDeliveryZone" name="district" id="district" style="padding: 8px 12px; border: 1px solid #ced4da; border-radius: 4px; font-size: 14px; background-color: #fff; width: 100%;">
-                                            <option value="">Seleccione distrito</option>
-                                            <option v-for="district in districts" :key="district.value" :value="district.value">
-                                                @{{ district.label }}
-                                            </option>
-                                        </select>
-                                    </div>
+                            <div class="form-row mb-2">
+                                <div class="col-12 col-md-4 mb-2 mb-md-0">
+                                    <label class="field-label" for="department">Departamento</label>
+                                    <select v-model="selectedDepartment" @change="updateProvinces" name="department" id="department" class="input">
+                                        <option value="">Seleccione departamento</option>
+                                        <option v-for="department in departments" :key="department.value" :value="department.value">
+                                            @{{ department.label }}
+                                        </option>
+                                    </select>
+                                </div>
+                                <div class="col-12 col-md-4 mb-2 mb-md-0">
+                                    <label class="field-label" for="province">Provincia</label>
+                                    <select v-model="selectedProvince" @change="updateDistricts" name="province" id="province" class="input">
+                                        <option value="">Seleccione provincia</option>
+                                        <option v-for="province in provinces" :key="province.value" :value="province.value">
+                                            @{{ province.label }}
+                                        </option>
+                                    </select>
+                                </div>
+                                <div class="col-12 col-md-4">
+                                    <label class="field-label" for="district">Distrito</label>
+                                    <select v-model="selectedDistrict" @change="checkDeliveryZone" name="district" id="district" class="input">
+                                        <option value="">Seleccione distrito</option>
+                                        <option v-for="district in districts" :key="district.value" :value="district.value">
+                                            @{{ district.label }}
+                                        </option>
+                                    </select>
                                 </div>
                             </div>
                         @endif
-                        <div style="margin-bottom: 10px;">
-                            <label style="display: block; margin-bottom: 5px; font-weight: 500; color: #555;">Dirección</label>
-                            <div style="display: flex; align-items: center; gap: 10px;">
-                                <div style="position: relative; width: 100%;">
-                                    <input
-                                        v-model="addressModal.address"
-                                        @input="onAddressInputChange"
-                                        @keydown.down.prevent="moveSuggestion(1)"
-                                        @keydown.up.prevent="moveSuggestion(-1)"
-                                        @keydown.enter.prevent="selectHighlighted"
-                                        @keydown.esc="clearSuggestions"
-                                        id="addressAutocompleteInput"
-                                        type="text"
-                                        placeholder="Ingrese su dirección completa"
-                                        autocomplete="off"
-                                        style="width: 100%; padding: 8px 12px; border: 1px solid #ced4da; border-radius: 4px; font-size: 14px; box-sizing: border-box; outline: none; background-color: #fff;">
 
-                                    <ul v-if="addressSuggestions.length > 0"
-                                        style="position: absolute; top: 100%; left: 0; right: 0;
-                                            background: #fff;
-                                            border: 1px solid #ced4da;
-                                            border-top: none;
-                                            border-radius: 0 0 4px 4px;
-                                            list-style: none;
-                                            margin: 0; padding: 0;
-                                            z-index: 9999;
-                                            max-height: 156px;
-                                            overflow-y: auto;
-                                            box-shadow: 0 4px 8px rgba(0,0,0,0.1);"
-                                    >
-                                        <li v-for="(suggestion, i) in addressSuggestions"
-                                            :key="i"
-                                            @mousedown.prevent="selectSuggestionFromList(suggestion)"
-                                            :style="{
-                                                padding: '10px 14px',
-                                                cursor: 'pointer',
-                                                fontSize: '13px',
-                                                borderBottom: '1px solid #f0f0f0',
-                                                backgroundColor: highlightedIndex === i ? '#f0f4ff' : '#fff',
-                                                color: '#333'
-                                            }">
-                                            <span style="font-weight: 500;">@{{ suggestion.mainText }}</span>
-                                            <span style="color: #888; font-size: 12px; display: block;">@{{ suggestion.secondaryText }}</span>
-                                        </li>
-                                    </ul>
-                                </div>
+                        <div class="mb-2">
+                            <label class="field-label">Dirección</label>
+                            <div class="position-relative">
+                                <input
+                                    v-model="addressModal.address"
+                                    @input="onAddressInputChange"
+                                    @keydown.down.prevent="moveSuggestion(1)"
+                                    @keydown.up.prevent="moveSuggestion(-1)"
+                                    @keydown.enter.prevent="selectHighlighted"
+                                    @keydown.esc="clearSuggestions"
+                                    id="addressAutocompleteInput"
+                                    type="text"
+                                    class="input"
+                                    placeholder="Ingrese su dirección completa"
+                                    autocomplete="off">
+
+                                <ul v-if="addressSuggestions.length > 0" class="addr-suggestions">
+                                    <li v-for="(suggestion, i) in addressSuggestions"
+                                        :key="i"
+                                        @mousedown.prevent="selectSuggestionFromList(suggestion)"
+                                        class="addr-suggestion"
+                                        :class="{ 'addr-suggestion--active': highlightedIndex === i }">
+                                        <span class="font-weight-bold">@{{ suggestion.mainText }}</span>
+                                        <span class="d-block text-muted small">@{{ suggestion.secondaryText }}</span>
+                                    </li>
+                                </ul>
                             </div>
                         </div>
 
-                        <div style="margin-bottom: 10px;">
-                            <label style="display: block; margin-bottom: 5px; font-weight: 500; color: #555;">Referencias</label>
-                            <textarea v-model="addressModal.reference" placeholder="Ej: Al costado del parque, frente a la iglesia" rows="2" style="width: 100%; padding: 8px 12px; border: 1px solid #ced4da; border-radius: 4px; font-size: 14px; box-sizing: border-box; resize: none; outline: none; background-color: #fff;"></textarea>
+                        <div class="mb-0">
+                            <label class="field-label">Referencias</label>
+                            <textarea v-model="addressModal.reference" class="input" rows="2" placeholder="Ej: Al costado del parque, frente a la iglesia"></textarea>
                         </div>
                     </div>
                 </div>
+
                 <!-- Alerta sin cobertura dentro del modal de dirección -->
-                <div v-if="deliveryMessage" style="margin: 0 15px 10px; padding: 10px 14px; background: #fff3cd; border: 1px solid #ffc107; border-radius: 4px; color: #856404;" class="mt-2">
-                    <strong>Sin cobertura:</strong> @{{ deliveryMessage }}
+                <div v-if="deliveryMessage" class="ship-alert ship-alert--warn mx-3 mb-3">
+                    <strong>&#9888; Sin cobertura:</strong> @{{ deliveryMessage }}
                 </div>
-                <!-- Alerta de cobertura disponible dentro del modal -->
-                {{-- <div v-if="deliveryZone" style="margin: 0 15px 10px; padding: 10px 14px; background: #d1e7dd; border: 1px solid #a3cfbb; border-radius: 4px; color: #0a3622;">
-                    <strong>&#10003; Delivery disponible:</strong> @{{ deliveryZone.name }} &mdash; S/ @{{ deliveryZone.price }}
-                </div> --}}
-                <div style="padding: 15px; border-top: 1px solid #dee2e6;">
-                    <button type="button" @click="confirmAddress()" style="background-color: #ff6600; color: white; border: none; padding: 12px 40px; font-size: 1rem; font-weight: 500; border-radius: 50px; cursor: pointer; width: 100%; text-transform: uppercase;">Continuar</button>
+
+                <div class="p-3 border-top px-4">
+                    <button type="button" class="pay-btn" @click="confirmAddress()">Continuar</button>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- ===== Modal reutilizable: Términos y Condiciones ===== --}}
+    <div class="app-modal" id="termsModal" role="dialog" aria-modal="true" aria-labelledby="termsModalTitle" aria-hidden="true">
+        <div class="app-modal__dialog">
+            <div class="app-modal__header">
+                <span class="app-modal__icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3v4a1 1 0 0 0 1 1h4"/><path d="M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2z"/><path d="M9 9h1"/><path d="M9 13h6"/><path d="M9 17h6"/></svg>
+                </span>
+                <h3 class="app-modal__title" id="termsModalTitle">Términos y Condiciones</h3>
+                <button type="button" class="app-modal__close" data-modal-close aria-label="Cerrar">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6l-12 12"/><path d="M6 6l12 12"/></svg>
+                </button>
+            </div>
+            <div class="app-modal__body">
+                @if(!empty($configuration->terms_conditions))
+                    <div class="app-modal__prose">{!! $configuration->terms_conditions !!}</div>
+                @else
+                    <p class="app-modal__prose text-muted">No se han definido términos y condiciones.</p>
+                @endif
+            </div>
+            <div class="app-modal__footer">
+                <button type="button" class="pay-btn second-btn" data-modal-close>Cerrar</button>
+                <button type="button" class="pay-btn" data-modal-accept="termsCheck" data-modal-close>Acepto los términos</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== Overlay de carga mientras se procesa el pago ===== -->
+    <div class="purchase-overlay purchase-overlay--show" v-if="processingPayment">
+        <div class="purchase-loading" role="status" aria-live="polite">
+            <span class="purchase-spinner" aria-hidden="true"></span>
+            <h3>Estamos generando tu pedido</h3>
+            <p>Por favor no cierres esta ventana hasta que el proceso termine.</p>
+        </div>
+    </div>
+
+    <!-- ===== Confirmación de compra (post-pago) ===== -->
+    <div class="purchase-overlay" :class="{ 'purchase-overlay--show': showConfirmModal }" v-if="successOrder">
+        <div class="purchase-confirm" role="dialog" aria-modal="true" aria-label="Detalle de tu compra">
+            <div class="purchase-confirm-head">
+                <span class="ic">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1 -2 2H5a2 2 0 0 1 -2 -2V5a2 2 0 0 1 2 -2h11"/></svg>
+                </span>
+                <div>
+                    <h3>¡Pago realizado!</h3>
+                    <div class="ordn">Pedido @{{ successOrder.number }}</div>
+                </div>
+            </div>
+            <div class="purchase-confirm-body">
+                <div class="o-item" v-for="(it, i) in successOrder.items" :key="i">
+                    <div><span class="o-q">@{{ it.cantidad }}×</span>@{{ it.description }}</div>
+                    <span class="o-amt">@{{ it.symbol }} @{{ it.total }}</span>
+                </div>
+                <div class="o-sep"></div>
+                <div class="o-row" v-if="parseFloat(successOrder.total_exonerated) > 0">Op. exoneradas <span class="v">S/ @{{ successOrder.total_exonerated }}</span></div>
+                <div class="o-row" v-if="parseFloat(successOrder.total_taxed) > 0">Op. gravada <span class="v">S/ @{{ successOrder.total_taxed }}</span></div>
+                <div class="o-row" v-if="parseFloat(successOrder.total_igv) > 0">IGV (18%) <span class="v">S/ @{{ successOrder.total_igv }}</span></div>
+                <div class="o-row" v-if="parseFloat(successOrder.delivery) > 0">Envío <span class="v">S/ @{{ successOrder.delivery }}</span></div>
+                <div class="o-total"><span class="l">Total pagado</span><span class="a">S/ @{{ successOrder.total }}</span></div>
+                <div class="o-pay">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+                    Pago: @{{ successOrder.paymentLabel }} · @{{ successOrder.deliveryLabel }}
+                </div>
+            </div>
+            <div class="purchase-confirm-foot">
+                <button type="button" class="pay-btn" @click="goToThankYou">
+                    Continuar
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                </button>
             </div>
         </div>
     </div>
@@ -599,7 +850,63 @@
         locations: '{{ route("get_location_cascade") }}',
         home: '{{ route("tenant.ecommerce.index") }}',
         culqi: '{{ route("tenant_ecommerce_culqui") }}',
+        thank_you: '{{ route("tenant_ecommerce_thank_you", ["external_id" => "EXTERNAL_ID"]) }}',
     };
+</script>
+
+<script>
+    (function () {
+        function openModal(modal) {
+            if (!modal) return;
+            modal.classList.add('app-modal--open');
+            modal.setAttribute('aria-hidden', 'false');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeModal(modal) {
+            if (!modal) return;
+            modal.classList.remove('app-modal--open');
+            modal.setAttribute('aria-hidden', 'true');
+            if (!document.querySelector('.app-modal--open')) {
+                document.body.style.overflow = '';
+            }
+        }
+
+        document.addEventListener('click', function (e) {
+            // Abrir
+            var opener = e.target.closest('[data-modal-open]');
+            if (opener) {
+                e.preventDefault();
+                openModal(document.getElementById(opener.getAttribute('data-modal-open')));
+                return;
+            }
+
+            // Aceptar: marca un checkbox antes de cerrar (dispara change para Vue/listeners)
+            var accepter = e.target.closest('[data-modal-accept]');
+            if (accepter) {
+                var check = document.getElementById(accepter.getAttribute('data-modal-accept'));
+                if (check && !check.checked) {
+                    check.checked = true;
+                    check.dispatchEvent(new Event('change', { bubbles: true }));
+                }
+            }
+
+            // Cerrar: botón con [data-modal-close] o clic en el overlay
+            if (e.target.closest('[data-modal-close]')) {
+                closeModal(e.target.closest('.app-modal'));
+                return;
+            }
+            if (e.target.classList.contains('app-modal')) {
+                closeModal(e.target);
+            }
+        });
+
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape') {
+                closeModal(document.querySelector('.app-modal--open'));
+            }
+        });
+    })();
 </script>
 
 @vite('modules/Ecommerce/Resources/assets/js/frontend/cart-app.js')

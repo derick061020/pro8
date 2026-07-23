@@ -7,6 +7,7 @@ use App\Http\Controllers\SearchItemController;
 use App\Models\Tenant\Company;
 use App\Models\Tenant\Establishment;
 use App\Models\Tenant\Series;
+use App\Services\SeriesResolver;
 use Barryvdh\DomPDF\Facade\Pdf as PDF;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -266,10 +267,11 @@ class TransferController extends Controller
                 ->where('id', $warehouse_id)
                 ->first();
 
-            $series = Series::query()
+            // Series filtradas por contexto (oculta dedicadas / restringe al grupo activo). Ver SeriesResolver.
+            $series = app(SeriesResolver::class)->applyContext(Series::query()
                 ->select('number')
                 ->where('establishment_id', $warehouse->establishment_id)
-                ->where('document_type_id', 'U4')
+                ->where('document_type_id', 'U4'))
                 ->first();
 
             $this->checkIfExistSerie($series, $document_type_id);

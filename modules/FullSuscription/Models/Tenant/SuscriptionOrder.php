@@ -210,6 +210,7 @@ class SuscriptionOrder extends ModelTenant
             '{{ order_id }}'         => $this->number,
             '{{ order_total }}'      => $this->amount,
             '{{ order_payment_url }}' => $this->getUrl(),
+            '{{ link_pago }}'        => $this->getUrl(),
         ];
     }
 

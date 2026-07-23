@@ -26,9 +26,17 @@ use Modules\Inventory\Http\Resources\ReportKardexLotsGroupCollection;
 use Modules\Inventory\Http\Resources\ReportKardexItemLotCollection;
 use Modules\Inventory\Models\Devolution;
 use App\Models\Tenant\Dispatch;
+use App\Models\Tenant\Document;
+use App\Models\Tenant\Inventory as TenantInventory;
+use App\Models\Tenant\Purchase;
+use App\Models\Tenant\PurchaseSettlement;
+use App\Models\Tenant\SaleNote;
 use App\Models\Tenant\TemporaryKardexRecord;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
+use Illuminate\Support\Collection;
 use Modules\Inventory\Http\Resources\ReportTemporaryKardexCollection;
-
+use Modules\Inventory\Models\Inventory;
+use Modules\Order\Models\OrderNote;
 
 class ReportKardexController extends Controller
 {
@@ -111,7 +119,7 @@ class ReportKardexController extends Controller
 
     public function records(Request $request)
     {
-        $data = $this->getDataRecords($request);
+        $records = $this->getDataRecords($request);
         $balance = 0;
         if($request->date_start){
             $balanceRequest = $request->duplicate();
@@ -121,15 +129,39 @@ class ReportKardexController extends Controller
                 'date_start' => null,
             ]);
             $dataBalance = $this->getDataRecords($balanceRequest);
-            $balance = $this->getFirstBalanceKardex($dataBalance["records"]);
+            $balance = $this->getFirstBalanceKardex($dataBalance);
         }
         
         TemporaryKardexRecord::truncate();
-        foreach($data["records"] as $row){
-             $rowKardex = $row->getKardexReportCollection($balance, $request->warehouse_id);
-             $rowKardex["inventory_kardex_id"] = ($rowKardex["id"])??0;
-             TemporaryKardexRecord::create($rowKardex);
-        }
+
+        $callback = function(Collection $documents) use (&$balance, $request) {
+            $rows = [];
+            // $now = now();
+            // $columns = (new TemporaryKardexRecord())->getFillable();
+            // $columns[] = 'created_at';
+            // $columns[] = 'updated_at';
+
+            foreach($documents as $row){
+                $rowKardex = $row->getKardexReportCollection($balance, $request->warehouse_id);
+                $rowKardex["inventory_kardex_id"] = ($rowKardex["id"])??0;
+                unset($rowKardex["id"]);
+                // $rowKardex['created_at'] = $now;
+                // $rowKardex['updated_at'] = $now;
+
+                // $rows[] = collect($columns)
+                //     ->mapWithKeys(function ($column) use ($rowKardex) {
+                //         return [$column => $rowKardex[$column] ?? null];
+                //     })
+                //     ->all();
+
+                $rows[] = $rowKardex;
+            }
+
+            TemporaryKardexRecord::insert($rows);
+        } ;
+        
+
+        $records->chunk(500, $callback);
 
         return new ReportTemporaryKardexCollection(TemporaryKardexRecord::paginate(config('tenant.items_per_page')));
     }
@@ -138,9 +170,18 @@ class ReportKardexController extends Controller
 
         $balance = 0 ;
         $lastRow = null;
-        foreach($records as $row) {
-            $lastRow = $row->getKardexReportCollection($balance);
-            $lastRow["inventory_kardex_id"] = $lastRow["id"] ?? 0;
+
+        $setLastRow = function ($records) use (&$balance, &$lastRow) {
+            foreach($records as $row) {
+                $lastRow = $row->getKardexReportCollection($balance);
+                $lastRow["inventory_kardex_id"] = $lastRow["id"] ?? 0;
+            }
+        };
+
+        if ($records instanceof \Illuminate\Database\Eloquent\Builder || $records instanceof \Illuminate\Database\Query\Builder) {
+            $records->chunk(500, $setLastRow);
+        } else {
+            $setLastRow($records);
         }
 
         if ($lastRow) {
@@ -240,7 +281,134 @@ class ReportKardexController extends Controller
         $item_id = $request->input('item_id');
 
         $query = InventoryKardex::query()
-            ->with(['inventory_kardexable']);
+            ->with([
+                'item' => function($query) {
+                    $query->select('id','description');
+                }
+                , 'inventory_kardexable' => function (MorphTo $morphTo) {
+                $morphTo->constrain([
+                    Document::class => function ($query) {
+                        $query
+                            ->without([
+                                'user',
+                                'soap_type',
+                                'state_type',
+                                'document_type',
+                                'currency_type',
+                                'group',
+                                'items',
+                                'invoice',
+                                'note',
+                                'payments',
+                                'fee'
+                            ])
+                            ->with([
+                                'note' => function ($query) {
+                                    $query
+                                        ->with([
+                                            'affected_document' => function ($query) {
+                                                $query->without([
+                                                        'user',
+                                                        'soap_type',
+                                                        'state_type',
+                                                        'document_type',
+                                                        'currency_type',
+                                                        'group',
+                                                        'items',
+                                                        'invoice',
+                                                'note',
+                                                'payments',
+                                                'fee'
+                                                ])->select('id', 'series', 'number');
+                                            }
+                                        ])
+                                        ->select('id', 'document_id', 'affected_document_id', 'data_affected_document');
+                                }, 
+                                'sale_note' ,
+                                'order_note' => function($query) {
+                                    $query->select('prefix', 'id');
+                                }
+                            ])
+                            ->select('id', 'sale_note_id', 'order_note_id', 'dispatch_id', 'sale_notes_relateds', 'series', 'number', 'has_prepayment', 'document_type_id', 'date_of_issue' );
+
+                    },
+                    Purchase::class => function ($query) {
+                        $query
+                            ->without([
+                                'user', 'soap_type', 'state_type', 'document_type', 'currency_type', 'group', 'items', 'purchase_payments'
+                            ])
+                            ->select('id', 'series', 'number', 'date_of_issue');
+                    }, 
+                    PurchaseSettlement::class => function ($query) {
+                        $query->select('id', 'series', 'number', 'date_of_issue');
+                    },
+                    SaleNote::class => function($query) {
+                        $query
+                            ->without([
+                                'user',
+                                'soap_type',
+                                'state_type',
+                                'currency_type',
+                                'items',
+                                'payments'
+                            ])
+                            ->with([
+                                'order_note' => function($query) {
+                                    $query->select('prefix', 'id');
+                                }
+                            ])
+                            ->select('order_note_id', 'series', 'number', 'prefix', 'id', 'date_of_issue');
+
+                    },
+                    OrderNote::class => function ($query) {
+                        $query
+                            ->without([
+                                'user',
+                                'soap_type',
+                                'state_type',
+                                'currency_type',
+                                'items',
+                            ])
+                            ->select('prefix', 'id', 'date_of_issue');
+                    },
+                    Dispatch::class => function($query) {
+                        $query
+                            ->without(['user', 'soap_type', 'state_type', 'document_type', 'unit_type', 'transport_mode_type', 'items', 'reference_document']
+                            )
+                            ->with(['transfer_reason_type', 'reference_document',
+                                'sale_note' => function ($query) {
+                                    $query->select('series', 'number', 'prefix', 'id');
+                                },
+                                'order_note' => function($query) {
+                                    $query->select('prefix', 'id');
+                                }
+                            ])
+                            ->select('id', 'reference_sale_note_id', 'reference_order_note_id', 'reference_document_id', 'transfer_reason_type_id', 'series', 'number', 'date_of_issue');
+                    },
+                    Devolution::class => function ($query) {
+                        $query->select('prefix', 'id', 'date_of_issue');
+                    },
+                    Inventory::class => function ($query) {
+                        $query
+                            ->without([
+                                'transaction',
+                                'warehouse',
+                                'warehouse_destination',
+                                'item'
+                            ])
+                            ->with([
+                                'guide' => function($query) {
+                                    $query->select('id', 'series', 'number', 'date_of_issue');
+                                },
+                                'inventories_transfer' => function($query) {
+                                    $query->select('id', 'series', 'created_at', 'number');
+                                },
+                            ])
+                            ->select('id', 'type', 'inventory_transaction_id', 'inventories_transfer_id', 'description', 'date_of_issue', 'guide_id', 'warehouse_destination_id', 'warehouse_id');
+
+                    },
+                ]);
+            }]);
 
         if ($warehouse_id!='all') {
             $query->where('warehouse_id', $warehouse_id);
@@ -259,12 +427,9 @@ class ReportKardexController extends Controller
         }
 
         $records = $query->orderBy('item_id')
-            ->orderBy('id')
-            ->get();
-
-        return [
-            'records' => $records
-        ];
+            ->orderBy('id');
+        
+        return $records;
     
     }
 

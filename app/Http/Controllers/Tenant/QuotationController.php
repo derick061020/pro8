@@ -28,6 +28,7 @@ use App\Models\Tenant\PaymentMethodType;
 use App\Models\Tenant\Person;
 use App\Models\Tenant\Quotation;
 use App\Models\Tenant\Series;
+use App\Services\SeriesResolver;
 use App\Models\Tenant\StateType;
 use App\Models\Tenant\User;
 use App\Models\Tenant\Warehouse;
@@ -232,7 +233,10 @@ class QuotationController extends Controller
     public function option_tables()
     {
         $establishment = Establishment::where('id', auth()->user()->establishment_id)->first();
-        $series = Series::where('establishment_id', $establishment->id)->get();
+        // Series filtradas por contexto (oculta dedicadas / restringe al grupo activo). Ver SeriesResolver.
+        $series = app(SeriesResolver::class)
+            ->applyContext(Series::where('establishment_id', $establishment->id))
+            ->get();
         $document_types_invoice = DocumentType::whereIn('id', ['01', '03'])->get();
         // $payment_method_types = PaymentMethodType::all();
         $payment_method_types = PaymentMethodType::getPaymentMethodTypes();
@@ -607,7 +611,12 @@ class QuotationController extends Controller
         ];
         */
 
-        return response()->file($temp, $this->generalPdfResponseFileHeaders($quotation->filename));
+        $headers = $this->generalPdfResponseFileHeaders($quotation->filename);
+        $headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0, post-check=0, pre-check=0';
+        $headers['Pragma'] = 'no-cache';
+        $headers['Expires'] = 'Sat, 26 Jul 1997 05:00:00 GMT';
+
+        return response()->file($temp, $headers);
     }
 
     private function reloadPDF($quotation, $format, $filename)

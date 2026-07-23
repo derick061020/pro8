@@ -2,17 +2,15 @@
 
 use Illuminate\Http\Request;
 
-/*
-|--------------------------------------------------------------------------
-| API Routes
-|--------------------------------------------------------------------------
-|
-| Here is where you can register API routes for your application. These
-| routes are loaded by the RouteServiceProvider within a group which
-| is assigned the "api" middleware group. Enjoy building your API!
-|
-*/
+$hostname = app(Hyn\Tenancy\Contracts\CurrentHostname::class);
 
-Route::middleware('auth:api')->get('/qrapi', function (Request $request) {
-    return $request->user();
-});
+if ($hostname)
+{
+    Route::domain($hostname->fqdn)->group(function () {
+        Route::middleware(['auth:api', 'locked.tenant'])->group(function () {
+            Route::prefix('qrapi')->group(function() {
+                Route::post('/send-message', 'QrApiController@sendMessage');
+            });
+        });
+    });
+}

@@ -29,7 +29,7 @@
             <div class="product-details-restaurant">
                 <div class="product-information">
                     <h2 class="product-title-restaurant">
-                        <a href="/restaurant/item/{{ $item->id }}-{{ \Illuminate\Support\Str::slug($item->description) }}">{{ $item->description }}</a>
+                        <a href="/restaurant/item/{{ $item->id }}/{{ \Illuminate\Support\Str::slug($item->description) }}">{{ $item->description }}</a>
                     </h2>
 
                     @if(isset($preferences['show_description']) && $preferences['show_description'] == 1)

@@ -5,7 +5,7 @@
 <div class="col-6 col-md-4">
     <div class="product">
         <figure class="product-image-container">
-            <a href="/ecommerce/item/{{ $item->id }}-{{ \Illuminate\Support\Str::slug($item->description) }}" class="product-image">
+            <a href="/ecommerce/item/{{ $item->id }}/{{ \Illuminate\Support\Str::slug($item->description) }}" class="product-image">
                 <img src="{{ asset('storage/uploads/items/'.$item->image) }}" alt="product">
             </a>
             <a href="{{route('item_partial', ['id' => $item->id])}}" class="btn-quickview">Quick View</a>

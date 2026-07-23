@@ -161,6 +161,7 @@ class DocumentCollection extends ResourceCollection
                 'number' => $row->number_full,
                 'customer_name' => $row->customer->name,
                 'customer_number' => $row->customer->number,
+                'customer_identity_document_type_description' => optional(optional($row->customer)->identity_document_type)->description,
                 'customer_telephone' => $row->customer->telephone,
                 'customer_email' => optional($row->customer)->email,
                 'custom_fields_data' => $custom_fields_data,

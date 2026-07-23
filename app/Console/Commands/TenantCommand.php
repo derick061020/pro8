@@ -5,7 +5,11 @@ namespace App\Console\Commands;
 use Illuminate\Console\Command;
 use App\Models\Tenant\Task;
 use Carbon\Carbon;
-use Artisan;
+use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\DB;
+use Hyn\Tenancy\Environment;
+use Hyn\Tenancy\Models\Website;
+use Symfony\Component\Console\Output\BufferedOutput;
 
 class TenantCommand extends Command
 {
@@ -38,16 +42,38 @@ class TenantCommand extends Command
      * @return mixed
      */
     public function handle() {
-        foreach (Task::where('execution_time', Carbon::now()->format('H:i').':00')->get() as $task) {
+        $task_tenant = DB::connection('system')->table('tenant_tasks')->where('execution_time', Carbon::now()->format('H:i').':00')->get();
+        foreach ($task_tenant as $task) {
             try {
-                Artisan::call($task->class);
-                $task->output = Artisan::output();
-                $task->save();
+                $website = Website::where('uuid', $task->uuid_tenant)->first();
+
+                if (! $website) {
+                    $output = "Tenant no encontrado: {$task->uuid_tenant}";
+                } else {
+                    $buffer = new BufferedOutput();
+
+                    Artisan::call('tenancy:run', [
+                        'run'      => $task->class,
+                        '--tenant' => [$website->id],
+                    ], $buffer);
+
+                    $output = $buffer->fetch();
+
+                    // Activar la conexión del tenant y guardar el output en su propia tabla tasks
+                    app(Environment::class)->tenant($website);
+                    Task::where('uuid', $task->uuid)->update(['output' => $output]);
+                }
             }
             catch (\Exception $e) {
-                $task->output = $e->getMessage();
-                $task->save();
+                $output = $e->getMessage();
             }
+
+            DB::connection('system')->table('tenant_tasks')
+                ->where('id', $task->id)
+                ->update([
+                    'output'     => $output,
+                    'updated_at' => Carbon::now(),
+                ]);
         };
     }
 }

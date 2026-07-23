@@ -196,6 +196,8 @@ class ConfigurationController extends Controller
             'show_stock' => (int) $request->input('show_stock', 0),
             'only_available_products' => (int) $request->input('only_available_products', 0),
             'full_width_banner' => (int) $request->input('full_width_banner', 0),
+            'header_theme' => in_array($request->input('header_theme'), ['light', 'dark']) ? $request->input('header_theme') : 'light',
+            'products_per_page' => in_array((int) $request->input('products_per_page'), [8, 12, 16, 24, 32, 40]) ? (int) $request->input('products_per_page') : 16,
         ];
 
         $configuration->save();

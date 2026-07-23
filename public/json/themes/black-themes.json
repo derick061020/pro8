@@ -2,16 +2,37 @@
     "default": {
         "--base-l": "0.2084",
         "--base-c": "0.0417",
-        "--base-h": "266.36"
+        "--base-h": "266.36",
+        "--black-font-family": "\"Figtree\", sans-serif"
+    },
+    "ocean": {
+        "--base-l": "0.2084",
+        "--base-c": "0.0417",
+        "--base-h": "200",
+        "--black-font-family": "\"Space Grotesk\", sans-serif"
     },
     "greenvoid": {
-        "--base-l": "0.2616",
-        "--base-c": "0.0469",
-        "--base-h": "154.7"
+        "--base-l": "0.2084",
+        "--base-c": "0.0417",
+        "--base-h": "154.7",
+        "--black-font-family": "\"Outfit\", sans-serif"
+    },
+    "bronze": {
+        "--base-l": "0.2084",
+        "--base-c": "0.0417",
+        "--base-h": "75",
+        "--black-font-family": "\"Sora\", sans-serif"
+    },
+    "crimson": {
+        "--base-l": "0.2084",
+        "--base-c": "0.0417",
+        "--base-h": "25",
+        "--black-font-family": "\"Archivo\", sans-serif"
     },
     "purplevoid": {
-        "--base-l": "0.224",
-        "--base-c": "0.0634",
-        "--base-h": "326.07"
+        "--base-l": "0.2084",
+        "--base-c": "0.0417",
+        "--base-h": "326.07",
+        "--black-font-family": "\"Onest\", sans-serif"
     }
 }

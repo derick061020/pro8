@@ -35,7 +35,8 @@ class OrderResource extends JsonResource
             'reference_payment' => strtoupper($this->reference_payment),
             'document_external_id' => $this->document_external_id,
             'created_at' => $this->created_at->format('Y-m-d H:i:s'),
-            'status_order_id' => $this->status_order_id
+            'status_order_id' => $this->status_order_id,
+            'payment_status_order_id' => $this->payment_status_order_id
         ];
 
         /*return [

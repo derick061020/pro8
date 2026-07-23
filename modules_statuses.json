@@ -39,6 +39,10 @@
     "WhatsAppApi": true,
     "FullSuscription": true,
     "CustomField": true,
+    "Affiliations": true,
     "ClaimsBook": true,
-    "ItemFormLayout": true
+    "WhatsAppBot": true,
+    "ItemFormLayout": true,
+    "DocumentFormLayout": true,
+    "Webhook": true
 }

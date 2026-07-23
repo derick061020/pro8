@@ -89,6 +89,67 @@
                                 </div>
                             </div>
                         </div>
+
+                        <!-- Establecimientos SUNAT (solo con token ApiPeru y RUC consultado) -->
+                        <div v-if="canQueryEstablishments" class="row mt-2">
+                            <div class="col-12 text-end">
+                                <el-button icon="el-icon-office-building"
+                                           size="small"
+                                           class="btn-query-establishments"
+                                           :loading="loading_establishments"
+                                           @click.prevent="consultEstablishments">
+                                    Consultar establecimientos
+                                </el-button>
+                            </div>
+                        </div>
+
+                        <div v-if="establishments.length > 0" class="row mt-2">
+                            <div class="col-12">
+                                <div class="establishments-panel">
+                                    <div class="establishments-head">
+                                        <div class="establishments-title">
+                                            Establecimientos
+                                            <el-tag size="mini" type="success">{{ establishments.length }} encontrados</el-tag>
+                                        </div>
+                                        <div class="establishments-presets">
+                                            <el-button size="mini" @click.prevent="selectAllEstablishments">Todas</el-button>
+                                            <el-button size="mini" @click.prevent="selectOnlyPrincipal">Solo principal</el-button>
+                                        </div>
+                                    </div>
+
+                                    <div class="establishments-rows">
+                                        <div v-for="est in establishments"
+                                             :key="est.codigo"
+                                             class="establishment-row"
+                                             :class="{'is-dim': !est.has_address || est.registered}">
+                                            <el-checkbox v-model="est.selected"
+                                                         :disabled="!est.has_address || est.registered || est.codigo === principal_establishment_code"
+                                                         @change="onToggleEstablishment(est)"></el-checkbox>
+                                            <span class="est-badge"
+                                                  :class="est.codigo === principal_establishment_code ? 'principal' : 'sucursal'">
+                                                {{ est.codigo === principal_establishment_code ? 'Principal' : 'Sucursal' }}
+                                            </span>
+                                            <span class="est-addr" :class="{'warn': !est.has_address}">
+                                                {{ est.direccion || 'Sin dirección registrada' }}
+                                            </span>
+                                            <el-tag v-if="est.registered" size="mini" type="info" class="est-registered">Registrado</el-tag>
+                                            <!-- Switch para elegir la dirección principal -->
+                                            <el-tooltip :content="est.codigo === principal_establishment_code ? 'Dirección principal' : 'Marcar como principal'"
+                                                        placement="top">
+                                                <el-switch class="est-switch"
+                                                           :value="est.codigo === principal_establishment_code"
+                                                           :disabled="!est.has_address || est.registered || est.codigo === principal_establishment_code"
+                                                           @change="setAsPrincipal(est)"></el-switch>
+                                            </el-tooltip>
+                                            <span class="est-code">N° {{ est.codigo }}</span>
+                                        </div>
+                                    </div>
+
+                                    <div class="establishments-note" v-html="establishmentsNote"></div>
+                                </div>
+                            </div>
+                        </div>
+
                         <div class="row mt-3 section-header">
                             <div class="col-12">
                                 <h5 class="section-title">Datos generales</h5>
@@ -123,7 +184,10 @@
 
                     <el-tab-pane class
                                  name="second">
-                        <span slot="label">Dirección</span>
+                        <span slot="label">
+                            Dirección
+                            <span v-if="addressesBadgeCount > 0" class="tab-count-badge">{{ addressesBadgeCount }}</span>
+                        </span>
 
                         <div class="row mb-3 section-header section-header-first">
                             <div class="col-12">
@@ -813,6 +877,9 @@ export default {
             discount_types: [],
             activeName: 'first',
             config_regex_password_user: false,
+            establishments: [],
+            loading_establishments: false,
+            principal_establishment_code: null,
         }
     },
     async created() {
@@ -861,6 +928,30 @@ export default {
             if (this.form.identity_document_type_id === '1') {
                 return 8
             }
+        },
+        canQueryEstablishments() {
+            return this.api_service_token != false
+                && this.form.identity_document_type_id === '6'
+                && !!this.form.name
+                && !!this.form.number
+                && this.form.number.length === 11
+        },
+        establishmentsNote() {
+            const selected = this.establishments.filter(e => e.selected).length
+            const principal = this.establishments.find(e => e.codigo === this.principal_establishment_code)
+            if (!principal) return 'Selecciona una dirección principal.'
+            return `Principal <b>N° ${principal.codigo}</b> · se guardarán <b>${selected} dirección(es)</b>.`
+        },
+        addressesBadgeCount() {
+            // Dirección principal (columnas de la persona) + direcciones adicionales.
+            // Al guardar, si no hay adicionales la principal se persiste como 1 dirección.
+            const additional = (this.form.addresses || []).length
+            const hasMain = !!(this.form.address
+                && Array.isArray(this.form.location_id)
+                && this.form.location_id.length === 3
+                && this.form.location_id.every(x => x))
+            if (additional === 0) return hasMain ? 1 : 0
+            return additional + (hasMain ? 1 : 0)
         },
     },
     watch: {
@@ -950,6 +1041,7 @@ export default {
 
             }
             this.updateEmail()
+            this.resetEstablishments()
             this.originalForm = JSON.stringify(this.form)
 
         },
@@ -1173,11 +1265,11 @@ export default {
                 this.form.discount_amount = 0;
             }
 
-            if (this.is_dispatch) {
+            /*if (this.is_dispatch) {
                if (this.form.location_id.length !== 3 || !this.form.address) {
                     return this.$message.error('Falta agregar Ubigeo o dirección');
                } 
-            }
+            }*/
 
             let hasErrorInAdditionalAddresses = false;
             let addressWithError = null;
@@ -1272,6 +1364,7 @@ export default {
         },
         searchNumber(data) {
             //cambios apiperu
+            this.resetEstablishments()
             this.form.name = data.name;
             if (data.trade_name) this.form.trade_name = data.trade_name;
             this.form.location_id = data.location_id;
@@ -1286,9 +1379,167 @@ export default {
             // this.filterProvinces()
             // this.filterDistricts()
 //                this.form.addresses[0].telephone = data.telefono;
+            // Mostrar el domicilio fiscal (0000) como primera y única opción del listado
+            this.setPrincipalFromRuc(data)
         },
         clickRemoveAddress(index) {
             this.form.addresses.splice(index, 1);
+        },
+
+        resetEstablishments() {
+            this.establishments = []
+            this.principal_establishment_code = null
+            this.loading_establishments = false
+        },
+        isEstablishmentRegistered(code) {
+            if (!this.recordId) return false
+            if (this.form.establishment_code && this.form.establishment_code === code) return true
+            return (this.form.addresses || []).some(a => a.id && a.establishment_code === code)
+        },
+        setPrincipalFromRuc(data) {
+            // Construye el domicilio fiscal (0000) con la data de la consulta RUC
+            // y lo muestra como primera y única opción del listado de establecimientos.
+            const location_id = Array.isArray(data.location_id) ? data.location_id : []
+            const code = this.form.establishment_code || '0000'
+            const has_address = !!data.address && location_id.length === 3
+            const row = {
+                codigo: code,
+                tipo: 'Domicilio Fiscal',
+                direccion: data.address || null,
+                direccion_completa: data.address || null,
+                location_id: location_id,
+                has_address: has_address,
+                is_ruc_principal: true,
+                selected: true,
+                registered: this.isEstablishmentRegistered(code),
+            }
+            this.establishments = [row]
+            this.principal_establishment_code = code
+            this.syncAddressesFromEstablishments()
+        },
+        mapApiEstablishment(item) {
+            // Normaliza un item crudo del endpoint ruc-establecimientos-anexos
+            const direccion = (item.direccion || '').trim()
+            const ubigeo = Array.isArray(item.ubigeo) ? item.ubigeo : []
+            const location_id = ubigeo.length === 3 ? ubigeo : []
+            const has_address = direccion !== '' && direccion !== '-' && location_id.length === 3
+            return {
+                codigo: item.codigo || null,
+                tipo: item.tipo_de_establecimiento || null,
+                direccion: has_address ? direccion : null,
+                location_id: location_id,
+                has_address: has_address,
+                selected: false,
+                registered: this.isEstablishmentRegistered(item.codigo),
+            }
+        },
+        async consultEstablishments() {
+            if (!this.form.number || this.form.number.length !== 11) {
+                return this.$message.error('Ingresar un RUC válido de 11 dígitos')
+            }
+            this.loading_establishments = true
+            try {
+                const response = await this.$http.get(`/service/ruc-establecimientos/${this.form.number}`)
+                if (response.data.success) {
+                    const anexos = response.data.data || []
+                    // Conservar el domicilio fiscal (0000) que vino de la consulta RUC como primera fila
+                    const rucPrincipal = this.establishments.find(e => e.is_ruc_principal)
+                    const merged = []
+                    if (rucPrincipal) merged.push(rucPrincipal)
+                    anexos.forEach(item => {
+                        const est = this.mapApiEstablishment(item)
+                        if (merged.some(m => m.codigo === est.codigo)) return
+                        merged.push(est)
+                    })
+                    if (merged.length === 0) {
+                        return this.$message.info('No se encontraron establecimientos para este RUC')
+                    }
+                    this.establishments = merged
+                    // Principal por defecto: el domicilio fiscal; si no tiene dirección, el primer registro utilizable
+                    const principal = merged.find(e => e.is_ruc_principal && e.has_address && !e.registered)
+                        || merged.find(e => e.has_address && !e.registered)
+                        || merged.find(e => e.has_address)
+                        || merged[0]
+                    this.principal_establishment_code = principal ? principal.codigo : null
+                    this.selectOnlyPrincipal()
+                } else {
+                    // p. ej. "No se encontró información para locales anexos."
+                    // Se conserva el domicilio fiscal (0000) ya mostrado.
+                    this.$message.info(response.data.message || 'No se encontraron establecimientos anexos')
+                }
+            } catch (error) {
+                console.log(error)
+                this.$message.error('Error al consultar los establecimientos')
+            } finally {
+                this.loading_establishments = false
+            }
+        },
+        selectOnlyPrincipal() {
+            this.establishments.forEach(e => {
+                e.selected = (e.codigo === this.principal_establishment_code)
+            })
+            this.syncAddressesFromEstablishments()
+        },
+        selectAllEstablishments() {
+            this.establishments.forEach(e => {
+                e.selected = e.has_address && !e.registered
+            })
+            const principal = this.establishments.find(e => e.codigo === this.principal_establishment_code)
+            if (principal) principal.selected = true
+            this.syncAddressesFromEstablishments()
+        },
+        onToggleEstablishment(est) {
+            // No permitir desmarcar la principal
+            if (est.codigo === this.principal_establishment_code && !est.selected) {
+                est.selected = true
+                return
+            }
+            this.syncAddressesFromEstablishments()
+        },
+        setAsPrincipal(est) {
+            if (!est.has_address || est.registered) return
+            this.principal_establishment_code = est.codigo
+            est.selected = true
+            this.syncAddressesFromEstablishments()
+        },
+        buildAddressFromEstablishment(est, main) {
+            return {
+                id: null,
+                country_id: 'PE',
+                location_id: est.location_id,
+                address: est.direccion,
+                email: null,
+                phone: null,
+                main: main,
+                establishment_code: est.codigo,
+                has_consigned: false,
+                consigned_id: null,
+                from_sunat_establishment: true,
+            }
+        },
+        syncAddressesFromEstablishments() {
+            const principal = this.establishments.find(e => e.codigo === this.principal_establishment_code)
+
+            // La principal alimenta la sección "Dirección principal" (columnas de la persona)
+            if (principal) {
+                this.form.address = principal.direccion
+                this.form.location_id = principal.location_id
+                this.form.establishment_code = principal.codigo
+            }
+
+            // Se conservan las direcciones guardadas (con id) y las manuales;
+            // solo se reconstruyen las que provienen de este panel.
+            const preserved = (this.form.addresses || []).filter(a => !a.from_sunat_establishment)
+
+            // Secundarias = seleccionadas distintas de la principal, con dirección y no registradas
+            const secondary = this.establishments
+                .filter(e => e.selected
+                    && e.codigo !== this.principal_establishment_code
+                    && e.has_address
+                    && !e.registered)
+                .map(e => this.buildAddressFromEstablishment(e, false))
+
+            this.form.addresses = [...preserved, ...secondary]
         },
 
         saveZone() {
@@ -1425,5 +1676,133 @@ export default {
 
 .contact-observation {
   height: 100%;
+}
+
+/* ---- Panel de establecimientos SUNAT ---- */
+.btn-query-establishments {
+  border: 1px dashed #b9c9e0;
+  color: #1f3a8a;
+  background: #f4f8ff;
+}
+
+.establishments-panel {
+  border: 1px solid #dbe9f8;
+  border-radius: 10px;
+  background: #f8fbff;
+  padding: 12px 14px 6px;
+}
+
+.establishments-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+
+.establishments-title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #1f3a8a;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.establishments-presets {
+  display: flex;
+  gap: 6px;
+}
+
+.establishments-rows {
+  display: block;
+  width: 100%;
+}
+
+.establishment-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 4px;
+  border-top: 1px solid #e7eff9;
+}
+
+.establishment-row:first-child {
+  border-top: none;
+}
+
+.establishment-row.is-dim {
+  opacity: 0.55;
+}
+
+.est-switch {
+  flex-shrink: 0;
+}
+
+.tab-count-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  margin-left: 6px;
+  border-radius: 9px;
+  background: #409eff;
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.est-badge {
+  font-size: 0.68rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 6px;
+  flex-shrink: 0;
+}
+
+.est-badge.principal {
+  background: #e8f0ff;
+  color: #2f6bff;
+}
+
+.est-badge.sucursal {
+  background: #eceef1;
+  color: #6b7280;
+}
+
+.est-addr {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.85rem;
+  color: #334155;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.est-addr.warn {
+  color: #b5710a;
+}
+
+.est-registered {
+  flex-shrink: 0;
+}
+
+.est-code {
+  font-size: 0.72rem;
+  color: #94a3b8;
+  flex-shrink: 0;
+}
+
+.establishments-note {
+  font-size: 0.76rem;
+  color: #6b7280;
+  padding: 8px 4px 6px;
+  border-top: 1px solid #e7eff9;
+  margin-top: 2px;
 }
 </style>

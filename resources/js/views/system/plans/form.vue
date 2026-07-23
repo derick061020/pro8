@@ -7,28 +7,26 @@
                     <h5 v-bind:class="{ 'text-danger': (toAttend < 0) }">Por Atender: {{toAttend}}</h5>
                 </div> -->
                 <div class="row">
-                    <div class="col-md-6">
+                    <div class="col-md-4">
                         <div class="form-group" :class="{'has-danger': errors.name}">
                             <label class="control-label">Nombre</label>
                             <el-input v-model="form.name" :maxlength="11"></el-input>
                             <small class="form-control-feedback" v-if="errors.name" v-text="errors.name[0]"></small>
                         </div>
                     </div>
-                    <div class="col-md-6">
+                    <div class="col-md-3">
+                        <div class="form-group" :class="{'has-danger': errors.test_days}">
+                            <label class="control-label">Dias de prueba</label>
+                            <el-input v-model="form.test_days" :disabled="!test_days_enabled"></el-input>
+                            <el-checkbox v-model="form.test_days_enabled" @change="setTestDays">Días de prueba</el-checkbox><br>
+                            <small class="form-control-feedback d-block" v-if="errors.test_days" v-text="errors.test_days[0]"></small>
+                        </div>
+                    </div>
+                    <div class="col-md-5">
                         <div class="form-group" :class="{'has-danger': errors.pricing}">
                             <label class="control-label">Precio</label>
                             <el-input v-model="form.pricing"></el-input>
                             <small class="form-control-feedback" v-if="errors.pricing" v-text="errors.pricing[0]"></small>
-                            <el-checkbox
-                                v-model="form.is_popular"
-                                :disabled="popularLockedByOtherPlan"
-                                class="mt-2"
-                            >
-                                Destacar como "Popular" en la vista del cliente
-                            </el-checkbox>
-                            <small v-if="popularLockedByOtherPlan" class="form-text text-muted d-block">
-                                El plan <strong>{{ popular_plan.name }}</strong> ya está marcado como Popular. Desmárcalo primero para destacar este.
-                            </small>
                         </div>
                     </div>
                 </div>
@@ -63,10 +61,10 @@
                                 <el-input value="∞" disabled></el-input>
                             </template>
                             <template v-else>
-                                <el-input v-model="form.establishments_limit"></el-input>
+                                <el-input v-model="form.establishments_limit" :disabled="business === 6"></el-input>
                             </template>
 
-                            <el-checkbox v-model="form.establishments_unlimited">Ilimitado</el-checkbox><br>
+                            <el-checkbox v-model="form.establishments_unlimited" :disabled="business === 6">Ilimitado</el-checkbox><br>
 
                             <small class="form-control-feedback d-block" v-if="errors.establishments_limit" v-text="errors.establishments_limit[0]"></small>
                         </div>
@@ -89,10 +87,10 @@
                                 <el-input value="∞" disabled></el-input>
                             </template>
                             <template v-else>
-                                <el-input v-model="form.sales_limit"></el-input>
+                                <el-input v-model="form.sales_limit" @input="normalizeNrusSalesLimit"></el-input>
                             </template>
 
-                            <el-checkbox v-model="form.sales_unlimited">Ilimitado</el-checkbox><br>
+                            <el-checkbox v-model="form.sales_unlimited" :disabled="business === 6">Ilimitado</el-checkbox><br>
                             <el-checkbox v-model="form.include_sale_notes_sales_limit">Incluir notas de venta</el-checkbox><br>
 
 
@@ -100,17 +98,45 @@
                         </div>
                     </div>
 
+                    <div class="col-md-6">
+                        <div class="form-group" :class="{'has-danger': errors.whatsapp_messages_limit}">
+                            <label class="control-label">Límite de mensajes de WhatsApp (Ciclo Facturación)</label>
+
+                            <template v-if="form.whatsapp_messages_unlimited">
+                                <el-input value="∞" disabled></el-input>
+                            </template>
+                            <template v-else>
+                                <el-input v-model="form.whatsapp_messages_limit"></el-input>
+                            </template>
+
+                            <el-checkbox v-model="form.whatsapp_messages_unlimited">Ilimitado</el-checkbox><br>
+
+                            <small class="form-control-feedback d-block" v-if="errors.whatsapp_messages_limit" v-text="errors.whatsapp_messages_limit[0]"></small>
+                        </div>
+                    </div>
+
                 </div>
                 <el-collapse v-model="collapse" class="mt-3">
                     <el-collapse-item name="1" title="Módulos predeterminados sugeridos (Opcional)">
                         <div class="row">
-                            <span class="ms-4">Giro de negocio <small>(opcional)</small></span>
+                            <span>Giro de negocio <small>(opcional)</small></span>
                             <div class="col-12">
                                 <el-radio-group v-model="business" @change="changeModules">
+                                    <el-radio v-if="business === 0" :label="0">Personalizado</el-radio>
+                                    <el-radio :label="5">Completo</el-radio>
                                     <el-radio :label="1">Básico</el-radio>
                                     <el-radio :label="2">Farmacia</el-radio>
                                     <el-radio :label="3">Hotel</el-radio>
                                     <el-radio :label="4">Restaurante</el-radio>
+                                    <el-radio :label="6">
+                                        NRUS
+                                        <el-tooltip class="item"
+                                                    content="Solo se permite 1 sucursal y un límite de ventas de 8000 por mes."
+                                                    effect="dark"
+                                                    placement="top">
+                                            <i class="fa fa-info-circle"></i>
+                                        </el-tooltip>
+                                    </el-radio>
                                 </el-radio-group>
                             </div>
                             <div class="col-md-6">
@@ -121,7 +147,7 @@
                                     <el-tree
                                         ref="tree"
                                         :check-strictly="true"
-                                        :data="modules"
+                                        :data="visibleModules"
                                         :props="defaultProps"
                                         accordion
                                         highlight-current
@@ -139,7 +165,7 @@
                                     <el-tree
                                         ref="Apptree"
                                         :check-strictly="true"
-                                        :data="apps"
+                                        :data="visibleApps"
                                         :props="defaultAppsProps"
                                         accordion
                                         highlight-current
@@ -190,6 +216,7 @@
                 resource: 'plans',
                 documents_unlimited:null,
                 users_unlimited:null,
+                test_days_enabled:false,
                 limit_users:null,
                 limit_documents:null,
                 errors: {},
@@ -198,6 +225,26 @@
                 form: {},
                 collapse: 1,
                 business: null,
+                applyingBusinessModules: false,
+                nrusSpec: {
+                    modules: {
+                        7: '*',
+                        2: '*',
+                        1: ['1-1', '1-2', '1-5', '1-8', '1-15', '1-84'],
+                        17: '*',
+                        18: '*',
+                        8: '*',
+                        12: ['12-16'],
+                        52: '*',
+                        4: '*',
+                    },
+                    apps: {
+                        11: '*',
+                        14: '*',
+                        5: '*',
+                        53: '*',
+                    },
+                },
                 modules: [],
                 apps: [],
                 group_basic: [],
@@ -207,7 +254,6 @@
                 group_hotel_apps: [],
                 group_pharmacy_apps: [],
                 group_restaurant_apps: [],
-                popular_plan: null,
                 defaultProps: {
                     children: 'childrens',
                     label: 'description'
@@ -219,8 +265,17 @@
             }
         },
         computed: {
-            popularLockedByOtherPlan() {
-                return !!(this.popular_plan && this.popular_plan.id !== this.form.id);
+            visibleModules() {
+                if (this.business === 6) {
+                    return this.modules.filter(m => this.nrusSpec.modules[m.id] !== undefined);
+                }
+                return this.modules;
+            },
+            visibleApps() {
+                if (this.business === 6) {
+                    return this.apps.filter(m => this.nrusSpec.apps[m.id] !== undefined);
+                }
+                return this.apps;
             }
         },
         created() 
@@ -236,7 +291,6 @@
                 this.group_hotel_apps = response.data.group_hotel_apps
                 this.group_pharmacy_apps = response.data.group_pharmacy_apps
                 this.group_restaurant_apps = response.data.group_restaurant_apps
-                this.popular_plan = response.data.popular_plan
             })
         },
         methods: {
@@ -249,6 +303,7 @@
                 this.limit_documents = null
                 this.documents_unlimited = false
                 this.users_unlimited = false
+                this.test_days_enabled = false
                 this.errors = {}
                 this.errorLDocument = {}
                 this.errorLUser = {}
@@ -256,6 +311,7 @@
                 this.form = {
                     id: null,
                     name: null,
+                    test_days: null,
                     pricing: null,
                     is_popular: false,
                     limit_users: null,
@@ -269,6 +325,10 @@
                     sales_unlimited : true,
                     include_sale_notes_sales_limit : false,
                     include_sale_notes_limit_documents: false,
+
+                    whatsapp_messages_limit : 0,
+                    whatsapp_messages_unlimited : true,
+
                     module_permissions: null
                 }
                 this.business = null;
@@ -280,13 +340,44 @@
             create() {
 
                 this.titleDialog = (this.recordId)? 'Editar plan':'Nuevo plan'
-                this.$http.get(`/${this.resource}/popular`).then(response => {
-                    this.popular_plan = response.data.popular_plan
-                })
                 if (this.recordId) {
                     this.$http.get(`/${this.resource}/record/${this.recordId}`).then(response => {
                             this.setData(response.data.data)
                         })
+                }
+            },
+            normalizeNrusSalesLimit() {
+                if (this.business !== 6 || this.form.sales_unlimited) return;
+
+                const salesLimit = Number(this.form.sales_limit);
+                if (!isNaN(salesLimit) && salesLimit > 8000) {
+                    this.form.sales_limit = 8000;
+                    this.$message.warning('NRUS permite ventas mensuales hasta S/ 8000.');
+                }
+            },
+            applyNrusLimits(showMessages = false) {
+                const messages = [];
+                const salesLimit = Number(this.form.sales_limit);
+                const establishmentsLimit = Number(this.form.establishments_limit);
+                const wasEstablishmentsUnlimited = this.form.establishments_unlimited;
+
+                if (!isNaN(salesLimit) && salesLimit > 8000) {
+                    this.form.sales_limit = 8000;
+                    messages.push('las ventas mensuales se ajustaron a S/ 8000');
+                }
+
+                if (wasEstablishmentsUnlimited || isNaN(establishmentsLimit) || establishmentsLimit !== 1) {
+                    this.form.establishments_unlimited = false;
+                    this.form.establishments_limit = 1;
+                    if (wasEstablishmentsUnlimited || isNaN(establishmentsLimit) || establishmentsLimit > 1) {
+                        messages.push('las sucursales se ajustaron a 1');
+                    }
+                }
+
+                this.form.sales_unlimited = false;
+
+                if (showMessages && messages.length) {
+                    this.$message.warning(`Para NRUS, ${messages.join(' y ')}.`);
                 }
             },
             validateInputs()
@@ -299,7 +390,14 @@
                 if(!this.form.sales_unlimited)
                 {
                     if(isNaN(this.form.sales_limit)) return this.getResponseValidations(false, 'Límite de ventas no es un número válido.')
-                } 
+                    if(this.business === 6) this.applyNrusLimits()
+                    if(this.business === 6 && Number(this.form.sales_limit) > 8000) return this.getResponseValidations(false, 'El límite de ventas mensual para NRUS no puede ser mayor a 8000.')
+                }
+
+                if(!this.form.whatsapp_messages_unlimited)
+                {
+                    if(isNaN(this.form.whatsapp_messages_limit)) return this.getResponseValidations(false, 'Límite de mensajes de WhatsApp no es un número válido.')
+                }
 
                 return this.getResponseValidations()
             },
@@ -376,7 +474,11 @@
                 this.form = data
                 this.form.plan_documents = Object.values(data.plan_documents)
                 this.users_unlimited = (data.limit_users == 0) ? true : false
-                this.documents_unlimited = (data.limit_documents == 0) ? true : false                
+                this.documents_unlimited = (data.limit_documents == 0) ? true : false
+                this.test_days_enabled = (data.test_days > 0) ? true : false
+                if (this.test_days_enabled) {
+                    this.form.test_days = data.test_days
+                }
                 this.limit_users = (this.users_unlimited) ? "∞": data.limit_users
                 this.limit_documents = (this.documents_unlimited) ? "∞":  data.limit_documents
 
@@ -414,9 +516,11 @@
                     });
                 }
                 
+                this.applyingBusinessModules = true;
                 setTimeout(() => {
                     if(this.$refs.tree) this.$refs.tree.setCheckedKeys(preSelecteds);
                     if(this.$refs.Apptree) this.$refs.Apptree.setCheckedKeys(preAppSelecteds);
+                    this.applyingBusinessModules = false;
                 }, 500);
             },
             transform(){
@@ -432,7 +536,11 @@
                 }else{
                     this.form.limit_documents = this.limit_documents
                 }
-                
+
+                if(!this.test_days_enabled){
+                    this.form.test_days = null
+                }
+
             },
             validateLDocuments(){
 
@@ -466,11 +574,17 @@
                 this.form.limit_users = (this.limit_users == "∞") ? 0 : this.limit_users
 
             },
+            setTestDays(){
+                if(!this.test_days_enabled){
+                    this.form.test_days = null
+                }
+            },
             close() {
                 this.$emit('update:showDialog', false)
                 this.initForm()
             },
             FixChildren(currentObj, treeStatus) {
+                this.markCustomBusiness()
                 let element = this.$refs.tree
                 if (currentObj !== undefined) {
                     let selected = treeStatus.checkedKeys.indexOf(currentObj.id)
@@ -485,6 +599,7 @@
                 }
             },
             FixAppChildren(currentObj, treeStatus) {
+                this.markCustomBusiness()
                 let element = this.$refs.Apptree
                 if (currentObj !== undefined) {
                     let selected = treeStatus.checkedKeys.indexOf(currentObj.id)
@@ -497,6 +612,10 @@
                         }
                     }
                 }
+            },
+            markCustomBusiness() {
+                if (this.applyingBusinessModules || this.business === 6 || this.business === 0) return;
+                this.business = 0;
             },
             FixSameValueToChild(treeList, isSelected, element) {
                 if (treeList !== undefined && element !== undefined) {
@@ -518,6 +637,20 @@
                 }
             },
             changeModules() {
+                if (this.business === 0) return;
+
+                this.applyingBusinessModules = true;
+                if (this.business === 6) {
+                    this.applyNrusLimits(true);
+                    this.$nextTick(() => {
+                        const treeKeys = this.buildNrusKeys(this.modules, this.nrusSpec.modules);
+                        const appKeys = this.buildNrusKeys(this.apps, this.nrusSpec.apps);
+                        if (this.$refs.tree) this.$refs.tree.setCheckedKeys(treeKeys);
+                        if (this.$refs.Apptree) this.$refs.Apptree.setCheckedKeys(appKeys);
+                        this.applyingBusinessModules = false;
+                    });
+                    return;
+                }
                 var group = {
                     modules: [],
                     apps: [],
@@ -537,8 +670,27 @@
                     group.modules = this.getIds(this.group_restaurant);
                     group.apps = this.getIds(this.group_restaurant_apps);
                 }
+                if(this.business == 5){
+                    group.modules = this.getIds(this.modules);
+                    group.apps = this.getIds(this.apps);
+                }
                 this.$refs.tree.setCheckedKeys(group.modules);
                 this.$refs.Apptree.setCheckedKeys(group.apps);
+                this.applyingBusinessModules = false;
+            },
+            buildNrusKeys(treeData, spec) {
+                const keys = [];
+                treeData.forEach(m => {
+                    const allowed = spec[m.id];
+                    if (allowed === undefined) return;
+                    keys.push(m.id);
+                    (m.childrens || []).forEach(c => {
+                        if (allowed === '*' || allowed.includes(c.id)) {
+                            keys.push(c.id);
+                        }
+                    });
+                });
+                return keys;
             },
             getIds(modules) {
                 const preSelecteds = [];

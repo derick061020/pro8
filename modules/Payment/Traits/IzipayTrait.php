@@ -24,9 +24,13 @@ trait IzipayTrait
 
 
         if ($response->successful()) {
-            $data = $response->json();
-            return $data['answer']['formToken'];
+            $body = $response->json();
+
+            if (($body['status'] ?? null) === 'SUCCESS' && isset($body['answer']['formToken'])) {
+                return $body['answer']['formToken'];
+            }
         }
+
         return null;
 
     }

@@ -11,6 +11,7 @@ use App\Models\Tenant\Series;
 use App\Models\Tenant\Catalogs\District;
 use Exception;
 use App\Models\Tenant\Configuration;
+use App\Services\SeriesCodeGenerator;
 use Carbon\Carbon;
 
 class Functions
@@ -172,6 +173,11 @@ class Functions
 
         if (!$series) {
             throw new Exception("La serie ingresada {$inputs['series']}, es incorrecta.");
+        }
+
+        if ((bool) optional(Configuration::first())->isNrus()
+            && ! in_array($series->document_type_id, SeriesCodeGenerator::nrusDocumentTypeIds(), true)) {
+            throw new Exception("Para empresas NRUS solo están disponibles las series de Boleta de venta electrónica y Nota de venta.");
         }
     }
 

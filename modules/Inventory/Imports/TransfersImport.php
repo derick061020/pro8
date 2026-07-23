@@ -5,6 +5,7 @@ namespace Modules\Inventory\Imports;
 use App\Models\Tenant\Establishment;
 use App\Models\Tenant\Item;
 use App\Models\Tenant\Series;
+use App\Services\SeriesResolver;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
 use Maatwebsite\Excel\Concerns\Importable;
@@ -32,10 +33,11 @@ class TransfersImport implements ToCollection
         // La serie de la transferencia masiva sera elegido por el usuario que hace el importe
         $establishment_id = auth()->user()->establishment->id;
 
-        $series = Series::query()
+        // Series filtradas por contexto (oculta dedicadas / restringe al grupo activo). Ver SeriesResolver.
+        $series = app(SeriesResolver::class)->applyContext(Series::query()
                 ->select('number')
                 ->where('establishment_id', $establishment_id)
-                ->where('document_type_id', 'U4')
+                ->where('document_type_id', 'U4'))
                 ->first();
         
         if (is_null($series)) {
@@ -65,10 +67,11 @@ class TransfersImport implements ToCollection
             $warehouse = Establishment::where('code', $code_establishment)->first();
 
 
-            $series = Series::query()
+            // Series filtradas por contexto (oculta dedicadas / restringe al grupo activo). Ver SeriesResolver.
+            $series = app(SeriesResolver::class)->applyContext(Series::query()
                 ->select('number')
                 ->where('establishment_id', $warehouse->id)
-                ->where('document_type_id', 'U4')
+                ->where('document_type_id', 'U4'))
                 ->first();
             
 

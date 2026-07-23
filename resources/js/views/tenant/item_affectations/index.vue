@@ -17,18 +17,17 @@
                 <div class="table-responsive" ref="scrollContainer">
                     <table class="table">
                         <thead>
-                        <tr width="100%">
-                            <th width="5%">#</th>
-                            <th width="50%">Descripción</th>
-                            <th width="5%">Activo</th>
+                        <tr>
+                            <th>#</th>
+                            <th class="text-start">Activo</th>
+                            <th>Descripción</th>
 
                         </tr>
                         </thead>
                         <tbody>
                         <tr v-for="(row, index) in records" :key="index">
                             <td>{{ index + 1 }}</td>
-                            <td>{{ row.description }}</td>
-                            <td class="text-center">
+                            <td class="text-start">
                                 <el-switch
                                     @change="changeActive(index)"
                                     v-model="row.active"
@@ -36,6 +35,7 @@
                                 </el-switch>
 
                             </td>
+                            <td>{{ row.description }}</td>
                             <!-- <td class="text-end">
                                 <button type="button" class="btn waves-effect waves-light btn-xs btn-info me-1" @click.prevent="clickCreate(row.id)">Editar</button>
                                   <template v-if="typeUser === 'admin'">

@@ -51,7 +51,11 @@
                             </button>
                         </div>
                         <div class="pinned-cell-edit-preview">
-                            <pinned-slot :slot-name="pin.field_key"
+                            <div v-if="isSpacer(pin)" class="ifb-spacer-preview">
+                                Espacio en blanco
+                            </div>
+                            <pinned-slot v-else
+                                         :slot-name="pin.field_key"
                                          :slot-scope-data="{ field: catalogByKey[pin.field_key], width: pin.width }" />
                         </div>
                         <div class="ifb-resize-handle"
@@ -62,15 +66,25 @@
                 </div>
             </draggable>
 
-            <!-- Selector de campos full-width agrupado por pestaña -->
-            <button v-if="!addPanelOpen"
-                    type="button"
-                    class="ifb-add-trigger"
-                    @click="openAddPanel">
-                <i class="el-icon-plus"></i> Agregar campo a la barra fijada
-            </button>
+            <div class="d-flex gap-2">
+                <button v-if="!addPanelOpen"
+                        type="button"
+                        class="ifb-add-trigger"
+                        @click="openAddPanel">
+                    <i class="el-icon-plus"></i> Agregar campo a la barra fijada
+                </button>
 
-            <div v-else class="ifb-add-panel">
+                <button v-else type="button" class="ifb-add-trigger" @click="closeAddPanel">
+                    <i class="el-icon-close"></i> Cerrar
+                </button>
+
+                <button type="button" class="btn second-buton mt-2" style="min-width: 195px;" @click="addSpacer">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-space me-1"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M4 10v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1 -1v-3" /></svg>
+                    Agregar espaciado
+                </button>
+            </div>
+
+            <div v-if="addPanelOpen" class="ifb-add-panel">
                 <div class="d-flex align-items-center gap-2 p-2 border-bottom bg-light">
                     <el-input v-model="addSearch"
                               ref="addSearchInput"
@@ -149,6 +163,7 @@ export default {
         return {
             editing: false,
             draftPins: [],
+            originalDraftSignature: null,
             addPanelOpen: false,
             addSearch: '',
             resizingIdx: null,
@@ -165,7 +180,7 @@ export default {
         },
         sortedPins() {
             return [...this.pinnedFields]
-                .filter(p => this.catalogByKey[p.field_key])
+                .filter(p => this.isSpacer(p) || this.catalogByKey[p.field_key])
                 .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
         },
         groupedAvailable() {
@@ -189,6 +204,7 @@ export default {
     methods: {
         enterEditMode() {
             this.draftPins = this.sortedPins.map(p => ({ ...p }));
+            this.originalDraftSignature = this.layoutSignature(this.draftPins);
             this.editing = true;
             this.addPanelOpen = false;
         },
@@ -196,6 +212,31 @@ export default {
             this.editing = false;
             this.addPanelOpen = false;
             this.addSearch = '';
+            this.originalDraftSignature = null;
+        },
+        cancelEdit() {
+            if (!this.hasUnsavedLayoutChanges()) {
+                this.exitEditMode();
+                return;
+            }
+
+            this.$confirm('Hay cambios sin guardar en el editor. Si cierras ahora, se perderán.', 'Cerrar sin guardar', {
+                confirmButtonText: 'Cerrar sin guardar',
+                cancelButtonText: 'Cancelar',
+                type: 'warning',
+            }).then(() => {
+                this.exitEditMode();
+            }).catch(() => {});
+        },
+        hasUnsavedLayoutChanges() {
+            return this.layoutSignature(this.draftPins) !== this.originalDraftSignature;
+        },
+        layoutSignature(pins) {
+            return JSON.stringify((pins || []).map((p, idx) => ({
+                field_key: p.field_key,
+                width: parseInt(p.width, 10) || 3,
+                order: idx,
+            })));
         },
         onDragEnd() {
             this.draftPins = this.draftPins.map((p, idx) => ({ ...p, order: idx }));
@@ -214,6 +255,19 @@ export default {
         addPinFromPanel(fieldKey) {
             if (this.isFieldPinned(fieldKey)) return;
             this.pinField(fieldKey);
+        },
+        isSpacer(pin) {
+            const key = pin && typeof pin === 'object' ? pin.field_key : pin;
+            return typeof key === 'string' && key.indexOf('__spacer__') === 0;
+        },
+        addSpacer() {
+            if (!this.editing) this.enterEditMode();
+            const key = `__spacer__${Date.now()}_${this.draftPins.length}`;
+            this.draftPins.push({
+                field_key: key,
+                width: 2,
+                order: this.draftPins.length,
+            });
         },
         isFieldPinned(fieldKey) {
             return this.draftPins.some(p => p.field_key === fieldKey);
@@ -258,6 +312,7 @@ export default {
             return getInputTypeLabel(type);
         },
         pinTitle(pin) {
+            if (this.isSpacer(pin)) return 'Espaciado';
             const field = this.catalogByKey[pin.field_key];
             return field && field.label ? field.label : pin.field_key;
         },

@@ -42,7 +42,7 @@ use Illuminate\Support\Facades\Storage;
 use Modules\Finance\Traits\FilePaymentTrait;
 use Modules\PseService\Http\Gior\Service as GiorService;
 use Modules\PseService\Http\Gior\ServiceSendFact as ServiceSendFact;
-use Modules\PseService\Http\Gior\ServiceOseSendFact as ServiceOseSendFact;  
+use Modules\PseService\Http\Gior\ServiceOseSendFact as ServiceOseSendFact;
 
 
 /**
@@ -763,14 +763,14 @@ class Facturalo
                 $html_footer_legend = "";
 
                 // if(isset($this->configuration->pdf_footer_images)) {
-                //     $footer_images = is_string($this->configuration->pdf_footer_images) 
-                //         ? json_decode($this->configuration->pdf_footer_images, true) 
+                //     $footer_images = is_string($this->configuration->pdf_footer_images)
+                //         ? json_decode($this->configuration->pdf_footer_images, true)
                 //         : $this->configuration->pdf_footer_images;
-                    
+
                 //     if(is_object($footer_images)) {
                 //         $footer_images = json_decode(json_encode($footer_images), true);
                 //     }
-                    
+
                 //     if(!empty($footer_images)) {
                 //         $images_html = '<div style="text-align: center; margin-top: 10px;">';
                 //         foreach((array)$footer_images as $image) {
@@ -794,7 +794,7 @@ class Facturalo
             ){
                 $html_footer_legend = $template->pdfFooterLegend($base_pdf_template, $document);
             }
-        
+
             $pdf->SetHTMLFooter($html_footer.$html_footer_legend);
         }
 //            $html_footer = $template->pdfFooter();
@@ -888,6 +888,85 @@ class Facturalo
             return $pdf->output('', 'S');
         }), 'pdf');
         return $this;
+    }
+
+
+    /**
+     * Genera una orden de impresión server-side para la app mozo, evitando que
+     * el cliente tenga que descargar el PDF, convertirlo a base64 y consumir
+     * /print-orders en un segundo roundtrip.
+     *
+     * Se invoca tras createPdf y antes del envío a SUNAT: el comprobante se
+     * imprime sin esperar la respuesta de la administración tributaria.
+     *
+     * Reutiliza el PDF que createPdf ya generó (formato definido por el cliente
+     * en actions.format_pdf); no regenera nada.
+     *
+     * El PrintOrderObserver publica la orden en Redis al persistir.
+     *
+     * Activación: actions.auto_print === true (lo envía la app en el payload).
+     *
+     * @return array{auto_printed: bool, print_order_id: int|null, reason: string|null}
+     */
+    public function generatePrintOrder()
+    {
+        $result = ['auto_printed' => false, 'print_order_id' => null, 'reason' => null];
+
+        // Defensa: si createPdf generó un ticket con despacho individual, deja
+        // atributos temporales (is_individual / itemChunk) sobre el modelo que
+        // NO son columnas. Se limpian para que el envío a SUNAT no intente
+        // persistirlos. No afecta el flujo estable (no existen como columna).
+        unset($this->document->is_individual, $this->document->itemChunk);
+
+        if (empty($this->actions['auto_print'])) {
+            $result['reason'] = 'disabled';
+            return $result;
+        }
+
+        // Validación de impresión local: misma regla que PrintOrderController@store.
+        // Un fallo aquí NO interrumpe el documento: degrada al fallback del mozo.
+        $config = \Modules\Restaurant\Models\RestaurantConfiguration::first();
+        if ($config && $config->print_local_enabled && $config->printer_public_ip) {
+            $clientIp = $this->actions['client_public_ip'] ?? null;
+            if ($clientIp !== $config->printer_public_ip) {
+                $result['reason'] = 'ip_mismatch';
+                return $result;
+            }
+        }
+
+        // Resolver impresora: la enviada o la predeterminada
+        $printerName = $this->actions['name_printer'] ?? null;
+        if (empty($printerName)) {
+            $default = \Modules\Restaurant\Models\Printer::where('active', true)
+                ->where('is_default', true)
+                ->first();
+            if (!$default) {
+                $result['reason'] = 'no_printer';
+                return $result;
+            }
+            $printerName = $default->name;
+        }
+
+        try {
+            // El PDF ya fue generado por createPdf en el formato que indica el
+            // payload (actions.format_pdf). Se reutiliza tal cual, sin regenerar:
+            // el formato a imprimir lo decide el cliente desde el JSON.
+            $pdf_b64 = base64_encode($this->getStorage($this->document->filename, 'pdf'));
+
+            $order = \Modules\Restaurant\Models\PrintOrder::create([
+                'name_printer' => $printerName,
+                'status'       => 0,
+                'pdf_b64'      => $pdf_b64,
+            ]);
+
+            $result['auto_printed']   = true;
+            $result['print_order_id'] = $order->id;
+        } catch (\Throwable $e) {
+            Log::error("generatePrintOrder: error generando orden de impresión — {$e->getMessage()}");
+            $result['reason'] = 'error';
+        }
+
+        return $result;
     }
 
 
@@ -1043,7 +1122,7 @@ class Facturalo
                     if ($company->pse_provider_id == 4) {
                         $query = $service->querySummary($this->document->filename);
                         $this->response['code'] = $query['document_status'];
-                        $state_type_id = $service->validationCodeResponseIntegration($query['document_status'], $description );   
+                        $state_type_id = $service->validationCodeResponseIntegration($query['document_status'], $description );
                         $this->updateState($state_type_id);
                     } else {
                         $this->validationCodeResponse($code, $description);

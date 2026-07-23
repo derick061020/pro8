@@ -311,6 +311,18 @@ class Cash extends ModelTenant
      */
     public function getApiRowResource()
     {
+        // Mientras la caja está abierta, income/final_balance persistidos están en 0
+        // (solo se calculan al cerrar). Para la app calculamos los montos al vuelo.
+        // Si está cerrada, reutilizamos lo persistido para no recalcular en cada fila.
+        if ($this->state) {
+            $current_totals = $this->getCurrentTotals();
+            $current_income = $current_totals['income'];
+            $current_final_balance = $current_totals['final_balance'];
+        } else {
+            $current_income = (float) $this->income;
+            $current_final_balance = (float) $this->final_balance;
+        }
+
         return [
             'id' => $this->id,
             'user_id' => $this->user_id,
@@ -319,14 +331,135 @@ class Cash extends ModelTenant
             'time_opening' => $this->time_opening,
             'opening' => "{$this->date_opening} {$this->time_opening}",
             'date_closed' => $this->date_closed,
-            'time_closed' => $this->time_closed, 
+            'time_closed' => $this->time_closed,
             'closed' => !$this->state ? "{$this->date_closed} {$this->time_closed}" : null,
             'beginning_balance' => (float) $this->beginning_balance,
             'final_balance' => (float) $this->final_balance,
             'income' => (float) $this->income,
-            'state' => (bool) $this->state, 
+            'current_income' => $current_income,
+            'current_final_balance' => $current_final_balance,
+            'state' => (bool) $this->state,
             'state_description' => $this->state_description,
             'reference_number' => $this->reference_number,
+        ];
+    }
+
+
+    /**
+     *
+     * Calcular montos actuales de la caja (ingresos y saldo final) al vuelo.
+     *
+     * Replica la lógica de cierre (CashController@close) pero sin persistir,
+     * usando la fecha/hora actual como tope cuando la caja sigue abierta.
+     * Se usa para exponer los montos en la app mientras la caja está aperturada.
+     *
+     * @return array{income: float, final_balance: float}
+     */
+    public function getCurrentTotals()
+    {
+        $id = $this->id;
+        $final_balance = 0;
+        $valid_states = ['01', '03', '05', '07', '13'];
+
+        foreach ($this->cash_documents as $cash_document) {
+
+            if ($cash_document->sale_note) {
+
+                if (in_array($cash_document->sale_note->state_type_id, $valid_states)) {
+                    $balance = $cash_document->sale_note->payments()
+                        ->whereHas('cashDocumentPayments', function ($query) use ($id) {
+                            $query->where('cash_id', $id);
+                        })
+                        ->sum('payment');
+
+                    $final_balance += ($cash_document->sale_note->currency_type_id == 'PEN')
+                        ? $balance
+                        : ($balance * $cash_document->sale_note->exchange_rate_sale);
+                }
+
+            }
+            else if ($cash_document->document) {
+
+                $note = $cash_document->document->getNotes();
+
+                if (is_null($note) || count($note) === 0) {
+                    if (in_array($cash_document->document->state_type_id, $valid_states)) {
+                        $balance = $cash_document->document->payments()
+                            ->whereHas('cashDocumentPayments', function ($query) use ($id) {
+                                $query->where('cash_id', $id);
+                            })
+                            ->sum('payment');
+                        $final_balance += ($cash_document->document->currency_type_id == 'PEN')
+                            ? $balance
+                            : ($balance * $cash_document->document->exchange_rate_sale);
+                    }
+                } else {
+                    foreach ($note as $n) {
+                        if ($n->isDebit()) {
+                            $final_balance += ($n->currency_type_id == 'PEN')
+                                ? $n->total
+                                : ($n->total * $n->exchange_rate_sale);
+                        } else {
+                            $final_balance -= ($n->currency_type_id == 'PEN')
+                                ? $n->total
+                                : ($n->total * $n->exchange_rate_sale);
+                        }
+                    }
+                }
+
+            }
+            else if ($cash_document->expense_payment) {
+
+                $expense = $cash_document->expense_payment->expense;
+                if ($expense->state_type_id == '05') {
+                    $final_balance -= ($expense->currency_type_id == 'PEN')
+                        ? $cash_document->expense_payment->payment
+                        : ($cash_document->expense_payment->payment * $expense->exchange_rate_sale);
+                }
+
+            }
+            else if ($cash_document->purchase) {
+
+                if (in_array($cash_document->purchase->state_type_id, $valid_states)) {
+                    if ($cash_document->purchase->total_canceled == 1) {
+                        $final_balance -= ($cash_document->purchase->currency_type_id == 'PEN')
+                            ? $cash_document->purchase->total
+                            : ($cash_document->purchase->total * $cash_document->purchase->exchange_rate_sale);
+                    }
+                }
+
+            }
+            else if ($cash_document->quotation) {
+
+                $final_balance += ($cash_document->quotation->applyQuotationToCash())
+                    ? $cash_document->quotation->getTransformTotal()
+                    : 0;
+
+            }
+
+        }
+
+        // Ingresos (finanzas): si la caja sigue abierta, usamos la fecha/hora actual como tope
+        $date_closed = $this->date_closed ?: date('Y-m-d');
+        $time_closed = $this->time_closed ?: date('H:i:s');
+
+        $incomes = \Modules\Finance\Models\Income::where('user_id', $this->user_id)
+            ->whereTypeUser()
+            ->whereBetween('date_of_issue', [$this->date_opening, $date_closed])
+            ->whereBetween('time_of_issue', [$this->time_opening, $time_closed])
+            ->get();
+
+        foreach ($incomes as $income) {
+            if (in_array($income->state_type_id, $valid_states)) {
+                $final_balance += ($income->currency_type_id == 'PEN')
+                    ? $income->total
+                    : ($income->total * $income->exchange_rate_sale);
+            }
+        }
+
+        return [
+            'income' => round($final_balance, 2),
+            'final_balance' => round($final_balance + $this->beginning_balance, 2),
         ];
     }
 

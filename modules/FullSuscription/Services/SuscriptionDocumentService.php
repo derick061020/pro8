@@ -10,6 +10,7 @@ use App\Http\Requests\Tenant\DocumentRequest;
 use App\Models\Tenant\Company;
 use App\Models\Tenant\Item;
 use App\Models\Tenant\Series;
+use App\Services\SeriesResolver;
 use Illuminate\Support\Str;
 use Modules\ApiPeruDev\Data\ServiceData;
 use Modules\FullSuscription\Models\Tenant\UserRelSuscriptionPlan;
@@ -49,10 +50,11 @@ trait SuscriptionDocumentService
         $document_type_id     = $this->getDocumentType($identity_document_type_id);
         $items                = $this->items($get_ids);
 
-        $serie = Series::where([
+        // Emisión automática (suscripción): siempre se omiten series dedicadas; no hay lectura de grupo/dispositivo.
+        $serie = app(SeriesResolver::class)->applyContext(Series::where([
             'establishment_id' => $establishment_id,
             'document_type_id' => $document_type_id,
-        ])->first();
+        ]), null)->first();
 
         $service = (new ServiceData())->exchange(now()->format('Y-m-d'));
 

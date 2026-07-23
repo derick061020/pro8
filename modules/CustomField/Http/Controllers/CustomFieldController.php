@@ -123,6 +123,22 @@ class CustomFieldController extends Controller
     }
 
     /**
+     * Obtener campos personalizados habilitados para cotizaciones
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function quotations()
+    {
+        $records = CustomField::where('enabled_for_quotations', true)
+            ->orderBy('order', 'asc')
+            ->get();
+
+        return response()->json([
+            'data' => CustomFieldResource::collection($records),
+        ]);
+    }
+
+    /**
      * Obtener un campo personalizado específico
      *
      * @param int $id
@@ -201,6 +217,7 @@ class CustomFieldController extends Controller
             'sale_notes' => 'enabled_for_sale_notes',
             'dispatches' => 'enabled_for_dispatches',
             'order_notes' => 'enabled_for_order_notes',
+            'quotations' => 'enabled_for_quotations',
         ];
 
         if (!isset($documentMap[$document])) {

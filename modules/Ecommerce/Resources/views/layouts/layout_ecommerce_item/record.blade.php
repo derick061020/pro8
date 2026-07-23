@@ -79,6 +79,7 @@
 
     <!-- Estilos personalizados -->
     <link rel="stylesheet" href="{{ asset('porto-light/css/styles_ecommerce.css') }}" />
+    @include('ecommerce::layouts.partials_ecommerce.primary_color_style')
 </head>
 
 <body>
@@ -114,9 +115,14 @@
                 </div><!-- End .row -->
             </div><!-- End .container -->
 
+            @php($currentItemId = data_get($record ?? null, 'id'))
+            @php($currentCategoryId = data_get($record ?? null, 'category.id') ?? data_get($record ?? null, 'category_id'))
+            @php($hasRelatedItems = $currentCategoryId && collect($items ?? [])->contains(fn($item) => data_get($item, 'category_id') == $currentCategoryId && data_get($item, 'id') != $currentItemId))
+            @if($hasRelatedItems)
             <div class="featured-section">
                 @include('ecommerce::layouts.partials_ecommerce.featured_products_bottom' )
             </div><!-- End .featured-section -->
+            @endif
         </main><!-- End .main -->
 
         <footer class="footer">

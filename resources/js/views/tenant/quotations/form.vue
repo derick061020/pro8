@@ -163,11 +163,7 @@
                                             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-user-plus"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0" /><path d="M16 19h6" /><path d="M19 16v6" /><path d="M6 21v-2a4 4 0 0 1 4 -4h4" /></svg>
                                         </span>
                                     </template>
-                                    <small
-                                        class="form-control-feedback"
-                                        v-if="errors.customer_id"
-                                        v-text="errors.customer_id[0]"
-                                    ></small>
+
                                 </div>
                                 <div
                                     v-if="customer_addresses.length > 0"
@@ -279,6 +275,11 @@
                                     ></small>
                                 </div>
                             </div>
+                            <custom-fields-renderer
+                                ref="customFieldsRenderer"
+                                document-type="quotations"
+                                :form-data.sync="form.custom_fields_data">
+                            </custom-fields-renderer>
                         </div>
 
                         <!-- Información Adicional -->
@@ -1707,6 +1708,7 @@ import { mapActions, mapState } from "vuex/dist/vuex.mjs";
 import { editableRowItems } from "@mixins/editable-row-items";
 import ItemSearchQuickSale from "@components/items/ItemSearchQuickSale.vue";
 import PackItemDescription from "@components/items/PackItemDescription.vue";
+import CustomFieldsRenderer from '@viewsModuleCustomField/custom_fields/custom_field_renderer.vue';
 
 export default {
     props: ["typeUser", "saleOpportunityId", "resourceId", "configuration", "authUser"],
@@ -1717,7 +1719,8 @@ export default {
         Logo,
         TermsCondition,
         ItemSearchQuickSale,
-        PackItemDescription
+        PackItemDescription,
+        CustomFieldsRenderer
     },
     mixins: [functions, exchangeRate, editableRowItems, fnItemSearchQuickSale],
     data() {
@@ -2347,7 +2350,8 @@ export default {
                 payments: [],
                 sale_opportunity_id: null,
                 contact: null,
-                phone: null
+                phone: null,
+                custom_fields_data: {}
             };
             this.total_global_discount = 0;
             this.total_discount_no_base = 0;
@@ -2603,6 +2607,19 @@ export default {
                 );
             }
 
+            if (this.$refs.customFieldsRenderer) {
+                const validation = this.$refs.customFieldsRenderer.validateRequiredFields()
+                if (!validation.valid) {
+                    this.$message.error('Campos personalizados incompletos: ' + validation.errors.join(', '))
+                    return
+                }
+            }
+
+            if (!this.form.customer_id) {
+                this.$message.error('El campo cliente es obligatorio.');
+                return;
+            }
+
             this.loading_submit = true;
 
             const isEdit = this.form.id && this.form.id > 0;
@@ -2639,6 +2656,10 @@ export default {
                 .catch(error => {
                     if (error.response.status === 422) {
                         this.errors = error.response.data;
+                        if (this.errors.customer_id) {
+                            this.$message.error(this.errors.customer_id[0]);
+                            delete this.errors.customer_id;
+                        }
                     } else {
                         this.$message.error(error.response.data.message);
                     }

@@ -16,16 +16,16 @@
             <system-configuration-themes></system-configuration-themes>
             <system-configuration-visible-columns></system-configuration-visible-columns>
             <system-login-other-configuration :plans='@json($plans)'></system-login-other-configuration>
-            <system-qrapi-configuration :configuration='@json($configuration)'></system-qrapi-configuration>
+            <system-openai-configuration></system-openai-configuration>
             <system-google-maps-configuration :configuration='@json($configuration)'></system-google-maps-configuration>
             <system-cron-order-configuration :configuration='@json($configuration)'></system-cron-order-configuration>
         </div>
         <div class="col-lg-6 col-md-12">
-            <system-configuration-culqi></system-configuration-culqi>
-            <system-configuration-izipay></system-configuration-izipay>
+            <system-configuration-payment-gateway></system-configuration-payment-gateway>
             <system-configuration-token></system-configuration-token>
             <system-configuration-apk-url></system-configuration-apk-url>
             <system-support-configuration></system-support-configuration>
+            <system-terms-configuration></system-terms-configuration>
             <system-email-configuration :configuration='@json($configuration)'></system-email-configuration>
         </div>
     </div>

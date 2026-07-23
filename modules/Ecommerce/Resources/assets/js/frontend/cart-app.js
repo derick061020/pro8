@@ -89,6 +89,11 @@ var app_cart = new Vue({
         // Métodos de pago adicionales
         enableYape: window.__ecommerce_config?.enable_yape || false,
         enableTransfer: window.__ecommerce_config?.enable_transfer || false,
+        acceptedTerms: false,
+        successOrder: null,
+        showConfirmModal: false,
+        processingPayment: false,
+        thankYouUrl: null,
     },
     computed: {
         maxLength: function () {
@@ -175,6 +180,11 @@ var app_cart = new Vue({
                 obj.cantidad = item.quantity ? parseInt(item.quantity) : 1
                 obj.sub_total = (parseFloat(item.sale_unit_price) * obj.cantidad).toFixed(2)
                 obj.exchange_rate_sale = ''
+                // Compatibilidad: items agregados desde el catálogo guardan el símbolo
+                // en currency_type.symbol; otros no lo traen. Normalizamos a un campo plano.
+                obj.currency_type_symbol = item.currency_type_symbol
+                    || (item.currency_type && item.currency_type.symbol)
+                    || 'S/'
                 return obj
             })
         }
@@ -531,30 +541,19 @@ var app_cart = new Vue({
                 return
             }
 
-            swal({
-                title: "Estamos generando el Pago.",
-                text: `Por favor no cierre esta ventana hasta que el proceso termine.`,
-                focusConfirm: false,
-                onOpen: () => {
-                    Swal.showLoading()
-                }
-            });
+            this.processingPayment = true;
 
             let url_finally = window.__routes?.payment_cash || '/ecommerce/payment/cash';
             let response = await axios.post(url_finally, await this.getFormPaymentCash(), this.getHeaderConfig()).then(response => {
                     if (response.data.success) {
                         this.saveContactDataUser()
-                        this.clearShoppingCart()
-                        this.response_order_total = response.data.order.total
-                        swal({
-                            title: "Gracias por su pago!",
-                            text: "En breve le enviaremos un correo electrónico con los detalles de su compra.",
-                            type: "success"
-                        }).then((x) => {
-                            app_cart.order_generated = order
-                        })
+                        this.processingPayment = false
+                        this.showPurchaseSuccess(response.data.order)
+                    } else {
+                        this.processingPayment = false
                     }
                 }).catch(error => {
+                    this.processingPayment = false
                     swal("Pago No realizado", 'Sucedió algo inesperado.', "error");
                     if (error.response.status === 422) {
                         this.errors = error.response.data;
@@ -565,6 +564,64 @@ var app_cart = new Vue({
         },
         redirectHome() {
             window.location = window.__routes?.home || "/ecommerce";
+        },
+        // Arma el detalle de la compra que se mostrará en el modal de confirmación
+        buildSuccessOrder(order) {
+            const paymentLabels = {
+                cash: 'Efectivo', yape: 'Yape', transfer: 'Transferencia',
+                culqi: 'Tarjeta (VISA)', paypal: 'PayPal'
+            };
+            const deliveryLabel = (this.isPickupMode && this.selectedPickupBranch)
+                ? 'Recojo en tienda — ' + this.selectedPickupBranch.name
+                : (this.isPickupMode ? 'Recojo en tienda' : 'Envío a domicilio');
+            const number = (order && (order.id || order.external_id))
+                ? '#' + String(order.id || order.external_id).toString().padStart(6, '0')
+                : '#—';
+            return {
+                number: number,
+                items: this.records.map(r => ({
+                    description: r.description,
+                    cantidad: r.cantidad,
+                    symbol: r.currency_type_symbol || 'S/',
+                    total: (parseFloat(r.sale_unit_price) * r.cantidad).toFixed(2)
+                })),
+                total_taxed: this.summary.total_taxed || '0.00',
+                total_igv: this.summary.total_igv || '0.00',
+                total_exonerated: this.summary.total_exonerated || '0.00',
+                delivery: this.summary.delivery || '0.00',
+                total: this.summary.total || '0.00',
+                paymentLabel: paymentLabels[this.selectedPaymentMethod] || 'Efectivo',
+                deliveryLabel: deliveryLabel,
+            };
+        },
+        showPurchaseSuccess(order) {
+            this.successOrder = this.buildSuccessOrder(order);
+            this.response_order_total = order ? order.total : 0;
+            if (order && order.external_id && window.__routes && window.__routes.thank_you) {
+                this.thankYouUrl = window.__routes.thank_you.replace('EXTERNAL_ID', order.external_id);
+            }
+            this.clearCartSilently();
+            this.$nextTick(() => { this.showConfirmModal = true; });
+        },
+        clearCartSilently() {
+            this.errors = {};
+            this.records_old = this.records.slice();
+            this.records = [];
+            localStorage.setItem('products_cart', JSON.stringify([]));
+            this.summary = {
+                subtotal: '0.0', tax: '0.0', total: '0.00',
+                total_taxed: '0.0', total_value: '0.0',
+                total_exonerated: '0.0', total_igv: '0.0', delivery: '0.00'
+            };
+            this.payment_cash.amount = '0.00';
+            $("#total_amount").data('total', '0.00');
+        },
+        goToThankYou() {
+            if (this.thankYouUrl) {
+                window.location = this.thankYouUrl;
+            } else {
+                this.redirectHome();
+            }
         },
         getHeaderConfig() {
             let token = this.user.api_token
@@ -1208,7 +1265,12 @@ var app_cart = new Vue({
         },
         // Alterna el modo de recojo en tienda y resetea la selección contraria
         togglePickupMode() {
-            this.isPickupMode = !this.isPickupMode;
+            this.setPickupMode(!this.isPickupMode);
+        },
+        // Establece el modo de entrega (true = recojo en tienda, false = delivery)
+        setPickupMode(value) {
+            if (this.isPickupMode === value) return;
+            this.isPickupMode = value;
             if (this.isPickupMode) {
                 // Al activar recojo: limpiar zona de delivery
                 this.deliveryZone = null;

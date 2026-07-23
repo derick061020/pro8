@@ -13,6 +13,7 @@ import XGraphLine from './components/graph/src/GraphLine.vue'
 
 import TenantSignaturePseIndex from './views/tenant/companies/signature_pse/index.vue'
 import TenantWhatsappApiIndex from './views/tenant/companies/whatsapp_api/index.vue'
+import TenantDedicatedGroupSelector from './views/tenant/series/dedicated_group_selector.vue'
 
 import TenantCompaniesForm from './views/tenant/companies/form.vue'
 import TenantCompaniesLogo from './views/tenant/companies/logo.vue'
@@ -304,6 +305,17 @@ import TenantOrdersIndex from './views/tenant/orders/index.vue'
 import TenantAccountPaymentIndex from './views/tenant/account/payment_index.vue'
 import TenantAccountConfigurationIndex from './views/tenant/account/configuration.vue'
 
+// WhatsApp Bot
+import TenantWhatsAppBotConfiguration from './views/tenant/whatsapp_bot/configuration.vue'
+import TenantWhatsAppBotCommands from './views/tenant/whatsapp_bot/commands.vue'
+import TenantWhatsAppBotManual from './views/tenant/whatsapp_bot/manual.vue'
+
+// Help Center
+import TenantHelpDrawer from './components/HelpDrawer.vue'
+import TenantHelpTooltip from './components/HelpTooltip.vue'
+import TenantContextHelp from './components/ContextHelp.vue'
+import TenantGlobalHelpButton from './components/GlobalHelpButton.vue'
+
 // Login
 import TenantLoginPage from './views/tenant/login/index.vue'
 
@@ -375,16 +387,18 @@ import TenantSystemActivityLogsTransactionsIndex from '@viewsModuleLevelAccess/s
 import TenantRememberChangePassword from './views/tenant/users/partials/remember_change_password.vue'
 
 import TenantSireIndex from './views/tenant/sire/index.vue'
-import TenantQrChat from '@viewsModuleQrChatBuho/Configuration.vue'
 import TenantQrApi from '@viewsModuleQrApi/ConfigurationQrApi.vue'
 import TenantReportPendingAccountCommissionsIndex from '@viewsModuleReport/pending-account-commissions/index.vue'
 import TenantReportSaleByBrand from '../../modules/Report/Resources/assets/js/views/sales_by_brand/index.vue'
 import TenatnEditorTag from '../../modules/Item/Resources/assets/js/views/editor-tag/index.vue'
 import EmptyState from './components/EmptyState.vue'
 import TenantItemAffectations from './views/tenant/item_affectations/index.vue';
+import TenantOperationTypes from './views/tenant/operation_types/index.vue';
 import TenantcustomFieldsIndex from '@viewsModuleCustomField/custom_fields/index.vue';
+import TenantWebhooksIndex from '@viewsModuleWebhook/webhooks/index.vue';
 import CheckoutIzipay from './components/checkouts/izipay.vue'
 import CheckoutCulqi from './components/checkouts/culqi.vue'
+import CheckoutMercadopago from './components/checkouts/mercadopago.vue'
 import CheckoutTenant from './components/checkouts/CheckoutTenant.vue'
 import CheckoutAdmin from './components/checkouts/CheckoutAdmin.vue'
 
@@ -395,9 +409,6 @@ import TenantClaimsBookForm from '@viewsModuleClaimsBook/views/claim_form.vue'
 Vue.component('empty-state', EmptyState);
 // Sire
 Vue.component('tenant-sire-index', TenantSireIndex);
-
-// Sire
-Vue.component('tenant-qr-chat', TenantQrChat);
 
 // QR Api
 Vue.component('tenant-qr-api', TenantQrApi);
@@ -432,6 +443,7 @@ Vue.component('tenant-configurations-sale-notes', TenantConfigurationsSaleNotes)
 Vue.component('tenant-configurations-pdf-guide', TenantConfigurationsPdfGuide)
 Vue.component('tenant-configurations-preprinted-pdf', TenantConfigurationsPreprintedPdf)
 Vue.component('tenant-configurations-custom-fields', TenantcustomFieldsIndex)
+Vue.component('tenant-configurations-webhooks', TenantWebhooksIndex)
 Vue.component('tenant-dialog-header-menu', TenantDialogHeaderMenu)
 
 Vue.component('tenant-bank_accounts-index', TenantBankAccountsIndex)
@@ -483,6 +495,7 @@ Vue.component('tenant-dispatch_carrier-form', TenantDispatchCarrierForm)
 Vue.component('tenant-purchases-items', TenantPurchasesItems)
 Vue.component('tenant-attribute_types-index', TenantAttributeTypesIndex)
 Vue.component('tenant-item-affectations', TenantItemAffectations)
+Vue.component('tenant-operation-types', TenantOperationTypes)
 Vue.component('tenant-calendar', TenantCalendar)
 Vue.component('tenant-warehouses', TenantWarehouses)
 Vue.component('tenant-calendar-quotation', TenantCalendarQuotation)
@@ -673,6 +686,7 @@ Vue.component('tenant-hotel-floors', TenantHotelFloors)
 Vue.component('tenant-hotel-rooms', TenantHotelRooms)
 Vue.component('tenant-hotel-reception', TenantHotelReception)
 Vue.component('tenant-hotel-sucursale', TenantHotelSucursale)
+Vue.component('tenant-dedicated-group-selector', TenantDedicatedGroupSelector)
 Vue.component('tenant-hotel-rent', TenantHotelRent)
 Vue.component('tenant-hotel-rent-add-product', TenantHotelRentAddProduct)
 Vue.component('tenant-hotel-rent-checkout', TenantHotelRentCheckout)
@@ -708,6 +722,13 @@ Vue.component('tenant-orders-index', TenantOrdersIndex)
 // Cuenta
 Vue.component('tenant-account-payment-index', TenantAccountPaymentIndex)
 Vue.component('tenant-account-configuration-index', TenantAccountConfigurationIndex)
+Vue.component('tenant-whatsapp-bot-configuration', TenantWhatsAppBotConfiguration)
+Vue.component('tenant-help-drawer', TenantHelpDrawer)
+Vue.component('tenant-help-tooltip', TenantHelpTooltip)
+Vue.component('tenant-context-help', TenantContextHelp)
+Vue.component('tenant-global-help-button', TenantGlobalHelpButton)
+Vue.component('tenant-whatsapp-bot-commands', TenantWhatsAppBotCommands)
+Vue.component('tenant-whatsapp-bot-manual', TenantWhatsAppBotManual)
 
 // Login
 Vue.component('tenant-login-page', TenantLoginPage)
@@ -789,5 +810,6 @@ Vue.component('tenant-claims-book-form',           TenantClaimsBookForm)
 
 Vue.component('tenant-checkout-culqi', CheckoutCulqi)
 Vue.component('tenant-checkout-izipay', CheckoutIzipay)
+Vue.component('tenant-checkout-mercadopago', CheckoutMercadopago)
 Vue.component('checkout-admin', CheckoutAdmin)
 Vue.component('checkout-tenant', CheckoutTenant)

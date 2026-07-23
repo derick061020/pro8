@@ -3,6 +3,7 @@
 namespace App\Models\Tenant;
 
 use App\Notifications\Tenant\PasswordResetNotification;
+use App\Services\SeriesResolver;
 use Carbon\Carbon;
 use Hyn\Tenancy\Traits\UsesTenantConnection;
 use Illuminate\Database\Eloquent\Builder;
@@ -182,7 +183,7 @@ class User extends Authenticatable
         'recreate_documents',
         'zone_id',
         'restaurant_role_id',
-        
+
         'delete_payment',
         'create_payment',
 
@@ -202,6 +203,7 @@ class User extends Authenticatable
         'personal_email',
         'corporate_email',
         'personal_cell_phone',
+        'bot_enabled',
         'corporate_cell_phone',
         'date_of_birth',
         'contract_date',
@@ -590,17 +592,15 @@ $modules_levels = []){
      * @return \Illuminate\Database\Query\Builder|Builder
      */
     public function scopeGetSellers(  $query,
-$withEstablishment = true){
+        $withEstablishment = true){
         if($withEstablishment == false) {
             $query->without(['establishment']);
         }else{
             $query->with(['establishment']);
 
         }
-        $query->whereIn('type',
- ['seller']);
-        $query->orWhere('id',
- auth()->user()->id);
+        $query->whereIn('type', ['seller']);
+        $query->orWhere('id', auth()->user()->id);
         return  $query;
     }
 
@@ -610,9 +610,7 @@ $withEstablishment = true){
      * @return mixed
      */
     public function scopeGetWorkers($query){
-        $query->whereIn('type',
- ['seller',
-'admin']);
+        $query->whereIn('type', ['seller', 'admin']);
         return  $query;
     }
 
@@ -920,7 +918,8 @@ $withEstablishment = true){
         $establishment_id =  $this->establishment_id;
         $userType = $this->type;
 
-        return  Series::FilterSeries($establishment_id)
+        // Filtrado por contexto: oculta dedicadas / restringe al grupo activo del equipo (cookie).
+        return  app(SeriesResolver::class)->applyContext(Series::FilterSeries($establishment_id))
             ->get()
             ->transform(function($row) use($document_id,$series_id,$userType) {
             /** @var Series $row */
@@ -950,14 +949,14 @@ $withEstablishment = true){
 
     }
 
-        
+
     /**
-     * 
+     *
      * Validar si aplica el filtro por vendedor para el usuario en sesión (filtrar clientes por vendedor asignado)
      *
      * Usado en:
      * Person - scopeWhereFilterCustomerBySeller
-     * 
+     *
      * @return bool
      */
     public function applyCustomerFilterBySeller()
@@ -967,9 +966,9 @@ $withEstablishment = true){
         return ($this->type === 'seller' && $configuration->customer_filter_by_seller);
     }
 
-    
+
     /**
-     * 
+     *
      * Obtener permisos para pagos de comprobantes
      *
      * @return array
@@ -982,9 +981,9 @@ $withEstablishment = true){
         ];
     }
 
-    
+
     /**
-     * 
+     *
      * Retorna data para los permisos de la app
      *
      * @return array
@@ -998,10 +997,10 @@ $withEstablishment = true){
             'app_modules' => $this->getDataAppModules()
         ];
     }
-    
-    
+
+
     /**
-     * 
+     *
      * Obtener modulos de la app
      *
      * @return array
@@ -1029,7 +1028,7 @@ $withEstablishment = true){
 
 
     /**
-     * 
+     *
      * Obtener permisos del usuario para gestionar modulos en la app
      *
      * @return array
@@ -1042,14 +1041,14 @@ $withEstablishment = true){
         {
             return $this->getTransformPermissionsApp(AppModule::get());
         }
-        
+
         return $this->getTransformPermissionsApp($this->app_modules);
 
     }
-    
+
 
     /**
-     * 
+     *
      * Obtener modulos/opciones disponibles en pos app
      *
      * @return array
@@ -1065,7 +1064,7 @@ $withEstablishment = true){
 
 
     /**
-     * 
+     *
      * Retornar data para api
      *
      * @param  array $data
@@ -1077,12 +1076,12 @@ $withEstablishment = true){
             return $row->getPermissionsApp();
         });
     }
-    
+
 
     /**
-     * 
+     *
      * Obtener datos generales del usuario
-     * 
+     *
      * Usado para carga inicial en app
      *
      * @return array
@@ -1092,9 +1091,10 @@ $withEstablishment = true){
         return [
             'type' => $this->type,
             'establishment_id' => $this->establishment_id,
+            'establishment' => $this->establishment ?? null,
         ];
     }
-    
+
     public function getPermissionsPurchase()
     {
         return [
@@ -1104,7 +1104,7 @@ $withEstablishment = true){
         ];
     }
 
-        
+
     /**
      *
      * @return string
@@ -1114,14 +1114,14 @@ $withEstablishment = true){
         return $this->photo_filename ? (new ModelTenant)->getPathPublicUploads('users', $this->photo_filename) : null;
     }
 
-    
+
     /**
-     * 
+     *
      * Filtro para no incluir relaciones en consulta
      *
      * @param \Illuminate\Database\Eloquent\Builder $query
      * @return \Illuminate\Database\Eloquent\Builder
-     */  
+     */
     public function scopeWhereFilterWithOutRelations($query)
     {
         return $query->withOut([
@@ -1129,9 +1129,9 @@ $withEstablishment = true){
         ]);
     }
 
-        
+
     /**
-     * 
+     *
      * Retorna nombre de la conexión
      *
      * @return string
@@ -1140,21 +1140,21 @@ $withEstablishment = true){
     {
         return $this->getConnection()->getName();
     }
-    
+
 
     public function system_activity_logs()
     {
         return $this->morphMany(SystemActivityLog::class, 'origin');
     }
 
-    
+
     /**
-     * 
+     *
      * Filtro para no incluir relaciones en consulta y obtener el nombre de usuario
      *
      * @param Builder $query
      * @return Builder
-     */  
+     */
     public function scopeFilterOnlyUsername($query)
     {
         return $query->whereFilterWithOutRelations()->select('id', 'name');
@@ -1206,7 +1206,7 @@ $withEstablishment = true){
 
 
     /**
-     * 
+     *
      * Permisos de los modulos y submodulos por usuario
      *
      * @return array
@@ -1241,7 +1241,7 @@ $withEstablishment = true){
         return $this->active;
     }
 
-  
+
     /**
      *
      * @param  Builder $query
@@ -1264,7 +1264,7 @@ $withEstablishment = true){
     }
 
 
-    
+
     /**
      *
      * @param  string $type
@@ -1273,8 +1273,8 @@ $withEstablishment = true){
     public static function getDescriptionType($type)
     {
         $description = null;
-        
-        switch ($type) 
+
+        switch ($type)
         {
             case 'admin':
                 $description =  'Administrador';

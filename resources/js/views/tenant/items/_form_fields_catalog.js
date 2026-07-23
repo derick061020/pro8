@@ -26,6 +26,7 @@ const TAB_LABELS = {
     general:    'General',
     warehouses: 'Almacenes',
     attributes: 'Atributos',
+    imagen:     'Imagen',
     purchase:   'Compra',
 };
 
@@ -41,6 +42,7 @@ const INPUT_TYPE_LABELS = {
     'select-category':         'Selección',
     'select-brand':            'Selección',
     'select-warehouse':        'Selección',
+    image:                     'Imagen',
 };
 
 const FIELDS = [
@@ -188,6 +190,14 @@ const FIELDS = [
         type: 'select-brand',
         tab: 'attributes',
         defaultWidth: 4,
+        availableForVariants: ALL_VARIANTS,
+    },
+    {
+        key: 'image',
+        label: 'Imagen',
+        type: 'image',
+        tab: 'imagen',
+        defaultWidth: 3,
         availableForVariants: ALL_VARIANTS,
     },
     {

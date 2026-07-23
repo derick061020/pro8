@@ -3,8 +3,9 @@
 namespace App\Http\Controllers\System;
 
 use App\Http\Controllers\Controller;
+use App\Models\System\Client;
 use App\Models\System\Configuration;
-use App\Models\System\Plan;
+use Hyn\Tenancy\Models\Hostname;
 use App\Http\Requests\System\{
     GuestRegisterClientRequest,
     SendEmailGuestRegisterRequest,
@@ -12,7 +13,6 @@ use App\Http\Requests\System\{
 use App\Traits\GuestRegisterTrait;
 use Exception;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Crypt;
 use App\Helpers\GuestRegisterHelper;
 use App\Http\Controllers\System\ClientController;
 
@@ -23,41 +23,93 @@ class GuestRegisterController extends Controller
 
     private const DEFAULT_BACKGROUND_IMAGE_LOGIN = 'fondo-5.svg';
 
-    public function index()
+    public function index(Request $request)
     {
-        return view('system.guest-register.index', $this->getDataRegister());
+        $plan_id = $request->query('plan_id');
+        return view('system.guest-register.index', $this->getDataRegister($plan_id));
     }
 
     public function disabled()
     {
         return view('system.guest-register.disabled', $this->getDataRegister());
     }
-    
+
+    /**
+     * Verifica si un subdominio está disponible (no existe el hostname/fqdn).
+     *
+     * @param  string  $subdomain
+     * @return array
+     */
+    public function checkSubdomain($subdomain)
+    {
+        $subdomain = strtolower(trim($subdomain));
+
+        if ($subdomain === '' || !preg_match('/^[a-z0-9]+$/', $subdomain)) {
+            return [
+                'success'   => true,
+                'available' => false,
+                'message'   => 'Solo se permiten letras y números, sin símbolos.',
+            ];
+        }
+
+        $fqdn = $subdomain . '.' . config('tenant.app_url_base');
+        $taken = Hostname::where('fqdn', $fqdn)->exists();
+
+        return [
+            'success'   => true,
+            'available' => !$taken,
+            'message'   => $taken
+                ? 'Este subdominio ya está en uso.'
+                : 'Subdominio disponible.',
+        ];
+    }
+
+    /**
+     * Verifica si un RUC/número de documento ya está registrado como cliente.
+     *
+     * @param  string  $number
+     * @return array
+     */
+    public function checkRuc($number)
+    {
+        $number = trim($number);
+
+        if ($number === '' || !preg_match('/^\d{8,11}$/', $number)) {
+            return [
+                'success'   => true,
+                'available' => false,
+                'message'   => 'Ingresa un número de documento válido.',
+            ];
+        }
+
+        $taken = Client::where('number', $number)->exists();
+
+        return [
+            'success'   => true,
+            'available' => !$taken,
+            'message'   => $taken
+                ? 'Este RUC ya está registrado.'
+                : 'RUC disponible.',
+        ];
+    }
+
     /**
      *
      * @return array
      */
-    private function getDataRegister()
+    private function getDataRegister(string $plan_id = null)
     {
-        $configuration = Configuration::select(['use_login_global', 'login', 'guest_register_plan_id'])->first();
+        $configuration = Configuration::select(['use_login_global', 'login', 'guest_register_plan_id', 'validate_ruc_register'])->first();
         $use_login_global = $configuration->use_login_global;
         $login = $configuration->login;
-        $plan_default = $configuration->guest_register_plan_id;
+        $plan_default = is_null($plan_id) ?  $configuration->guest_register_plan_id : $plan_id;
+        $validate_ruc_register = (bool) $configuration->validate_ruc_register;
         $default_background_image_login = asset('images/'.self::DEFAULT_BACKGROUND_IMAGE_LOGIN);
         $base_url = '.' . config('tenant.app_url_base');
 
-        $plans = Plan::where('locked', false)
-            ->select(
-                'id', 'name', 'pricing',
-                'limit_users', 'limit_documents',
-                'establishments_limit', 'establishments_unlimited',
-                'sales_limit', 'sales_unlimited',
-                'include_sale_notes_sales_limit', 'include_sale_notes_limit_documents'
-            )
-            ->orderBy('pricing')
-            ->get();
+        $plans = $this->getRegisterPlans();
 
-        return compact('login', 'use_login_global', 'default_background_image_login', 'base_url', 'plans', 'plan_default');
+        return compact('login', 'use_login_global', 'default_background_image_login', 'base_url', 'plans', 'plan_default', 'validate_ruc_register');
     }
 
     /**
@@ -123,13 +175,13 @@ class GuestRegisterController extends Controller
 
             if(!$response['success']) return $response;
 
-            $payment_uuid = $response['guest_register']['payment_uuid'] ?? null;
+            // $payment_uuid = $response['guest_register']['payment_uuid'] ?? null;
 
             return [
                 'success' => true,
                 'message' => 'Cuenta registrada correctamente.',
-                'guest_register' => $response['guest_register'],
-                'payment_url' => $payment_uuid ? route('payment.public.show', ['uuid' => $payment_uuid]) : null,
+                // 'guest_register' => $response['guest_register'],
+                // 'payment_url' => $payment_uuid ? route('payment.public.show', ['uuid' => $payment_uuid]) : null,
             ];
 
         }

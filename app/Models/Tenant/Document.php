@@ -22,6 +22,7 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
+use App\Helpers\CacheHelper;
 use Modules\BusinessTurn\Models\DocumentHotel;
 use Modules\BusinessTurn\Models\DocumentTransport;
 use Modules\Item\Models\WebPlatform;
@@ -306,23 +307,23 @@ class Document extends ModelTenant
     protected static function booted()
     {
         static::created(function ($document){
-            Cache::tags(['document_list'])->flush();
-            Cache::tags(['document_detail'])->flush();
+            CacheHelper::flush(['document_list']);
+            CacheHelper::flush(['document_detail']);
         });
 
         static::updated(function ($document){
-            Cache::tags(['document_list'])->flush();
-            Cache::tags(['document_detail'])->flush();
+            CacheHelper::flush(['document_list']);
+            CacheHelper::flush(['document_detail']);
         });
 
         static::deleted(function ($document){
-            Cache::tags(['document_list'])->flush();
-            Cache::tags(['document_detail'])->flush();
+            CacheHelper::flush(['document_list']);
+            CacheHelper::flush(['document_detail']);
         });
 
         static::saved(function ($document){
-            Cache::tags(['document_list'])->flush();
-            Cache::tags(['document_detail'])->flush();
+            CacheHelper::flush(['document_list']);
+            CacheHelper::flush(['document_detail']);
         });
     }
 

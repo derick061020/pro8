@@ -8,7 +8,8 @@ use App\Http\Resources\Tenant\RetentionCollection;
 use App\Http\Resources\Tenant\RetentionResource;
 use App\Models\Tenant\Catalogs\Code;
 use App\Models\Tenant\Establishment;
-use App\Models\Tenant\Series; 
+use App\Models\Tenant\Series;
+use App\Services\SeriesResolver;
 use App\Models\Tenant\Retention;
 use App\Models\Tenant\Supplier;
 use Exception;
@@ -60,7 +61,8 @@ class RetentionController extends Controller
         $establishments = Establishment::where('id', auth()->user()->establishment_id)->get();// Establishment::all();
         $retention_types = RetentionType::get();
         $suppliers = $this->table('suppliers');
-        $series = Series::all();
+        // Series filtradas por contexto (oculta dedicadas / restringe al grupo activo). Ver SeriesResolver.
+        $series = app(SeriesResolver::class)->applyContext(Series::query())->get();
 
         return compact('establishments', 'retention_types', 'suppliers', 'series');
     }

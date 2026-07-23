@@ -1,177 +1,154 @@
 <template>
-  <div class="card-body bg-white" style="border-radius: 12px;">
-
-    <!-- Cabecera -->
-    <div class="page-header pe-0">
-      <h2>
-        <a href="/full-suscription/payment-reminders">
-          <svg xmlns="http://www.w3.org/2000/svg" style="margin-top: -5px;" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-bell"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M10 5a2 2 0 1 1 4 0a7 7 0 0 1 4 6v3a4 4 0 0 0 2 3h-16a4 4 0 0 0 2 -3v-3a7 7 0 0 1 4 -6" /><path d="M9 17v1a3 3 0 0 0 6 0v-1" /></svg>
-        </a>
-      </h2>
-      <ol class="breadcrumbs">
-        <li class="active">
-          <span>Recordatorios de Pago</span>
-        </li>
-      </ol>
-      <div class="right-wrapper pull-right"></div>
-    </div>
-
+<div>
+  <!-- Cabecera -->
+  <div class="page-header pe-0">
+    <h2>
+      <a href="/full-suscription/payment-reminders">
+        <svg xmlns="http://www.w3.org/2000/svg" style="margin-top: -5px;" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-bell"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M10 5a2 2 0 1 1 4 0a7 7 0 0 1 4 6v3a4 4 0 0 0 2 3h-16a4 4 0 0 0 2 -3v-3a7 7 0 0 1 4 -6" /><path d="M9 17v1a3 3 0 0 0 6 0v-1" /></svg>
+      </a>
+    </h2>
+    <ol class="breadcrumbs">
+      <li class="active">
+        <span>Recordatorios de Pago</span>
+      </li>
+    </ol>
+    <div class="right-wrapper pull-right"></div>
+  </div>
+  
+  <div class="tab-content tab-content-default">
     <!-- Configuración general -->
-    <div class="card border mb-4 card-body bg-white" style="border-color:#dde3ed !important;">
-      <div class="">
-        <div class="row">
-          <div class="col-12 col-md-6">
-            <div :class="{ 'has-danger': errors.before_day_creation_suscription_order }" class="form-group mb-0">
-              <label class="control-label font-weight-semibold mb-1 h6">
-                Días de anticipación para crear la orden
-              </label>
-              <p class="text-muted mb-3">
-                Cuántos días antes del vencimiento se genera automáticamente la orden de pago.
-              </p>
-              <div class="d-flex align-items-center" style="gap:8px;">
-                <el-input
-                  v-model="form.before_day_creation_suscription_order"
-                  placeholder="Ej: 3"
-                  type="number"
-                  min="1"
-                  style="width:240px;"
-                />
-                <el-button type="primary" size="small" @click="submit">
-                Guardar
-                </el-button>
-              </div>
-              <small
-                v-if="errors.before_day_creation_suscription_order"
-                class="invalid-feedback d-block"
-                v-text="errors.before_day_creation_suscription_order[0]"
-              ></small>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Reglas -->
-    <div class="card border mb-4">
-
-          <!-- Header -->
-          <div class="card-header classic-header d-flex justify-content-between align-items-center">
-            <div>
-              <span class="control-label font-weight-semibold mb-1 h6">Programación de notificaciones automáticas</span>
-              <p class="text-muted mb-0" style="font-weight: normal;">
-                Configura reglas para enviar recordatorios automáticos a tus clientes antes o después del vencimiento de su pago.
-              </p>
-            </div>
-          </div>
-
-          <div class="card-body p-0 bg-white">
-
-            <el-table
-              v-if="reminders.length > 0"
-              :data="reminders"
-              style="width:100%;"
-            >
-              <!-- # -->
-              <el-table-column label="#" width="50" align="center">
-                <template slot-scope="{ $index }">
-                  <span class="row-number">{{ $index + 1 }}</span>
-                </template>
-              </el-table-column>
-
-              <!-- Canal -->
-              <el-table-column label="Canal" width="200">
-                <template slot-scope="{ row }">
-                  <div class="input-group input-group-sm">
-                    <div class="input-group-prepend">
-                      <span class="input-group-text bg-white">
-                        <i :class="channelIcon(row.channel)"></i>
-                      </span>
-                    </div>
-                    <el-select v-model="row.channel" size="small" style="flex:1; min-width:0;">
-                      <el-option value="email"    label="Correo"></el-option>
-                      <el-option value="whatsapp" label="WhatsApp"></el-option>
-                    </el-select>
-                  </div>
-                </template>
-              </el-table-column>
-
-              <!-- Días -->
-              <el-table-column label="Días" width="90" align="center">
-                <template slot-scope="{ row }">
-                  <el-input
-                    v-if="row.timingType !== 'same_day'"
-                    v-model="row.days"
-                    type="number"
-                    min="1"
-                    max="365"
-                    size="small"
-                  />
-                  <el-input v-else value="—" size="small" disabled />
-                </template>
-              </el-table-column>
-
-              <!-- Momento -->
-              <el-table-column label="Momento de envío">
-                <template slot-scope="{ row }">
-                  <el-select
-                    v-model="row.timingType"
-                    size="small"
-                    style="width:100%;"
-                  >
-                    <el-option value="before"   label="Días antes de vencer"></el-option>
-                    <el-option value="same_day" label="El mismo día del vencimiento"></el-option>
-                    <el-option value="after"    label="Días después de vencer"></el-option>
-                  </el-select>
-                </template>
-              </el-table-column>
-
-              <!-- Hora -->
-              <el-table-column label="Hora" width="130" align="center">
-                <template slot-scope="{ row }">
-                  <el-input v-model="row.time" type="time" size="small" />
-                </template>
-              </el-table-column>
-
-              <!-- Eliminar -->
-              <el-table-column label="" width="55" align="center">
-                <template slot-scope="{ $index }">
-                  <button
-                    class="btn btn-sm btn-link text-danger p-0"
-                    title="Eliminar"
-                    @click="removeReminder($index)"
-                  >
-                    <i class="fas fa-trash-alt"></i>
-                  </button>
-                </template>
-              </el-table-column>
-
-            </el-table>
-
-            <!-- Botón añadir -->
-            <div class="p-3">
-              <button
-                class="btn btn-outline-secondary w-100 py-2"
-                style="border-style:dashed;"
-                @click="addReminder"
-              >
-                <i class="fas fa-plus mr-2"></i>
-                Añadir regla
-              </button>
-            </div>
-
-          </div>
-
-          <!-- Footer -->
-          <div class="card-footer d-flex justify-content-end align-items-center">
-            <el-button type="primary" size="small" :loading="loading" @click="saveConfiguration">
-              {{ loading ? 'Guardando...' : 'Guardar configuración' }}
+    <div class="row invoice">
+      <div class="col-12 mb-3">
+        <div :class="{ 'has-danger': errors.before_day_creation_suscription_order }" class="form-group mb-0">
+          <label class="control-label font-weight-semibold mb-1 h6">
+            Días de anticipación para crear la orden
+          </label>
+          <p class="text-muted mb-3">
+            Cuántos días antes del vencimiento se genera automáticamente la orden de pago.
+          </p>
+          <div class="d-flex align-items-center" style="gap:8px;">
+            <el-input
+              v-model="form.before_day_creation_suscription_order"
+              placeholder="Ej: 3"
+              type="number"
+              min="1"
+              style="width:240px;"
+            />
+            <el-button type="primary" size="small" @click="submit">
+            Guardar
             </el-button>
           </div>
-
+          <small
+            v-if="errors.before_day_creation_suscription_order"
+            class="invalid-feedback d-block"
+            v-text="errors.before_day_creation_suscription_order[0]"
+          ></small>
         </div>
       </div>
 
+      <div class="col-12 mb-3">
+        <div class="d-flex justify-content-start align-items-center">
+          <div>
+            <span class="control-label font-weight-semibold mb-1 h6">Programación de notificaciones automáticas</span>
+            <p class="text-muted mb-0" style="font-weight: normal;">
+              Configura reglas para enviar recordatorios automáticos a tus clientes antes o después del vencimiento de su pago.
+            </p>
+          </div>
+        </div>
+        <div class="">
+          <div class="table-responsive" v-if="reminders.length > 0">
+            <table class="table mb-1">
+              <thead>
+                <tr class="table-titles-default">
+                  <th style="width: 10px;" class="text-center">#</th>
+                  <th class="font-weight-bold" style="width: 200px;">Canal</th>
+                  <th class="text-center font-weight-bold" style="width: 90px;">Días</th>
+                  <th class="font-weight-bold">Momento de envío</th>
+                  <th class="text-center font-weight-bold" style="width: 130px;">Hora</th>
+                  <th style="width: 55px;"></th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr class="table-titles-default" v-for="(row, index) in reminders" :key="index">
+                  <!-- # -->
+                  <td class="text-center">
+                    <span class="row-number">{{ index + 1 }}</span>
+                  </td>
+                  <!-- Canal -->
+                  <td>
+                    <div class="input-group input-group-sm">
+                      <el-select v-model="row.channel" size="small" style="flex:1; min-width:0;">
+                        <el-option value="email"    label="Correo"></el-option>
+                        <el-option value="whatsapp" label="WhatsApp"></el-option>
+                      </el-select>
+                    </div>
+                  </td>
+                  <!-- Días -->
+                  <td class="text-center">
+                    <el-input
+                      v-if="row.timingType !== 'same_day'"
+                      v-model="row.days"
+                      type="number"
+                      min="1"
+                      max="365"
+                      size="small"
+                    />
+                    <el-input v-else value="—" size="small" disabled />
+                  </td>
+                  <!-- Momento -->
+                  <td>
+                    <el-select
+                      v-model="row.timingType"
+                      size="small"
+                      style="width:100%;"
+                    >
+                      <el-option value="before"   label="Días antes de vencer"></el-option>
+                      <el-option value="same_day" label="El mismo día del vencimiento"></el-option>
+                      <el-option value="after"    label="Días después de vencer"></el-option>
+                    </el-select>
+                  </td>
+                  <!-- Hora -->
+                  <td class="text-center">
+                    <el-input v-model="row.time" type="time" size="small" />
+                  </td>
+                  <!-- Eliminar -->
+                  <td class="text-center">
+                    <button
+                      class="btn btn-sm btn-link text-danger p-0"
+                      title="Eliminar"
+                      @click="removeReminder(index)"
+                    >
+                      <i class="fas fa-trash-alt"></i>
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <!-- Botón añadir -->
+          <div class="pt-2">
+            <button
+              class="btn btn-outline-secondary w-100 py-2"
+              style="border-style:dashed;"
+              @click="addReminder"
+            >
+              <i class="fas fa-plus mr-2"></i>
+              Añadir regla
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-12">
+        <div class="d-flex justify-content-end align-items-center">
+          <el-button type="primary" size="small" :loading="loading" @click="saveConfiguration">
+            {{ loading ? 'Guardando...' : 'Guardar configuración' }}
+          </el-button>
+        </div>
+      </div>
+     </div>
   </div>
+</div>
 </template>
 
 <script>
@@ -294,15 +271,6 @@ export default {
 </script>
 
 <style scoped>
-.classic-header {
-  background: #f7f8fa;
-  border-bottom: 0px solid #dde3ed;
-  font-size: 13px;
-  font-weight: 600;
-  color: #344563;
-  padding: 10px 16px;
-}
-
 .row-number {
   display: inline-flex;
   align-items: center;
@@ -314,34 +282,5 @@ export default {
   color: #7a8aab;
   font-size: 11px;
   font-weight: 700;
-}
-
-.empty-icon {
-  width: 52px;
-  height: 52px;
-  border-radius: 50%;
-  background: #f0f2f7;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-::v-deep .el-table td.el-table__cell,
-::v-deep .el-table th.el-table__cell.is-leaf {
-    border-bottom: none !important;
-}
-::v-deep .el-table::before,
-::v-deep .el-table::after {
-    display: none !important;
-}
-
-.card-footer {
-    border-top: 0px solid var(--black-highlight);
-}
-
-input[type=number]::-webkit-inner-spin-button,
-input[type=number]::-webkit-outer-spin-button {
-  -webkit-appearance: none;
-  margin: 0;
 }
 </style>

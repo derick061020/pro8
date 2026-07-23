@@ -28,6 +28,7 @@
     <link rel="stylesheet" href="{{ asset('porto-ecommerce/assets/css/rating.css') }}">
     <link rel="stylesheet" href="{{ asset('porto-ecommerce/assets/font-awesome/css/fontawesome-all.min.css') }}">
     <link rel="stylesheet" href="{{ asset('porto-light/css/styles_ecommerce.css') }}" />
+    @include('ecommerce::layouts.partials_ecommerce.primary_color_style')
 </head>
 
 <body data-company-title="{{ data_get($pageCompany, 'title_web') ?: data_get($pageCompany, 'trade_name') }}">

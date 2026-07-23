@@ -47,6 +47,7 @@ use App\Models\Tenant\PaymentMethodType;
 use App\Models\Tenant\Person;
 use App\Models\Tenant\SaleNote;
 use App\Models\Tenant\Series;
+use App\Services\SeriesResolver;
 use App\Models\Tenant\StateType;
 use App\Models\Tenant\User;
 use App\Traits\OfflineTrait;
@@ -195,6 +196,102 @@ class DocumentController extends Controller
             [
                 'name' => $ND_t->description,
                 'total' => "S/ " . ReportHelper::setNumber($ND),
+            ],
+        ];
+    }
+
+    /**
+     * KPIs del listado de comprobantes (solo documentos: facturas y boletas).
+     *
+     * Devuelve:
+     *  - Ventas del mes (facturas + boletas), desglose y variacion vs mes anterior.
+     *  - Cuentas por cobrar (saldo pendiente), separado en por cobrar y vencidas.
+     *
+     * Implementado en resources/js/views/tenant/documents/index.vue
+     *
+     * @param Request $request
+     * @return array
+     */
+    public function kpis(Request $request)
+    {
+        $valid_states = ['01', '03', '05', '07', '13'];
+
+        $start_current = Carbon::now()->startOfMonth()->toDateString();
+        $end_current   = Carbon::now()->endOfMonth()->toDateString();
+        $start_prev    = Carbon::now()->subMonthNoOverflow()->startOfMonth()->toDateString();
+        $end_prev      = Carbon::now()->subMonthNoOverflow()->endOfMonth()->toDateString();
+
+        $sumPen = function ($document_type_id, $start, $end) use ($valid_states) {
+            return (float) Document::query()
+                ->where(fn ($q) => $q->whereTypeUser())
+                ->whereIn('state_type_id', $valid_states)
+                ->where('document_type_id', $document_type_id)
+                ->whereBetween('date_of_issue', [$start, $end])
+                ->selectRaw("COALESCE(SUM(CASE WHEN currency_type_id = 'PEN' THEN total ELSE total * exchange_rate_sale END), 0) as s")
+                ->value('s');
+        };
+
+        $facturas_now = $sumPen('01', $start_current, $end_current);
+        $boletas_now  = $sumPen('03', $start_current, $end_current);
+        $sales_now    = $facturas_now + $boletas_now;
+
+        $sales_prev = $sumPen('01', $start_prev, $end_prev) + $sumPen('03', $start_prev, $end_prev);
+
+        if ($sales_prev > 0) {
+            $variation = (($sales_now - $sales_prev) / $sales_prev) * 100;
+        } else {
+            $variation = $sales_now > 0 ? 100 : 0;
+        }
+
+        // Cuentas por cobrar: saldo pendiente de facturas/boletas no canceladas.
+        $receivable_total = 0;
+        $por_cobrar_30    = 0;
+        $vencidas         = 0;
+        $today = Carbon::now()->startOfDay();
+        $due_limit_30 = $today->copy()->addDays(30)->endOfDay();
+
+        Document::query()
+            ->where(fn ($q) => $q->whereTypeUser())
+            ->whereIn('state_type_id', $valid_states)
+            ->whereIn('document_type_id', ['01', '03'])
+            ->where('total_canceled', false)
+            ->with(['invoice:id,document_id,date_of_due'])
+            ->withSum('payments as payments_sum', 'payment')
+            ->get(['id', 'document_type_id', 'currency_type_id', 'exchange_rate_sale', 'total', 'retention'])
+            ->each(function ($row) use (&$receivable_total, &$por_cobrar_30, &$vencidas, $today, $due_limit_30) {
+                $retention = $row->retention ? $row->retention->amount : 0;
+                $balance = $row->total - $retention - ($row->payments_sum ?? 0);
+
+                if ($balance <= 0) {
+                    return;
+                }
+
+                $balance_pen = ($row->currency_type_id === 'PEN')
+                    ? $balance
+                    : $balance * $row->exchange_rate_sale;
+
+                $receivable_total += $balance_pen;
+
+                $date_of_due = optional($row->invoice)->date_of_due;
+                if ($date_of_due && Carbon::parse($date_of_due)->lt($today)) {
+                    $vencidas += $balance_pen;
+                } elseif ($date_of_due && Carbon::parse($date_of_due)->lte($due_limit_30)) {
+                    $por_cobrar_30 += $balance_pen;
+                }
+            });
+
+        return [
+            'sales' => [
+                'total'        => 'S/ ' . number_format($sales_now, 2, '.', ','),
+                'facturas'     => 'S/ ' . number_format($facturas_now, 2, '.', ','),
+                'boletas'      => 'S/ ' . number_format($boletas_now, 2, '.', ','),
+                'variation'    => ($variation >= 0 ? '+' : '') . number_format($variation, 1, '.', ',') . '% vs mes anterior',
+                'variation_up' => $variation >= 0,
+            ],
+            'receivable' => [
+                'total'   => 'S/ ' . number_format($receivable_total, 2, '.', ','),
+                'current' => 'S/ ' . number_format($por_cobrar_30, 2, '.', ','),
+                'overdue' => 'S/ ' . number_format($vencidas, 2, '.', ','),
             ],
         ];
     }
@@ -1412,7 +1509,10 @@ class DocumentController extends Controller
         $categories = Category::orderBy('name')->get();
         $state_types = StateType::get();
         $document_types = DocumentType::whereIn('id', ['01', '03', '07', '08'])->get();
-        $series = Series::whereIn('document_type_id', ['01', '03', '07', '08'])->get();
+        // Series filtradas por contexto (oculta dedicadas / restringe al grupo activo). Ver SeriesResolver.
+        $series = app(SeriesResolver::class)
+            ->applyContext(Series::whereIn('document_type_id', ['01', '03', '07', '08']))
+            ->get();
         $establishments = Establishment::where('id', auth()->user()->establishment_id)->get();// Establishment::all();
 
         return compact('customers', 'document_types', 'series', 'establishments', 'state_types', 'items', 'categories');
@@ -1620,9 +1720,9 @@ class DocumentController extends Controller
             ->whereIn('id', ['01', '03'])
             ->get();
 
-        $series = Series::query()
+        $series = app(SeriesResolver::class)->applyContext(Series::query()
             ->whereIn('document_type_id', ['01', '03'])
-            ->where('establishment_id', auth()->user()->establishment_id)
+            ->where('establishment_id', auth()->user()->establishment_id))
             ->get();
 
         return [

@@ -14,7 +14,7 @@ class TenantAddEditNameProductPurchase extends Migration
     public function up()
     {
         Schema::table('configurations', function (Blueprint $table) {
-            $table->boolean('edit_name_product')->default(true)->after('options_pos');
+            $table->boolean('edit_name_product')->default(false)->after('options_pos');
         });
     }
 

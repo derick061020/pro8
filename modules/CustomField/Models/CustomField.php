@@ -22,6 +22,8 @@ class CustomField extends ModelTenant
         'enabled_for_sale_notes',
         'enabled_for_dispatches',
         'enabled_for_order_notes',
+        'enabled_for_quotations',
+        'show_in_pdf',
     ];
 
     protected $casts = [
@@ -31,5 +33,7 @@ class CustomField extends ModelTenant
         'enabled_for_sale_notes' => 'boolean',
         'enabled_for_dispatches' => 'boolean',
         'enabled_for_order_notes' => 'boolean',
+        'enabled_for_quotations' => 'boolean',
+        'show_in_pdf' => 'boolean',
     ];
 }

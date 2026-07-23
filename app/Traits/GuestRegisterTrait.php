@@ -5,6 +5,7 @@ namespace App\Traits;
 use App\Models\System\{
     Client,
     Module,
+    ModuleLevel,
     Plan
 };
 use App\Http\Requests\System\ClientRequest;
@@ -184,7 +185,8 @@ trait GuestRegisterTrait
             'modules' => $basic_module_levels['modules'],
             'levels' => $basic_module_levels['levels'],
             'from_guest_register' => true,
-            'enable_list_product' => true
+            'enable_list_product' => true,
+            'order_state_id' => $request->order_state_id
         ]; 
 
         return new ClientRequest($inputs);
@@ -192,8 +194,63 @@ trait GuestRegisterTrait
 
     /**
      *
+     * Planes disponibles para el registro (web y API), con sus modulos/submodulos.
+     *
+     * @return \Illuminate\Support\Collection
+     */
+    public function getRegisterPlans()
+    {
+        $moduleNames = Module::pluck('description', 'id');
+        $allLevels = ModuleLevel::get(['id', 'description', 'module_id'])->keyBy('id');
+
+        return Plan::where('locked', false)
+            ->select(
+                'id', 'name', 'pricing', 'is_popular',
+                'test_days',
+                'limit_users', 'limit_documents',
+                'establishments_limit', 'establishments_unlimited',
+                'sales_limit', 'sales_unlimited',
+                'include_sale_notes_sales_limit', 'include_sale_notes_limit_documents',
+                'module_permissions'
+            )
+            ->orderBy('pricing')
+            ->get()
+            ->map(function ($plan) use ($moduleNames, $allLevels) {
+                $moduleIds = data_get($plan->module_permissions, 'modules', []) ?? [];
+                $levelIds = data_get($plan->module_permissions, 'levels', []) ?? [];
+
+                $levelsByModule = collect($levelIds)
+                    ->map(fn ($levelId) => $allLevels->get((int) $levelId))
+                    ->filter()
+                    ->groupBy('module_id');
+
+                $plan->selected_modules = collect($moduleIds)
+                    ->map(function ($moduleId) use ($moduleNames, $levelsByModule) {
+                        $name = $moduleNames->get((int) $moduleId);
+                        if (!$name) {
+                            return null;
+                        }
+
+                        return [
+                            'name' => $name,
+                            'submodules' => collect($levelsByModule->get((int) $moduleId, []))
+                                ->pluck('description')
+                                ->values()
+                                ->all(),
+                        ];
+                    })
+                    ->filter()
+                    ->values()
+                    ->all();
+
+                return $plan;
+            });
+    }
+
+    /**
+     *
      * Modulos del grupo basico
-     * 
+     *
      * @return array
      */
     public function getBasicModuleLevels()

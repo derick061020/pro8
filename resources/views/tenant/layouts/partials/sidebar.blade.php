@@ -215,7 +215,6 @@ $showTransfer = collect($vc_module_levels)->intersect(['inventory', 'inventory_d
         <div class="nano-content nano-content-mobile pt-0">
             <nav id="menu" class="nav-main" role="navigation">
                 <ul class="nav nav-main nav-main-mobile">
-
                     @if(in_array('dashboard', $vc_modules))
                         <li class="{{ ($firstLevel === 'dashboard') ? 'nav-active' : '' }}">
                             <a class="nav-link dashboard-link" href="{{ route('tenant.dashboard.index') }}">
@@ -228,7 +227,7 @@ $showTransfer = collect($vc_module_levels)->intersect(['inventory', 'inventory_d
                                     <path d="M13.45 11.55l2.05 -2.05" />
                                     <path d="M6.4 20a9 9 0 1 1 11.2 0z" />
                                 </svg>
-                                <span>DASHBOARD</span>
+                                <span>Dashboard</span>
                             </a>
                         </li>
                     @endif
@@ -394,7 +393,7 @@ $showTransfer = collect($vc_module_levels)->intersect(['inventory', 'inventory_d
                                                                                                                                                 ">
                             <a class="nav-link" href="#">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-receipt-2"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M5 21v-16a2 2 0 0 1 2 -2h10a2 2 0 0 1 2 2v16l-3 -2l-2 2l-2 -2l-2 2l-2 -2l-3 2" /><path d="M14 8h-2.5a1.5 1.5 0 0 0 0 3h1a1.5 1.5 0 0 1 0 3h-2.5m2 0v1.5m0 -9v1.5" /></svg>
-                                <span>VENTAS</span>
+                                <span>Ventas</span>
                             </a>
                             <ul class="nav nav-children" style="">
                                 {{-- @if(auth()->user()->type != 'integrator' && $vc_company->soap_type_id != '03')
@@ -1309,10 +1308,24 @@ $showTransfer = collect($vc_module_levels)->intersect(['inventory', 'inventory_d
                                     </ul>
                                 </li>
                                 <li
-                                    class="{{ ($secondLevel != null && $secondLevel == 'configuration' && $firstLevel === 'restaurant') ? 'nav-active' : '' }}">
+                                    class="nav-item-with-action {{ ($secondLevel != null && $secondLevel == 'configuration' && $firstLevel === 'restaurant') ? 'nav-active' : '' }}">
                                     <a class="nav-link" href="{{ route('tenant.restaurant.configuration') }}">
-                                        Config. Mesas/Cocina
+                                        Configuración
                                     </a>
+                                    <div class="ms-3">
+                                        <button
+                                            type="button"
+                                            class="{{ ($firstLevel === 'quotations') ? 'second-buton' : 'btn-primary' }} btn btn-xs nav-action m-0 py-0"
+                                            title="Mozo"
+                                            onclick="openMozoApp('{{ auth()->user()->api_token ?? '' }}')">Ver Mozo
+                                        </button>
+                                        <button
+                                            type="button"
+                                            class="{{ ($firstLevel === 'quotations') ? 'second-buton' : 'btn-primary' }} btn btn-xs nav-action m-0 py-0 ms-1"
+                                            title="Vendeya"
+                                            onclick="openVendeyaApp('{{ auth()->user()->api_token ?? '' }}')">Ver Vendeya
+                                        </button>
+                                    </div>
                                 </li>
                             </ul>
                         </li>
@@ -1744,7 +1757,7 @@ $showTransfer = collect($vc_module_levels)->intersect(['inventory', 'inventory_d
                             <span>Configuración y más</span>
                         </a>
                     </li>
-                    <span class="w-100 text-center text-muted">{{ $vc_version ?? 'Pro 8' }}</span>
+                    <span class="w-100 text-center text-muted">{{ $vc_version ?? 'Pro 9' }}</span>
                 </ul>
             </div>
 
@@ -2108,6 +2121,21 @@ $showTransfer = collect($vc_module_levels)->intersect(['inventory', 'inventory_d
                 }
             } catch (err) { }
         });
+
+        (function() {
+            var sidebar = document.getElementById('sidebar-left');
+            if (!sidebar) return;
+            var nano = sidebar.querySelector('.nano');
+            if (!nano) return;
+
+            nano.addEventListener('mouseenter', function() {
+                nano.classList.add('hovered');
+            });
+
+            sidebar.addEventListener('mouseleave', function() {
+                nano.classList.remove('hovered');
+            });
+        })();
     });
 </script>
 
@@ -2116,10 +2144,12 @@ $showTransfer = collect($vc_module_levels)->intersect(['inventory', 'inventory_d
         height: calc(100% - 62px);
     }
     @media only screen and (min-width: 767px) {
-        html.no-overflowscrolling .sidebar-left.show-branch-selector .nano {
+        html.no-overflowscrolling .sidebar-left.show-branch-selector .nano,
+        html.no-overflowscrolling .sidebar-left:has(.nano.hovered).show-branch-selector .nano {
             height: calc(100% - 146px);
         }
-        html.no-overflowscrolling .sidebar-left.show-both-selectors .nano {
+        html.no-overflowscrolling .sidebar-left.show-both-selectors .nano,
+        html.no-overflowscrolling .sidebar-left:has(.nano.hovered).show-both-selectors .nano {
             height: calc(100% - 200px);
         }
     }

@@ -15,6 +15,11 @@ class ServiceController extends Controller
         return (new DocumentApiResolver())->service($type, $number);
     }
 
+    public function establishments($number)
+    {
+        return (new ServiceData)->establishments($number);
+    }
+
     public function exchange($date)
     {
         return (new ServiceData)->exchange($date);

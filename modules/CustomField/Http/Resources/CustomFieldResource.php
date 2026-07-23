@@ -26,6 +26,8 @@ class CustomFieldResource extends JsonResource
             'enabled_for_sale_notes' => $this->enabled_for_sale_notes,
             'enabled_for_dispatches' => $this->enabled_for_dispatches,
             'enabled_for_order_notes' => $this->enabled_for_order_notes,
+            'enabled_for_quotations' => $this->enabled_for_quotations,
+            'show_in_pdf' => (bool)$this->show_in_pdf,
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
         ];

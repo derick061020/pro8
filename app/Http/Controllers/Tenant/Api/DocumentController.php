@@ -25,7 +25,9 @@ class DocumentController extends Controller
     public function store(Request $request)
     {
         // dd($request->all());
-        $fact = DB::connection('tenant')->transaction(function () use ($request) {
+        $print_result = ['auto_printed' => false, 'print_order_id' => null, 'reason' => null];
+
+        $fact = DB::connection('tenant')->transaction(function () use ($request, &$print_result) {
             $facturalo = new Facturalo();
             $facturalo->save($request->all());
             $facturalo->createXmlUnsigned();
@@ -34,6 +36,9 @@ class DocumentController extends Controller
             $facturalo->updateHash($service_pse_xml['hash']);
             $facturalo->updateQr();
             $facturalo->createPdf();
+            // Impresión automática: se dispara antes del envío a SUNAT para no
+            // hacer esperar al cliente. Solo actúa si actions.auto_print === true.
+            $print_result = $facturalo->generatePrintOrder();
             $facturalo->senderXmlSignedBill($service_pse_xml['code']);
             $facturalo->sendEmail();
 
@@ -57,9 +62,14 @@ class DocumentController extends Controller
                 'id' => $document->id,
                 'print_ticket' =>  $document->getUrlPrintByFormat('ticket'),
             ],
+            // Resultado de la impresión automática server-side.
+            // Si auto_printed=true, el cliente NO debe ejecutar su flujo de
+            // descarga+base64+POST a /print-orders (evita doble impresión).
+            'print' => $print_result,
             'data_ws' => [
-                'message_text' => "Su comprobante de pago electrónico {$document->number_full} ha sido generado correctamente, puede revisarlo en el siguiente enlace: ".url('')."/print/document/{$document->external_id}/a4"."",
+                'message_text' => "Su comprobante de pago electrónico {$document->number_full} ha sido generado correctamente, puede revisarlo en el siguiente enlace: ".url('')."/print/document/{$document->external_id}/ticket"."",
                 "pdf_a4_filename" => url('')."/api/document-file/document/{$document->external_id}/a4",
+                "pdf_ticket_filename" => url('')."/api/document-file/document/{$document->external_id}/ticket",
                 "full_filename" => $document->filename.".pdf",
                 "customer_telephone" => optional($document->person)->telephone
             ],

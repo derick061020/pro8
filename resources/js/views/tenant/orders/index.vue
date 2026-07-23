@@ -46,7 +46,7 @@
         </div>
         <div class="card tab-content-default row-new mb-0">
             <div class="card-body">
-                <data-table :resource="resource" :status-options="options">
+                <data-table :resource="resource" :status-options="orderOptions">
                     <tr slot="heading" width="100%">
                         <!-- <th>#</th> -->
                         <th># Pedido</th>
@@ -55,14 +55,20 @@
                         <th class="text-end">Total</th>
                         <th>Fecha Emision</th>
                         <th>Medio Pago</th>
-                        <th>Estado</th>
+                        <th>Estado de pago</th>
+                        <th>Estado de envío</th>
+                        <th>Estado de pedido</th>
                         <th class="text-center">Documento</th>
                         <th class="text-end">Opciones</th>
                     </tr>
                     <tr></tr>
                     <tr slot-scope="{ index, row }">
                         <!-- <td>{{ index }}</td> -->
-                        <td>{{ row.order_id }}</td>
+                        <td>
+                            <a href="#" @click.prevent="openDetail(row)" class="text-primary">
+                                {{ row.order_id }}
+                            </a>
+                        </td>
                         <td>{{ row.customer }}</td>
                         <td class="text-center">
                             <template>
@@ -165,19 +171,91 @@
                         <td>{{ formatDate(row.created_at) }}</td>
                         <td>{{ row.reference_payment }}</td>
                         <td>
-                            <el-select
-                                v-model="row.status_order_id"
-                                placeholder="Estatus Pedido"
-                                :value="row.status_order_id"
-                                @change="updateStatus(row)"
+                            <div
+                                class="status-select-wrap"
+                                :class="{ 'has-color': statusColor(row.payment_status_order_id) }"
+                                :style="selectVars(row.payment_status_order_id)"
                             >
-                                <el-option
-                                    v-for="item in options"
-                                    :key="item.id"
-                                    :label="item.description"
-                                    :value="item.id"
-                                ></el-option>
-                            </el-select>
+                                <span
+                                    v-if="statusColor(row.payment_status_order_id)"
+                                    class="status-dot status-dot--inside"
+                                    :style="{ background: statusColor(row.payment_status_order_id) }"
+                                ></span>
+                                <el-select
+                                    v-model="row.payment_status_order_id"
+                                    placeholder="Estado de pago"
+                                    :value="row.payment_status_order_id"
+                                    @change="updateStatus(row, 'payment_status_order_id')"
+                                >
+                                    <el-option
+                                        v-for="item in paymentOptions"
+                                        :key="item.id"
+                                        :label="item.description"
+                                        :value="item.id"
+                                    >
+                                        <span class="status-dot" :style="{ background: item.color || '#909399' }"></span>
+                                        <span>{{ item.description }}</span>
+                                    </el-option>
+                                </el-select>
+                            </div>
+                        </td>
+                        <td>
+                            <div
+                                class="status-select-wrap"
+                                :class="{ 'has-color': statusColor(row.shipping_status_order_id) }"
+                                :style="selectVars(row.shipping_status_order_id)"
+                            >
+                                <span
+                                    v-if="statusColor(row.shipping_status_order_id)"
+                                    class="status-dot status-dot--inside"
+                                    :style="{ background: statusColor(row.shipping_status_order_id) }"
+                                ></span>
+                                <el-select
+                                    v-model="row.shipping_status_order_id"
+                                    placeholder="Estado de envío"
+                                    :value="row.shipping_status_order_id"
+                                    @change="updateStatus(row, 'shipping_status_order_id')"
+                                >
+                                    <el-option
+                                        v-for="item in shippingOptions"
+                                        :key="item.id"
+                                        :label="item.description"
+                                        :value="item.id"
+                                    >
+                                        <span class="status-dot" :style="{ background: item.color || '#909399' }"></span>
+                                        <span>{{ item.description }}</span>
+                                    </el-option>
+                                </el-select>
+                            </div>
+                        </td>
+                        <td>
+                            <div
+                                class="status-select-wrap"
+                                :class="{ 'has-color': statusColor(row.status_order_id) }"
+                                :style="selectVars(row.status_order_id)"
+                            >
+                                <span
+                                    v-if="statusColor(row.status_order_id)"
+                                    class="status-dot status-dot--inside"
+                                    :style="{ background: statusColor(row.status_order_id) }"
+                                ></span>
+                                <el-select
+                                    v-model="row.status_order_id"
+                                    placeholder="Estado de pedido"
+                                    :value="row.status_order_id"
+                                    @change="updateStatus(row, 'status_order_id')"
+                                >
+                                    <el-option
+                                        v-for="item in orderOptions"
+                                        :key="item.id"
+                                        :label="item.description"
+                                        :value="item.id"
+                                    >
+                                        <span class="status-dot" :style="{ background: item.color || '#909399' }"></span>
+                                        <span>{{ item.description }}</span>
+                                    </el-option>
+                                </el-select>
+                            </div>
                         </td>
                         <td class="text-center">
                             <template v-if="row.document_type_id == '80'">
@@ -311,9 +389,54 @@
             :showDialog.sync="showStatusModal"
             :options="options"
         ></status-order-modal>
+        <order-detail
+            :visible.sync="showOrderModal"
+            :record="selectedOrder">
+        </order-detail>
     </div>
 </template>
 <style>
+/* Estado con color: se pinta el propio select (borde, fondo, texto) con el punto dentro */
+.status-select-wrap {
+    position: relative;
+    width: 100%;
+}
+.status-dot {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+/* Punto dentro del select, sobre el input, a la izquierda del texto */
+.status-dot--inside {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 2;
+    pointer-events: none;
+}
+/* Pinta el input del select con el color del estado. !important para ganarle al skin del tenant */
+.status-select-wrap.has-color .el-input__inner {
+    border: none !important;
+    background-color: color-mix(in srgb, var(--st-color) 12%, #fff) !important;
+    color: color-mix(in srgb, var(--st-color) 80%, #000) !important;
+    font-weight: 600;
+    padding-left: 30px !important; /* espacio para el punto interno */
+}
+.status-select-wrap.has-color .el-input__inner::placeholder {
+    color: color-mix(in srgb, var(--st-color) 62%, #000) !important;
+}
+.status-select-wrap.has-color .el-select__caret {
+    color: var(--st-color) !important;
+}
+/* Punto dentro de las opciones del desplegable (se teletransporta al body) */
+.el-select-dropdown__item .status-dot {
+    margin-right: 8px;
+    vertical-align: middle;
+}
+
 @media only screen and (max-width: 485px) {
     .filter-container {
         margin-top: 0px;
@@ -333,11 +456,12 @@ import OptionsForm from "../pos/partials/options.vue";
 import DocumentForm from "./partials/document_form.vue";
 import SaleNoteForm from "./partials/sale_note_form.vue";
 import StatusOrderModal from "./partials/status_order_modal.vue";
+import OrderDetail from "./partials/OrderDetail.vue";
 
 export default {
     props: ["user"],
 
-    components: { DataTable, OptionsForm, DocumentForm, SaleNoteForm, StatusOrderModal },
+    components: { DataTable, OptionsForm, DocumentForm, SaleNoteForm, StatusOrderModal, OrderDetail },
     data() {
         return {
             showStatusModal: false,
@@ -363,7 +487,10 @@ export default {
             order_id: null,
             dataSaleNote: {},
             showDialogSaleNote: false,
-            statusFilter: null
+            statusFilter: null,
+            statusField: 'status_order_id',
+            showOrderModal: false,
+            selectedOrder: null,
         };
     },
     async created() {
@@ -375,12 +502,39 @@ export default {
             this.loadStatuses()
         })
     },
-    computed: {},
+    computed: {
+        paymentOptions() {
+            return this.options.filter(o => o.is_payment_status);
+        },
+        orderOptions() {
+            return this.options.filter(o => o.is_order_status);
+        },
+        shippingOptions() {
+            return this.options.filter(o => o.is_shipping_status);
+        }
+    },
     methods: {
+        openDetail(row) {
+            console.log(row)
+            console.log(row.purchase)
+            this.selectedOrder = row
+            this.showOrderModal = true
+        },
         loadStatuses() {
             this.$http.get(`/statusOrder/records`).then(response => {
                 this.options = response.data;
             });
+        },
+        // Devuelve el color hex del estado con ese id (o '' si no tiene)
+        statusColor(id) {
+            if (!id) return '';
+            const s = this.options.find(o => o.id === id);
+            return s && s.color ? s.color : '';
+        },
+        // Variable CSS con el color del estado, para pintar el select (borde, fondo, texto)
+        selectVars(id) {
+            const c = this.statusColor(id);
+            return c ? { '--st-color': c } : {};
         },
         formatDate(date) {
             if (!date) return null;
@@ -435,10 +589,14 @@ export default {
             this.dataSaleNote = sale_note;
             this.showDialogSaleNote = true;
         },
-        async updateStatus(record) {
+        async updateStatus(record, field = 'status_order_id') {
             this.record = record;
+            this.statusField = field;
 
-            if (record.status_order_id === 2) {
+            // Obtener el objeto de estado completo desde las opciones cargadas
+            const selectedStatus = this.options.find(o => o.id === record[field])
+
+            if (selectedStatus && selectedStatus.action_generate_document) {
                 this.order_id = record.id;
 
                 if (record.purchase.codigo_tipo_documento == "80") {
@@ -447,7 +605,6 @@ export default {
                             "Ya existe una nota de venta"
                         );
                     this.openDialogSaleNote(record.purchase);
-                    // console.log(record)
                 } else {
                     if (record.document_external_id) {
                         return this.$message.success(
@@ -455,10 +612,13 @@ export default {
                         );
                     }
                     this.$refs.document_form.sendPreview(record.purchase);
-                    //this.loading_submit = true
-                    //await this.sendDocument(record.purchase)
                 }
-            } else if (record.status_order_id === 3) {
+            } else if (selectedStatus && selectedStatus.action_discount_stock) {
+                // Si la orden ya tiene el flag de stock descontado, no continuar
+                if (record.stock_discounted) {
+                    this.$message.success('El stock ya fue descontado para esta orden');
+                    return;
+                }
                 this.totalProduct = await this.products(record);
                 await this.$http
                     .post(`/orders/warehouse`, { item_id: this.totalProduct })
@@ -473,7 +633,7 @@ export default {
         },
         saveUpdateStatus() {
             this.$http
-                .post(`/statusOrder/update`, { record: this.record })
+                .post(`/statusOrder/update`, { record: this.record, field: this.statusField })
                 .then(response => {
                     this.$message.success(response.data.message);
                 });
@@ -490,10 +650,14 @@ export default {
                 }
             }
 
+            // Marcar en el front que el stock será descontado
+            this.record.stock_discounted = true;
+
             await this.$http
                 .post(`/statusOrder/update`, {
                     record: this.record,
-                    discount: save
+                    discount: save,
+                    field: this.statusField
                 })
                 .then(response => {
                     this.$message.success(response.data.message);

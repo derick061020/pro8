@@ -214,7 +214,7 @@
                         </th>
                         <template v-for="col in orderedColumns">
                             <th v-if="col.visible && col.key === 'id'" :key="col.key" class="text-end" style="max-width: 83px;">ID</th>
-                            <th v-if="col.visible && col.key === 'internal_id'" :key="col.key" class="text-end">Cód. Interno</th>
+                            <!-- <th v-if="col.visible && col.key === 'internal_id'" :key="col.key" class="text-end">Cód. Interno</th> -->
                             <th v-if="col.visible && col.key === 'unit_type'" :key="col.key">Unidad</th>
                             <th v-if="col.visible && col.key === 'image'" :key="col.key">Imagen</th>
                             <th v-if="col.visible && col.key === 'name'" :key="col.key">
@@ -251,10 +251,10 @@
                         </td>
                         <template v-for="col in orderedColumns">
                             <td v-if="col.visible && col.key === 'id'" :key="col.key" class="text-end">{{ row.id }}</td>
-                            <td v-if="col.visible && col.key === 'internal_id'" :key="col.key" class="text-end">{{ row.internal_id }}</td>
+                            <!-- <td v-if="col.visible && col.key === 'internal_id'" :key="col.key" class="text-end">{{ row.internal_id }}</td> -->
                             <td v-if="col.visible && col.key === 'unit_type'" :key="col.key">{{ row.unit_type_id }}</td>
-                            <td v-if="col.visible && col.key === 'image'" :key="col.key"><img :src="row.image_url_small" style="object-fit: contain;" alt width="32px" height="32px" /></td>
-                            <td v-if="col.visible && col.key === 'name'" :key="col.key">{{ row.description }}</td>
+                            <td v-if="col.visible && col.key === 'image'" :key="col.key"><img :src="row.image_url_small" style="object-fit: contain; border-radius: 50%;" alt width="48px" height="48px" /></td>
+                            <td class="fw-semibold" v-if="col.visible && col.key === 'name'" :key="col.key">{{ row.description }} <template v-if="columns.internal_id && columns.internal_id.visible"><br> <small class="text-muted uppercase">{{ row.internal_id }}</small></template></td>
                             <td v-if="col.visible && col.key === 'description'" :key="col.key"><div class="limit-4-lines">{{ stripHtml(row.name) }}</div></td>
                             <td v-if="col.visible && col.key === 'model'" :key="col.key">{{ row.model }}</td>
                             <td v-if="col.visible && col.key === 'brand'" :key="col.key">{{ row.brand }}</td>
@@ -265,11 +265,11 @@
                                 <button class="btn waves-effect waves-light btn-xs btn-primary" type="button" @click.prevent="clickHistory(row.id)"><i class="fa fa-history"></i></button>
                             </td>
                             <td v-if="col.visible && col.key === 'stock'" :key="col.key">
-                                <div v-if="config.product_only_location == true" :class="{ 'text-danger': row.stock < row.stock_min }">
+                                <div class="fw-semibold" v-if="config.product_only_location == true" :class="{ 'text-danger': row.stock < row.stock_min }">
                                     {{ formatStock(row.stock, row.unit_type_id) }} <!-- <small class="text-muted ms-1">{{ unitSymbol(row.unit_type_id) }}</small> -->
                                 </div>
                                 <div v-else>
-                                    <template v-if="typeUser == 'seller' && row.unit_type_id != 'ZZ'">
+                                    <template class="fw-semibold" v-if="typeUser == 'seller' && row.unit_type_id != 'ZZ'">
                                         <span :class="{ 'text-danger': row.stock < row.stock_min }">
                                             {{ formatStock(row.stock, row.unit_type_id) }}<!-- <small class="text-muted ms-1">{{ unitSymbol(row.unit_type_id) }}</small> -->
                                         </span>
@@ -284,7 +284,7 @@
                                     <button class="btn waves-effect waves-light btn-xs btn-primary" type="button" @click.prevent="clickStockItems(row)"><i class="fa fa-database"></i></button>
                                 </template>
                             </td>
-                            <td v-if="col.visible && col.key === 'sale_unit_price'" :key="col.key" class="text-end">{{ row.sale_unit_price }}</td>
+                            <td v-if="col.visible && col.key === 'sale_unit_price'" :key="col.key" class="text-end text-primary fw-semibold">{{ row.sale_unit_price }}</td>
                             <td v-if="col.visible && col.key === 'purchase_unit_price' && typeUser != 'seller'" :key="col.key" class="text-end">{{ row.purchase_unit_price }}</td>
                             <td v-if="col.visible && col.key === 'real_unit_price'" :key="col.key" class="text-end">{{ row.sale_unit_price_with_igv }}</td>
                             <td v-if="col.visible && col.key === 'has_igv'" :key="col.key" class="text-start">{{ row.has_igv_description }}</td>

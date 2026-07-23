@@ -9,6 +9,7 @@
     use App\Models\Tenant\Catalogs\DocumentType;
     use App\Models\Tenant\Establishment;
     use App\Models\Tenant\Series;
+    use App\Services\SeriesResolver;
     use Exception;
     use Illuminate\Http\Request;
     use Maatwebsite\Excel\Excel;
@@ -78,14 +79,14 @@
             }
 
 
-            $seriesBoleta = Series::where([
+            $seriesBoleta = app(SeriesResolver::class)->applyContext(Series::where([
                 'establishment_id' => $configurationMiTienda->establishment_id,
                 'document_type_id' => '03',
-            ])->get();
-            $seriesInvoice = Series::where([
+            ]))->get();
+            $seriesInvoice = app(SeriesResolver::class)->applyContext(Series::where([
                 'establishment_id' => $configurationMiTienda->establishment_id,
                 'document_type_id' => '01',
-            ])->get();
+            ]))->get();
             $currencys = CurrencyType::where('active', 1)->get();
             $payment_destinations = [];
             $payment_destinations_temp = $this->getPaymentDestinations()->transform(function ($row) use (&$payment_destinations) {
@@ -112,14 +113,14 @@
         public function tables(Request $request)
         {
 
-            $seriesBoleta = Series::where([
+            $seriesBoleta = app(SeriesResolver::class)->applyContext(Series::where([
                 'establishment_id' => $request->establishment_id,
                 'document_type_id' => '03',
-            ])->get();
-            $seriesInvoice = Series::where([
+            ]))->get();
+            $seriesInvoice = app(SeriesResolver::class)->applyContext(Series::where([
                 'establishment_id' => $request->establishment_id,
                 'document_type_id' => '01',
-            ])->get();
+            ]))->get();
             $currencys = CurrencyType::where('active', 1)->get();
             $payment_destinations = [];
             $payment_destinations_temp = $this->getPaymentDestinations()->transform(function ($row) use (&$payment_destinations) {

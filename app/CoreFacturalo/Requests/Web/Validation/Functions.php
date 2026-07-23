@@ -3,12 +3,14 @@
 namespace App\CoreFacturalo\Requests\Web\Validation;
 
 use App\Models\Tenant\{
+    Configuration,
     Establishment,
     Document,
     Series,
     Person,
     Item
 };
+use App\Services\SeriesCodeGenerator;
 use Exception;
 
 class Functions
@@ -35,6 +37,8 @@ class Functions
         if (!$series) {
             throw new Exception("La serie ingresada {$inputs['series']}, es incorrecta.");
         }
+
+        self::validateNrusSeries($series);
     }
 
     public static function person($inputs, $type)
@@ -95,25 +99,33 @@ class Functions
     public static function findSeries($inputs)
     {
         if (array_key_exists('series_id', $inputs)) {
-            return Series::find($inputs['series_id']);
+            $series = Series::find($inputs['series_id']);
+            self::validateNrusSeries($series);
+            return $series;
         }
         if (key_exists('series', $inputs)) {
             // si es string se busca directamente
             if(is_string($inputs['series'])) {
                 // dd($inputs['series']);
-                return Series::query()
+                $series = Series::query()
                     ->where('number', $inputs['series'])
                     ->where('document_type_id', $inputs['document_type_id'])
                     ->where('establishment_id', $inputs['establishment_id'])
                     ->first();
+                self::validateNrusSeries($series);
+                return $series;
             }
             // si es array debe existir series_id para ser seleccionada
             if(is_array($inputs['series'])) {
                 if (key_exists('series_id', $inputs)) {
-                    return Series::find($inputs['series_id']);
+                    $series = Series::find($inputs['series_id']);
+                    self::validateNrusSeries($series);
+                    return $series;
                 }
                 // si no, se utiliza la primera iteración (no debería llegar a este caso)
-                return Series::find($inputs['series'][0]['id']);
+                $series = Series::find($inputs['series'][0]['id']);
+                self::validateNrusSeries($series);
+                return $series;
             }
         }
         throw new Exception("Problemas para identificar la serie para el documento");
@@ -127,6 +139,17 @@ class Functions
         //     if (!$inputs['series_id']) throw new Exception("La serie no existe");
         //     return Series::find($inputs['series_id']);
         // }
+    }
+
+    private static function validateNrusSeries($series): void
+    {
+        if (! $series || ! (bool) optional(Configuration::first())->isNrus()) {
+            return;
+        }
+
+        if (! in_array($series->document_type_id, SeriesCodeGenerator::nrusDocumentTypeIds(), true)) {
+            throw new Exception("Para empresas NRUS solo están disponibles las series de Boleta de venta electrónica y Nota de venta.");
+        }
     }
 
     public static function findAffectedDocument($inputs)

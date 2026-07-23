@@ -3,7 +3,7 @@ html.sidebar-light:not(.dark) .page-header h2 {
 }
 
 .card-footer {
-    padding: 0px 0.75rem !important;
+    padding: 0px 0.75rem;
 }
 
 .content-body {
@@ -121,7 +121,7 @@ html.sidebar-light:not(.dark) .page-header h2 {
 .pos .product-item .card-body  {
     margin: 0;
     padding: 0;
-    border-radius: 8px 8px 0 0 !important;
+    border-radius: 8px 8px 0 0;
     border-bottom: none !important;
 }
 .pos .card.product-item {
@@ -135,7 +135,7 @@ small.measuring-unit{
 
 .pos .card-footer {
     position: relative;
-    border-radius: 0 0 8px 8px !important;
+    border-radius: 0 0 8px 8px;
     border-top: none;
 }
 

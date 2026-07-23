@@ -16,7 +16,7 @@ Route::middleware(['check.permission', 'locked.tenant','check.email.verified'])-
 
     Route::get('/', 'EcommerceController@index')->name('tenant.ecommerce.index');
 
-    Route::get('item/{slug}/{promotion_id?}', 'EcommerceController@item')->name('tenant.ecommerce.item');
+    Route::get('item/{id}/{slug?}', 'EcommerceController@item')->name('tenant.ecommerce.item');
 
     Route::get('items', 'EcommerceController@items')->name('tenant.ecommerce.item.index');
     Route::get('item_partial/{id}', 'EcommerceController@partialItem')->name('item_partial');
@@ -26,12 +26,14 @@ Route::middleware(['check.permission', 'locked.tenant','check.email.verified'])-
     Route::get('orders', 'EcommerceController@orders')->name('tenant_orders');
 
     Route::get('order_list', 'EcommerceController@orderList')->name('tenant_order_list');
+    Route::get('account', 'EcommerceController@account')->name('tenant_ecommerce_account');
     Route::get('pay_cart', 'EcommerceController@pay')->name('tenant_pay_cart');
     Route::get('login', 'EcommerceController@showLogin')->name('tenant_ecommerce_login');
     Route::post('logout', 'EcommerceController@logout')->name('tenant_ecommerce_logout');
     Route::get('items_bar', 'EcommerceController@itemsBar');
     Route::post('login', 'EcommerceController@login');
     Route::post('storeUser', 'EcommerceController@storeUser')->name('tenant_ecommerce_store_user');
+    Route::get('search-document/{number}', 'EcommerceController@searchDocumentPublic')->name('tenant_ecommerce_search_document');
     Route::post('rating_item', 'EcommerceController@ratingItem')->name('tenant_ecommerce_rating_item');
     Route::get('rating_item/{id}', 'EcommerceController@getRating');
     Route::get('color-ecommerce', 'ConfigurationController@getColorEcommerce');
@@ -52,6 +54,8 @@ Route::middleware(['check.permission', 'locked.tenant','check.email.verified'])-
     Route::get('politica-de-privacidad', 'EcommerceController@privacyPolicy')->name('tenant_ecommerce_privacy_policy');
     // Página de sobre nosotros
     Route::get('nosotros', 'EcommerceController@aboutUs')->name('tenant_ecommerce_about_us');
+    // Página de gracias tras completar el pago
+    Route::get('thanks/{external_id}', 'EcommerceController@thankYou')->name('tenant_ecommerce_thank_you');
 
     Route::get('configuration', 'ConfigurationController@index')->middleware(['auth', 'redirect.module'])->name('tenant_ecommerce_configuration');
     Route::post('configuration', 'ConfigurationController@store_configuration');
@@ -116,6 +120,8 @@ Route::middleware(['check.permission', 'locked.tenant','check.email.verified'])-
         Route::get('item/tables', 'ItemSetController@item_tables');
 
     });
+
+    Route::get('sitemap.xml', 'EcommerceController@sitemap')->name('tenant.ecommerce.sitemap');
 
     // Ruta de categoría al final para no interferir con rutas específicas
     Route::get('/{category}', 'EcommerceController@index')->name('tenant.ecommerce.category');

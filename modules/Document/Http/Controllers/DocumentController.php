@@ -13,6 +13,7 @@ use Modules\Document\Http\Resources\DocumentNotSentCollection;
 use App\Models\Tenant\Catalogs\DocumentType;
 use App\Models\Tenant\Establishment;
 use App\Models\Tenant\Series;
+use App\Services\SeriesResolver;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use App\Models\Tenant\Person;
@@ -108,7 +109,7 @@ class DocumentController extends Controller
         });
 
         $document_types = DocumentType::whereIn('id', ['01', '03', '07', '08'])->get();
-        $series = Series::whereIn('document_type_id', ['01', '03', '07', '08'])->get();
+        $series = app(SeriesResolver::class)->applyContext(Series::whereIn('document_type_id', ['01', '03', '07', '08']))->get();
         $establishments = Establishment::where('id', auth()->user()->establishment_id)->get();
         $state_types = StateType::get();
 

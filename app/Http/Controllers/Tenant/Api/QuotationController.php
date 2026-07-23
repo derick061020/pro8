@@ -17,9 +17,9 @@ use App\Http\Controllers\Tenant\EmailController;
 
 class QuotationController extends Controller
 {
-    
+
     /**
-     * 
+     *
      * Listado de cotizaciones (app)
      *
      * @param  Request $request
@@ -63,9 +63,20 @@ class QuotationController extends Controller
         return [
             'success' => true,
             'data' => [
+                'id' => $this->quotation->id,
+                'state_type_id' => $this->quotation->state_type_id,
+                'state_type_description' => $this->quotation->state_type->description,
                 'number_full' => $this->quotation->number_full,
                 'external_id' => $this->quotation->external_id,
                 'filename' => $this->quotation->filename,
+                'customer' => [
+                    'id' => $this->quotation->customer_id,
+                    'name' => $this->quotation->customer->name,
+                    'number' => $this->quotation->customer->number,
+                    'email' => $this->quotation->customer->email,
+                    'phone' => $this->quotation->customer->telephone,
+                ],
+                'total' => (float) $this->quotation->total,
                 'print_a4'    => url('')."/quotations/print/{$this->quotation->external_id}/a4",
                 'print_ticket' => $this->quotation->getUrlPrintPdf('ticket'),
             ],
@@ -80,7 +91,7 @@ class QuotationController extends Controller
 
     }
 
-    
+
     /**
      *
      * @param  Request $request
@@ -101,9 +112,9 @@ class QuotationController extends Controller
         ];
     }
 
-    
+
     /**
-     * 
+     *
      * Sirve para evitar error al consultar endpoint desde la app, funcion agregada en prox
      *
      * @return array

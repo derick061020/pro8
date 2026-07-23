@@ -255,7 +255,36 @@ class DashboardSalePurchase
 
 
 
-    private function items_by_sales($establishment_id, $d_start, $d_end, $enabled_move_item, $no_take = false, $page) 
+    /**
+     * Total de compras (normalizado a PEN) filtrado por rango de fechas.
+     *
+     * @param int    $establishment_id
+     * @param string $date_start  Y-m-d
+     * @param string $date_end    Y-m-d
+     *
+     * @return array
+     */
+    public function purchasesTotalByRange($establishment_id, $date_start, $date_end)
+    {
+        $query = Purchase::DasboardSalePurchase($establishment_id);
+
+        if ($date_start && $date_end) {
+            $query->whereBetween('date_of_issue', [$date_start, $date_end]);
+        }
+
+        $purchases = $query->get();
+
+        $purchases_total = round($purchases->sum('total_purchase'), 2);
+        $purchases_total_perception = round($purchases->sum('total_perception_purchase'), 2);
+
+        return [
+            'purchases_total' => $purchases_total,
+            'purchases_total_perception' => $purchases_total_perception,
+            'total' => round($purchases_total + $purchases_total_perception, 2),
+        ];
+    }
+
+    private function items_by_sales($establishment_id, $d_start, $d_end, $enabled_move_item, $no_take = false, $page)
     {
         if ($d_start && $d_end) {
 

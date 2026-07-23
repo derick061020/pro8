@@ -1,0 +1,11 @@
+{
+    "name": "DocumentFormLayout",
+    "alias": "documentformlayout",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\DocumentFormLayout\\Providers\\DocumentFormLayoutServiceProvider"
+    ],
+    "files": []
+}

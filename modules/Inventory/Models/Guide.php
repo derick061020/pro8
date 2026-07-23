@@ -70,4 +70,9 @@ class Guide extends Model
         }
         return $query->where('inventory_transaction_id', $inventory_transaction_id);
     }
+
+    public function inventory()
+    {
+        return $this->hasOne(Inventory::class, 'guide_id');
+    }
 }

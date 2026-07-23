@@ -67,14 +67,10 @@
 
     <!-- Estilos personalizados -->
     <link rel="stylesheet" href="{{ asset('porto-light/css/styles_ecommerce.css') }}" />
+    @include('ecommerce::layouts.partials_ecommerce.primary_color_style')
 
     <!-- Element UI CSS -->
     <link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
-    <style>
-        .category-dropdown{
-            display: none;
-        }
-    </style>
 
     @stack('styles')
 

@@ -43,7 +43,7 @@ class TenantCatDetractionTypesTable extends Migration
             
         ]);
 
-        DB::table('cat_operation_types')->where('id', '1001')->update(['active' => true]);
+        DB::table('cat_operation_types')->where('id', '1001')->update(['active' => false]);
  
     }
 

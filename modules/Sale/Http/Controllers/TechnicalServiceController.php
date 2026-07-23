@@ -20,6 +20,7 @@
     use App\Models\Tenant\PaymentCondition;
     use App\Models\Tenant\Person;
     use App\Models\Tenant\Series;
+    use App\Services\SeriesResolver;
     use App\Models\Tenant\TechnicalServiceItem;
     use App\Models\Tenant\User;
     use App\Traits\OfflineTrait;
@@ -111,7 +112,7 @@
             $customers = $this->table('customers');
             // $prepayment_documents = $this->table('prepayment_documents');
             $establishments = Establishment::where('id', auth()->user()->establishment_id)->get();// Establishment::all();
-            $series = collect(Series::all())->transform(function ($row) {
+            $series = collect(app(SeriesResolver::class)->applyContext(Series::query())->get())->transform(function ($row) {
                 return [
                     'id' => $row->id,
                     'contingency' => (bool)$row->contingency,

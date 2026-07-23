@@ -21,6 +21,7 @@
                         <th>Código</th>
                         <th>Descripción</th>
                         <th>Condición de pago</th>
+                        <th>Estado</th>
                         <th class="text-end">Acciones</th>
                     </tr>
                     </thead>
@@ -30,6 +31,9 @@
                         <td>{{ row.id }}</td>
                         <td>{{ row.description }}</td>
                         <td>{{ (row.is_credit == 1)?'Crédito':'Contado' }}</td>
+                        <td>
+                            <el-switch v-model="row.is_active" @change="clickActive(row)"></el-switch>
+                        </td>
                         <td class="text-end">
 
                             <template v-if="row.show_actions">
@@ -100,6 +104,20 @@
                 this.destroy(`/${this.resource}/${id}`).then(() =>
                     this.$eventHub.$emit('reloadData')
                 )
+            },
+            clickActive(row) {
+                this.$http.post(`/${this.resource}/active`, row)
+                    .then(response => {
+                        if (response.data.success) {
+                            this.$message.success(response.data.message)
+                        } else {
+                            this.$message.error(response.data.message)
+                            row.is_active = !row.is_active
+                        }
+                    })
+                    .catch(error => {
+                        this.$message.error('Error al actualizar')
+                    })
             }
         }
     }

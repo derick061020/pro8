@@ -4,8 +4,10 @@ namespace App\Providers;
 
 use App\Models\System\PaymentOrder;
 use App\Models\Tenant\Document;
+use App\Models\Tenant\Purchase;
 use App\Observers\DocumentObserver;
 use App\Observers\PaymentOrderObserver;
+use App\Observers\PurchaseObserver;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
@@ -33,12 +35,20 @@ class AppServiceProvider extends ServiceProvider
 		}
 		Document::observe(DocumentObserver::class);
 		PaymentOrder::observe(PaymentOrderObserver::class);
+		Purchase::observe(PurchaseObserver::class);
 
 		// ── AGREGADO (RECIENTE) ──────────────────────────────────────
         // Se movió este método desde ForgotPasswordController para centralizar
         // la configuración de correo en el arranque de la aplicación.
-        if (Schema::hasTable('configurations')) {
-            $this->configurarCorreoDesdeDB();
+        // Envuelto en try/catch: en boot() Hyn aun no resuelve el tenant y la
+        // conexion MySQL puede fallar con credenciales default. El bootstrap
+        // no debe romper la app si la BD no responde aqui.
+        try {
+            if (Schema::hasTable('configurations')) {
+                $this->configurarCorreoDesdeDB();
+            }
+        } catch (\Throwable $e) {
+            // silencioso a proposito
         }
 	}
 

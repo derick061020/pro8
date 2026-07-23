@@ -16,16 +16,6 @@ class LiveAppController extends Controller
         return view('mobileapp::mobile_app.index');
     }
 
-    public function configuration()
-    {
-        return view('mobileapp::configuration.index');
-    }
-
-    public function premium()
-    {
-        return view('mobileapp::mobile_app_white.index');
-    }
-
     public function getReportGeneralSale(Request $request, $format = null)
     {
         $establishment_id = $request->establishment_id;

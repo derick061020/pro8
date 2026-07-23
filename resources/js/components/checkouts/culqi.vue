@@ -1,6 +1,17 @@
 <template>
-    <div>
-        <el-button type="primary" :disabled="disabled" @click.prevent="submit">Pagar con Culqi</el-button>
+    <div class="checkout-pay">
+        <button
+            type="button"
+            class="checkout-pay__btn checkout-pay__btn--culqi"
+            :disabled="disabled || !isReady"
+            @click.prevent="submit"
+        >
+            <span class="checkout-pay__label">
+                <span v-if="!isReady" class="checkout-pay__spinner"></span>
+                {{ isReady ? 'Pagar con Culqi' : 'Cargando...' }}
+            </span>
+            <span class="checkout-pay__amount">{{ formattedAmount }}</span>
+        </button>
     </div>
 </template>
 <script>
@@ -40,14 +51,8 @@ export default {
         },
     },
     created() {
-        if (!window.Culqi) {
-            const script = document.createElement('script');
-            script.src = "https://js.culqi.com/checkout-js";
-            script.async = true;
-            document.head.appendChild(script);
-
-            this.loadConfiguration();
-        }
+        this.loadScript();
+        this.loadConfiguration();
     },
     data() {
         return {
@@ -62,17 +67,58 @@ export default {
                 agente: true,
                 // cuotealo: true,
             },
-            publicKey: null
+            publicKey: null,
+            scriptLoaded: false
         }
     },
     computed: {
         resource() {
             return this.endpointPrefix;
+        },
+        isReady() {
+            return this.scriptLoaded && !!this.publicKey;
+        },
+        formattedAmount() {
+            const amount = Number(this.form.amount || 0) / 100;
+            const symbol = this.form.currency === 'USD' ? '$' : 'S/';
+            return `${symbol} ${amount.toLocaleString('es-PE', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            })}`;
         }
     },
     methods:  {
+        loadScript() {
+            // Ya está disponible (cargado previamente por otra instancia)
+            if (window.CulqiCheckout) {
+                this.scriptLoaded = true;
+                return;
+            }
+
+            const existing = document.querySelector('script[src="https://js.culqi.com/checkout-js"]');
+            if (existing) {
+                existing.addEventListener('load', () => { this.scriptLoaded = true; });
+                // Por si ya terminó de cargar antes de registrar el listener
+                if (window.CulqiCheckout) this.scriptLoaded = true;
+                return;
+            }
+
+            const script = document.createElement('script');
+            script.src = "https://js.culqi.com/checkout-js";
+            script.async = true;
+            script.addEventListener('load', () => { this.scriptLoaded = true; });
+            script.addEventListener('error', () => {
+                this.$message.error('No se pudo cargar el procesador de pagos. Verifique su conexión.');
+            });
+            document.head.appendChild(script);
+        },
         submit() {
-            let config  = { 
+            if (!this.isReady || typeof CulqiCheckout === 'undefined') {
+                this.$message.warning('El procesador de pagos aún se está cargando, espere un momento.');
+                return;
+            }
+
+            let config  = {
                 settings: {
                     title : this.form.description,
                     currency: this.form.currency,
@@ -123,11 +169,11 @@ export default {
                         currency_code: this.form.currency,
                     }).then(response => {
                         const data = response.data
-                        console.log(data);
                         
                         this.$emit('submit', {
                             status : response.data.result.outcome.type,
-                            customer: this.form._customer
+                            customer: this.form._customer,
+                            data: data
                         });
                         Culqi.close();
                     }).catch(error => {
@@ -139,7 +185,8 @@ export default {
                         let status = error.response?.data?.result?.type ;
                         this.$emit('submit', {
                             status : status,
-                            customer: this.form._customer
+                            customer: this.form._customer,
+                            data: error.response.data
                         });
                         Culqi.close();
 
@@ -209,3 +256,64 @@ export default {
 }
 
 </script>
+
+<style scoped>
+.checkout-pay {
+    width: 100%;
+}
+.checkout-pay__btn {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    width: 100%;
+    padding: 14px 20px;
+    border: none;
+    border-radius: 10px;
+    color: #fff;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+.checkout-pay__btn:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18);
+}
+.checkout-pay__btn:active:not(:disabled) {
+    transform: translateY(0);
+}
+.checkout-pay__btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+.checkout-pay__btn--culqi {
+    background: linear-gradient(135deg, #00d1b2 0%, #009e94 100%);
+    box-shadow: 0 4px 12px rgba(0, 158, 148, 0.25);
+}
+.checkout-pay__label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.checkout-pay__spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(255, 255, 255, 0.4);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: checkout-pay-spin 0.7s linear infinite;
+}
+@keyframes checkout-pay-spin {
+    to { transform: rotate(360deg); }
+}
+.checkout-pay__amount {
+    font-size: 16px;
+    font-weight: 700;
+    background: rgba(255, 255, 255, 0.2);
+    padding: 4px 12px;
+    border-radius: 6px;
+    white-space: nowrap;
+}
+</style>

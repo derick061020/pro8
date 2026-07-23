@@ -15,14 +15,16 @@ import '../sass/element-ui.scss';
 import 'element-ui/lib/theme-chalk/index.css';
 import CheckoutIzipay from './components/checkouts/izipay.vue'
 import CheckoutCulqi from './components/checkouts/culqi.vue'
+import CheckoutMercadopago from './components/checkouts/mercadopago.vue'
 import CheckoutAdmin from './components/checkouts/CheckoutAdmin.vue'
 import CheckoutGuest from './components/checkouts/CheckoutGuest.vue'
 
 
 // components
 import SystemSupportConfiguration from './views/system/configuration/supportConfiguration.vue';
-import SystemConfigurationQrApi from './views/system/configuration/qrApiConfiguration.vue'
+import SystemConfigurationOpenAi from './views/system/configuration/openAiConfiguration.vue'
 import SystemGoogleMapsConfiguration from './views/system/configuration/googleMapsConfiguration.vue'
+import SystemTermsConfiguration from './views/system/configuration/termsConfiguration.vue'
 import SystemClientsIndex from './views/system/clients/index.vue';
 import SystemClientsForm from './views/system/clients/form.vue';
 import SystemUsersform from './views/system/users/form.vue';
@@ -34,8 +36,7 @@ import SystemMultiUsersIndex from '@viewsModuleMultiUser/system/multi-users/inde
 import SystemMassiveInvoiceIndex from './views/system/massive_invoice/index.vue';
 import SystemUpdateIndex from './views/system/update/index.vue';
 import SystemBackupIndex from './views/system/backup/index.vue';
-import SystemConfigurationCulqui from './views/system/configuration/culqi.vue';
-import SystemConfigurationIzipay from './views/system/configuration/izipay.vue';
+import SystemConfigurationPaymentGateway from './views/system/configuration/payment-gateway.vue';
 import SystemConfigurationApkUrl from './views/system/configuration/apk-url.vue';
 import SystemConfigurationTokenRucDni from './views/system/configuration/token_ruc_dni.vue';
 import SystemConfigurationPhpInfo from './views/system/configuration/php_info.vue';
@@ -50,15 +51,16 @@ import SystemPlansIndex from './views/system/plans/index.vue';
 import SystemPlansForm from './views/system/plans/form.vue';
 import SystemConfigurationCronOrderPayments from './views/system/configuration/cronOrderPayments.vue';
 import SystemPaymentsIndex from './views/system/payments/index.vue';
+import SystemPaymentViewIndex from './views/system/payments/payment-view.vue';
 import SystemAdminResellerAdministratorsIndex from './views/system/admin_reseller/administrators/index.vue';
 
 import InputService from '../../modules/ApiPeruDev/Resources/assets/js/components/InputService.vue'// apiperu - porque cambiar el input si tiene el mismo contenido?
 import SystemGuestRegisterDisabled from  './views/system/guest-register/disabled.vue'
 import SystemGuestRegister from './views/system/guest-register/register.vue'
+import SystemGuestRegisterPlanPanel from './views/system/guest-register/plan-panel.vue'
 import XImportServiceGuest from './../../modules/ApiPeruDev/Resources/assets/js/components/InputServiceGuest.vue'
 import SystemConfigurationThemes from './views/system/configuration/themes.vue'
 import SystemsVisibleColumns from './views/system/configuration/visibleColumns.vue'
-
 
 locale.use(lang)
 
@@ -101,8 +103,9 @@ if (Vue.prototype.$http) {
 Vue.component('system-support-configuration', SystemSupportConfiguration);
 
 Vue.component('system-clients-index', SystemClientsIndex);
-Vue.component('system-qrapi-configuration', SystemConfigurationQrApi);
+Vue.component('system-openai-configuration', SystemConfigurationOpenAi);
 Vue.component('system-google-maps-configuration', SystemGoogleMapsConfiguration);
+Vue.component('system-terms-configuration', SystemTermsConfiguration);
 Vue.component('system-clients-form', SystemClientsForm);
 Vue.component('system-users-form', SystemUsersform);
 Vue.component('system-users-token-user', SystemUsersTokenUser);
@@ -118,8 +121,7 @@ Vue.component('system-massive-invoice-index', SystemMassiveInvoiceIndex);
 // Tools & config in System
 Vue.component('system-update', SystemUpdateIndex);
 Vue.component('system-backup', SystemBackupIndex);
-Vue.component('system-configuration-culqi', SystemConfigurationCulqui);
-Vue.component('system-configuration-izipay', SystemConfigurationIzipay);
+Vue.component('system-configuration-payment-gateway', SystemConfigurationPaymentGateway);
 Vue.component('system-configuration-apk-url', SystemConfigurationApkUrl);
 Vue.component('system-configuration-token', SystemConfigurationTokenRucDni);
 Vue.component('system-php-configuration', SystemConfigurationPhpInfo);
@@ -144,14 +146,17 @@ Vue.component('x-input-service', InputService);
 
 //system payments
 Vue.component('system-payments-index', SystemPaymentsIndex);
+Vue.component('system-payments-view-index', SystemPaymentViewIndex);
 Vue.component('system-cron-order-configuration', SystemConfigurationCronOrderPayments);
 Vue.component('system-admin-reseller-administrators-index', SystemAdminResellerAdministratorsIndex);
 Vue.component('system-guest-register-register', SystemGuestRegister);
+Vue.component('system-guest-register-plan-panel', SystemGuestRegisterPlanPanel);
 Vue.component('system-guest-register-disabled', SystemGuestRegisterDisabled );
 Vue.component('x-input-service-guest', XImportServiceGuest);
 
 Vue.component('system-checkout-culqi', CheckoutCulqi)
 Vue.component('system-checkout-izipay', CheckoutIzipay)
+Vue.component('system-checkout-mercadopago', CheckoutMercadopago)
 Vue.component('checkout-admin', CheckoutAdmin)
 Vue.component('checkout-guest', CheckoutGuest)
 

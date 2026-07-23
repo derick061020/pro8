@@ -122,7 +122,7 @@
                                 </div>
                             </div>
                             <!-- numero de DAM -->
-                            <template v-if="form.transfer_reason_type_id === '09'">
+                            <template v-if="form.transfer_reason_type_id === '09' ||form.transfer_reason_type_id === '08' " >
                                 <div class="col-lg-4">
                                     <div :class="{ 'has-danger': errors['related.number'] }" class="form-group">
                                         <label class="control-label">Número de documento (DAM/DS)
@@ -1127,7 +1127,7 @@ export default {
                 }
             }
             await this.changeEstablishment()
-            this.changeSeries();
+            this.setSeriesByDefault();
             this.setDefaults();
         }
         if (this.order_form) {
@@ -1228,6 +1228,9 @@ export default {
                 is_transport_m1l: false,
                 license_plate_m1l:null,
                 custom_fields_data: {}
+            };
+            if (this.series && this.series.length > 0) {
+                this.setSeriesByDefault();
             }
         },
         setDescriptionOfItem(item) {
@@ -1288,7 +1291,7 @@ export default {
             const isReasonType09 = this.form.transfer_reason_type_id === '09';
             const isReasonType04 = this.form.transfer_reason_type_id === '04';
 
-            this.form.related = isReasonType09 ? { number: null, document_type_id: 50 } : {};
+            // this.form.related = isReasonType09 ? { number: null, document_type_id: 50 } : {};
             this.form.customer_id = isReasonType09 || isReasonType04 ? null : this.form.customer_id;
 
             this.delivery = isReasonType09
@@ -1546,18 +1549,7 @@ export default {
                 const serieExists = this.series.find(s => s.number === this.form.series);
 
                 if (!serieExists) {
-                    this.form.series = null;
-
-                    if (this.config.user && this.config.user.serie) {
-                        const defaultSeries = this.series.find(s => s.number === this.config.user.serie);
-                        if (defaultSeries) {
-                            this.form.series = defaultSeries.number;
-                        } else {
-                            this.setDefaultSeries();
-                        }
-                    } else {
-                        this.setDefaultSeries();
-                    }
+                    this.setSeriesByDefault();
                 }
 
                 await this.getOriginAddresses(this.form.establishment_id)
@@ -1566,16 +1558,21 @@ export default {
                 }
             }
         },
-        changeSeries() {
+        setSeriesByDefault() {
             this.form.series = null;
+            if (this.config && this.config.user && this.config.user.document_id == this.form.document_type_id) {
+                const existSerie = this.series.find(s => s.id == this.config.user.serie || s.number == this.config.user.serie);
+                if (existSerie) {
+                    this.form.series = existSerie.number;
+                    return;
+                }
+            }
             this.setDefaultSeries();
-            //this.generalSetDefaultSerieByDocumentType('09');
         },
         setDefaultSeries() {
+            if (this.form.series) return;
             if (this.series.length > 0) {
-
                 const defaultSeries = this.series.find(s => s.is_default === true);
-
                 this.form.series = defaultSeries ? defaultSeries.number : this.series[0].number;
             } else {
                 this.form.series = null;

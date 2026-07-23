@@ -1,5 +1,12 @@
 <template>
     <div :class="{ 'content-opacity': isVisible }" @click.self="toggleInformation">
+        <MiniTour
+            :steps="miniTourSteps"
+            storage-key="tour_doc_generate_buttons"
+            :version="1"
+            fab-avoid-selector=".ws-flotante"
+            auto
+        />
         <span class="module-title-marker" data-page-title="Nuevo Comprobante"></span>
         <Keypress key-event="keyup" @success="checkKey" />
         <Keypress
@@ -12,308 +19,169 @@
                 <form
                 autocomplete="off"
                 class="row no-gutters mx-0"
+                :class="{ 'layout-editing-active': editingLayout }"
                 @submit.prevent="submit"
                 >
                 <div class="col-xl-12 col-md-12 col-12 px-0">
-                    <header class="clearfix clearfix-default py-2 px-0 px-md-2">
+                    <header class="clearfix clearfix-default py-2 px-0 px-md-2 border-0">
                         <div
                             class="row mx-1 my-1 mx-md-1 my-md-0"
                         >
-                            <div class="col-sm-2 text-center mt-3 mb-0 d-none d-md-block">
-                                <logo
-                                    url="/"
-                                    :path_logo="getCurrentLogo"
-                                ></logo>
+                            <div class="col-md-6 text-start d-flex align-items-end">
+                                <h2 class="m-0 fw-bold title-document" style="line-height: 25px;">
+                                    Nuevo Combrobante Electrónico
+                                    <button type="button" title="Personalizar datos generales" @click="enterLayoutEditFromHeader" class="btn btn-sm second-buton ms-3 edit-layout-btn" v-if="!editingLayout">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-adjustments-horizontal"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M12 6a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" /><path d="M4 6l8 0" /><path d="M16 6l4 0" /><path d="M6 12a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" /><path d="M4 12l2 0" /><path d="M10 12l10 0" /><path d="M15 18a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" /><path d="M4 18l11 0" /><path d="M19 18l1 0" /></svg>
+                                    </button>
+                                </h2>
                             </div>
-                            <div
-                                class="col-sm-5 text-start mt-3 mb-0 d-none d-md-block"
-                            >
-                                <address class="ib me-2">
-                                    <span class="font-weight-bold">{{
-                                        company.name
-                                    }}</span>
-                                    <br />
-                                    <span v-if="establishment.address != '-'"
-                                        >{{ establishment.address }}
-                                    </span>
-                                    <br />
-                                    <span v-if="establishment.email != '-'"
-                                        >{{ establishment.email }} </span
-                                    ><span v-if="establishment.telephone != '-'"
-                                        >- {{ establishment.telephone }}</span
-                                    >
-                                </address>
-                            </div>
-                            <div class="row p-0 m-0 col-md-5">
-                                <div class="col-6">
+                            <div class="row p-0 m-0 col-md-6 justify-content-end">
+                                <div class="col-md-4 d-flex align-items-end justify-content-end">
+                                    <button type="button" data-tour="info-adicional" class="btn btn-sm second-buton" @click="toggleInformation">
+                                        Información adicional
+                                    </button>
+                                </div>
+                                <div class="col-3 align-self-end invoice-type">
                                     <div
                                         :class="{
-                                            'has-danger':
-                                                errors.date_of_issue
+                                            'has-danger': errors.document_type_id
+                                        }"
+                                        class="form-group"
+                                    >
+                                        <label
+                                            class="control-label font-weight-bold"
+                                            >Tipo comprobante</label
+                                        >
+                                        <el-select
+                                            v-model="form.document_type_id"
+                                            class="border-left rounded-left border-info"
+                                            dusk="document_type_id"
+                                            popper-class="el-select-document_type"
+                                            @change="changeDocumentType"
+                                            :disabled="isUpdateDocument"
+                                        >
+                                            <el-option
+                                                v-for="option in documentTypesAvailable"
+                                                :key="option.id"
+                                                :label="option.description"
+                                                :value="option.id"
+                                            ></el-option>
+                                        </el-select>
+                                        <small
+                                            v-if="errors.document_type_id"
+                                            class="form-control-feedback"
+                                            v-text="errors.document_type_id[0]"
+                                        ></small>
+                                    </div>
+                                </div>
+                                <div class="align-self-end serie-input col-2">
+                                    <div
+                                        :class="{ 'has-danger': errors.series_id }"
+                                        class="form-group"
+                                    >
+                                        <label class="control-label">Serie</label>
+                                        <el-select
+                                            v-model="form.series_id"
+                                            :disabled="disabledSeries()"
+                                        >
+                                            <el-option
+                                                v-for="option in series"
+                                                :key="option.id"
+                                                :label="option.number"
+                                                :disabled="option.disabled"
+                                                :value="option.id"
+                                            ></el-option>
+                                        </el-select>
+                                        <small
+                                            v-if="errors.series_id"
+                                            class="form-control-feedback"
+                                            v-text="errors.series_id[0]"
+                                        ></small>
+                                    </div>
+                                </div>
+
+                                <div
+                                    v-if="showOperationTypeField"
+                                    class="col-md-3 align-self-end operation-type"
+                                >
+                                    <div
+                                        :class="{
+                                            'has-danger': errors.operation_type_id
                                         }"
                                         class="form-group"
                                     >
                                         <label class="control-label"
-                                            >Fec. Emisión</label
-                                        >
-                                        <el-date-picker
-                                            v-model="form.date_of_issue"
-                                            :clearable="false"
-                                            :picker-options="datEmision"
-                                            :readonly="readonly_date_of_due"
-                                            type="date"
-                                            :format="dpDateFormat"
-                                            value-format="yyyy-MM-dd"
-                                            @change="changeDateOfIssue"
-                                        ></el-date-picker>
-                                        <small
-                                            v-if="errors.date_of_issue"
-                                            class="form-control-feedback"
-                                            v-text="errors.date_of_issue[0]"
-                                        ></small>
-                                    </div>
-                                </div>
-                                <div class="col-6">
-                                    <div
-                                        :class="{
-                                            'has-danger': errors.date_of_due
-                                        }"
-                                        class="form-group"
-                                    >
-                                        <label class="control-label"
-                                            >Fec. Vencimiento</label
-                                        >
-                                        <el-date-picker
-                                            v-model="form.date_of_due"
-                                            :clearable="false"
-                                            :readonly="readonly_date_of_due"
-                                            type="date"
-                                            :format="dpDateFormat"
-                                            value-format="yyyy-MM-dd"
-                                        ></el-date-picker>
-                                        <small
-                                            v-if="errors.date_of_due"
-                                            class="form-control-feedback"
-                                            v-text="errors.date_of_due[0]"
-                                        ></small>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </header>
-                    <div class="card-body card-body-invoice no-gutters border-0 shadow-none p-0 py-1 py-md-2 px-md-2">
-                        <div class="row inputs-container mx-1">
-                            <div class="col-md-5 col-lg-4 align-self-end invoice-type" :class="{'col-lg-4': currency_types.length > 1, 'col-lg-5': currency_types.length <= 1}">
-                                <div
-                                    :class="{
-                                        'has-danger': errors.document_type_id
-                                    }"
-                                    class="form-group"
-                                >
-                                    <label
-                                        class="control-label font-weight-bold"
-                                        >Tipo comprobante</label
-                                    >
-                                    <el-select
-                                        v-model="form.document_type_id"
-                                        class="border-left rounded-left border-info"
-                                        dusk="document_type_id"
-                                        popper-class="el-select-document_type"
-                                        @change="changeDocumentType"
-                                        :disabled="isUpdateDocument"
-                                    >
-                                        <el-option
-                                            v-for="option in document_types"
-                                            :key="option.id"
-                                            :label="option.description"
-                                            :value="option.id"
-                                        ></el-option>
-                                    </el-select>
-                                    <small
-                                        v-if="errors.document_type_id"
-                                        class="form-control-feedback"
-                                        v-text="errors.document_type_id[0]"
-                                    ></small>
-                                </div>
-                            </div>
-                            <div class="col-lg-2 d-none">
-                                <div
-                                    :class="{
-                                        'has-danger': errors.establishment_id
-                                    }"
-                                    class="form-group"
-                                >
-                                    <label class="control-label"
-                                        >Sucursal</label
-                                    >
-                                    <el-select
-                                        v-model="form.establishment_id"
-                                        @change="changeEstablishment"
-                                    >
-                                        <el-option
-                                            v-for="option in establishments"
-                                            :key="option.id"
-                                            :label="option.description"
-                                            :value="option.id"
-                                        ></el-option>
-                                    </el-select>
-                                    <small
-                                        v-if="errors.establishment_id"
-                                        class="form-control-feedback"
-                                        v-text="errors.establishment_id[0]"
-                                    ></small>
-                                </div>
-                            </div>
-                            <div class="align-self-end serie-input" :class="{'col-md-2': currency_types.length > 1, 'col-md-3': currency_types.length <= 1}">
-                                <div
-                                    :class="{ 'has-danger': errors.series_id }"
-                                    class="form-group"
-                                >
-                                    <label class="control-label">Serie</label>
-                                    <el-select
-                                        v-model="form.series_id"
-                                        :disabled="disabledSeries()"
-                                    >
-                                        <el-option
-                                            v-for="option in series"
-                                            :key="option.id"
-                                            :label="option.number"
-                                            :disabled="option.disabled"
-                                            :value="option.id"
-                                        ></el-option>
-                                    </el-select>
-                                    <small
-                                        v-if="errors.series_id"
-                                        class="form-control-feedback"
-                                        v-text="errors.series_id[0]"
-                                    ></small>
-                                </div>
-                            </div>
-                            <div class="col-md-5 align-self-end operation-type" :class="{'col-lg-2': currency_types.length > 1, 'col-lg-4': currency_types.length <= 1}">
-                                <div
-                                    :class="{
-                                        'has-danger': errors.operation_type_id
-                                    }"
-                                    class="form-group"
-                                >
-                                    <label class="control-label"
-                                        >Tipo Operación
-                                        <template
-                                            v-if="
-                                                (form.operation_type_id ==
-                                                    '1001' ||
-                                                    form.operation_type_id ==
-                                                        '1004') &&
-                                                    has_data_detraction
-                                            "
-                                        >
-                                            <a
-                                                class="text-center font-weight-bold text-info"
-                                                href="#"
-                                                @click.prevent="
-                                                    showDialogDocumentDetraction = true
+                                            >Tipo Operación
+                                            <template
+                                                v-if="
+                                                    (form.operation_type_id ==
+                                                        '1001' ||
+                                                        form.operation_type_id ==
+                                                            '1004') &&
+                                                        has_data_detraction
                                                 "
                                             >
-                                                [+ Ver datos]</a
-                                            >
-                                        </template>
-                                    </label>
-                                    <el-select
-                                        v-model="form.operation_type_id"
-                                        @change="changeOperationType"
-                                    >
-                                        <el-option
-                                            v-for="option in operation_types"
-                                            :key="option.id"
-                                            :label="option.description"
-                                            :value="option.id"
-                                        ></el-option>
-                                    </el-select>
-                                    <small
-                                        v-if="errors.operation_type_id"
-                                        class="form-control-feedback"
-                                        v-text="errors.operation_type_id[0]"
-                                    ></small>
-                                </div>
-                            </div>
-                            <div v-if="currency_types.length > 1" class="col-md-6 col-lg-2 align-self-end money-input">
-                                <div
-                                    :class="{
-                                        'has-danger': errors.currency_type_id
-                                    }"
-                                    class="form-group"
-                                >
-                                    <label class="control-label">Moneda</label>
-                                    <el-select
-                                        v-model="form.currency_type_id"
-                                        @change="changeCurrencyType"
-                                    >
-                                        <el-option
-                                            v-for="option in currency_types"
-                                            :key="option.id"
-                                            :label="option.description"
-                                            :value="option.id"
-                                        ></el-option>
-                                    </el-select>
-                                    <small
-                                        v-if="errors.currency_type_id"
-                                        class="form-control-feedback"
-                                        v-text="errors.currency_type_id[0]"
-                                    ></small>
-                                </div>
-                            </div>
-                            <div v-if="currency_types.length > 1" class="col-md-6 col-lg-2 align-self-end change-type">
-                                <div
-                                    :class="{
-                                        'has-danger': errors.exchange_rate_sale
-                                    }"
-                                    class="form-group"
-                                >
-                                    <label class="control-label"
-                                        >Tipo de cambio
-                                        <el-tooltip
-                                            class="item"
-                                            content="Tipo de cambio del día, extraído de SUNAT"
-                                            effect="dark"
-                                            placement="top-end"
+                                                <a
+                                                    class="text-center font-weight-bold text-info"
+                                                    href="#"
+                                                    @click.prevent="
+                                                        showDialogDocumentDetraction = true
+                                                    "
+                                                >
+                                                    [+ Ver datos]</a
+                                                >
+                                            </template>
+                                        </label>
+                                        <el-select
+                                            v-model="operation_type_id_view"
+                                            @change="changeOperationType"
                                         >
-                                            <i class="fa fa-info-circle"></i>
-                                        </el-tooltip>
-                                    </label>
-                                    <el-input
-                                        v-model="form.exchange_rate_sale"
-                                    ></el-input>
-                                    <!-- <el-input :disabled="isUpdate" v-model="form.exchange_rate_sale"></el-input> -->
-                                    <small
-                                        v-if="errors.exchange_rate_sale"
-                                        class="form-control-feedback"
-                                        v-text="errors.exchange_rate_sale[0]"
-                                    ></small>
+                                            <el-option
+                                                v-for="option in operation_types_filter"
+                                                :key="option.id"
+                                                :label="option.description"
+                                                :value="option.id"
+                                            ></el-option>
+                                        </el-select>
+                                        <small
+                                            v-if="errors.operation_type_id"
+                                            class="form-control-feedback"
+                                            v-text="errors.operation_type_id[0]"
+                                        ></small>
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
-                    <div class="card-body card-body-invoice no-gutters border-0 shadow-none p-0 py-1 py-md-2 px-md-2">
-                        <div class="row inputs-container mx-1">
-                            <div
-                                :class="{ 'has-danger': errors.customer_id }"
-                                class="form-group col-sm-6 col-lg-4 position-relative"
-                            >
-                                <label
-                                    class="control-label font-weight-bold"
-                                >
+                        <div class="d-flex align-items-end justify-content-start gap-1 p-0 py-1 py-md-2 px-md-2 mx-1" v-if="editingLayout">
+                            <button type="button" class="btn btn-sm second-buton mt-1" @click="cancelLayoutEditFromHeader">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-x" style="margin-top: -2px;"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M18 6l-12 12" /><path d="M6 6l12 12" /></svg>
+                                Cancelar
+                            </button>
+                            <button type="button" @click="resetLayoutFromHeader" class="btn btn-sm second-buton" title="Restablecer">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-refresh" style="margin-top: -2px;"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M20 11a8.1 8.1 0 0 0 -15.5 -2m-.5 -4v4h4" /><path d="M4 13a8.1 8.1 0 0 0 15.5 2m.5 4v-4h-4" /></svg>
+                                Restablecer
+                            </button>
+                            <button type="button" :disabled="layout_saving" @click="confirmLayoutFromHeader" class="btn btn-sm btn-primary" title="Guardar">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-device-floppy" style="margin-top: -2px;"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M6 4h10l4 4v10a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 2 -2" /><path d="M10 14a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" /><path d="M14 4l0 4l-6 0l0 -4" /></svg>
+                                Guardar
+                            </button>
+                        </div>
+                    </header>
+                    <document-form-pinned-bar
+                        ref="pinnedBar"
+                        variant="invoice"
+                        class="card-body card-body-invoice no-gutters border-0 shadow-none p-0 py-1 py-md-2 px-md-2 mx-1"
+                        :pinned-fields="pinned_fields"
+                        :hidden-fields="hiddenLayoutFields"
+                        @editing-changed="editingLayout = $event"
+                        @save="onSaveLayout"
+                    >
+                        <template #customer_id>
+                            <div :class="{ 'has-danger': errors.customer_id }" class="form-group position-relative">
+                                <label class="control-label font-weight-bold">
                                     <el-badge type="success" :value="getCustomer.person_type" class="item">
-                                        <span>
-                                            Cliente
-                                        </span>
+                                        <span>Cliente</span>
                                     </el-badge>
-                                    <!-- <a
-                                        href="#"
-                                        @click.prevent="
-                                            showDialogNewPerson = true
-                                        "
-                                        >[+ Nuevo]</a
-                                    > -->
                                 </label>
                                 <el-select
                                     v-model="form.customer_id"
@@ -370,26 +238,182 @@
                                     class="form-control-feedback"
                                     v-text="errors.customer_id[0]"
                                 ></small>
+                            </div>
+
                             <div v-if="form.operation_type_id === '0101'" class="mt-2">
-                                <div >
                                 <el-checkbox v-model="form.is_itinerant" @change="changeItineratOption">
                                     ¿Venta itinerante?
                                 </el-checkbox>
+                            </div>
+                        <div class="points-system">
                                 <div
-                                    :class="{
-                                        'has-danger': errors.is_itinerant
-                                    }"
+                                    v-if="config.enabled_point_system && form.customer_id"
+                                    class="d-flex align-items-center justify-content-between content-points"
                                 >
-                                    <small
-                                        v-if="errors.is_itinerant"
-                                        class="form-control-feedback"
-                                        v-text="errors.is_itinerant[0]"
-                                    ></small>
-                                </div>
+                                    <p class="fs-point-system m-0">
+                                        <label class="font-weight-bold text-info"
+                                            >Puntos acumulados: </label
+                                        >
+                                        <b>{{ customer_accumulated_points }}</b>
 
+                                        <template v-if="total_exchange_points > 0">
+                                            -
+                                            <b class="text-danger">{{ total_exchange_points}}</b>
+                                            <b>{{ calculate_customer_accumulated_points }}</b>
+                                        </template>
+                                    </p>
+                                    <span class="mx-1 text-muted">|</span>
+                                    <p class="fs-point-system m-0">
+                                        <label class="font-weight-bold text-danger"
+                                            >Puntos por la compra: </label
+                                        >
+                                        <b>{{ total_points_by_sale }}</b>
+                                    </p>
                                 </div>
+                            </div>
+                        </template>
 
-                                <div v-if="form.is_itinerant">
+                        <template #customer_address_id>
+                            <div v-if="customer_addresses.length > 0 && itinerant_option_id == 1" class="form-group mb-0">
+                                <label class="control-label font-weight-bold">Dirección</label>
+                                <el-select v-model="form.customer_address_id">
+                                    <el-option
+                                        v-for="option in customer_addresses"
+                                        :key="option.id"
+                                        :label="option.address"
+                                        :value="option.id"
+                                    ></el-option>
+                                </el-select>
+                            </div>
+                            <div v-else class="form-group mb-0">
+                                <label class="control-label font-weight-bold label-ghost">Dirección</label>
+                                <el-input class="input-ghost" placeholder="Seleccione un cliente para ver dirección">
+                                </el-input>
+                            </div>
+                        </template>
+
+                        <template #date_of_issue>
+                            <div :class="{ 'has-danger': errors.date_of_issue }" class="form-group">
+                                <label class="control-label">Fec. Emisión</label>
+                                <el-date-picker
+                                    v-model="form.date_of_issue"
+                                    :clearable="false"
+                                    :picker-options="datEmision"
+                                    :readonly="readonly_date_of_due"
+                                    type="date"
+                                    :format="dpDateFormat"
+                                    value-format="yyyy-MM-dd"
+                                    @change="changeDateOfIssue"
+                                ></el-date-picker>
+                                <small
+                                    v-if="errors.date_of_issue"
+                                    class="form-control-feedback"
+                                    v-text="errors.date_of_issue[0]"
+                                ></small>
+                            </div>
+                        </template>
+
+                        <template #date_of_due>
+                            <div :class="{ 'has-danger': errors.date_of_due }" class="form-group">
+                                <label class="control-label">Fec. Vencimiento</label>
+                                <el-date-picker
+                                    v-model="form.date_of_due"
+                                    :clearable="false"
+                                    :readonly="readonly_date_of_due"
+                                    type="date"
+                                    :format="dpDateFormat"
+                                    value-format="yyyy-MM-dd"
+                                ></el-date-picker>
+                                <small
+                                    v-if="errors.date_of_due"
+                                    class="form-control-feedback"
+                                    v-text="errors.date_of_due[0]"
+                                ></small>
+                            </div>
+                        </template>
+
+                        <template #consigned_id>
+                            <div :class="{ 'has-danger': errors.consigned_id }" class="form-group">
+                                <label class="control-label fw-bold text-info">
+                                    Consignado
+                                    <a href="#" @click.prevent="showDialogConsignedForm = true">[+ Nuevo]</a>
+                                </label>
+                                <el-select class="w-100"
+                                        v-model="form.consigned_id"
+                                        @change="getConsignedAddresses"
+                                        filterable
+                                        placeholder="Seleccionar consignado">
+                                    <el-option v-for="option in consigneds"
+                                            :key="option.id"
+                                            :label="option.name"
+                                            :value="option.id"></el-option>
+                                </el-select>
+                                <small v-if="errors.consigned_id"
+                                    class="invalid-feedback"
+                                    v-text="errors.consigned_id[0]"></small>
+                            </div>
+                        </template>
+
+                        <template #consigned_address_id>
+                            <div class="form-group mb-0">
+                                <label class="control-label fw-bold text-info">Dirección</label>
+                                <el-select v-model="form.consigned_address_id"
+                                    @change="changeConsignedAddresses">
+                                    <el-option v-for="option in consigned_addresses"
+                                            :key="option.id"
+                                            :label="option.address"
+                                            :value="option.id"></el-option>
+                                </el-select>
+                            </div>
+                        </template>
+
+                        <template #currency_type_id>
+                            <div :class="{ 'has-danger': errors.currency_type_id }" class="form-group money-input">
+                                <label class="control-label">Moneda</label>
+                                <el-select
+                                    v-model="form.currency_type_id"
+                                    @change="changeCurrencyType"
+                                >
+                                    <el-option
+                                        v-for="option in currency_types"
+                                        :key="option.id"
+                                        :label="option.description"
+                                        :value="option.id"
+                                    ></el-option>
+                                </el-select>
+                                <small
+                                    v-if="errors.currency_type_id"
+                                    class="form-control-feedback"
+                                    v-text="errors.currency_type_id[0]"
+                                ></small>
+                            </div>
+                        </template>
+
+                        <template #exchange_rate_sale>
+                            <div :class="{ 'has-danger': errors.exchange_rate_sale }" class="form-group change-type">
+                                <label class="control-label"
+                                    >Tipo de cambio
+                                    <el-tooltip
+                                        class="item"
+                                        content="Tipo de cambio del día, extraído de SUNAT"
+                                        effect="dark"
+                                        placement="top-end"
+                                    >
+                                        <i class="fa fa-info-circle"></i>
+                                    </el-tooltip>
+                                </label>
+                                <el-input v-model="form.exchange_rate_sale"></el-input>
+                                <small
+                                    v-if="errors.exchange_rate_sale"
+                                    class="form-control-feedback"
+                                    v-text="errors.exchange_rate_sale[0]"
+                                ></small>
+                            </div>
+                        </template>
+
+                        <template #itinerant_option_id>
+                            <div class="form-group">
+                                <label class="control-label">Punto de venta itinerante</label>
                                 <el-select
                                     v-model="itinerant_option_id"
                                     class="border-left rounded-left border-info"
@@ -405,132 +429,84 @@
                                         :value="option.id"
                                     ></el-option>
                                 </el-select>
-                                </div>
-                                <div
-                                    v-if="itinerant_option_id == 2 && form.is_itinerant"
-                                    :class="{
-                                        'has-danger': errors.exchange_rate_sale
-                                    }"
-                                    class="form-group"
-                                >
-                                    <label class="control-label"
-                                        >Ruc del establecimiento
-                                        <el-tooltip
-                                            class="item"
-                                            content=""
-                                            effect="dark"
-                                            placement="top-end"
-                                        >
-                                            <i class="fa fa-info-circle"></i>
-                                        </el-tooltip>
-                                    </label>
-                                        <x-input-service v-model="ruc_itinerant"
-                                                         :identity_document_type_id="'6'"
-                                                         @search="searchNumber"></x-input-service>
-                                    <small
-                                        v-if="errors.exchange_rate_sale"
-                                        class="form-control-feedback"
-                                        v-text="errors.exchange_rate_sale[0]"
-                                    ></small>
-                                </div>
                             </div>
+                        </template>
+
+                        <template #ruc_itinerant>
+                            <div :class="{ 'has-danger': errors.exchange_rate_sale }" class="form-group">
+                                <label class="control-label"
+                                    >Ruc del establecimiento
+                                    <el-tooltip
+                                        class="item"
+                                        content=""
+                                        effect="dark"
+                                        placement="top-end"
+                                    >
+                                        <i class="fa fa-info-circle"></i>
+                                    </el-tooltip>
+                                </label>
+                                <x-input-service v-model="ruc_itinerant"
+                                                 :identity_document_type_id="'6'"
+                                                 @search="searchNumber"></x-input-service>
+                                <small
+                                    v-if="errors.exchange_rate_sale"
+                                    class="form-control-feedback"
+                                    v-text="errors.exchange_rate_sale[0]"
+                                ></small>
                             </div>
-                            <div
-                                v-if="customer_addresses.length > 0 && this.itinerant_option_id == 1"
-                                class="form-group col-sm-6 col-lg-4 mb-0"
-                            >
-                                <label
-                                    class="control-label font-weight-bold text-info"
-                                    >Dirección</label
-                                >
-                                <el-select v-model="form.customer_address_id">
+                        </template>
+
+                        <!-- Campos traídos desde Información Adicional -->
+                        <template #purchase_order>
+                            <div :class="{ 'has-danger': errors.purchase_order }" class="form-group">
+                                <label class="control-label">Orden de Compra</label>
+                                <el-input v-model="form.purchase_order" type="textarea"></el-input>
+                                <small
+                                    v-if="errors.purchase_order"
+                                    class="form-control-feedback"
+                                    v-text="errors.purchase_order[0]"
+                                ></small>
+                            </div>
+                        </template>
+
+                        <template #additional_information>
+                            <div class="form-group">
+                                <label class="control-label">Observaciones</label>
+                                <el-input v-model="form.additional_information" autosize type="textarea"></el-input>
+                            </div>
+                        </template>
+
+                        <template #plate_number>
+                            <div :class="{ 'has-danger': errors.plate_number }" class="form-group">
+                                <label class="control-label">N° Placa</label>
+                                <el-input v-model="form.plate_number" type="textarea"></el-input>
+                                <small
+                                    v-if="errors.plate_number"
+                                    class="form-control-feedback"
+                                    v-text="errors.plate_number[0]"
+                                ></small>
+                            </div>
+                        </template>
+
+                        <template #seller_id>
+                            <div class="form-group">
+                                <label class="control-label">Vendedor</label>
+                                <el-select v-model="form.seller_id" :disabled="typeUser == 'seller'">
                                     <el-option
-                                        v-for="option in customer_addresses"
+                                        v-for="option in filteredSellers"
                                         :key="option.id"
-                                        :label="option.address"
+                                        :label="option.name"
                                         :value="option.id"
                                     ></el-option>
                                 </el-select>
                             </div>
-
-                            <!-- sistema por puntos -->
-                            <div
-                                v-if="config.enabled_point_system && form.customer_id"
-                                class="form-group col-12 col-lg-4 mb-0"
-                            >
-                                <p class="fs-point-system">
-                                    <label class="font-weight-bold text-info"
-                                        >Puntos acumulados:</label
-                                    >
-                                    <b>{{ customer_accumulated_points }}</b>
-
-                                    <template v-if="total_exchange_points > 0">
-                                        -
-                                        <b style="color:red">{{
-                                            total_exchange_points
-                                        }}</b>
-                                        =
-                                        <b>{{
-                                            calculate_customer_accumulated_points
-                                        }}</b>
-                                    </template>
-                                </p>
-                                <p class="fs-point-system">
-                                    <label class="font-weight-bold text-danger"
-                                        >Puntos por la compra:</label
-                                    >
-                                    <b>{{ total_points_by_sale }}</b>
-                                </p>
-                            </div>
-                            <!-- sistema por puntos -->
-                            <custom-fields-renderer
-                                ref="customFieldsRenderer"
-                                document-type="documents"
-                                :form-data.sync="form.custom_fields_data">
-                            </custom-fields-renderer>
-                        </div>
-                    </div>
-                    <template v-if="configuration.enable_consigned">
-                        <div v-if="consigneds.length" class="card-body border-top">
-                            <div class="row">
-                                <div class="col-12 col-md-6">
-                                    <div :class="{'has-danger': errors.consigned_id}"
-                                        class="form-group">
-                                        <label class="control-label fw-bold text-info">
-                                            Consignado
-                                            <a
-                                            href="#"
-                                            @click.prevent="showDialogConsignedForm = true">[+ Nuevo]</a>
-                                        </label>
-                                        <el-select class="w-100"
-                                                v-model="form.consigned_id"
-                                                @change="getConsignedAddresses"
-                                                filterable
-                                                placeholder="Seleccionar consignado">
-                                            <el-option v-for="option in consigneds"
-                                                    :key="option.id"
-                                                    :label="option.name"
-                                                    :value="option.id"></el-option>
-                                        </el-select>
-                                        <small v-if="errors.consigned_id"
-                                            class="invalid-feedback"
-                                            v-text="errors.consigned_id[0]"></small>
-                                    </div>
-                                </div>
-                                <div class="form-group col-sm-6 mb-0">
-                                    <label class="control-label fw-bold text-info">Dirección</label>
-                                    <el-select v-model="form.consigned_address_id"
-                                        @change="changeConsignedAddresses"
-                                        >
-                                        <el-option v-for="option in consigned_addresses"
-                                                :key="option.id"
-                                                :label="option.address"
-                                                :value="option.id"></el-option>
-                                    </el-select>
-                                </div>
-                            </div>
-                        </div>
-                    </template>
+                        </template>
+                    </document-form-pinned-bar>
+                    <custom-fields-renderer
+                        ref="customFieldsRenderer"
+                        document-type="documents"
+                        :form-data.sync="form.custom_fields_data">
+                    </custom-fields-renderer>
                     <div class="card-body card-body-invoice no-gutters border-0 shadow-none px-2 px-md-4">
                         <template v-if="showSearchItemsMainForm">
                             <div class="row">
@@ -578,11 +554,12 @@
                         <!-- Información Adicional -->
                         <div>
                             <!-- Botón para mostrar/ocultar el componente -->
-                            <span
+                            <!-- <span
                                 class="toggle-button toggle-button-invoice"
                                 :class="{ shift: isVisible }"
                                 @click="toggleInformation"
                                 :title="isVisible ? 'Cerrar Información Adicional' : 'Abrir Información Adicional'"
+                                v-if="isVisible"
                             >
                                 <span class="toggle-button-text">
                                     {{
@@ -591,7 +568,7 @@
                                             : "Abrir Información Adicional"
                                     }}
                                 </span>
-                            </span>
+                            </span> -->
 
                             <div
                                 class="additional-information px-4"
@@ -607,6 +584,24 @@
                                     </i>
                                 </div>
                                 <div class="w-100">
+                                    <div
+                                        v-if="relocatedFields.length"
+                                        class="mt-5 no-gutters w-100"
+                                    >
+                                        <div
+                                            v-for="rf in relocatedFields"
+                                            :key="rf.key"
+                                            class="col-12 field-pinnable"
+                                        >
+                                            <button v-if="editingLayout" type="button" class="pin-from-form-btn" @click.prevent="pinFromForm(rf.key)"><i class="el-icon-top"></i> Fijar</button>
+                                            <remote-slot
+                                                :source="pinnedBarInstance"
+                                                :slot-name="rf.key"
+                                                :slot-scope-data="{ field: rf.field, width: 12 }"
+                                            />
+                                        </div>
+                                    </div>
+
                                     <div class="mt-5 w-100">
                                         <div class="col-12 switch-container">
                                             <div class="row no-gutters">
@@ -895,7 +890,8 @@
                                     <div
                                         class="mt-5 no-gutters w-100"
                                     >
-                                        <div class="col-12">
+                                        <div class="col-12 field-pinnable" v-show="!isLayoutPinned('purchase_order')">
+                                            <button v-if="editingLayout" type="button" class="pin-from-form-btn" @click.prevent="pinFromForm('purchase_order')"><i class="el-icon-top"></i>Fijar</button>
                                             <div
                                                 :class="{
                                                     'has-danger':
@@ -922,7 +918,8 @@
                                                 ></small>
                                             </div>
                                         </div>
-                                        <div class="col-12">
+                                        <div class="col-12 field-pinnable" v-show="!isLayoutPinned('additional_information')">
+                                            <button v-if="editingLayout" type="button" class="pin-from-form-btn" @click.prevent="pinFromForm('additional_information')"><i class="el-icon-top"></i> Fijar</button>
                                             <div class="form-group">
                                                 <label class="control-label"
                                                     >Observaciones</label
@@ -937,7 +934,8 @@
                                                 </el-input>
                                             </div>
                                         </div>
-                                        <div class="col-12" v-if="showPlateNumberField">
+                                        <div class="col-12 field-pinnable" v-show="showPlateNumberField && !isLayoutPinned('plate_number')">
+                                            <button v-if="editingLayout" type="button" class="pin-from-form-btn" @click.prevent="pinFromForm('plate_number')"><i class="el-icon-top"></i> Fijar</button>
                                             <div
                                                 :class="{
                                                     'has-danger':
@@ -964,7 +962,8 @@
                                         </div>
                                     </div>
                                     <div class="mt-5 w-100">
-                                        <div class="form-group">
+                                        <div class="form-group field-pinnable" v-show="!isLayoutPinned('seller_id')">
+                                            <button v-if="editingLayout" type="button" class="pin-from-form-btn" @click.prevent="pinFromForm('seller_id')"><i class="el-icon-top"></i> Fijar</button>
                                             <label class="control-label"
                                                 >Vendedor</label
                                             >
@@ -1222,7 +1221,12 @@
                         </div>
                         <!-- Fin de informacion adicional -->
 
-                        <div class="table-responsive" v-loading="loading_items">
+                        <div class="col add-row-table mx-0 py-3 fs-6" v-if="form.items <= 0" @click.prevent="clickAddItemInvoice">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-circle-plus"><path data-v-cdc5f86e="" stroke="none" d="M0 0h24v24H0z" fill="none"></path><path data-v-cdc5f86e="" d="M3 12a9 9 0 1 0 18 0a9 9 0 0 0 -18 0"></path><path data-v-cdc5f86e="" d="M9 12h6"></path><path data-v-cdc5f86e="" d="M12 9v6"></path></svg>
+                            Agregar producto
+                            <kbd>F2</kbd>
+                        </div>
+                        <div class="table-responsive" v-loading="loading_items" v-else>
                             <table class="table table-sm">
                                 <thead>
                                     <tr class="table-titles-default">
@@ -1719,7 +1723,7 @@
                                     <!-- @todo: Mejorar evitando duplicar codigo -->
                                     <!-- Ocultar en cel -->
                                     <tr>
-                                        <td class="pt-1" colspan="4">
+                                        <td class="pt-1 align-top" colspan="4">
                                             <el-popover
                                                 placement="top-start"
                                                 :open-delay="1000"
@@ -1729,12 +1733,13 @@
                                             >
                                                 <button
                                                     slot="reference"
-                                                    class="btn waves-effect waves-light btn-primary"
+                                                    class="btn waves-effect waves-light add-row-table m-0 w-50 py-2 fs-6"
                                                     type="button"
                                                     @click.prevent="
                                                         clickAddItemInvoice
                                                     "
                                                 >
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-circle-plus" style="margin-top: 2px;"><path data-v-cdc5f86e="" stroke="none" d="M0 0h24v24H0z" fill="none"></path><path data-v-cdc5f86e="" d="M3 12a9 9 0 1 0 18 0a9 9 0 0 0 -18 0"></path><path data-v-cdc5f86e="" d="M9 12h6"></path><path data-v-cdc5f86e="" d="M12 9v6"></path></svg>
                                                     Agregar Producto
                                                     <kbd>F2</kbd>
                                                 </button>
@@ -1845,7 +1850,7 @@
                                                     </tr>
 
                                                     <template
-                                                        v-if="form.detraction"
+                                                        v-if="form.detraction && !isNrus"
                                                     >
                                                         <tr
                                                             v-if="
@@ -1867,7 +1872,7 @@
                                                             <!-- <td>{{ currency_type.symbol }} {{ form.detraction.amount }}</td> -->
                                                         </tr>
                                                     </template>
-                                                    <template v-if=" config.enabled_guarantee_fund && (form.detraction || form.retention)">
+                                                    <template v-if=" config.enabled_guarantee_fund && (form.detraction || form.retention) && !isNrus">
                                                         <tr v-if="form.detraction.guarantee_fund > 0 || form.retention.guarantee_fund > 0">
                                                             <td width="60%">FONDO DE GARANTIA:</td>
                                                             <td>{{ currency_type.symbol }} {{ guarantee_fund }}</td>
@@ -1946,7 +1951,7 @@
                                                     </tr>
                                                     <tr
                                                         v-if="
-                                                            form.total_taxed > 0
+                                                            form.total_taxed > 0 && !isNrus
                                                         "
                                                     >
                                                         <td>OP.GRAVADA:</td>
@@ -1978,7 +1983,7 @@
                                                     </tr>
                                                     <tr
                                                         v-if="
-                                                            form.total_igv > 0
+                                                            form.total_igv > 0 && !isNrus
                                                         "
                                                     >
                                                         <td>IGV:</td>
@@ -1991,7 +1996,7 @@
                                                     </tr>
                                                     <tr
                                                         v-if="
-                                                            form.total_isc > 0
+                                                            form.total_isc > 0 && !isNrus
                                                         "
                                                     >
                                                         <td>ISC:</td>
@@ -2880,7 +2885,7 @@
 
 
 
-                                    <template v-if="form.detraction">
+                                    <template v-if="form.detraction && !isNrus">
                                         <tr v-if="form.detraction.amount > 0">
                                             <td width="60%">M. DETRACCIÓN:</td>
                                             <td>
@@ -2888,14 +2893,14 @@
                                             </td>
                                         </tr>
                                     </template>
-                                    <template v-if="config.enabled_guarantee_fund && (form.detraction || form.retention)">
+                                    <template v-if="config.enabled_guarantee_fund && (form.detraction || form.retention) && !isNrus">
                                             <tr v-if="form.detraction.guarantee_fund > 0 || form.retention.guarantee_fund > 0">
                                                 <td width="60%">FONDO DE GARANTIA:</td>
                                                 <td>{{ currency_type.symbol }} {{ guarantee_fund }}</td>
                                             </tr>
                                     </template>
 
-                                    <template v-if="form.retention">
+                                    <template v-if="form.retention && !isNrus">
                                         <tr v-if="form.retention.amount > 0">
                                             <td>
                                                 M. RETENCIÓN ({{
@@ -2910,7 +2915,7 @@
                                         </tr>
                                     </template>
 
-                                    <tr v-if="form.total_exportation > 0">
+                                    <tr v-if="form.total_exportation > 0 && !isNrus">
                                         <td>OP.EXPORTACIÓN:</td>
                                         <td>
                                             {{ currency_type.symbol }}
@@ -2938,7 +2943,7 @@
                                             {{ form.total_exonerated }}
                                         </td>
                                     </tr>
-                                    <tr v-if="form.total_taxed > 0">
+                                    <tr v-if="form.total_taxed > 0 && !isNrus">
                                         <td>OP.GRAVADA:</td>
                                         <td>
                                             {{ currency_type.symbol }}
@@ -2952,14 +2957,14 @@
                                             {{ form.total_discount }}
                                         </td>
                                     </tr>
-                                    <tr v-if="form.total_igv > 0">
+                                    <tr v-if="form.total_igv > 0 && !isNrus">
                                         <td>IGV:</td>
                                         <td>
                                             {{ currency_type.symbol }}
                                             {{ form.total_igv }}
                                         </td>
                                     </tr>
-                                    <tr v-if="form.total_isc > 0">
+                                    <tr v-if="form.total_isc > 0 && !isNrus">
                                         <td>ISC:</td>
                                         <td>
                                             {{ currency_type.symbol }}
@@ -3899,6 +3904,14 @@
 .customer-select-clearable >>> .el-input__suffix {
     right: 33px;
 }
+.edit-layout-btn {
+    opacity: 0;
+    pointer-events: none;
+}
+.title-document:hover .edit-layout-btn {
+    opacity: 1;
+    pointer-events: all;
+}
 @media only screen and (min-width: 992px) {
     .table-responsive {
         overflow-x: visible !important;
@@ -3985,6 +3998,28 @@ import PackItemDescription from "@components/items/PackItemDescription.vue";
 import DocumentFormPreview from "./partials/preview.vue";
 import ConsignedForm from './partials/consigned.vue';
 import CustomFieldsRenderer from '@viewsModuleCustomField/custom_fields/custom_field_renderer.vue'
+import DocumentFormPinnedBar from './_document_pinned_bar.vue';
+import MiniTour from "@components/MiniTour.vue";
+import {
+    getDefaultLayout as getDocumentDefaultLayout,
+    getAvailableFields as getDocumentAvailableFields,
+} from './_document_form_fields_catalog';
+
+const RemoteSlot = {
+    name: 'RemoteSlot',
+    functional: true,
+    props: {
+        source: { type: Object, default: null },
+        slotName: { type: String, required: true },
+        slotScopeData: { type: Object, default: () => ({}) },
+    },
+    render(h, ctx) {
+        const src = ctx.props.source;
+        const slot = src && src.$scopedSlots ? src.$scopedSlots[ctx.props.slotName] : null;
+        const content = typeof slot === 'function' ? slot(ctx.props.slotScopeData) : slot;
+        return h('div', { class: 'relocated-field-slot' }, content || []);
+    },
+};
 
 export default {
     props: [
@@ -4016,6 +4051,9 @@ export default {
         DocumentFormPreview,
         ConsignedForm,
         CustomFieldsRenderer,
+        DocumentFormPinnedBar,
+        RemoteSlot,
+        MiniTour,
     },
     mixins: [
         functions,
@@ -4028,6 +4066,23 @@ export default {
     ],
     data() {
         return {
+            miniTourSteps: [
+                {
+                    target: ".edit-layout-btn",
+                    tag: "Paso 1 de 2",
+                    title: "Personaliza tus campos",
+                    body: "Con este botón puedes <b>reordenar los campos</b> del formulario y <b>ajustar el ancho</b> de cada uno. Aparece al <b>pasar el cursor sobre el título</b>; configúralo una vez y el formulario quedará a tu medida.",
+                    placement: "bottom"
+                },
+                {
+                    target: "[data-tour='info-adicional']",
+                    tag: "Paso 2 de 2",
+                    badge: "Solo la primera vez",
+                    title: "Información adicional",
+                    body: "Aquí agregas datos extra al comprobante: <b>observaciones, orden de compra, guías</b> y más.",
+                    placement: "bottom"
+                }
+            ],
             datEmision: {
                 disabledDate(time) {
                     return time.getTime() > moment();
@@ -4047,6 +4102,13 @@ export default {
             ],
             // default_document_type: null,
             // default_series_type: null,
+            // Datos generales personalizables (ver módulo DocumentFormLayout)
+            pinned_fields: [],
+            editingLayout: false,
+            layout_saving: false,
+            // Instancia de la barra de datos generales, para reubicar sus slots no fijados.
+            pinnedBarInstance: null,
+            pinnedBarReady: false,
             isVisible: false,
             is_contingency: false,
             focus_on_client: false,
@@ -4155,10 +4217,121 @@ export default {
             total_consumption_charge : 0,
             consigneds:[],
             consigned_addresses:[],
-            customerSearchTerm: ''
+            customerSearchTerm: '',
+            operation_types_filter: [],
+            is_itinerant_operation: false
         };
     },
     computed: {
+        layoutPinnedKeysSet() {
+            if (
+                this.editingLayout &&
+                this.pinnedBarInstance &&
+                Array.isArray(this.pinnedBarInstance.draftPins)
+            ) {
+                return new Set(this.pinnedBarInstance.draftPins.map(p => p.field_key));
+            }
+            return new Set((this.pinned_fields || []).map(p => p.field_key));
+        },
+        relocatedFields() {
+            if (!this.pinnedBarReady) return [];
+            const hidden = new Set(this.hiddenLayoutFields);
+            return getDocumentAvailableFields('invoice')
+                .filter(f => f.group === 'main')
+                .filter(f => !this.layoutPinnedKeysSet.has(f.key) && !hidden.has(f.key))
+                .map(f => ({ key: f.key, field: f }));
+        },
+        hiddenLayoutFields() {
+            const hidden = [];
+            if (!this.showCurrencyExchangeFields) {
+                hidden.push('currency_type_id', 'exchange_rate_sale');
+            }
+            if (!this.showItinerantPointField) {
+                hidden.push('itinerant_option_id');
+            }
+            if (!this.showItinerantRucField) {
+                hidden.push('ruc_itinerant');
+            }
+            if (!(this.configuration && this.configuration.enable_consigned && this.consigneds && this.consigneds.length)) {
+                hidden.push('consigned_id', 'consigned_address_id');
+            }
+            if (!this.showPlateNumberField) {
+                hidden.push('plate_number');
+            }
+            return hidden;
+        },
+        operation_type_id_view: {
+            get() {
+                if (
+                    this.form.operation_type_id === "0101" &&
+                    this.is_itinerant_operation
+                ) {
+                    return "0101_itinerant";
+                }
+                return this.form.operation_type_id;
+            },
+            set(val) {
+                if (val === "0101_itinerant") {
+                    this.is_itinerant_operation = true;
+                    this.form.operation_type_id = "0101";
+                    this.form.is_itinerant = true;
+                } else {
+                    if (this.is_itinerant_operation) {
+                        this.form.is_itinerant = false;
+                    }
+                    this.is_itinerant_operation = false;
+                    this.form.operation_type_id = val;
+                }
+            }
+        },
+        showOperationTypeField() {
+            return this.operation_types_filter.length > 1;
+        },
+        showCurrencyExchangeFields() {
+            return this.currency_types.length > 1;
+        },
+        showItinerantPointField() {
+            return this.form.operation_type_id === "0101" && this.form.is_itinerant;
+        },
+        showItinerantRucField() {
+            return this.showItinerantPointField && this.itinerant_option_id == 2;
+        },
+        currencyColumnClass() {
+            if (this.showItinerantRucField) {
+                return "col-lg-3";
+            }
+
+            if (this.showItinerantPointField) {
+                return "col-lg-4";
+            }
+
+            return "col-lg-6";
+        },
+        exchangeRateColumnClass() {
+            if (this.showItinerantRucField) {
+                return "col-lg-3";
+            }
+
+            if (this.showItinerantPointField) {
+                return "col-lg-4";
+            }
+
+            return "col-lg-6";
+        },
+        itinerantPointColumnClass() {
+            if (!this.showCurrencyExchangeFields) {
+                return this.showItinerantRucField ? "col-lg-8" : "col-lg-12";
+            }
+
+            return "col-lg-4";
+        },
+        itinerantRucColumnClass() {
+            if (!this.showCurrencyExchangeFields) {
+                return "col-lg-4";
+            }
+
+            return "col-lg-2";
+        },
         showPlateNumberField() {
             return Array.isArray(this.business_turns) &&
                 this.business_turns.some(bt => bt.value === 'tap' && bt.active);
@@ -4193,6 +4366,16 @@ export default {
             return this.configuration.global_discount_type_id === "02" ;
         },
         ...mapState(["config", "series", "all_series"]),
+        isNrus() {
+            return !!(this.config && this.config.is_nrus);
+        },
+        documentTypesAvailable() {
+            // En NRUS solo se permite emitir Boleta (03)
+            if (this.isNrus) {
+                return this.document_types.filter(dt => dt.id === "03");
+            }
+            return this.document_types;
+        },
         credit_payment_metod: function() {
             return _.filter(this.payment_method_types, { is_credit: true });
         },
@@ -4306,6 +4489,12 @@ export default {
             return fund_obj.guarantee_fund ? fund_obj.guarantee_fund : 0
         }
     },
+    mounted() {
+        this.capturePinnedBar();
+    },
+    updated() {
+        this.capturePinnedBar();
+    },
     async created() {
         await this.initComponent();
         await this.getPercentageIgv();
@@ -4417,7 +4606,9 @@ export default {
         const clientfromDispatchesOrNotes = localStorage.getItem("client");
         if (clientfromDispatchesOrNotes) {
             const client = JSON.parse(clientfromDispatchesOrNotes);
-            if (client.identity_document_type_id == 1 || client.identity_document_type_id == 0) {
+            if (this.isNrus) {
+                this.form.document_type_id = "03";
+            } else if (client.identity_document_type_id == 1 || client.identity_document_type_id == 0) {
                 this.form.document_type_id = "03";
             } else if (client.identity_document_type_id == 6 ) {
                 this.form.document_type_id = "01";
@@ -4452,6 +4643,12 @@ export default {
         // }
 
         this.startConnectionQzTray();
+
+        // Verificar si es boleta, y desactivar las detracciones
+
+        await this.verifyDocumentType03ForDetraction();
+
+
     },
     watch: {
         'form.customer_id': 'checkCustomerExpiredDebt',
@@ -4471,12 +4668,140 @@ export default {
         }
     },
     methods: {
+        // ───── Datos generales personalizables (DocumentFormLayout) ─────
+        capturePinnedBar() {
+            if (this.pinnedBarInstance || !this.$refs.pinnedBar) return;
+            this.pinnedBarInstance = this.$refs.pinnedBar;
+            this.pinnedBarReady = true;
+        },
+        isLayoutPinned(fieldKey) {
+            return this.layoutPinnedKeysSet.has(fieldKey);
+        },
+        loadFormLayout() {
+            return this.$http
+                .get('/document-form-layout/invoice')
+                .then(({ data }) => {
+                    const remote = data && data.data && Array.isArray(data.data.pinned_fields)
+                        ? data.data.pinned_fields
+                        : [];
+                    this.pinned_fields = remote.length > 0
+                        ? remote
+                        : getDocumentDefaultLayout('invoice');
+                })
+                .catch(() => {
+                    this.pinned_fields = getDocumentDefaultLayout('invoice');
+                });
+        },
+        enterLayoutEditFromHeader() {
+            if (this.$refs.pinnedBar && typeof this.$refs.pinnedBar.enterEditMode === 'function') {
+                this.$refs.pinnedBar.enterEditMode();
+            }
+        },
+        resetLayoutFromHeader() {
+            if (this.$refs.pinnedBar && typeof this.$refs.pinnedBar.resetLayout === 'function') {
+                this.$refs.pinnedBar.resetLayout();
+            }
+        },
+        confirmLayoutFromHeader() {
+            if (this.$refs.pinnedBar && typeof this.$refs.pinnedBar.confirmEdit === 'function') {
+                this.$refs.pinnedBar.confirmEdit();
+            }
+        },
+        cancelLayoutEditFromHeader() {
+            if (this.$refs.pinnedBar && typeof this.$refs.pinnedBar.cancelEdit === 'function') {
+                this.$refs.pinnedBar.cancelEdit();
+            }
+        },
+        pinFromForm(fieldKey) {
+            if (this.$refs.pinnedBar && typeof this.$refs.pinnedBar.pinField === 'function') {
+                this.$refs.pinnedBar.pinField(fieldKey);
+            }
+        },
+        onSaveLayout(pinned, done) {
+            this.layout_saving = true;
+            this.$http
+                .put('/document-form-layout/invoice', { pinned_fields: pinned })
+                .then(response => {
+                    if (response.data && response.data.success) {
+                        this.pinned_fields = response.data.data.pinned_fields;
+                        this.$message.success(response.data.message || 'Configuración guardada con éxito');
+                        if (typeof done === 'function') done();
+                    } else {
+                        this.$message.error((response.data && response.data.message) || 'No se pudo guardar la configuración');
+                    }
+                })
+                .catch(() => {
+                    this.$message.error('No se pudo guardar la configuración');
+                })
+                .finally(() => {
+                    this.layout_saving = false;
+                });
+        },
+        sortOperationTypes(operationTypes) {
+            const sorted = operationTypes.slice();
+            const internalSaleIndex = sorted.findIndex(ot => ot.id === "0101");
+            const itinerantIndex = sorted.findIndex(
+                ot => ot.id === "0101_itinerant"
+            );
+
+            if (
+                internalSaleIndex !== -1 &&
+                itinerantIndex !== -1 &&
+                itinerantIndex !== internalSaleIndex + 1
+            ) {
+                const [itinerantOperation] = sorted.splice(itinerantIndex, 1);
+                const newInternalSaleIndex = sorted.findIndex(
+                    ot => ot.id === "0101"
+                );
+                sorted.splice(newInternalSaleIndex + 1, 0, itinerantOperation);
+            }
+
+            return sorted;
+        },
+        syncSingleOperationTypeSelection() {
+            if (this.operation_types_filter.length !== 1) return;
+
+            const operationType = this.operation_types_filter[0];
+            const isCurrentItinerantOperation =
+                operationType.id === "0101_itinerant" &&
+                this.form.operation_type_id === "0101" &&
+                this.is_itinerant_operation;
+
+            if (
+                this.operation_type_id_view === operationType.id &&
+                (operationType.id !== "0101_itinerant" ||
+                    isCurrentItinerantOperation)
+            ) return;
+
+            this.operation_type_id_view = operationType.id;
+            this.changeOperationType();
+        },
+        async verifyDocumentType03ForDetraction() {
+            const documentType = this.document_types.find(
+                dt => dt.id === this.form.document_type_id
+            );
+            console.log(documentType);
+            
+            
+            let filtered;
+            if (documentType && documentType.id === "03") {
+                filtered = this.operation_types.filter(
+                    ot => ot.id !== "1001" && ot.id !== "1004"
+                );
+            } else {
+                filtered = this.operation_types.slice();
+            }
+            this.operation_types_filter = filtered;
+            this.syncSingleOperationTypeSelection();
+        },
         async initComponent() {
             this.loadConfiguration();
             this.$store.commit("setConfiguration", this.configuration);
 
             // Cargar price_options desde la API de price labels activos
             await this.loadPriceOptions();
+
+            await this.loadFormLayout();
 
             await this.initForm();
             await this.$http.get(`/${this.resource}/tables`).then(response => {
@@ -4485,7 +4810,9 @@ export default {
                 this.currency_types = response.data.currency_types;
                 this.business_turns = response.data.business_turns;
                 this.establishments = response.data.establishments;
-                this.operation_types = response.data.operation_types;
+                this.operation_types = this.sortOperationTypes(
+                    response.data.operation_types
+                );
                 this.is_restaurant_active = response.data.is_restaurant_active;
                 this.restaurant_tip_factor = response.data.restaurant_tip_factor;
                 this.$store.commit("setAllSeries", response.data.series);
@@ -4508,8 +4835,9 @@ export default {
                     this.establishments.length > 0
                         ? this.establishments[0].id
                         : null;
-                this.form.document_type_id =
-                    this.document_types.length > 0
+                this.form.document_type_id = this.isNrus
+                    ? "03"
+                    : this.document_types.length > 0
                         ? this.document_types[0].id
                         : null;
                 this.form.operation_type_id =
@@ -5486,6 +5814,10 @@ export default {
             }
         },
         selectDocumentType() {
+            if (this.isNrus) {
+                this.form.document_type_id = "03";
+                return;
+            }
             this.form.document_type_id = this.select_first_document_type_03
                 ? "03"
                 : "01";
@@ -6228,6 +6560,7 @@ export default {
             this.cleanCustomer();
             this.filterCustomers();
             this.setDefaultSerieByDocument();
+            this.verifyDocumentType03ForDetraction();
         },
         setDefaultSerieByDocument() {
             if (!this.authUser || !this.authUser.multiple_default_document_types)
@@ -7590,6 +7923,10 @@ export default {
                 .catch(error => {
                     if (error.response.status === 422) {
                         this.errors = error.response.data;
+                        if (this.errors.customer_id) {
+                            this.$message.error(this.errors.customer_id[0]);
+                            delete this.errors.customer_id;
+                        }
                     } else {
                         this.$message.error(error.response.data.message);
                     }
@@ -8026,7 +8363,7 @@ export default {
             }
 
             if (!this.form.customer_id) {
-                this.$message.error("Debe seleccionar cliente");
+                this.$message.error("El campo cliente es obligatorio.");
                 return false;
             }
 

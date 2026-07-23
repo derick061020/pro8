@@ -256,6 +256,9 @@
                                 <th class="text-center">
                                     Notificaciones
                                 </th>
+                                <th class="text-center">
+                                    Link de pago
+                                </th>
                                 <th class="text-end">
                                     Acciones
                                 </th>
@@ -322,6 +325,20 @@
                                     </span>
                                     <br>
                                     <span class="text-muted" v-if="record.diff_notification"> {{ record.diff_notification }}</span>
+                                </td>
+                                <td class="text-center">
+                                    <el-button
+                                        v-if="record.url_view"
+                                        type="text"
+                                        size="small"
+                                        class="copy-link-btn"
+                                        title="Copiar link de pago"
+                                        v-clipboard:copy="record.url_view"
+                                        v-clipboard:success="onCopyLink"
+                                        v-clipboard:error="onErrorLink"
+                                    >
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-link"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M9 15l6 -6" /><path d="M11 6l.463 -.536a5 5 0 0 1 7.071 7.072l-.534 .464" /><path d="M13 18l-.397 .534a5.068 5.068 0 0 1 -7.127 0a4.972 4.972 0 0 1 0 -7.071l.524 -.463" /></svg>
+                                    </el-button>
                                 </td>
                                 <td class="text-end">
                                   <template v-if="!(record.order_state_id == 4 || record.order_state_id == 2)">
@@ -586,6 +603,12 @@ import EditClient from './partials/edit-client.vue'
                 default:
                   return '';
               }
+            },
+            onCopyLink() {
+              this.$message.success('Link de pago copiado al portapapeles')
+            },
+            onErrorLink() {
+              this.$message.error('No se pudo copiar el link de pago')
             },
             formatDecimal(record) {
               if (record.amount === '' || record.amount === null || record.amount === undefined) return;

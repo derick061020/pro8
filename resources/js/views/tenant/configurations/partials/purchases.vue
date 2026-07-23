@@ -8,9 +8,6 @@
                             <span class="dot"></span>
                             <span class="text-primary text-uppercase">Configuración de Compras</span>
                         </h5>
-                        <span class="text-muted text-uppercase px-2 options-count">
-                            4 opciones
-                        </span>
                     </div>
                     <div>
                         <span class="text-muted">

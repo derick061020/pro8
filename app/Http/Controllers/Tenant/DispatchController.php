@@ -24,6 +24,7 @@ use App\Models\Tenant\Person;
 use App\Models\Tenant\Quotation;
 use App\Models\Tenant\SaleNote;
 use App\Models\Tenant\Series;
+use App\Services\SeriesResolver;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -148,7 +149,8 @@ class DispatchController extends Controller
             ];
         });
 
-        $series = Series::where('document_type_id', '09')->get();
+        // Series filtradas por contexto (oculta dedicadas / restringe al grupo activo). Ver SeriesResolver.
+        $series = app(SeriesResolver::class)->applyContext(Series::where('document_type_id', '09'))->get();
 
         return compact('customers', 'series');
 
@@ -565,7 +567,7 @@ class DispatchController extends Controller
             });
 
         $establishments = Establishment::all();
-        $series = Series::all()->toArray();
+        $series = app(SeriesResolver::class)->applyContext(Series::query())->get()->toArray();
         $company = Company::select('number', 'name', 'identity_document_type_id')->first();
         $drivers = (new DriverController())->getOptions();
         $transports = (new TransportController())->getOptions();
@@ -735,7 +737,8 @@ class DispatchController extends Controller
             ];
         });
 
-        $series = Series::where('establishment_id', $establishment->id)->get();
+        // Series filtradas por contexto (oculta dedicadas / restringe al grupo activo). Ver SeriesResolver.
+        $series = app(SeriesResolver::class)->applyContext(Series::where('establishment_id', $establishment->id))->get();
         $document_types_invoice = DocumentType::whereIn('id', ['01', '03'])->get();
         // $document_types_invoice = DocumentType::whereIn('id', ['01', '03', '80'])->get();
         $payment_method_types = PaymentMethodType::all();

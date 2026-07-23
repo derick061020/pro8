@@ -54,7 +54,7 @@
                                     :config="editorConfig"
                                 />
                                 <small class="form-control-feedback">Agrega detalles sobre el soporte. Puede indicar algún mensaje corto sobre como es la atención o el  horario o forma de comunicarse con soporte.</small>
-                                <small class="form-control-feedback" v-if="errors.introduction" v-text="errors.introduction[0]"></small>                                
+                                <small class="form-control-feedback" v-if="errors.introduction" v-text="errors.introduction[0]"></small>
                             </div>
                         </div>
                     </div>

@@ -16,9 +16,9 @@ $banners = $items;
             $bannerHref = null;
             if (!empty($item->item_id)) {
             $itemSlug = $item->item
-            ? $item->item_id . '-' . \Illuminate\Support\Str::slug($item->item->description)
-            : $item->item_id;
-            $bannerHref = url('/ecommerce/item/' . $itemSlug . '/' . $item->id);
+            ? \Illuminate\Support\Str::slug($item->item->description)
+            : '';
+            $bannerHref = url('/ecommerce/item/' . $item->item_id . '/' . $itemSlug) . '?promotion=' . $item->id;
             }
             @endphp
 

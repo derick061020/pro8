@@ -8,6 +8,8 @@ use App\Models\Tenant\CashDocument;
 use App\Models\Tenant\Company;
 use App\Models\Tenant\Document;
 use Modules\Finance\Traits\FinanceTrait;
+use Modules\Webhook\Services\WebhookDispatcher;
+use Modules\Webhook\Services\WebhookEvents;
 
 class DocumentObserver
 {
@@ -40,7 +42,12 @@ class DocumentObserver
      */
     public function updated(Document $document)
     {
-        //
+        // Notifica el ciclo de vida SUNAT (aceptado/observado/rechazado/anulado)
+        if ($document->wasChanged('state_type_id')) {
+            if ($event = WebhookEvents::forDocumentState($document->state_type_id)) {
+                app(WebhookDispatcher::class)->dispatch($event, $document);
+            }
+        }
     }
 
     /**
@@ -78,6 +85,9 @@ class DocumentObserver
 
     public function created(Document $document)
     {
+        // Antes de la lógica de caja: Cash::firstOrFail() puede lanzar excepción
+        app(WebhookDispatcher::class)->dispatch(WebhookEvents::DOCUMENT_CREATED, $document);
+
         // Esto nos verifica que es un documento generado desde el api
         $cash = Cash::where([
             ['user_id', auth()->id()],

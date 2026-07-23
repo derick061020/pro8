@@ -84,7 +84,7 @@
                                                                  }}</p>
                         </div>
                     </div>
-                    <div class="row m-0 p-0 bg-white h-17 d-flex align-items-center">
+                    <div class="row m-0 p-0 bg-white h-17 d-flex align-items-center" v-if="!isNrus">
                         <div class="col-sm-6 py-1">
                             <p class="font-weight-semibold mb-0">IGV</p>
                         </div>
@@ -93,7 +93,7 @@
                                                                  {{ form.total_igv }}</p>
                         </div>
                     </div>
-                    <div class="row m-0 p-0 bg-white h-17 d-flex align-items-center" v-if="form.total_isc > 0">
+                    <div class="row m-0 p-0 bg-white h-17 d-flex align-items-center" v-if="form.total_isc > 0 && !isNrus">
                         <div class="col-sm-6 py-1">
                             <p class="font-weight-semibold mb-0">ISC</p>
                         </div>
@@ -125,7 +125,7 @@
                             </div>
                         </div>
 
-                        <div class="row justify-content-center m-0">
+                        <div class="row justify-content-center m-0" v-if="!isNrus">
                             <div class="col-sm-6">
                                 <p class="mb-0">IGV</p>
                             </div>
@@ -136,7 +136,7 @@
                         </div>
 
                     </div>
-                    <div class="row m-0 p-0 bg-white d-flex align-items-center" v-if="form.total_isc > 0">
+                    <div class="row m-0 p-0 bg-white d-flex align-items-center" v-if="form.total_isc > 0 && !isNrus">
                         <div class="col-sm-6">
                             <p class="mb-0">ISC</p>
                         </div>
@@ -145,7 +145,7 @@
                                                                 {{ form.total_isc }}</p>
                         </div>
                     </div>
-                    <template v-if="form.has_retention && form.total > 700">
+                    <template v-if="form.has_retention && form.total > 700 && !isNrus">
                     <div class="row m-0 p-0 bg-white d-flex align-items-center" v-if="form.has_retention">
                         <div class="col-sm-6">
                             <p class="mb-0">IMPORTE TOTAL</p>
@@ -243,7 +243,7 @@
                         <el-radio-group v-model="form.document_type_id"
                                         size="small"
                                         @change="filterSeries">
-                            <el-radio-button  label="01">FACTURA</el-radio-button>
+                            <el-radio-button v-if="!isNrus" label="01">FACTURA</el-radio-button>
                             <el-radio-button label="03">BOLETA</el-radio-button>
                             <el-radio-button label="80">N. VENTA</el-radio-button>
                         </el-radio-group>
@@ -292,7 +292,7 @@
                                         <span slot="prepend" class="currency-symbol-span" v-if="is_discount_amount">{{ currencyTypeActive.symbol }}</span>
                                         <span slot="append" class="currency-symbol-span" v-else>%</span>
                                     </template>
-                                    <h2 class="m-0 d-flex align-items-center justify-content-center switch-wrapper">
+                                    <h2 v-if="!disabledDiscountForSeller" class="m-0 d-flex align-items-center justify-content-center switch-wrapper">
                                         <el-switch v-model="enabled_discount"
                                                    active-text="Descuento"
                                                    class="control-label font-weight-semibold m-0 text-center m-b-0"
@@ -715,6 +715,9 @@ export default {
         // console.log(this.currencyTypeActive)
     },
     computed: {
+        isNrus: function () {
+            return !!(this.config && this.config.is_nrus)
+        },
         isGlobalDiscountBase: function () {
             return (this.globalDiscountTypeId === '02')
         },
@@ -743,6 +746,10 @@ export default {
 
             if (this.default_document_type !== null) {
                 this.form.document_type_id = this.default_document_type;
+                // En NRUS no se permite Factura; forzar Boleta
+                if (this.isNrus && this.form.document_type_id === '01') {
+                    this.form.document_type_id = '03';
+                }
                 this.filterSeries()
                 let alt = _.find(this.all_series, { id: this.default_series_type });
 
@@ -788,6 +795,12 @@ export default {
         },
         handleFn113() {
             const code = this.form.document_type_id
+            if (this.isNrus) {
+                // En NRUS solo Boleta (03) y N. Venta (80); se omite Factura
+                this.form.document_type_id = (code == '03') ? '80' : '03'
+                this.filterSeries()
+                return
+            }
             if (code == '01') {
                 this.form.document_type_id = '03'
             } else if (code == '03') {

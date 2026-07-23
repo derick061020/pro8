@@ -326,6 +326,7 @@ export default {
         this.getRecords();
         this.loadIcons();
         this.loadFaviconCache();
+        this.$eventHub.$on('open-header-menu-dialog', () => { this.showDialog = true; });
     },
     watch: {
       'menu.menu_extra_1.link': {
@@ -455,6 +456,7 @@ export default {
                 .then(response => {
                     if (response.data.success) {
                         this.$message.success(response.data.message);
+                        this.$eventHub.$emit('header-menu-updated');
                         
                         // Parse menu_extra si viene como string JSON
                         const menuExtra1 = typeof response.data.menu.top_menu_extra_one === 'string' 

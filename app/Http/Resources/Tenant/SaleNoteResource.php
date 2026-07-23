@@ -36,7 +36,7 @@ class SaleNoteResource extends JsonResource
             'serie' => $this->series,
             'number' => $this->number,
             'seller_id' => $this->seller_id,
-            'message_text' => "Su comprobante de nota de venta {$this->number_full} ha sido generado correctamente, puede revisarlo en el siguiente enlace: ".url('')."/sale-notes/print/{$this->external_id}/a4".''
+            'message_text' => "Su comprobante de nota de venta {$this->number_full} ha sido generado correctamente, puede revisarlo en el siguiente enlace: ".url('')."/sale-notes/print/{$this->external_id}/ticket".''
 
         ];
     }

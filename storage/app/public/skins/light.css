@@ -1,12 +1,14 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Nunito+Sans:wght@400;600;700;800&family=DM+Sans:wght@400;500;700&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Anaheim:wght@400..800&family=Heebo:wght@100..900&family=Host+Grotesk:ital,wght@0,300..800;1,300..800&family=IBM+Plex+Mono:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;1,100;1,200;1,300;1,400;1,500;1,600;1,700&family=Jaldi:wght@400;700&family=Maven+Pro:wght@400..900&family=Pragati+Narrow:wght@400;700&family=Questrial&family=Roboto:ital,wght@0,100..900;1,100..900&family=Sora:wght@100..800&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,400;0,700;1,400;1,700&display=swap');
 
 :root{
-    --primary-color: #4a40ff;
-    --dark-color: #323941;
-    --light-color: #f7faff;
-    --accent-color: #cac8f1;
-    --highlight-color: #9894dd;
+    --primary-color: #3d6bf5;
+    --dark-color: #3a4658;
+    --light-color: #f5f8ff;
+    --accent-color: #e7edfc;
+    --highlight-color: #8aa4f7;
+    --muted: #8492a6;
     /* modo dark */
     --background-dark: #0e1525;
     --contents-dark: #1a2235;
@@ -17,7 +19,7 @@
     --danger: #ff0066;
     --success: #00c666;
     --warning: #ff8400;
-    --primary: #007bff;
+    --primary: var(--primary-color);
     --info: #1dadff; 
 }
 
@@ -119,7 +121,9 @@ label {
 label.control-label {
     margin-top: 8px;
 }
-
+.text-primary {
+    color: var(--primary-color) !important;
+}
 .text-info {
     color: var(--info) !important;
 }
@@ -310,9 +314,6 @@ html.sidebar-left-collapsed .sidebar-left .nav-main > li > a {
 .card:hover .card-footer.configuration-options {
     background: var(--highlight-color);
 }
-.pos .product-item .card-body, .product-item .card-body {
-    border: 1px solid var(--accent-color) !important;
-}
 .pos .card-footer, .product-item .card-footer {
     border-color: var(--accent-color);
 }
@@ -347,7 +348,7 @@ ul.nav-main li .nav-children li a:before {
     box-shadow: unset;
 }
 a.text-info:hover, a.text-info:focus {
-    color: #002183 !important;
+    color: var(--dark-color) !important;
 }
 html.fixed.sidebar-white .sidebar-left, html.fixed.sidebar-white .sidebar-header, html.fixed.sidebar-white .sidebar-left .nano {
     transition: all .15s ease;
@@ -869,7 +870,6 @@ html.sidebar-gray ul.nav-main li .nav-children li a:after {
     }
     html.sidebar-left-collapsed .sidebar-left .nano:hover {
         width: 300px;
-        box-shadow: 0 30px 30px rgb(0 0 0 / 20%);
     }
 }
 .welcome-component,
@@ -902,8 +902,8 @@ html.sidebar-gray ul.nav-main li .nav-children li a:after {
 }
 .btn-edit-price-container{
     position: absolute;
-    top: 5px;
-    right: 0.75rem;
+    top: 8.8px;
+    right: 8.8px;
 }
 .btn-edit-price-container button{
     height: 27px;
@@ -1201,9 +1201,6 @@ html.dark ul.nav-main li .nav-children li a:after {
 }
 
 /* -------- config -------- */
-html.dark .card.card-dashboard .card-title, html.dark .card.card-dashboard small.text-muted {
-    background: var(--button-second);
-}
 /* menu top */
 .fix-m {
     margin-bottom: -4px;
@@ -1412,10 +1409,12 @@ html.sidebar-light .establishment-selector-container{
     html.no-overflowscrolling .nano {
     height: calc(100% - 66px) !important;
 }
-    html.no-overflowscrolling .sidebar-left.show-branch-selector .nano{
+    html.no-overflowscrolling .sidebar-left.show-branch-selector .nano,
+    html.no-overflowscrolling .sidebar-left:has(.nano.hovered).show-branch-selector .nano {
         height: calc(100% - 150px) !important;
     }
-    html.no-overflowscrolling .sidebar-left.show-both-selectors .nano {
+    html.no-overflowscrolling .sidebar-left.show-both-selectors .nano,
+    html.no-overflowscrolling .sidebar-left:has(.nano.hovered).show-both-selectors .nano {
         height: calc(100% - 204px) !important;
     }
     html.no-overflowscrolling.sidebar-left-collapsed .sidebar-left.show-branch-selector .nano,
@@ -1467,6 +1466,466 @@ html.sidebar-light .establishment-selector-container{
 .text-primary {
     color: var(--primary-color) !important;
 }
+/* ---------------- Estilos tema menú inicio (colores, bordes) ------------------- */
+.icon-menu span {
+    border-radius: 6px;
+    background-color: color-mix(in srgb, var(--primary-color) 8%, #ffffff00);
+    color: color-mix(in srgb, var(--primary-color) 80%, #fff);
+}
+.icon-menu.edit span {
+    background-color: var(--light-color);
+    color: var(--muted);
+}
+.menu-link:hover {
+    box-shadow: 0 0 #0000, 0 0 #0000, 0 0 #0000, 0 0 #0000, 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+}
+.menu-link:hover .icon-menu span {
+    background-color: color-mix(in srgb, var(--primary-color) 80%, #fff);
+    color: #fff;
+}
+.menu-link:hover .icon-menu.edit span {
+    background-color: var(--muted);
+    color: #fff;
+}
+.monthly-statement {
+    background-color: var(--contents-dark) !important;
+}
+.monthly-statement .icon-chart span {
+    border-radius: 0.4rem;
+    border: 1px solid color-mix(in srgb, var(--muted) 15%, #ffffff00);
+    background-color: color-mix(in srgb, var(--muted) 20%, #ffffff00);
+}
+.btn-declaration {
+    border-radius: 0.3rem;
+}
+.btn-declaration-primary {
+    background-color: var(--primary-color);
+    color: #fff !important;
+}
+.btn-declaration-secondary {
+    background-color: color-mix(in srgb, var(--muted) 20%, #ffffff00);
+    color: #fff !important;
+    border: 1px solid color-mix(in srgb, var(--muted) 15%, #ffffff00);
+}
+.btn-declaration-primary:hover {
+    background-color: color-mix(in srgb, var(--primary-color) 85%, #000);
+    color: #fff !important;
+}
+.btn-declaration-secondary:hover {
+    background-color: color-mix(in srgb, var(--muted) 35%, #ffffff00);
+    color: #fff !important;
+}
+.primary-blur {
+    border-radius: 9999px;
+    background-color: color-mix(in srgb, var(--primary-color) 20%, transparent);
+}
+.secondary-blur {
+    border-radius: 9999px;
+    background-color: color-mix(in srgb, var(--success) 10%, transparent);
+}
+.tax-bar {
+    border-radius: 2rem 2rem 0 0;
+    background-color: color-mix(in srgb, var(--primary-color) 5%, var(--light-color));
+}
+.tax-bar-label {
+    color: var(--muted);
+}
+.tax-bar--last {
+    background-color: var(--primary-color);
+}
+.tax-bar--projection {
+    background-color: color-mix(in srgb, var(--primary-color) 30%, transparent);
+    border: 2px dashed color-mix(in srgb, var(--primary-color) 40%, transparent);
+}
+.tax-saving-box {
+    background-color: color-mix(in srgb, var(--primary-color) 8%, transparent);
+    border-radius: .4rem;
+}
+.tax-saving-label {
+    color: var(--primary-color);
+}
+.tax-saving-value {
+    color: var(--primary-color);
+}
+.tax-saving-sub {
+    color: var(--muted);
+}
+.deadline-calendar-link {
+    color: var(--primary-color) !important;
+}
+.deadline-item:not(:last-child)::before {
+    background-color: color-mix(in srgb, var(--light-color) 80%, #000);
+}
+.deadline-dot {
+    border-radius: 50%;
+    background-color: color-mix(in srgb, var(--light-color) 80%, #000);
+}
+.deadline-dot--urgent {
+    background-color: var(--danger);
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--danger) 15%, transparent);
+}
+.deadline-dot--danger {
+    background-color: var(--danger);
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--danger) 15%, transparent);
+}
+.deadline-dot--warning {
+    background-color: var(--warning);
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--warning) 15%, transparent);
+}
+.deadline-dot--success {
+    background-color: var(--success);
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--success) 15%, transparent);
+}
+.deadline-days-badge {
+    border-radius: 999px;
+}
+.deadline-badge--success {
+    background-color: color-mix(in srgb, var(--success) 12%, transparent);
+    color: var(--success);
+}
+.deadline-badge--warning {
+    background-color: color-mix(in srgb, var(--warning) 12%, transparent);
+    color: var(--warning);
+}
+.deadline-badge--danger {
+    background-color: color-mix(in srgb, var(--danger) 12%, transparent);
+    color: var(--danger);
+}
+.deadline-date {
+    color: var(--muted);
+}
+.deadline-title {
+    color: var(--dark-color);
+}
+.deadline-subtitle {
+    color: var(--muted);
+}
+.caja-icon {
+    border-radius: 50%;
+}
+.caja-icon--cyan {
+    background-color: color-mix(in srgb, var(--success) 10%, #ffffff00);
+    color: var(--success);
+}
+.caja-icon--red {
+    background-color: color-mix(in srgb, var(--danger) 10%, #ffffff00);
+    color: var(--danger);
+}
+.caja-label {
+    color: var(--muted);
+}
+.caja-value {
+    color: var(--dark-color);
+}
+html.dark .caja-value {
+    color: var(--light-color);
+}
+.caja-sub-stat {
+    background-color: color-mix(in srgb, var(--light-color) 60%, transparent);
+    border-radius: .4rem;
+}
+html.dark .caja-sub-stat{
+    background-color: color-mix(in srgb, var(--background-dark) 60%, transparent);
+}
+.caja-sub-label {
+    color: var(--muted);
+}
+.caja-sub-value {
+    color: var(--dark-color);
+}
+html.dark .caja-sub-value {
+    color: var(--light-color);
+}
+.caja-badge {
+    border-radius: 999px;
+}
+.caja-badge--up   { background-color: color-mix(in srgb, var(--success) 12%, transparent); color: var(--success); }
+.caja-badge--down { background-color: color-mix(in srgb, var(--danger) 12%, transparent);  color: var(--danger); }
+/* ---------------------- final ---------------------- */
+
+/* -------------- Estilos venta rápida (solo tema) ------------------ */
+.card.product-item {
+    border: 1px solid var(--accent-color) !important;
+    border-radius: 6px !important;
+}
+.pos-order-panel {
+    border-left: 1px solid color-mix(in srgb, var(--light-color) 88%, #000);
+    background: #ffffff;
+    box-shadow: -20px 0 40px color-mix(in srgb, var(--primary-color) 5%, #00000000);
+}
+.fp-doc-tabs {
+    background: color-mix(in srgb, var(--light-color) 92%, #000);
+    border-radius: 6px;
+}
+.fp-doc-tab {
+    color: color-mix(in srgb, var(--muted) 68%, #000);
+}
+.fp-doc-tab:hover:not(.active) {
+    background: color-mix(in srgb, var(--light-color) 89%, #000);
+}
+.fp-doc-tab.active {
+    background: var(--primary-color);
+    color: #fff;
+    box-shadow: 0 6px 14px -4px color-mix(in srgb, var(--primary-color) 45%, transparent);
+}
+.fp-customer-select .el-input__inner {
+    color: var(--dark-color);
+}
+.fp-customer-icon {
+    color: var(--muted);
+}
+.fp-add-customer {
+    color: var(--muted) !important;
+}
+.fp-add-customer:hover {
+    background: color-mix(in srgb, var(--light-color) 95%, #000);
+    color: var(--muted) !important;
+}
+.pos-cart-row {
+    border-bottom: 1px solid var(--accent-color);
+}
+.pos-cart-thumb, .pos-cart-thumb-ph {
+    background: color-mix(in srgb, var(--light-color) 88%, #000);
+    border-radius: 6px;
+}
+.pos-cart-name {
+    color: var(--dark-color);
+}
+.pos-total-input .el-input__inner {
+    color: var(--primary-color);
+    border-color: color-mix(in srgb, var(--light-color) 80%, #000);
+    background: #ffffff;
+}
+.pos-cart-del {
+    color: var(--muted) !important;
+}
+.pos-cart-del:hover {
+    color: var(--danger) !important;
+    background: color-mix(in srgb, var(--danger) 10%, transparent);
+}
+.pos-qty-btn {
+    background: color-mix(in srgb, var(--light-color) 92%, #000);
+    color: var(--primary-color);
+    border-radius: 4px;
+}
+.pos-qty-field .el-input__inner {
+    color: var(--dark-color);
+}
+.pos-empty-icon,
+.pos-empty-text {
+    color: var(--muted);
+}
+.fp-action-btn {
+    border: 1.5px solid var(--primary-color);
+    color: var(--primary-color);
+    border-radius: 6px;
+}
+.fp-action-btn:hover {
+    background: color-mix(in srgb, var(--primary-color) 8%, transparent);
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+}
+.fp-field-label,
+.fp-sym,
+.fp-total-label,
+.fp-total-val {
+    color: var(--muted);
+}
+.fp-sym{
+    bottom: 6px;
+}
+.fp-totals {
+    background: var(--light-color);
+    border-radius: 6px;
+}
+.fp-grand {
+    border-top: 1px solid color-mix(in srgb, var(--light-color) 88%, #000);
+}
+.fp-grand-label {
+    color: var(--dark-color);
+}
+.fp-grand-amount {
+    color: var(--primary-color);
+}
+.fp-pay-btn, .fp-pay-btn.el-button, .fp-pay-btn.el-button--default {
+    background: var(--primary-color) !important;
+    border-color: var(--primary-color) !important;
+    color: #fff !important;
+}
+.fp-pay-btn:hover:not(:disabled), .fp-pay-btn.el-button:hover:not(:disabled) {
+    filter: brightness(1.1);
+    background: var(--primary-color) !important;
+    border-color: var(--primary-color) !important;
+    color: #fff !important;
+}
+.fp-cancel-btn, .fp-cancel-btn.btn, .fp-cancel-btn.btn-link {
+    color: var(--muted) !important;
+}
+.fp-cancel-btn:hover, .fp-cancel-btn.btn:hover {
+    color: var(--danger) !important;
+}
+.pos .product-item .card-body, .product-item .card-body, .product-item .card-footer{
+    background-color: transparent !important;
+    box-shadow: none !important;
+}
+.input-search-pos .btn-add-product-pos {
+    color: #fff !important;
+    border-radius: 0 4px 4px 0 !important;
+    height: 36px;
+    background-color: var(--primary-color) !important;
+    margin-top: -6px;
+}
+html.dark .card.product-item {
+    border-color: var(--borders-dark) !important;
+}
+html.dark .product-item .card-body {
+    border-color: transparent !important;
+}
+html.dark .product-item .card-footer {
+    background-color: transparent !important;
+}
+html.dark .pos-order-panel,
+html.dark .pos-cart-row,
+html.dark .fp-grand,
+html.dark .documents-kpis .card-value {
+    border-color: var(--borders-dark);
+}
+html.dark .fp-doc-tabs {
+    background: var(--inputs-dark);
+}
+html.dark .fp-doc-tab:hover:not(.active) {
+    background: color-mix(in srgb, var(--inputs-dark) 89%, #000);
+}
+html.dark .pos-qty-btn {
+    background: color-mix(in srgb, var(--inputs-dark) 92%, #000);
+}
+html.dark .fp-totals {
+    background: var(--inputs-dark);
+}
+html.dark .fp-grand-label {
+    color: var(--light-color);
+}
+html.dark .fp-add-customer {
+    color: var(--muted) !important;
+}
+html.dark .fp-add-customer:hover {
+    background: color-mix(in srgb, var(--inputs-dark) 95%, #000);
+}
+html.dark .fp-grand-amount {
+    color: var(--light-color);
+}
+html.dark .fp-action-btn {
+    border-color: var(--light-color);
+    color: var(--light-color);
+}
+html.dark .pos-qty-btn {
+    color: var(--light-color);
+}
+/* ---------------- final ------------------ */
+.igv-mode-toggle {
+    border-radius: 4px;
+    background-color: color-mix(in srgb, var(--accent-color) 14%, transparent);
+    border: 1px solid color-mix(in srgb, var(--accent-color) 12%, transparent);
+}
+.igv-mode-toggle button {
+    background: transparent;
+    color: var(--accent-color);
+    border-radius: 4px;
+}
+.igv-mode-toggle button:hover {
+    color: #fff;
+}
+.igv-mode-toggle button.active {
+    background-color: var(--primary-color);
+    color: #fff;
+}
+.monthly-statement .igv-date-picker.el-date-editor.el-input {
+    width: 210px;
+}
+.monthly-statement .igv-date-picker .el-input__inner {
+    background-color: color-mix(in srgb, var(--accent-color) 14%, transparent) !important;
+    border: 1px solid color-mix(in srgb, var(--accent-color) 14%, transparent) !important;
+    color: #fff !important;
+    border-radius: 4px;
+    height: 38px !important;
+    line-height: 38px !important;
+    box-shadow: none !important;
+}
+.monthly-statement .igv-date-picker .el-input__icon {
+    color: var(--accent-color);
+    line-height: 38px;
+}
+.el-radio-button__orig-radio:checked+.el-radio-button__inner {
+    color: #fff;
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+    -webkit-box-shadow: -1px 0 0 0 var(--primary-color);
+    box-shadow: -1px 0 var(--primary-color);
+}
+.btn-pagination label span.el-radio-button__inner {
+    border-radius: 4px !important;
+    border: 1px solid var(--accent-color);
+    color: var(--dark-color);
+}
+.theme-dark.active,
+.theme-light.active {
+    border-color: var(--primary-color);
+}
+.check-select {
+    background-color: var(--primary-color);
+}
+.redirect-segment__btn.active {
+  color: var(--primary-color) !important;
+}
+.points-system .content-points {
+    border: 1px solid var(--accent-color);
+    background: var(--light-color);
+    border-radius: 4px;
+}
+.minitour-ring {
+    box-shadow: 0 0 0 3px var(--primary-color);
+}
+@keyframes minitour-pulse {
+    0% {
+        box-shadow: 0 0 0 3px var(--primary-color), 0 0 0 3px color-mix(in srgb, var(--primary-color) 20%, #ffffff00);
+    }
+    70% {
+        box-shadow: 0 0 0 3px var(--primary-color), 0 0 0 14px color-mix(in srgb, var(--primary-color) 20%, #ffffff00);
+    }
+    100% {
+        box-shadow: 0 0 0 3px var(--primary-color), 0 0 0 14px color-mix(in srgb, var(--primary-color) 20%, #ffffff00);
+    }
+}
+.minitour-tooltip,
+.minitour-arrow {
+    background-color: var(--contents-dark);
+    color: var(--light-color);
+}
+.minitour-tooltip p {
+    color: var(--muted) !important;
+}
+.minitour-tooltip p b {
+    color: var(--light-color) !important;
+}
+.minitour-step-tag {
+    color: var(--highlight-color);
+}
+.minitour-dot.on {
+    background-color: var(--highlight-color);
+}
+html.dark .minitour-tooltip,
+html.dark .minitour-arrow {
+    background-color: var(--light-color);
+}
+html.dark .minitour-tooltip h2 {
+    color: var(--dark-color) !important;
+}
+html.dark .minitour-tooltip p {
+    color: color-mix(in srgb, var(--dark-color) 92%, #fff) !important;
+}
+html.dark .minitour-tooltip p b {
+    color: var(--dark-color) !important;
+}
 /* modo oscuro */
 html.dark .table-responsive.payment {
     border: 1px solid var(--inputs-dark);
@@ -1477,8 +1936,9 @@ html.dark .el-tabs--border-card > .el-tabs__header {
     background-color: var(--contents-dark);
     border-bottom: 1px solid var(--borders-dark);
 }
-html.dark .el-tabs--border-card > .el-tabs__header .el-tabs__item.is-active {
-    color: var(--primary-color);
+html.dark .el-tabs--border-card > .el-tabs__header .el-tabs__item.is-active,
+html.dark .advanced-settings.el-tabs--border-card>.el-tabs__header .el-tabs__item.is-active {
+    color: var(--light-color) !important;
     background-color: var(--button-second);
     border-right-color: var(--borders-dark);
     border-left-color: var(--borders-dark);
@@ -1599,10 +2059,11 @@ html.dark .form-control:focus, html.dark .el-input__inner:focus, html.dark .el-t
 html.dark .el-dialog {
     background: var(--contents-dark);
 }
-html.dark .card.card-dashboard .card-title, html.dark .card.card-dashboard small.text-muted, html.dark .el-dialog__title {
+html.dark .card.card-dashboard .card-title, html.dark .el-dialog__title {
     color: var(--light-color) !important;
 }
-html.dark label.control-label, html.dark .userbox .name, html.dark .el-select-dropdown__item.selected {
+html.dark label.control-label, html.dark .userbox .name, html.dark .el-select-dropdown__item.selected,
+html.dark .text-primary {
     color: var(--light-color) !important;
 }
 html.dark .el-select-dropdown, html.dark .el-message-box,
@@ -1951,6 +2412,26 @@ html.dark .el-alert--info.is-light,
 html.dark .cd-text-block {
     background-color: var(--inputs-dark);
     color: var(--accent-color);
+}
+html.dark .pos-qty-field .el-input__inner{
+    border-color: transparent !important;
+    background-color: transparent !important;
+}
+html.dark .advanced-settings .el-tabs__nav,
+html.dark .db-seg,
+html.dark .db-count {
+    background-color: var(--inputs-dark);
+}
+html.dark .db-thumb {
+    background-color: var(--contents-dark);
+}
+html.dark .db-seg button.active {
+    color: var(--light-color);
+}
+html.dark .db-client,
+html.dark .tp-item,
+html.dark .ls-item {
+    border-color: var(--borders-dark);
 }
 @media only screen and (min-width: 391px){
     .card-body-invoice div .row .filter-invoice{

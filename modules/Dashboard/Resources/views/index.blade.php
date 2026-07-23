@@ -3,7 +3,7 @@
 @section('content')
 @php
 $a = $vc_modules;
-$show_welcome_panel = data_get($configuration, 'visual.show_welcome_panel', true);
+$show_welcome_panel = data_get($configuration, 'visual.show_welcome_panel', false);
 @endphp
     <div class="card welcome-component" style="display: {{ $show_welcome_panel ? 'block' : 'none' }};">
         <div class="welcome-card-body">

@@ -13,6 +13,7 @@ use Exception;
 use Illuminate\Http\Request;
 use App\Models\Tenant\Promotion;
 use App\Models\Tenant\Item;
+use Modules\Item\Models\Category;
 use Modules\Finance\Helpers\UploadFileHelper;
 
 
@@ -34,9 +35,9 @@ class PromotionController extends Controller
 
     public function tables()
     {
-
         $items = Item::where('apply_store', 1)->get();
-        return compact('items');
+        $categories = Category::orderBy('name')->get();
+        return compact('items', 'categories');
     }
 
 

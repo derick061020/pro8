@@ -18,9 +18,9 @@ use App\Http\Requests\Tenant\CashRequest;
 class CashController extends Controller
 {
 
-    
+
     /**
-     * 
+     *
      * Obtener caja
      *
      * @param  int $id
@@ -31,27 +31,27 @@ class CashController extends Controller
         return app(CashControllerWeb::class)->record($id);
     }
 
-    
+
     /**
-     * 
+     *
      * Registrar/Actualizar caja
      *
      * @param  CashRequest $request
      * @return array
      */
-    public function store(CashRequest $request) 
+    public function store(CashRequest $request)
     {
         if(!$request['user_id'])
         {
             $request['user_id'] = auth()->id();
         }
-        
+
         return app(CashControllerWeb::class)->store($request);
     }
 
 
     /**
-     * 
+     *
      * Validar si el usuario tiene caja aperturada
      *
      * @return array
@@ -67,7 +67,7 @@ class CashController extends Controller
 
 
     /**
-     * 
+     *
      * Obtener registros paginados
      *
      * @param  Request $request
@@ -80,9 +80,64 @@ class CashController extends Controller
 		return new CashCollection($records->paginate(config('tenant.items_per_page')));
 	}
 
-	
+
     /**
-     * 
+     *
+     * Obtener registros para scroll infinito
+     * Se usa cursor-based pagination para mejor rendimiento
+     *
+     * Parámetros soportados:
+     * - limit: cantidad de registros (máximo 100, default 15)
+     * - cursor: posición actual (null en primera petición)
+     * - input: búsqueda por income o reference_number
+     * - state: filtrar por estado (true=aperturada, false=cerrada) opcional
+     * - date_start: fecha inicio rango (Y-m-d) sobre date_opening
+     * - date_end: fecha fin rango (Y-m-d) sobre date_opening
+     *
+     * @param  Request $request
+     * @return array
+     */
+    public function byScroll(Request $request)
+    {
+        $limit = $request->input('limit', config('tenant.items_per_page', 15));
+        $cursor = $request->input('cursor');
+        $input = $request->input('input', '');
+        $state = $request->input('state');
+
+        $limit = min((int) $limit, 100);
+
+        $query = Cash::whereFilterRecordsApi($input)
+            ->orderBy('id', 'desc');
+
+        if ($state !== null) {
+            $query->where('state', filter_var($state, FILTER_VALIDATE_BOOLEAN));
+        }
+
+        if ($request->filled('date_start') && $request->filled('date_end')) {
+            $query->whereBetween('date_opening', [
+                $request->input('date_start'),
+                $request->input('date_end'),
+            ]);
+        }
+
+        if ($cursor) {
+            $records = $query->cursorPaginate($limit, ['*'], 'cursor', $cursor);
+        } else {
+            $records = $query->cursorPaginate($limit);
+        }
+
+        return [
+            'data' => CashCollection::make($records),
+            'pagination' => [
+                'next_cursor' => $records->nextCursor()?->encode() ?? null,
+                'has_more' => $records->hasMorePages(),
+            ]
+        ];
+    }
+
+
+    /**
+     *
      * Cerrar caja, usa método del proceso por web
      *
      * @param  int $id
@@ -95,7 +150,7 @@ class CashController extends Controller
 
 
     /**
-     * 
+     *
      * Eliminar registro, usa método del proceso por web
      *
      * @param  int $id
@@ -106,15 +161,15 @@ class CashController extends Controller
         return app(CashControllerWeb::class)->destroy($id);
     }
 
-        
+
     /**
-     * 
+     *
      * Envio de email
      *
      * @param  Request $request
      * @return array
      */
-    public function email(Request $request) 
+    public function email(Request $request)
     {
         $request->validate(
             ['email' => 'required']
@@ -123,9 +178,9 @@ class CashController extends Controller
         return app(CashControllerWebPos::class)->email($request);
     }
 
-    
+
     /**
-     * 
+     *
      * Reporte general de caja, usa método del proceso por web
      *
      * @param  int $id
@@ -134,7 +189,7 @@ class CashController extends Controller
      */
     public function generalReport($id, $format = 'a4')
     {
-        
+
         if($format == 'ticket')
         {
             return app(CashControllerWebPos::class)->reportTicket($id, 80);
@@ -145,7 +200,7 @@ class CashController extends Controller
 
 
     /**
-     * 
+     *
      * Reporte de productos
      *
      * @param  int $id
@@ -156,9 +211,9 @@ class CashController extends Controller
         return app(CashControllerWeb::class)->report_products($id);
     }
 
-    
+
     /**
-     * 
+     *
      * Reporte de ingresos y egresos en efectivo con destino caja
      *
      * @param  int $id
@@ -171,8 +226,8 @@ class CashController extends Controller
 
 
     /**
-     * 
-     * Reporte de ingresos 
+     *
+     * Reporte de ingresos
      *
      * @param  int $id
      * @return mixed
@@ -181,10 +236,10 @@ class CashController extends Controller
     {
         return app(ReportIncomeSummaryController::class)->pdf($id);
     }
-    
+
 
     /**
-     * 
+     *
      * Asociar documento a caja
      *
      * @param  Request $request
@@ -202,5 +257,5 @@ class CashController extends Controller
 
     }
 
-    
+
 }

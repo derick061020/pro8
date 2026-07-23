@@ -122,7 +122,7 @@
             class="row col-lg-12 m-0 p-0"
             v-loading="loading"
         >
-            <div class="col-lg-7 col-md-6 px-4 hyo">
+            <div class="col-lg-8 col-md-6 px-4 hyo">
                 <template v-if="!search_item_by_barcode">
                     <el-input
                         v-show="
@@ -181,9 +181,8 @@
                         <div
                             v-for="(item, index) in categories"
                             @click="filterCategorie(item.id, true)"
-                            :style="{ backgroundColor: item.color }"
                             :key="index"
-                            class="col-sm-3 pointer col-sm-3-name"
+                            class="btn btn-primary w-auto mx-1 fw-semibold"
                         >
                             {{ item.name }}
                         </div>
@@ -199,8 +198,7 @@
                                 class="card p-0 m-0 mb-1 mr-1 text-center"
                             >
                                 <div
-                                    :style="{ backgroundColor: item.color }"
-                                    class="card-body pointer rounded-0"
+                                    class="btn btn-primary pointer"
                                     style="font-weight: bold;color: white;font-size: 18px;"
                                 >
                                     {{ item.name }}
@@ -216,27 +214,12 @@
                     :class="layout_mode"
                 >
                     <template v-for="(item, index) in items">
-                        <div :key="index">
-                            <section class="card product-item">
+                        <div :key="index" class="px-0">
+                            <section class="card product-item mb-0 h-100">
                                 <div
-                                    class="card-body pointer px-2 pt-2 m-0 pb-0"
+                                    class="card-body product pointer px-2 pt-2 m-0 pb-0 bg-transparent"
                                     @click="clickAddItem(item, index)"
                                 >
-                                    <p
-                                        class="font-weight-semibold mb-0 product-name-description"
-                                        v-if="DescriptionLength(item) > 50"
-                                        data-toggle="tooltip"
-                                        data-placement="top"
-                                        :title="item.description"
-                                    >
-                                        {{ item.description.substring(0, 50) }}
-                                    </p>
-                                    <p
-                                        class="font-weight-semibold mb-0 product-name-description"
-                                        v-if="DescriptionLength(item) <= 50"
-                                    >
-                                        {{ item.description }}
-                                    </p>
                                     <img
                                         :src="item.image_url"
                                         class="img-thumbail img-custom"
@@ -245,7 +228,7 @@
                                         class="text-muted font-weight-lighter mb-0"
                                         style="display: flex; justify-content: space-between; align-items: center;"
                                     >
-                                        <small style="width: 45%;">{{ item.internal_id }}</small>
+                                        <small class="text-primary internal-code-small" :title="item.internal_id">{{ item.internal_id }}</small>
                                         <el-tooltip
                                             class="item text-center"
                                             effect="dark"
@@ -263,39 +246,62 @@
                                             </i>
                                         </el-tooltip>
 
-                                        <!-- <el-popover v-if="item.warehouses" placement="right" width="280"  trigger="hover">
-                      <el-table  :data="item.warehouses">
-                        <el-table-column width="150" property="warehouse_description" label="Ubicación"></el-table-column>
-                        <el-table-column width="100" property="stock" label="Stock"></el-table-column>
-                      </el-table>
-                      <el-button slot="reference"><i class="fa fa-search"></i></el-button>
-                    </el-popover> -->
-                                        <small
-                                            class="measuring-unit text-end"
-                                            style="width: 45%;"
-                                            >{{ item.unit_type_id }}
+                                        <small class="measuring-unit text-end" style="width: 45%;">
+                                            <el-tag
+                                                type="primary"
+                                                size="mini"
+                                                >{{ item.unit_type_id }}
+                                            </el-tag>
                                         </small>
                                     </p>
+                                    <span
+                                        class="font-weight-semibold mb-0 product-name-description"
+                                        v-if="DescriptionLength(item) > 50"
+                                        data-toggle="tooltip"
+                                        data-placement="top"
+                                        :title="item.description"
+                                    >
+                                        {{ item.description.substring(0, 50) }}
+                                    </span>
+                                    <span
+                                        class="font-weight-semibold mb-0 product-name-description"
+                                        v-if="DescriptionLength(item) <= 50"
+                                    >
+                                        {{ item.description }}
+                                    </span>
                                 </div>
                                 <div
-                                    class="card-footer card-footer-fast-payment pointer text-center mb-1 position-relative"
+                                    class="card-footer card-footer-fast-payment pointer text-center mb-1 position-relative px-0 py-1 bg-transparent"
                                     style="border-radius: 0px;"
                                 >
                                     <!-- <button type="button" class="btn waves-effect waves-light btn-xs btn-danger m-1__2" @click="clickHistorySales(item.item_id)"><i class="fa fa-list"></i></button>
                   <button type="button" class="btn waves-effect waves-light btn-xs btn-success m-1__2" @click="clickHistoryPurchases(item.item_id)"><i class="fas fa-cart-plus"></i></button> -->
                                     <template v-if="!item.edit_unit_price">
                                         <h5
-                                            class="font-weight-semibold text-center m-0"
+                                            class="font-weight-semibold text-start m-0 price-item-container px-2 m-0 pb-1"
                                         >
                                             {{ item.currency_type_symbol }}
                                             {{ item.sale_unit_price }}
+                                            <button
+                                                v-if="
+                                                    configuration.options_pos &&
+                                                        edit_unit_price
+                                                "
+                                                type="button"
+                                                class="btn btn-xs btn-primary-pos edit-price"
+                                                @click="
+                                                    clickOpenInputEditUP(index)
+                                                "
+                                            >
+                                                <i data-v-8ca351fc="" class="fas fa-pen"></i>
+                                            </button>
                                         </h5>
                                     </template>
                                     <template v-else>
                                         <el-input
                                             min="0"
                                             v-model="item.edit_sale_unit_price"
-                                            class="mt-1 mb-2"
+                                            class="mt-1 mb-2 px-2"
                                             size="mini"
                                         >
                                         </el-input>
@@ -547,7 +553,7 @@
 
 
                                                         </tbody>
-                                                    </table>                                                    
+                                                    </table>
                                                     <button
                                                         slot="reference"
                                                         type="button"
@@ -652,160 +658,158 @@
                 </div>
             </div>
             <div
-                class="col-lg-5 col-md-6 bg-white m-0 p-0"
-                style="height: calc(100vh - 110px)"
+                class="col-lg-4 col-md-6 bg-white m-0 p-0 pos-order-panel d-flex flex-column px-3 pt-2"
+                style="height: calc(100vh - 110px); overflow-y: auto;"
             >
-                <div class="h-50 m-1" style="overflow-y: auto">
-                    <!-- <div class="row py-3 border-bottom m-0 p-0">
-                        <div class="col-8">
+                <!-- ── TOP: Tipo documento + cliente ── -->
+                <div class="fp-top-header">
+                    <div class="fp-doc-tabs d-flex align-items-start px-1 py-1">
+                        <div
+                            v-for="tab in docTypeTabsAvailable"
+                            :key="tab.id"
+                            class="fp-doc-tab-wrap"
+                            :class="{'active': form.document_type_id === tab.id}"
+                        >
+                            <button
+                                class="fp-doc-tab w-100"
+                                :class="{'active': form.document_type_id === tab.id}"
+                                @click="setDocType(tab.id)"
+                            >{{ tab.label }}</button>
                             <el-select
-                                ref="select_person"
-                                v-model="form.customer_id"
-                                filterable
-                                placeholder="Cliente"
-                                @change="changeCustomer"
-                                @keyup.native="keyupCustomer"
-                                @keyup.enter.native="keyupEnterCustomer"
-                                @focus="focusClienteSelect = true"
-                                @blur="focusClienteSelect = false"
+                                v-if="form.document_type_id === tab.id && show_fast_payment_garage && current_series_count > 1"
+                                v-model="form.series_id"
+                                size="mini"
+                                class="fp-series-inline w-100 mt-1"
+                                @click.native.stop
                             >
                                 <el-option
-                                    v-for="option in all_customers"
-                                    :key="option.id"
-                                    :label="option.description"
-                                    :value="option.id"
+                                    v-for="s in ($refs.componentFastPaymentGarage ? $refs.componentFastPaymentGarage.series : [])"
+                                    :key="s.id"
+                                    :label="s.number"
+                                    :value="s.id"
                                 ></el-option>
                             </el-select>
                         </div>
-                        <div class="col-4">
-                            <div class="btn-group d-flex h-100" role="group">
-                                <a
-                                    class="btn btn-sm btn-default w-100 d-flex align-items-center justify-content-center"
-                                    @click.prevent="showDialogNewPerson = true"
-                                >
-                                    <i class="fas fa-plus fa-wf"></i>
-                                </a>
-                                <a
-                                    class="btn btn-sm btn-default w-100 d-flex align-items-center justify-content-center"
-                                    @click="clickDeleteCustomer"
-                                >
-                                    <i class="fas fa-trash fa-wf"></i>
-                                </a>                        
-                            </div>
-                        </div>
-                    </div> -->
-                    <div class="row py-1 m-0 p-0">
-                        <div class="col-12">
-                            <table
-                                class="table table-sm table-borderless mb-0 pos-list-items"
-                            >
-                                <template v-for="(item, index) in form.items">
-                                    <tr :key="index">
-                                        <td
-                                            style="width: 10px; text-align: center; vertical-align: top"
-                                            class="pos-list-label"
-                                        >
-                                        {{ item.unit_type_id}}
-                                        </td>
-                                        <td
-                                            style="width: 80px; vertical-align: top"
-                                        >
-                                            <el-input
-                                                v-model="item.item.aux_quantity"
-                                                @input="
-                                                    clickAddItem(
-                                                        item,
-                                                        index,
-                                                        true
-                                                    )
-                                                "
-                                                @keyup.enter.native="
-                                                    keyupEnterQuantity
-                                                "
-                                            ></el-input>
-                                        </td>
-                                        <td>
-                                            <p class="item-description">
-                                                {{ item.item.description }}
-                                                <template v-if="item.item.presentation &&
-                                                    item.item.presentation.hasOwnProperty(
-                                                        'description'
-                                                    )
-                                                " >
-                                                {{ item.item.presentation
-                                                            .description
-                                                }}
-                                                </template>
-                                            </p>
-                                            <small>
-                                                {{ nameSets(item.item_id) }}
-                                            </small>
-                                        </td>
-                                        <td
-                                            style="width: 10px; text-align: center; vertical-align: top"
-                                            class="pos-list-label"
-                                        >
-                                            {{ currency_type.symbol }}
-                                        </td>
-                                        <td
-                                            style="width: 80px; vertical-align: top"
-                                        >
-                                            <template v-if="edit_unit_price">
-                                                <el-input
-                                                    v-model="item.total"
-                                                    @input="
-                                                        calculateQuantity(index)
-                                                    "
-                                                    @blur="changeRowTotalGarage(index)"
-                                                    :readonly="!edit_unit_price && !item.item.calculate_quantity"
-                                                >
-                                                </el-input>
-                                            </template>
-                                            <template v-else>
-                                                {{ item.total }}
-                                            </template>
-                                        </td>
-                                        <td
-                                            class="text-end"
-                                            style="width: 36px; padding-left: 0; padding-right: 0; vertical-align: top"
-                                        >
-                                            <a
-                                                class="btn btn-sm btn-default"
-                                                @click="clickDeleteItem(index)"
-                                            >
-                                                <i
-                                                    class="fas fa-trash fa-wf"
-                                                ></i>
-                                            </a>
-                                        </td>
-                                    </tr>
-                                </template>
-                            </table>
-                        </div>
+                    </div>
+                    <div class="fp-customer-row d-flex align-items-center py-2 px-1">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-user-search fa-user-circle fp-customer-icon me-2"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0" /><path d="M6 21v-2a4 4 0 0 1 4 -4h1.5" /><path d="M15 18a3 3 0 1 0 6 0a3 3 0 1 0 -6 0" /><path d="M20.2 20.2l1.8 1.8" /></svg>
+                        <el-select
+                            ref="select_person"
+                            v-model="form.customer_id"
+                            filterable
+                            placeholder="Seleccionar Cliente"
+                            @change="changeCustomer"
+                            @keyup.native="keyupCustomer"
+                            @keyup.enter.native="keyupEnterCustomer"
+                            @focus="focusClienteSelect = true"
+                            @blur="focusClienteSelect = false"
+                            class="fp-customer-select flex-grow-1"
+                            :class="{ 'customer-error': customerError }"
+                        >
+                            <el-option
+                                v-for="option in all_customers"
+                                :key="option.id"
+                                :label="option.description"
+                                :value="option.id"
+                            ></el-option>
+                        </el-select>
+                        <a class="fp-add-customer" @click.prevent="showDialogNewPerson = true" title="Agregar cliente">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-user-plus"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0" /><path d="M16 19h6" /><path d="M19 16v6" /><path d="M6 21v-2a4 4 0 0 1 4 -4h4" /></svg>
+                        </a>
                     </div>
                 </div>
-                <div class="h-50 pt-2 payment-container-pos p-2" style="overflow-y: auto">
-                    <div class="row m-0 p-0 d-flex align-items-center">
-                        <template v-if="show_fast_payment_garage">
-                            <fast-payment
-                                :is_payment.sync="is_payment"
-                                :form="form"
-                                :currency-type-id-active="form.currency_type_id"
-                                :currency-type-active="currency_type"
-                                :exchange-rate-sale="form.exchange_rate_sale"
-                                :customer.sync="customer"
-                                :soapCompany="soapCompany"
-                                :businessTurns="businessTurns"
-                                :is-print="isPrint"
-                                :rows-items="form.items.length"
-                                ref="componentFastPaymentGarage"
-                                :configuration="configuration"
-                                :type-user="typeUser"
-                                :customer_email="customerEmail"
-                                :config="config"
-                            ></fast-payment>
+
+                <!-- ── MIDDLE: Lista de items (scrollable) ── -->
+                <div class="pos-order-top flex-grow-1" style="overflow-y: auto; min-height: 200px;">
+
+                    <!-- Empty state -->
+                    <div v-if="!form.items.length" class="pos-empty d-flex flex-column align-items-center justify-content-center py-4">
+                        <i class="fas fa-shopping-cart pos-empty-icon"></i>
+                        <p class="pos-empty-text mt-2 mb-0">Sin productos</p>
+                    </div>
+                    <!-- Items list -->
+                    <div class="px-2 py-1">
+                        <template v-for="(item, index) in form.items">
+                            <div :key="index" class="pos-cart-row d-flex align-items-center py-2">
+                                <!-- Thumbnail -->
+                                <img
+                                    v-if="item.item && item.item.image_url"
+                                    :src="item.item.image_url"
+                                    class="pos-cart-thumb mr-2"
+                                />
+                                <div v-else class="pos-cart-thumb-ph mr-2">
+                                    <i class="fas fa-cube"></i>
+                                </div>
+                                <!-- Info -->
+                                <div class="pos-cart-info flex-grow-1 mr-2 min-w-0">
+                                    <p class="pos-cart-name mb-0">
+                                        {{ item.item.description }}
+                                        <template v-if="item.item.presentation && item.item.presentation.hasOwnProperty('description')">
+                                            {{ item.item.presentation.description }}
+                                        </template>
+                                    </p>
+                                    <template v-if="edit_unit_price">
+                                        <el-input
+                                            v-model="item.total"
+                                            size="mini"
+                                            @input="calculateQuantity(index)"
+                                            @blur="blurCalculateQuantity(index)"
+                                            class="pos-total-input"
+                                        />
+                                    </template>
+                                    <span v-else class="pos-cart-price">{{ currency_type.symbol }} {{ item.total }}</span>
+                                </div>
+                                <!-- Qty controls + trash (trash visible on row hover, a la izquierda del -) -->
+                                <div class="pos-qty-wrap d-flex align-items-center">
+                                    <a class="pos-cart-del" @click="clickDeleteItem(index)" title="Eliminar">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                                            <path d="M4 7l16 0"/>
+                                            <path d="M10 11l0 6"/>
+                                            <path d="M14 11l0 6"/>
+                                            <path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2 -2l1 -12"/>
+                                            <path d="M9 7v-3a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v3"/>
+                                        </svg>
+                                    </a>
+                                    <button class="pos-qty-btn" @click="decrementItem(item, index)">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-minus"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M5 12l14 0" /></svg>
+                                    </button>
+                                    <el-input
+                                        v-model="item.item.aux_quantity"
+                                        @input="clickAddItem(item, index, true)"
+                                        @keyup.enter.native="keyupEnterQuantity"
+                                        class="pos-qty-field"
+                                    />
+                                    <button class="pos-qty-btn" @click="clickAddItem(item, index)">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-plus"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M12 5l0 14" /><path d="M5 12l14 0" /></svg>
+                                    </button>
+                                </div>
+                            </div>
                         </template>
                     </div>
+                </div>
+
+                <!-- ── BOTTOM: Sección de pago ── -->
+                <div class="payment-container-pos border-0">
+                    <template v-if="show_fast_payment_garage">
+                        <fast-payment
+                            :is_payment.sync="is_payment"
+                            :form="form"
+                            :currency-type-id-active="form.currency_type_id"
+                            :currency-type-active="currency_type"
+                            :exchange-rate-sale="form.exchange_rate_sale"
+                            :customer.sync="customer"
+                            :soapCompany="soapCompany"
+                            :businessTurns="businessTurns"
+                            :is-print="isPrint"
+                            :rows-items="form.items.length"
+                            ref="componentFastPaymentGarage"
+                            :configuration="configuration"
+                            :type-user="typeUser"
+                            @series-filtered="current_series_count = $event"
+                            @customer-required="customerError = true"
+                        ></fast-payment>
+                    </template>
                 </div>
             </div>
 
@@ -852,7 +856,7 @@
 <style>
 .el-select-dropdown__item.hover {
     /* background-color: red; */
-    background-color: #e6e9ee;
+    background-color: var(--tq-accent-color-muted);
 }
 
 /* The heart of the matter */
@@ -948,6 +952,17 @@
 .el-tooltip__popper {
     white-space: pre-line;
 }
+.internal-code-small {
+    width: 45%; 
+    white-space: nowrap;
+    overflow: hidden; 
+    text-overflow: ellipsis;
+}
+/* ── POS · Venta Rápida — Panel lateral ──────────────────────
+   Los estilos del panel derecho (tabs documento, cliente,
+   items del carrito, totales, botón Pagar y Cancelar) viven en
+   storage/app/public/skins/tu-quipu.css
+   No duplicar aquí. */
 </style>
 
 <script>
@@ -1028,7 +1043,14 @@ export default {
             show_fast_payment_garage: false,
             itemUnitTypes: [],
             affectations_exonerated_igv: ["10", "20"],
-            searchFromBarcode: false
+            searchFromBarcode: false,
+            current_series_count: 0,
+            doc_type_tabs: [
+                { id: '03', label: 'Boleta' },
+                { id: '01', label: 'Factura' },
+                { id: '80', label: 'N. Venta' },
+            ],
+            customerError: false,
         };
     },
     async created() {
@@ -1076,6 +1098,16 @@ export default {
             });
         },
         ...mapState(["config"]),
+        isNrus() {
+            return !!((this.configuration && this.configuration.is_nrus) || (this.config && this.config.is_nrus));
+        },
+        docTypeTabsAvailable() {
+            // NRUS no emite Factura (01)
+            if (this.isNrus) {
+                return this.doc_type_tabs.filter(tab => tab.id !== '01');
+            }
+            return this.doc_type_tabs;
+        },
         validteCreateProduct() {
             if (this.config) {
                 return (
@@ -1235,6 +1267,20 @@ export default {
         },
         keyupEnterQuantity() {
             this.initFocus();
+        },
+        decrementItem(item, index) {
+            const qty = parseInt(item.item.aux_quantity);
+            if (qty <= 1) {
+                this.clickDeleteItem(index);
+            } else {
+                item.item.aux_quantity = qty - 1;
+                this.clickAddItem(item, index, true);
+            }
+        },
+        setDocType(typeId) {
+            this.form.document_type_id = typeId;
+            if (this.$refs.componentFastPaymentGarage)
+                this.$refs.componentFastPaymentGarage.filterSeries();
         },
         handleFn112(response) {
             this.search_item_by_barcode = !this.search_item_by_barcode;
@@ -1420,7 +1466,7 @@ export default {
             this.items[index].sale_unit_price = price.price;
             this.items[index].unit_type_id = price.unit_type_id;
             this.items[index].presentation = price
-            
+
             this.$message.success("Precio seleccionado");
         },
         clickWarehouseDetail(item) {
@@ -1536,6 +1582,17 @@ export default {
             //  this.clickAddItem(this.form.items[index],index, true)
         },
         blurCalculateQuantity(index) {
+            const current = this.form.items[index];
+            if (!current.item.calculate_quantity) {
+                const quantity = parseFloat(current.quantity);
+                const newTotal = parseFloat(current.total);
+                if (quantity > 0 && !isNaN(newTotal) && newTotal >= 0) {
+                    const newUnitPrice = _.round(newTotal / quantity, 6);
+                    current.item.unit_price = newUnitPrice;
+                    current.unit_price = newUnitPrice;
+                }
+            }
+
             this.row = calculateRowItem(
                 this.form.items[index],
                 this.form.currency_type_id,
@@ -1564,6 +1621,8 @@ export default {
         changeCustomer() {
             // console.log('clien 13')
 
+            this.customerError = false;
+
             let customer = _.find(this.all_customers, {
                 id: this.form.customer_id
             });
@@ -1572,6 +1631,9 @@ export default {
             if (this.configuration.default_document_type_80) {
                 this.form.document_type_id = "80";
             } else if (this.configuration.default_document_type_03) {
+                this.form.document_type_id = "03";
+            } else if (this.isNrus) {
+                // NRUS no emite Factura, siempre Boleta
                 this.form.document_type_id = "03";
             } else {
                 this.form.document_type_id =
@@ -1803,13 +1865,13 @@ export default {
             // console.log(item)
             let presentation = item.presentation
 
-            let exist_item =  false 
+            let exist_item =  false
             if (presentation === undefined) {
                 exist_item = _.find(this.form.items, {
                     item_id: item.item_id,
                     unit_type_id: item.unit_type_id
                 });
-            } 
+            }
             else {
                 // Se evalua si existe presentation de item
                 exist_item = _.find(this.form.items, {
@@ -1881,7 +1943,7 @@ export default {
                 );
 
                 console.log(this.row);
-                
+
 
                 this.row["unit_type_id"] = item.unit_type_id;
 
@@ -2077,7 +2139,7 @@ export default {
             );
             this.form.subtotal = this.form.total;
 
-            // Ya no esta funcionando el evento emit de checkPaymentGarage, 
+            // Ya no esta funcionando el evento emit de checkPaymentGarage,
             // this.checkPaymentGarage();
             this.$refs.componentFastPaymentGarage.checkPaymentGarage(this.form.total)
         },

@@ -129,8 +129,10 @@ export default {
                         .then((response) => {
                             this.qr_api_enable_ws = response.data.qr_api_enable_ws
                             this.wsConfig = {
-                                qr_api_key_ws: response.data.qr_api_key_ws,
-                                qr_api_url_ws: response.data.qr_api_url_ws,
+                                qr_api_enable_ws: response.data.qr_api_enable_ws,
+                                qr_api_use_bot_instance: response.data.qr_api_use_bot_instance,
+                                qr_api_instance: response.data.qr_api_instance,
+                                evolution_instance: response.data.evolution_instance,
                             }
                         })
 

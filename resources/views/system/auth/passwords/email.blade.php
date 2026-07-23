@@ -2,6 +2,8 @@
 
 @section('content')
 
+@include('system.auth.partials.theme')
+
 @php
     use App\Models\System\Configuration;
     $configuration = Configuration::first();
@@ -11,19 +13,20 @@
 <section class="body-sign">
     <div class="center-sign">
 
-        <div class="logo-login">
+        <div class="logo-login mb-3">
             @if ($logo)
-                <img class="uk-logo-inverse" width="100" height="auto" src="{{ $logo }}" alt="Logo" />
+                <img class="uk-logo-inverse" src="{{ $logo }}" alt="Logo" />
             @elseif (file_exists(public_path('theme/logo.svg')))
-                <img class="uk-logo-inverse" width="100" height="auto" src="{{ asset('theme/logo.svg') }}" alt="Logo" />
+                <img class="uk-logo-inverse" src="{{ asset('theme/logo.svg') }}" alt="Logo" />
             @endif
         </div>
 
-        <div class="">
-            <div class="card card-header card-primary bg-info">
-                <p class="card-title text-center">Recuperar contraseña</p>
-                <h1 class="display-3 position-absolute text-left font-weight-bold"
-                    style="left: 90%; margin-top: -35px !important; color: rgba(255,255,255,.1) !important; font-size: 4.5rem !important; font-weight: 600 !important;">8</h1>
+        <div class="card">
+            <div class="card-header bg-info d-flex align-items-center justify-content-between py-3">
+                <p class="card-title mb-0 text-white font-weight-bold">Recuperar contraseña</p>
+                <span class="login-version">
+                    <i class="ti ti-sparkles"></i> Versión <b>9</b>
+                </span>
             </div>
 
             <div class="card-body p-4">
@@ -67,21 +70,17 @@
                     @csrf
 
                     <div class="form-group mb-4">
-                        <label>Correo electrónico</label>
-                        <div class="input-group">
-                            <input type="email" id="input-email" name="email" class="form-control form-control-lg" required>
-                            <span class="input-group-append">
-                                <span class="input-group-text">
-                                    <i class="fas fa-envelope"></i>
-                                </span>
-                            </span>
+                        <label class="control-label">Correo electrónico</label>
+                        <div>
+                            <input type="email" id="input-email" name="email" class="form-control"
+                                placeholder="tucorreo@empresa.com" required>
                         </div>
                     </div>
 
                     <div class="row">
                         <div class="col-12">
-                            <button type="submit" id="btn-enviar" class="btn btn-primary btn-lg btn-block mt-2">
-                                Enviar enlace
+                            <button type="submit" id="btn-enviar" class="btn btn-primary btn-lg btn-block login-submit mt-2">
+                                <i class="ti ti-send"></i> Enviar enlace
                             </button>
                         </div>
                     </div>

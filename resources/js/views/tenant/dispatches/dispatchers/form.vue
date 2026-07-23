@@ -159,7 +159,48 @@ export default {
                     })
             }
         },
+        validateForm() {
+            const errors = {}
+            const number = (this.form.number || '').trim()
+            const name = (this.form.name || '').trim()
+            const address = (this.form.address || '').trim()
+            const mtc = (this.form.number_mtc || '').trim()
+            const hasLetter = /[A-Za-zÁÉÍÓÚáéíóúÑñ]/
+
+            if (!this.form.identity_document_type_id) {
+                errors.identity_document_type_id = ['Seleccione el tipo de documento.']
+            }
+
+            if (!number) {
+                errors.number = ['El número es obligatorio.']
+            } else if (this.form.identity_document_type_id === '6' && !/^(10|15|16|17|20)\d{9}$/.test(number)) {
+                errors.number = ['El RUC debe tener 11 dígitos y un prefijo válido (10, 15, 16, 17 o 20).']
+            } else if (this.form.identity_document_type_id === '1' && !/^\d{8}$/.test(number)) {
+                errors.number = ['El DNI debe tener 8 dígitos.']
+            } else if (this.form.identity_document_type_id !== '6' && this.form.identity_document_type_id !== '1' && !/^[a-zA-Z0-9]{4,15}$/.test(number)) {
+                errors.number = ['El número debe tener entre 4 y 15 caracteres alfanuméricos.']
+            }
+
+            if (!name) {
+                errors.name = ['El nombre es obligatorio.']
+            } else if (name.length < 2 || !hasLetter.test(name)) {
+                errors.name = ['Ingrese un nombre válido (mínimo 2 caracteres y al menos una letra).']
+            }
+
+            if (address && (address.length < 3 || !hasLetter.test(address))) {
+                errors.address = ['Ingrese una dirección válida (mínimo 3 caracteres y al menos una letra).']
+            }
+
+            if (mtc && (!/^[a-zA-Z0-9]+$/.test(mtc) || mtc.length > 12)) {
+                errors.number_mtc = ['El MTC solo admite letras y números (máx. 12 caracteres).']
+            }
+
+            this.errors = errors
+            return Object.keys(errors).length === 0
+        },
         submit() {
+            if (!this.validateForm()) return
+
             this.loading_submit = true
             this.$http.post(`/${this.resource}`, this.form)
                 .then(response => {

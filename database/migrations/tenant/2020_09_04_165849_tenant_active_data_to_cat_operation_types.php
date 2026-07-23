@@ -14,7 +14,7 @@ class TenantActiveDataToCatOperationTypes extends Migration
      */
     public function up()
     {
-        DB::table('cat_operation_types')->where('id', '0401')->update(['active' => true]);
+        DB::table('cat_operation_types')->where('id', '0401')->update(['active' => false]);
     }
 
     /**

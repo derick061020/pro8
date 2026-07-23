@@ -1,0 +1,9 @@
+.radius {
+  border-radius: 10px;
+}
+body > div.is-active.is-small.with-top-menu.modal.v-modal > div.modal-content > div > header {
+  display: none;
+}
+body > div.is-active.is-small.with-top-menu.modal.v-modal > div.modal-content > div {
+  border-radius: 10px;
+}

@@ -1037,6 +1037,22 @@ use Illuminate\Support\Facades\DB;
 
         /**
          *
+         * Filtrar por tipo de documento de identidad
+         *
+         * @param Builder $query
+         * @param int|null $identity_document_type_id
+         * @return Builder
+         */
+        public function scopeFilterByDocumentType($query, $identity_document_type_id)
+        {
+            if ($identity_document_type_id !== null) {
+                $query->where('identity_document_type_id', $identity_document_type_id);
+            }
+            return $query;
+        }
+
+        /**
+         *
          * @return array
          */
         public function getSearchDataResource()

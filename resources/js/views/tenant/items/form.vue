@@ -8,23 +8,27 @@
                @close="close"
                @open="create">
         <span slot="title" class="ifb-dialog-title">
-            <span class="ifb-dialog-title-text">{{ titleDialog }}</span>
+            <span class="el-dialog__title">{{ titleDialog }}</span>
             <span class="ifb-dialog-title-actions">
                 <template v-if="editingLayout">
-                    <el-button size="mini" plain @click="resetLayoutFromHeader">
-                        <i class="el-icon-refresh-left"></i> Restablecer
-                    </el-button>
-                    <el-button size="mini"
-                               type="primary"
-                               :loading="layout_saving"
-                               @click="confirmLayoutFromHeader">
-                        <i class="el-icon-check"></i> Listo
-                    </el-button>
+                    <button type="button" class="btn btn-sm second-buton mt-1" @click="cancelLayoutEditFromHeader">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-x" style="margin-top: -2px;"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M18 6l-12 12" /><path d="M6 6l12 12" /></svg>
+                        Cancelar
+                    </button>
+                    <button @click="resetLayoutFromHeader" class="btn btn-sm second-buton">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-refresh" style="margin-top: -2px;"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M20 11a8.1 8.1 0 0 0 -15.5 -2m-.5 -4v4h4" /><path d="M4 13a8.1 8.1 0 0 0 15.5 2m.5 4v-4h-4" /></svg>
+                        Restablecer
+                    </button>
+                    <button :loading="layout_saving" @click="confirmLayoutFromHeader" class="btn btn-sm btn-primary">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-device-floppy" style="margin-top: -2px;"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M6 4h10l4 4v10a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 2 -2" /><path d="M10 14a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" /><path d="M14 4l0 4l-6 0l0 -4" /></svg>
+                        Guardar
+                    </button>
                 </template>
                 <template v-else>
-                    <el-button size="mini" plain icon="el-icon-set-up" @click="enterLayoutEditFromHeader">
+                    <button class="btn btn-sm second-buton" @click="enterLayoutEditFromHeader">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-adjustments-horizontal" style="margin-top: -2px;"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M12 6a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" /><path d="M4 6l8 0" /><path d="M16 6l4 0" /><path d="M6 12a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" /><path d="M4 12l2 0" /><path d="M10 12l10 0" /><path d="M15 18a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" /><path d="M4 18l11 0" /><path d="M19 18l1 0" /></svg>
                         Personalizar barra
-                    </el-button>
+                    </button>
                 </template>
             </span>
         </span>
@@ -81,11 +85,18 @@
                 </template>
                 <template #sale_unit_price>
                     <div :class="{'has-danger': errors.sale_unit_price}" class="form-group">
-                        <label class="control-label">Precio Unitario <small v-if="form.has_igv">(con IGV)</small> <small v-else>(sin IGV)</small><span class="text-danger">*</span></label>
+                        <label class="control-label">Precio Unitario <template v-if="!isNrus"><small v-if="form.has_igv">(con IGV)</small> <small v-else>(sin IGV)</small></template><span class="text-danger">*</span></label>
                         <el-input v-model="form.sale_unit_price"
                                   dusk="sale_unit_price"
                                   @input="calculatePercentageOfProfitBySale"></el-input>
-                        <small v-if="saleUnitPriceBreakdown" class="text-muted">{{ saleUnitPriceBreakdown }}</small>
+                        <small v-if="!isNrus" :style="saleUnitPriceBreakdown ? 'opacity: 1' : 'opacity: 0'" class="text-muted">
+                            <template v-if="saleUnitPriceBreakdown">
+                                {{ saleUnitPriceBreakdown }}
+                            </template>
+                            <template v-else>
+                                &nbsp;
+                            </template>
+                        </small>
                         <small v-if="errors.sale_unit_price"
                                class="form-control-feedback"
                                v-text="errors.sale_unit_price[0]"></small>
@@ -147,7 +158,7 @@
                     </div>
                 </template>
                 <template #sale_affectation_igv_type_id>
-                    <div :class="{'has-danger': errors.sale_affectation_igv_type_id}" class="form-group">
+                    <div v-if="showAffectationIgvType" :class="{'has-danger': errors.sale_affectation_igv_type_id}" class="form-group">
                         <label class="control-label">Tipo de afectación</label>
                         <el-select v-model="form.sale_affectation_igv_type_id"
                                    filterable
@@ -249,9 +260,35 @@
                                v-text="errors.brand_id[0]"></small>
                     </div>
                 </template>
+                <template #image>
+                    <div class="form-group d-flex">
+                        <el-upload ref="itemImageUploadPinned"
+                                   :action="`/${resource}/upload`"
+                                   :data="{'type': 'items'}"
+                                   :headers="headers"
+                                   :on-success="onSuccess"
+                                   :show-file-list="false"
+                                   class="avatar-uploader item-img"
+                                   style="margin-top: 12px;">
+                            <img v-if="form.image_url"
+                                 :src="form.image_url"
+                                 class="avatar">
+                            <i v-else
+                               class="el-icon-plus avatar-uploader-icon"></i>
+                        </el-upload>
+                        <div class="d-flex flex-column ms-2">
+                            <label class="label-img">Imágen</label>
+                            <button type="button"
+                                    class="btn btn-sm second-buton mt-auto"
+                                    @click.prevent="clickUploadImage('itemImageUploadPinned')">
+                                Agregar imágen
+                            </button>
+                        </div>
+                    </div>
+                </template>
                 <template #purchase_unit_price>
                     <div :class="{'has-danger': errors.purchase_unit_price}" class="form-group">
-                        <label class="control-label">Precio Unitario (Compra) <small v-if="form.purchase_has_igv">(con IGV)</small> <small v-else>(sin IGV)</small></label>
+                        <label class="control-label">Precio Unitario (Compra) <template v-if="!isNrus"><small v-if="form.purchase_has_igv">(con IGV)</small> <small v-else>(sin IGV)</small></template></label>
                         <el-input v-model="form.purchase_unit_price"
                                   @input="calculatePercentageOfProfitByPurchase"></el-input>
                         <small v-if="errors.purchase_unit_price"
@@ -260,7 +297,7 @@
                     </div>
                 </template>
                 <template #purchase_affectation_igv_type_id>
-                    <div :class="{'has-danger': errors.purchase_affectation_igv_type_id}" class="form-group">
+                    <div v-if="showAffectationIgvType" :class="{'has-danger': errors.purchase_affectation_igv_type_id}" class="form-group">
                         <label class="control-label">Tipo de afectación (Compra)</label>
                         <el-select v-model="form.purchase_affectation_igv_type_id"
                                    @change="changePurchaseAffectationIgvType">
@@ -362,7 +399,7 @@
                             </div>
                             <button v-if="editingLayout" type="button" class="pin-from-form-btn" @click.prevent="pinFromForm('model')"><i class="el-icon-top"></i> Fijar arriba</button>
                         </div>
-                        <div v-show="!isPinned('unit_type_id')" class="col-md-2 field-pinnable">
+                        <div v-show="!isPinned('unit_type_id')" class="field-pinnable" :class="!showAffectationIgvType || currency_types.length <= 1 ? 'col-md-3' : 'col-md-2'">
                             <div :class="{'has-danger': errors.unit_type_id}"
                                  class="form-group">
                                 <label class="control-label">Unidad</label>
@@ -398,7 +435,7 @@
                             </div>
                             <button v-if="editingLayout" type="button" class="pin-from-form-btn" @click.prevent="pinFromForm('currency_type_id')"><i class="el-icon-top"></i> Fijar arriba</button>
                         </div>
-                        <div v-show="!isPinned('sale_affectation_igv_type_id')" class="col-md-4 field-pinnable">
+                        <div v-show="!isPinned('sale_affectation_igv_type_id') && showAffectationIgvType" class="col-md-4 field-pinnable">
                             <div :class="{'has-danger': errors.sale_affectation_igv_type_id}"
                                  class="form-group">
                                 <label class="control-label">Tipo de afectación</label>
@@ -614,6 +651,7 @@
                             </div>
                         </div>
 
+                        <template v-if="!isNrus">
                         <div class="col-12 mt-2">
                             <div class="table-responsive table-border-none">
                                 <table class="table table-sm mb-0 table-borderless">
@@ -797,7 +835,9 @@
                                 </div>
                             </div>
                         </template>
-                        <div class="col-md-12 mt-4 text-center" v-if="showTab('imagen')">
+                        </template>
+                        <div class="col-md-12 mt-4 text-center field-pinnable" v-if="showTab('imagen') && !isPinned('image')" data-field-key="image">
+                            <button v-if="editingLayout" type="button" class="pin-from-form-btn" @click.prevent="pinFromForm('image')"><i class="el-icon-top"></i> Fijar arriba</button>
                             <label class="control-label d-block mb-2">Imagen</label>
                             <el-upload :action="`/${resource}/upload`"
                                     :data="{'type': 'items'}"
@@ -813,7 +853,7 @@
                 </el-tab-pane>
 
                 <el-tab-pane class
-                             v-if="!isService && showTab('warehouses')"
+                             v-if="!isService && showTab('warehouses') && !isNrus"
                              name="second">
                     <span slot="label">Almacenes</span>
                     <div class="row">
@@ -923,8 +963,8 @@
                                                 <td class="text-center align-middle">
                                                     <template v-if="config.enable_list_product">
                                                         <el-input v-model="row.quantity_unit"
-                                                            min="1"
-                                                            step="1"
+                                                            :min="isDecimalUnit(row.unit_type_id) ? 0.0001 : 1"
+                                                            :step="isDecimalUnit(row.unit_type_id) ? 'any' : 1"
                                                             type="number"></el-input>
                                                     </template>
                                                     <template v-else>
@@ -978,21 +1018,31 @@
                              name="fourth">
                     <span slot="label">Atributos</span>
                     <div class="row">
-                        <div class="col-md-3">
-                            <div class="form-group">
-                                <label class="control-label">Imágen <span class="text-danger"></span></label>
-                                <el-upload :action="`/${resource}/upload`"
+                        <div v-show="!isPinned('image')" class="col-md-3 field-pinnable" data-field-key="image">
+                            <button v-if="editingLayout" type="button" class="pin-from-form-btn" @click.prevent="pinFromForm('image')"><i class="el-icon-top"></i> Fijar arriba</button>
+                            <div class="form-group d-flex">
+                                <el-upload ref="itemImageUpload"
+                                           :action="`/${resource}/upload`"
                                            :data="{'type': 'items'}"
                                            :headers="headers"
                                            :on-success="onSuccess"
                                            :show-file-list="false"
-                                           class="avatar-uploader">
+                                           class="avatar-uploader item-img"
+                                           style="margin-top: 12px;">
                                     <img v-if="form.image_url"
                                          :src="form.image_url"
                                          class="avatar">
                                     <i v-else
                                        class="el-icon-plus avatar-uploader-icon"></i>
                                 </el-upload>
+                                <div class="d-flex flex-column ms-2">
+                                    <label class="label-img">Imágen</label>
+                                    <button type="button"
+                                            class="btn btn-sm second-buton mt-auto"
+                                            @click.prevent="clickUploadImage('itemImageUpload')">
+                                        Agregar imágen
+                                    </button>
+                                </div>
                             </div>
                         </div>
                         <div class="col-md-9">
@@ -1180,7 +1230,7 @@
                              name="five">
                     <span slot="label">Compra</span>
                     <div class="row">
-                        <div v-show="!isPinned('purchase_affectation_igv_type_id')" class="col-md-8 field-pinnable">
+                        <div v-show="!isPinned('purchase_affectation_igv_type_id') && showAffectationIgvType" class="col-md-8 field-pinnable">
                             <div :class="{'has-danger': errors.purchase_affectation_igv_type_id}"
                                  class="form-group">
                                 <label class="control-label">Tipo de afectación</label>
@@ -1200,11 +1250,18 @@
                         <div v-show="!isPinned('purchase_unit_price')" class="col-md-4 field-pinnable">
                             <div :class="{'has-danger': errors.purchase_unit_price}"
                                  class="form-group">
-                                <label class="control-label">Precio Unitario <small v-if="form.purchase_has_igv">(con IGV)</small> <small v-else>(sin IGV)</small></label>
+                                <label class="control-label">Precio Unitario <template v-if="!isNrus"><small v-if="form.purchase_has_igv">(con IGV)</small> <small v-else>(sin IGV)</small></template></label>
                                 <el-input v-model="form.purchase_unit_price"
                                           dusk="purchase_unit_price"
                                           @input="calculatePercentageOfProfitByPurchase"></el-input>
-                                <small v-if="purchaseUnitPriceBreakdown" class="text-muted">{{ purchaseUnitPriceBreakdown }}</small>
+                                <small v-if="!isNrus" :style="purchaseUnitPriceBreakdown ? 'opacity: 1' : 'opacity: 0'" class="text-muted">
+                                    <template v-if="purchaseUnitPriceBreakdown">
+                                        {{ purchaseUnitPriceBreakdown }}
+                                    </template>
+                                    <template v-else>
+                                        &nbsp;
+                                    </template>
+                                </small>
                                 <small v-if="errors.purchase_unit_price"
                                        class="form-control-feedback"
                                        v-text="errors.purchase_unit_price[0]"></small>
@@ -1244,7 +1301,7 @@
                         </div>
 
                         <!-- isc compras -->
-                        <div class="col-md-4">
+                        <div class="col-md-4" v-if="!isNrus">
                             <div :class="{'has-danger': errors.purchase_has_isc}"
                                  class="form-group">
                                 <el-checkbox v-model="form.purchase_has_isc"
@@ -1467,7 +1524,7 @@
                     </div>
                 </el-tab-pane>
             </el-tabs>
-            <div class="form-actions text-end pt-2 mt-2">
+            <div class="form-actions text-end pt-2 mt-2" v-if="!editingLayout">
                 <template v-if="forOnlyShowAllDetails">
                     <el-button @click.prevent="close()">Cerrar</el-button>
                 </template>
@@ -1541,6 +1598,9 @@ export default {
         },
         pinnedKeysSet() {
             return new Set((this.pinned_fields || []).map(p => p.field_key))
+        },
+        showAffectationIgvType() {
+            return this.affectation_igv_types.length > 1
         },
         forOnlyShowAllDetails()
         {
@@ -1622,10 +1682,15 @@ export default {
             }
             return true
         },
+        isNrus()
+        {
+            return !!(this.config && this.config.is_nrus)
+        },
         saleUnitPriceBreakdown()
         {
             const price = parseFloat(this.form.sale_unit_price)
             if (!price || price <= 0) return null
+            const symbol = this.getCurrencySymbol()
             const IGV_RATE = 0.18
             let base, igv, total
             if (this.form.has_igv) {
@@ -1637,12 +1702,13 @@ export default {
                 igv = price * IGV_RATE
                 total = price + igv
             }
-            return `${base.toFixed(2)} + ${igv.toFixed(2)} IGV = S/ ${total.toFixed(2)}`
+            return `${base.toFixed(2)} + ${igv.toFixed(2)} IGV = ${symbol} ${total.toFixed(2)}`
         },
         purchaseUnitPriceBreakdown()
         {
             const price = parseFloat(this.form.purchase_unit_price)
             if (!price || price <= 0) return null
+            const symbol = this.getCurrencySymbol()
             const IGV_RATE = 0.18
             let base, igv, total
             if (this.form.purchase_has_igv) {
@@ -1654,7 +1720,7 @@ export default {
                 igv = price * IGV_RATE
                 total = price + igv
             }
-            return `${base.toFixed(2)} + ${igv.toFixed(2)} IGV = S/ ${total.toFixed(2)}`
+            return `${base.toFixed(2)} + ${igv.toFixed(2)} IGV = ${symbol} ${total.toFixed(2)}`
         }
 
     },
@@ -1812,7 +1878,9 @@ export default {
     },
 
     methods: {
-
+        getCurrencySymbol() {
+            return this.form.currency_type_id === 'USD' ? '$' : 'S/'
+        },
         ...mapActions([
             'loadConfiguration',
         ]),
@@ -2059,6 +2127,12 @@ export default {
                 this.$message.error(response.message)
             }
         },
+        clickUploadImage(refName = 'itemImageUpload') {
+            const upload = this.$refs[refName]
+            const input = upload && upload.$el ? upload.$el.querySelector('input[type="file"]') : null
+
+            if (input) input.click()
+        },
         changeAffectationIgvType() {
 
             let affectation_igv_type_exonerated = [20, 21, 30, 31, 32, 33, 34, 35, 36, 37]
@@ -2221,6 +2295,11 @@ this.activeName = null
 
             if (this.enabled_percentage_of_profit) this.form.sale_unit_price = (this.form.purchase_unit_price * (100 + parseFloat(this.form.percentage_of_profit))) / 100
         },
+        isDecimalUnit(unitTypeId) {
+            // Unidades de peso, volumen, longitud, área, tiempo: admiten decimales
+            const decimals = ['KGM','GRM','MGM','TNE','LBR','LTR','MLT','GLL','MTR','CMT','KMT','MTK','MTQ','HUR','DAY','MIN'];
+            return decimals.includes(unitTypeId);
+        },
         validateItemUnitTypes() {
 
             let error_by_item = 0
@@ -2229,7 +2308,11 @@ this.activeName = null
 
                 this.form.item_unit_types.forEach(item => {
 
-                    if (parseFloat(item.quantity_unit) < 0.0001) {
+                    const factor = parseFloat(item.quantity_unit)
+
+                    if (isNaN(factor) || factor < 0.0001) {
+                        error_by_item++
+                    } else if (!this.isDecimalUnit(item.unit_type_id) && !Number.isInteger(factor)) {
                         error_by_item++
                     }
 
@@ -2258,7 +2341,7 @@ this.activeName = null
             }
 
             if (this.validateItemUnitTypes() > 0)
-                return this.$message.error('El campo factor no puede ser menor a 0.0001');
+                return this.$message.error('Factor inválido: mínimo 0.0001 y solo se permiten decimales en unidades de medida (kg, L, m, etc.).');
 
             if (this.fromPharmacy === true) {
                 if (!payload.cod_digemid)
@@ -2310,15 +2393,27 @@ this.activeName = null
                     this.close();
 
                 } else {
-                    this.$message.error(response.data.message);
+                    const msg = response.data.message || '';
+                    if (msg.toLowerCase().includes('código interno') || msg.toLowerCase().includes('internal id')) {
+                        this.errors = { internal_id: [msg] };
+                    } else {
+                        this.$message.error(msg || 'Error al guardar el producto');
+                    }
                 }
 
             } catch (error) {
                 if (error.response?.status === 422) {
-                    this.errors = error.response.data;
+                    this.errors = error.response.data.errors || error.response.data;
+                } else if (error.response?.data?.message) {
+                    const msg = error.response.data.message.toLowerCase();
+                    if (msg.includes('código interno') || msg.includes('internal id')) {
+                        this.errors = { internal_id: [error.response.data.message] };
+                    } else {
+                        this.$message.error(error.response.data.message);
+                    }
                 } else {
                     console.log(error);
-                    this.$message.error(error.response?.data?.message);
+                    this.$message.error('Server Error');
                 }
             } finally {
                 this.loading_submit = false;
@@ -2601,7 +2696,9 @@ this.activeName = null
                     const data = response.data && response.data.data ? response.data.data : null
                     const available = getAvailableFields(this.resolvedVariant).map(f => f.key)
                     const remote = data && Array.isArray(data.pinned_fields) ? data.pinned_fields : []
-                    const filtered = remote.filter(p => available.includes(p.field_key))
+                    const filtered = remote.filter(p =>
+                        (typeof p.field_key === 'string' && p.field_key.indexOf('__spacer__') === 0)
+                        || available.includes(p.field_key))
                     this.pinned_fields = filtered.length > 0
                         ? filtered
                         : getDefaultLayout(this.resolvedVariant)
@@ -2628,6 +2725,11 @@ this.activeName = null
         confirmLayoutFromHeader() {
             if (this.$refs.pinnedBar && typeof this.$refs.pinnedBar.confirmEdit === 'function') {
                 this.$refs.pinnedBar.confirmEdit();
+            }
+        },
+        cancelLayoutEditFromHeader() {
+            if (this.$refs.pinnedBar && typeof this.$refs.pinnedBar.cancelEdit === 'function') {
+                this.$refs.pinnedBar.cancelEdit();
             }
         },
         onSaveLayout(pinned, done) {

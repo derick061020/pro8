@@ -120,7 +120,8 @@
                         <QrApi 
                             colClass="col-md-12"
                             :wsPhone="form.customer_telephone"
-                            :wsFile="form.pdf_a4_filename"
+                            :wsFile="form.print_ticket"
+                            :wsFileA4="form.pdf_a4_filename"
                             :wsDocument="form.number"
                             :wsMessage="form.message_text"
                             :wsData="form.pdf_a4_data"

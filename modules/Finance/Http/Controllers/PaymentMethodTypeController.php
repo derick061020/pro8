@@ -111,4 +111,16 @@ class PaymentMethodTypeController extends Controller
 
     }
 
+    public function active(Request $request)
+    {
+        $id = $request->input('id');
+        $unit_type = PaymentMethodType::findOrFail($id);
+        $unit_type->is_active = $request->boolean('is_active') ? 1 : 0;
+        $unit_type->save();
+
+        return [
+            'success' => true,
+            'message' => 'Estado actualizado con éxito',
+        ];
+    }
 }

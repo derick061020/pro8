@@ -28,7 +28,8 @@
     };
     use Exception;
     use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Redis;
+    use Illuminate\Support\Facades\Redis;
+    use App\Helpers\CacheHelper;
 
     /**
      * Class Controller
@@ -455,8 +456,8 @@ $string = var_export($header,true);
             $isCacheMiss = false;
             $startTime = microtime(true);
 
-            // Ejecutar con caché, pasando la bandera por referencia al callback
-            $result = Cache::tags($tag)->remember($cacheKey, $ttl, function () use (&$isCacheMiss, $callback) {
+            // Si el driver no soporta tags, se usa Cache directamente (file, database, etc.)
+            $result = CacheHelper::remember($tag, $cacheKey, $ttl, function () use (&$isCacheMiss, $callback) {
                 $isCacheMiss = true;
                 return $callback();
             });

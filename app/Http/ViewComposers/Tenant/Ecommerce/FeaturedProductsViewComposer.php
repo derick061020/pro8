@@ -14,6 +14,7 @@ class FeaturedProductsViewComposer
             return (object)[
                 'id' => $row->id,
                 'description' => $row->description,
+                'category_id' => $row->category_id,
                 'name' => $row->name,
                 'second_name' => $row->second_name,
                 'sale_unit_price' => $row->sale_unit_price,

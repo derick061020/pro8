@@ -15,6 +15,7 @@ if ($current_hostname) {
                 Route::get('documents', 'CustomFieldController@documents');
                 Route::get('dispatches', 'CustomFieldController@dispatches');
                 Route::get('order-notes', 'CustomFieldController@orderNotes');
+                Route::get('quotations', 'CustomFieldController@quotations');
                 Route::get('record/{id}', 'CustomFieldController@record');
                 Route::post('store', 'CustomFieldController@store');
                 Route::delete('destroy/{id}', 'CustomFieldController@destroy');

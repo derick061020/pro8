@@ -38,6 +38,7 @@ use App\Models\Tenant\SaleNotePayment;
 use App\Models\Tenant\Document;
 use App\Models\Tenant\SaleNoteMigration;
 use App\Models\Tenant\Series;
+use App\Services\SeriesResolver;
 use App\Models\Tenant\User;
 use App\Traits\OfflineTrait;
 use Carbon\Carbon;
@@ -433,7 +434,8 @@ class SaleNoteController extends Controller
     public function columns2()
     {
         return [
-            'series' => Series::whereIn('document_type_id', ['80'])->get(),
+            // Series filtradas por contexto (oculta dedicadas / restringe al grupo activo). Ver SeriesResolver.
+            'series' => app(SeriesResolver::class)->applyContext(Series::whereIn('document_type_id', ['80']))->get(),
 
         ];
     }
@@ -548,7 +550,7 @@ class SaleNoteController extends Controller
         $global_charge_types = ChargeDiscountType::whereIn('id', ['50'])->get();
         $company = Company::active();
         $payment_method_types = PaymentMethodType::all();
-        $series = collect(Series::all())->transform(function($row) {
+        $series = collect(app(SeriesResolver::class)->applyContext(Series::query())->get())->transform(function($row) {
             return [
                 'id' => $row->id,
                 'contingency' => (bool) $row->contingency,
@@ -898,6 +900,9 @@ class SaleNoteController extends Controller
 
             $number = ($document) ? $document->number + 1 : 1;
 
+            // Marca la serie (NV) como en uso al emitir (§4.7).
+            Series::markInUse('80', $series);
+
         }
         $seller_id = isset($inputs['seller_id'])?(int)$inputs['seller_id']:0;
         if($seller_id == 0){
@@ -1068,6 +1073,9 @@ class SaleNoteController extends Controller
         $this->configuration = Configuration::first();
         // $configuration = $this->configuration->formats;
         $base_template = Establishment::find($this->document->establishment_id)->template_pdf;
+        if (in_array($format_pdf, ['ticket', 'ticket_58', 'ticket_50', 'ticket_80'])) {
+            $base_template = Establishment::find($this->document->establishment_id)->template_ticket_pdf;
+        }
 
         $html = $template->pdf($base_template, "sale_note", $this->company, $this->document, $format_pdf);
 
@@ -1616,7 +1624,8 @@ class SaleNoteController extends Controller
     public function option_tables()
     {
         $establishment = Establishment::where('id', auth()->user()->establishment_id)->first();
-        $series = Series::where('establishment_id',$establishment->id)->get();
+        // Series filtradas por contexto (oculta dedicadas / restringe al grupo activo). Ver SeriesResolver.
+        $series = app(SeriesResolver::class)->applyContext(Series::where('establishment_id', $establishment->id))->get();
         $document_types_invoice = DocumentType::whereIn('id', ['01', '03'])->get();
         $payment_method_types = PaymentMethodType::all();
         $payment_destinations = $this->getPaymentDestinations();
