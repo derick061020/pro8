@@ -1131,12 +1131,12 @@
     bottom: 100%;
     margin-bottom: 6px;
     z-index: 6;
-    padding: 2px 8px;
+    padding: 4px 10px;
     background: #ff4757;
     color: white;
     border-radius: 10px;
-    font-size: 10px;
-    font-weight: 600;
+    font-size: 13px;
+    font-weight: 700;
     line-height: 1.3;
     animation: pulse 2s infinite;
     white-space: nowrap;

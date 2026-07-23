@@ -467,6 +467,26 @@ class HotelReceptionController extends Controller
                 $rent->output_time = $outputTime;
             }
 
+            // Nueva cantidad de unidades (noches/horas/meses) según el tipo de
+            // renta, igual que el cálculo del frontend (ceil de la duración).
+            // Se calcula SIEMPRE que cambien las fechas, no solo cuando llega un
+            // precio nuevo: `rent->duration` es lo que el checkout lee para
+            // mostrar la tarjeta "Noches", así que si no se actualizaba aquí la
+            // cantidad de noches quedaba desincronizada de la fecha de salida.
+            $rentalType = $rent->rental_period_type;
+            if ($rentalType === 'hour') {
+                $quantity = (int) max(1, ceil($inputDateTime->diffInMinutes($outputDateTime) / 60));
+                $timeUnit = 'hora(s)';
+            } elseif ($rentalType === 'month') {
+                $quantity = (int) max(1, ceil($inputDateTime->diffInDays($outputDateTime) / 30));
+                $timeUnit = 'mes(es)';
+            } else {
+                $quantity = (int) max(1, ceil($inputDateTime->diffInHours($outputDateTime) / 24));
+                $timeUnit = 'noche(s)';
+            }
+
+            $rent->duration = $quantity;
+
             // Actualizar precio si se proporciona. IMPORTANTE: el precio,
             // la cantidad de noches y el total que la UI y los totales del
             // checkout realmente leen NO viven en las columnas unit_price/total
@@ -479,20 +499,6 @@ class HotelReceptionController extends Controller
             if ($newPrice !== null && $newPrice > 0) {
                 $roomItem = $rent->items()->where('type', 'HAB')->first();
                 if ($roomItem) {
-                    // Nueva cantidad de unidades según el tipo de renta, igual
-                    // que el cálculo del frontend (ceil de la duración).
-                    $rentalType = $rent->rental_period_type;
-                    if ($rentalType === 'hour') {
-                        $quantity = (int) max(1, ceil($inputDateTime->diffInMinutes($outputDateTime) / 60));
-                        $timeUnit = 'hora(s)';
-                    } elseif ($rentalType === 'month') {
-                        $quantity = (int) max(1, ceil($inputDateTime->diffInDays($outputDateTime) / 30));
-                        $timeUnit = 'mes(es)';
-                    } else {
-                        $quantity = (int) max(1, ceil($inputDateTime->diffInHours($outputDateTime) / 24));
-                        $timeUnit = 'noche(s)';
-                    }
-
                     $unitPrice = $newPrice / $quantity;
 
                     // Regex para reemplazar el sufijo " x N noche(s)/hora(s)/mes(es)"

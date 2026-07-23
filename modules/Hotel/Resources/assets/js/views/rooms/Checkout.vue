@@ -1399,17 +1399,18 @@ export default {
             return (parseFloat(this.extendForm.pricePerDay) || 0) * (this.extendForm.days || 1);
         },
         canConfirmDateEdit() {
-            // Validar que se puedan confirmar los cambios de fecha
-            if (!this.editDatesForm.newPrice) return false;
-            
-            // Validar que las fechas sean lógicas
-            if (this.editDatesModal.editInput && this.editDatesModal.editOutput) {
-                const inputDateTime = moment(`${this.editDatesForm.inputDate} ${this.editDatesForm.inputTime || '00:00'}`);
-                const outputDateTime = moment(`${this.editDatesForm.outputDate} ${this.editDatesForm.outputTime || '23:59'}`);
-                return inputDateTime.isBefore(outputDateTime);
-            }
-            
-            return true;
+            // El precio se recalcula al abrir el modal y con cada cambio, así que
+            // solo queda bloqueado cuando el recálculo no fue posible (fechas
+            // inválidas). Se compara contra null a propósito: un precio 0 es
+            // válido (estadía sin costo) y no debe bloquear la confirmación.
+            if (this.editDatesForm.newPrice === null) return false;
+
+            // Validar que la salida sea siempre posterior al ingreso, se esté
+            // editando el ingreso, la salida o ambos.
+            const inputDateTime = moment(`${this.editDatesForm.inputDate} ${this.editDatesForm.inputTime || '00:00'}`);
+            const outputDateTime = moment(`${this.editDatesForm.outputDate} ${this.editDatesForm.outputTime || '23:59'}`);
+
+            return inputDateTime.isBefore(outputDateTime);
         }
     },
     created() {
@@ -2383,6 +2384,12 @@ export default {
                 });
             }
 
+            // Consolidar los pagos por método (y destino) para el comprobante:
+            // si el cliente pagó varias veces con el mismo método (p. ej. Yape
+            // S/10 + Yape S/2) el comprobante debe mostrar una sola línea con el
+            // total (Yape S/12), no una fila por cada pago.
+            this.document.payments = this.consolidatePaymentsByMethod(this.document.payments);
+
             this.loading = true;
             try {
                 const response = await this.$http.post(`/${this.resource_documents}`, this.document);
@@ -2481,6 +2488,39 @@ export default {
                 await this.onCalculateTotals();
                 this.loading = false;
             }
+        },
+        consolidatePaymentsByMethod(payments) {
+            // Agrupa los pagos por método de pago + destino (caja) y suma sus
+            // montos, devolviendo una sola línea por combinación. Conserva la
+            // primera referencia no vacía y suma el vuelto de cada grupo.
+            const groups = {};
+            const order = [];
+            (payments || []).forEach((p) => {
+                const methodId = p.payment_method_type_id || "01";
+                const destinationId = p.payment_destination_id || null;
+                const key = `${methodId}|${destinationId}`;
+                if (!groups[key]) {
+                    groups[key] = {
+                        ...p,
+                        payment: 0,
+                        change: 0,
+                    };
+                    order.push(key);
+                }
+                groups[key].payment = _.round(
+                    groups[key].payment + (parseFloat(p.payment) || 0),
+                    2
+                );
+                groups[key].change = _.round(
+                    groups[key].change + (parseFloat(p.change) || 0),
+                    2
+                );
+                // Conservar la primera referencia disponible del grupo.
+                if (!groups[key].reference && p.reference) {
+                    groups[key].reference = p.reference;
+                }
+            });
+            return order.map((key) => groups[key]);
         },
         async refreshRentItemsFromServer() {
             try {
@@ -3096,6 +3136,10 @@ export default {
 
             this.editDatesForm.warning = '';
 
+            // Precalcular precio y duración con los valores actuales para que el
+            // botón de confirmar no quede bloqueado hasta tocar un selector.
+            this.calculateNewPrice();
+
             this.showEditDatesModal = true;
         },
         showEditCheckoutDates() {
@@ -3147,7 +3191,11 @@ export default {
             );
             
             this.editDatesForm.warning = '';
-            
+
+            // Precalcular precio y duración con los valores actuales para que el
+            // botón de confirmar no quede bloqueado hasta tocar un selector.
+            this.calculateNewPrice();
+
             this.showEditDatesModal = true;
         },
         calculateDuration(inputDate, inputTime, outputDate, outputTime) {

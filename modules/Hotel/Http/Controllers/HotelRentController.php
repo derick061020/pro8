@@ -370,7 +370,7 @@ class HotelRentController extends Controller
 				if ($request->rent_payment && ($request->rent_payment['payment'] ?? 0) > 0) {
 					$advancePayment = HotelRentItemPayment::create([
 						'hotel_rent_item_id'     => $item->id,
-						'date_of_payment'        => date('Y-m-d'),
+						'date_of_payment'        => date('Y-m-d H:i:s'),
 						'payment_method_type_id' => $request->rent_payment['payment_method_type_id'],
 						'reference'              => $request->rent_payment['reference'] ?? null,
 						'payment'                => $request->rent_payment['payment'],
@@ -390,7 +390,7 @@ class HotelRentController extends Controller
 				$remaining   = round($itemTotal - $alreadyPaid, 2);
 				if ($remaining > 0) {
 					$paidPayment = $item->payments()->create([
-						'date_of_payment'        => date('Y-m-d'),
+						'date_of_payment'        => date('Y-m-d H:i:s'),
 						'payment_method_type_id' => $request->rent_payment['payment_method_type_id'] ?? null,
 						'reference'              => $request->rent_payment['reference'] ?? null,
 						'payment'                => $remaining,
@@ -524,7 +524,7 @@ class HotelRentController extends Controller
 		if($item->isPaid())
 		{
 			$record = $item->payments()->create([
-				'date_of_payment' => date('Y-m-d'),
+				'date_of_payment' => date('Y-m-d H:i:s'),
 				'payment_method_type_id' => $rent_payment['payment_method_type_id'],
 				'reference' => $rent_payment['reference'],
 				'payment' => $rent_payment['payment'],
@@ -696,7 +696,7 @@ class HotelRentController extends Controller
 
         $payment = new HotelRentItemPayment();
         $payment->hotel_rent_item_id = $extensionItem->id;
-        $payment->date_of_payment = date('Y-m-d');
+        $payment->date_of_payment = date('Y-m-d H:i:s');
         $payment->payment_method_type_id = $paymentMethodId;
         $payment->reference = $request->payment_reference ?? null;
         $payment->payment = $request->payment_amount;
@@ -2030,7 +2030,7 @@ class HotelRentController extends Controller
                     $paymentAmount = (float) $request->input('payment_amount', 0);
                     $extensionPayment = HotelRentItemPayment::create([
                         'hotel_rent_item_id' => $extensionItem->id,
-                        'date_of_payment' => date('Y-m-d'),
+                        'date_of_payment' => date('Y-m-d H:i:s'),
                         'payment_method_type_id' => $paymentMethodId,
                         'reference' => $request->input('payment_reference'),
                         'payment' => $paymentAmount,
