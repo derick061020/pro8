@@ -1128,8 +1128,21 @@ use Illuminate\Support\Facades\Mail;
 
         } catch (Exception $e) {
             Log::error('Error en store client', ['error' => $e->getTraceAsString()]);
-            app(HostnameRepository::class)->delete($hostname, true);
-            app(WebsiteRepository::class)->delete($website, true);
+
+            // Rollback seguro: solo borrar lo que realmente se llegó a crear.
+            // Si el website no tiene uuid/no existe, borrarlo dispara un
+            // "DROP DATABASE ``" que enmascara el error real (ej. subdominio duplicado).
+            try {
+                if ($hostname->exists) {
+                    app(HostnameRepository::class)->delete($hostname, true);
+                }
+                if ($website->exists && !empty($website->uuid)) {
+                    app(WebsiteRepository::class)->delete($website, true);
+                }
+            } catch (Exception $cleanupError) {
+                Log::error('Error limpiando tenant a medias', ['error' => $cleanupError->getMessage()]);
+            }
+
             return [
                 'success' => false,
                 'message' => $e->getMessage()
