@@ -40,13 +40,15 @@
             'size',
             'featured',
             'web_price',
+            'web_visible',
         ];
 
         protected $casts = [
-            'images'    => 'array',
-            'amenities' => 'array',
-            'featured'  => 'boolean',
-            'web_price' => 'float',
+            'images'      => 'array',
+            'amenities'   => 'array',
+            'featured'    => 'boolean',
+            'web_price'   => 'float',
+            'web_visible' => 'boolean',
         ];
 
         /**

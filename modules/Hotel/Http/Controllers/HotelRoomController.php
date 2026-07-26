@@ -128,6 +128,8 @@ class HotelRoomController extends Controller
 		$room->beds              = $request->input('beds');
 		$room->size              = $request->input('size');
 		$room->featured          = (bool) $request->input('featured', false);
+		// Visibilidad en la web (independiente de `active`). Por defecto visible.
+		$room->web_visible       = (bool) $request->input('web_visible', true);
 
 		// Precio personalizado para la web de reservas. Si se envía vacío o <= 0
 		// se guarda nulo para que la landing use el mínimo de las tarifas.
@@ -302,9 +304,19 @@ class HotelRoomController extends Controller
 	 * @param int $id
 	 * @return Response
 	 */
-	public function destroy($id)
+	public function destroy($id, Request $request)
 	{
 		try {
+			// Clave de seguridad: exigir la contraseña del usuario autenticado
+			// para poder eliminar una habitación (evita borrados accidentales).
+			$password = (string) $request->input('password', '');
+			if ($password === '' || !\Illuminate\Support\Facades\Hash::check($password, auth()->user()->password)) {
+				return response()->json([
+					'success' => false,
+					'message' => 'Contraseña incorrecta. No se eliminó la habitación.'
+				], 422);
+			}
+
 			HotelRoom::where('id', $id)
 				->delete();
 

@@ -380,18 +380,25 @@ export default {
       this.openModalRoomRates = true;
     },
     onDelete(item) {
-      this.$confirm(
-        `¿estás seguro de eliminar al elemento ${item.name}?`,
-        "Atención",
+      // Clave de seguridad: se solicita la contraseña del usuario para
+      // confirmar la eliminación de la habitación (evita borrados accidentales).
+      this.$prompt(
+        `Ingresa tu contraseña para eliminar la habitación "${item.name}".`,
+        "Confirmar eliminación",
         {
-          confirmButtonText: "Si, continuar",
-          cancelButtonText: "No, cerrar",
+          confirmButtonText: "Eliminar",
+          cancelButtonText: "Cancelar",
+          inputType: "password",
+          inputPlaceholder: "Contraseña",
           type: "warning",
+          inputValidator: (value) => (value ? true : "Debes ingresar la contraseña"),
         }
       )
-        .then(() => {
+        .then(({ value }) => {
           this.$http
-            .delete(`/hotels/rooms/${item.id}/delete`)
+            .delete(`/hotels/rooms/${item.id}/delete`, {
+              data: { password: value },
+            })
             .then((response) => {
               this.$message({
                 type: "success",
@@ -400,10 +407,16 @@ export default {
               this.items = this.items.filter((i) => i.id !== item.id);
             })
             .catch((error) => {
-              this.axiosError(error);
+              if (error.response && error.response.status === 422) {
+                this.$message.error(
+                  error.response.data.message || "Contraseña incorrecta."
+                );
+              } else {
+                this.axiosError(error);
+              }
             });
         })
-        .catch();
+        .catch(() => {});
     },
     onEdit(item) {
       this.room = { ...item };

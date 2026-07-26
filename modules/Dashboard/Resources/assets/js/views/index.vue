@@ -40,7 +40,9 @@
 
         <hr v-if="showWelcomePanel">
 
-        <div class="card mb-0 row-new bg-transparent dashboard-cards mt-0">            
+        <new-dashboard v-if="!showLegacyDashboard"></new-dashboard>
+
+        <div v-if="showLegacyDashboard" class="card mb-0 row-new bg-transparent dashboard-cards mt-0">
             <div class="row px-2" v-show="showFilters">
                 <div class="col-12">
                     <section class="card card-dashboard">
@@ -131,147 +133,154 @@
                 </div>
             </div>
 
-            <RowTop :company="company" :utilities="utilities"></RowTop>
+            <RowTop :company="company" :utilities="utilities" :filters="form"></RowTop>
 
             <div class="row mx-0 px-1">
                 <div class="col-xl-12 card-dashboard-section">
                     <div class="row">
                     <template v-if="configuration.dashboard_sales">
-                        <div class="col-12 col-sm-6 col-xl-3">
-                            <section class="card card-dashboard">
-                                <div class="card-body" v-if="loaders.sale_note">
-                                    <template >
-                                        <loader-graph :rows="4" :columns="1" :radius="50"></loader-graph>
-                                    </template>
-                                </div>
-                                <div class="card-body card-body-border-radius" v-if="!loaders.sale_note">
-                                    <div class="widget-summary">
-                                        <div class="widget-summary-col" v-if="sale_note">
-                                            <div class="row no-gutters">
-                                                <div class="col-md-12 m-b-10">
-                                                    <label>Notas de venta</label>
-                                                </div>
-                                            </div>
-                                            <div class="row">
-                                                <div class="col-md-12">
-                                                    <x-graph type="doughnut" :all-data="sale_note.graph"></x-graph>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>    
-                                    <div class="mt-3" v-show="!loaders.sale_note">
-                                        <table class="table-dashboard mb-0 table-sm">
-                                            <tbody class="card-dark">
-                                                <tr class="text-info text-bold">
-                                                    <td>Total Cobrado</td>
-                                                    <td class="text-end font-weight-bold">S/&nbsp;{{ sale_note.totals.total_payment }}</td>
-                                                </tr>
-                                                <tr class="text-danger text-bold">
-                                                    <td>Cobro pendiente</td>
-                                                    <td class="text-end font-weight-bold">S/&nbsp;{{ sale_note.totals.total_to_pay }}</td>
-                                                </tr>
-                                                <tr class="text-bold td-total">
-                                                    <td class="">Total</td>
-                                                    <td class="text-end font-weight-bold">S/&nbsp;{{ sale_note.totals.total }}</td>
-                                                </tr>
-                                            </tbody>
-                                        </table>
+                    <div class="col-12 col-md-6 col-xl-3 mb-2">
+                        <section class="card card-dashboard sn-panel">
+                            <div class="card-body" v-if="loaders.sale_note">
+                                <template >
+                                    <loader-graph :rows="4" :columns="1" :radius="50"></loader-graph>
+                                </template>
+                            </div>
+                            <div class="card-body card-body-border-radius" v-if="!loaders.sale_note">
+                                <div class="sn-head">
+                                    <div>
+                                        <h5 class="sn-title m-0">Notas de venta</h5>
+                                        <small class="text-muted">Cobros y pendientes</small>
                                     </div>
                                 </div>
-                            </section>
-                        </div>
 
-                        <div class="col-12 col-sm-6 col-xl-3" v-if="soapCompany != '03'">
-                            <section class="card card-dashboard">
-                                <div class="card-body" v-if="loaders.document">
-                                    <template >
-                                        <loader-graph :rows="4" :columns="1" :radius="50"></loader-graph>
-                                    </template>
-                                </div>
-                                <div class="card-body card-body-border-radius" v-if="!loaders.document">
-                                    <div class="widget-summary">
-                                        <div class="widget-summary-col" v-if="document">
-                                            <div class="row no-gutters">
-                                                <div class="col-md-12 m-b-10">
-                                                    <label>Comprobantes</label>
-                                                </div>
-                                            </div>
-                                            <div class="row">
-                                                <div class="col-md-12">
-                                                    <x-graph type="doughnut" :all-data="document.graph"></x-graph>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>    
-                                    <div class="mt-3" v-show="!loaders.document">
-                                        <table class="table-dashboard mb-0 table-sm">
-                                            <tbody class="card-default">
-                                                <tr class="text-info text-bold">
-                                                    <td>Total Cobrado</td>
-                                                    <td class="text-end font-weight-bold">S/&nbsp;{{ document.totals.total_payment }}</td>
-                                                </tr>
-                                                <tr class="text-danger text-bold">
-                                                    <td>Cobro pendiente</td>
-                                                    <td class="text-end font-weight-bold">S/&nbsp;{{ document.totals.total_to_pay }}</td>
-                                                </tr>
-                                                <tr class="text-bold td-total">
-                                                    <td class="">Total</td>
-                                                    <td class="text-end font-weight-bold">S/&nbsp;{{ document.totals.total }}</td>
-                                                </tr>
-                                            </tbody>
-                                        </table>
+                                <div v-if="saleNoteHasData" class="sn-body">
+                                    <div class="sn-chart">
+                                        <apexchart type="donut" height="210" :options="saleNoteChartOptions" :series="saleNoteValues"></apexchart>
                                     </div>
+                                    <ul class="sn-legend">
+                                        <li v-for="(item, index) in saleNoteLegendItems" :key="index" class="sn-legend-item">
+                                            <span class="sn-dot" :style="{ background: item.color }"></span>
+                                            <span class="sn-label text-truncate">{{ item.label }}</span>
+                                            <span class="sn-value">S/ {{ item.value | saleNoteMoney }}</span>
+                                        </li>
+                                    </ul>
                                 </div>
-                            </section>
-                        </div>
 
-                        <div class="col-xl-6 col-md-6">
-                            <section class="card card-dashboard">
-                                <div class="card-body" v-if="loaders.general">
-                                    <template >
-                                        <loader-graph :rows="2" :columns="3" :radius="100"></loader-graph>
-                                    </template>
-                                </div>
-                                <div class="card-body card-body-border-radius" v-if="!loaders.general">
-                                    <div class="widget-summary">
-                                        <div class="widget-summary-col" v-if="general">
-                                            <div class="summary">
-                                                <div class="row no-gutters">
-                                                    <div class="col-md-12 m-b-10">
-                                                        <label>Totales</label>
-                                                    </div>
-                                                </div>
-                                                <div class="row">
-                                                    <div class="col-md-12">
-                                                        <x-graph-line :all-data="general.graph"></x-graph-line>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>    
-                                    <div class="mt-3" v-show="!loaders.general">
-                                        <table class="table-dashboard mb-0 table-sm">
-                                            <tbody class="card-default">
-                                                <tr class="text-info text-bold">
-                                                    <td>Total notas de venta</td>
-                                                    <td class="text-end font-weight-bold">S/&nbsp;{{ general.totals.total_sale_notes }}</td>
-                                                </tr>
-                                                <tr class="text-danger text-bold">
-                                                    <td>Total comprobantes</td>
-                                                    <td class="text-end font-weight-bold">S/&nbsp;{{ general.totals.total_documents }}</td>
-                                                </tr>
-                                                <tr class="text-bold td-total">
-                                                    <td class="">Total</td>
-                                                    <td class="text-end font-weight-bold">S/&nbsp;{{ general.totals.total }}</td>
-                                                </tr>
-                                            </tbody>
-                                        </table>
+                                <div v-else class="sn-empty text-muted text-center">Sin notas de venta en el periodo.</div>
+                            </div>
+                        </section>
+                    </div>
+                    <div class="col-12 col-md-6 col-xl-3 mb-2" v-if="soapCompany != '03'">
+                        <section class="card card-dashboard sn-panel">
+                            <div class="card-body" v-if="loaders.document">
+                                <template >
+                                    <loader-graph :rows="4" :columns="1" :radius="50"></loader-graph>
+                                </template>
+                            </div>
+                            <div class="card-body card-body-border-radius" v-if="!loaders.document">
+                                <div class="sn-head">
+                                    <div>
+                                        <h5 class="sn-title m-0">Comprobantes</h5>
+                                        <small class="text-muted">Cobros y pendientes</small>
                                     </div>
                                 </div>
-                            </section>
+
+                                <div v-if="documentHasData" class="sn-body">
+                                    <div class="sn-chart">
+                                        <apexchart type="donut" height="210" :options="documentChartOptions" :series="documentValues"></apexchart>
+                                    </div>
+                                    <ul class="sn-legend">
+                                        <li v-for="(item, index) in documentLegendItems" :key="index" class="sn-legend-item">
+                                            <span class="sn-dot" :style="{ background: item.color }"></span>
+                                            <span class="sn-label text-truncate">{{ item.label }}</span>
+                                            <span class="sn-value">S/ {{ item.value | saleNoteMoney }}</span>
+                                        </li>
+                                    </ul>
+                                </div>
+
+                                <div v-else class="sn-empty text-muted text-center">Sin comprobantes en el periodo.</div>
+                            </div>
+                        </section>
+                    </div>
+                    <div class="col-12 col-xl-6 mb-2">
+                        <section class="card card-dashboard gt-panel">
+                            <div class="card-body" v-if="loaders.general">
+                                <template >
+                                    <loader-graph :rows="2" :columns="3" :radius="100"></loader-graph>
+                                </template>
+                            </div>
+                            <div class="card-body card-body-border-radius" v-if="!loaders.general">
+                                <div class="gt-head">
+                                    <div>
+                                        <h5 class="gt-title m-0">Totales</h5>
+                                        <small class="text-muted">Notas de venta y comprobantes</small>
+                                    </div>
+                                    <div class="gt-legend">
+                                        <span v-for="item in generalLegendItems" :key="item.label" class="gt-legend-item">
+                                            <i class="gt-dot" :style="{ background: item.color }"></i>{{ item.label }}
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <div class="gt-metrics">
+                                    <div v-for="item in generalLegendItems" :key="`metric-${item.label}`" class="gt-metric">
+                                        <small class="text-muted">{{ item.label }}</small>
+                                        <strong>S/ {{ item.value | saleNoteMoney }}</strong>
+                                    </div>
+                                </div>
+
+                                <apexchart
+                                    v-if="generalHasData"
+                                    type="area"
+                                    height="260"
+                                    :options="generalChartOptions"
+                                    :series="generalSeries"
+                                ></apexchart>
+
+                                <div v-else class="gt-empty text-muted text-center">Sin totales para graficar en el periodo.</div>
+                            </div>
+                        </section>
+                    </div>
+                    </template>
+                    <div class="col-12 mb-2" :class="{ 'col-xl-8': configuration.dashboard_goal_enabled }">
+                        <weekly-sales-chart :filters="form"></weekly-sales-chart>
+                    </div>
+                    <div v-if="configuration.dashboard_goal_enabled" class="col-12 col-xl-4 mb-2">
+                        <month-goal></month-goal>
+                    </div>
+                    <div class="col-12 col-md-6 mb-2" :class="configuration.dashboard_products ? 'col-xl-4' : 'col-xl-6'">
+                        <debtors :filters="form"></debtors>
+                    </div>
+                    <template v-if="configuration.dashboard_products">
+                        <div class="col-12 col-md-6 col-xl-4 mb-2">
+                            <div v-if="loaders.items_by_sales" class="card card-dashboard">
+                                <div class="card-body">
+                                    <loader-graph :rows="4" :columns="1" :radius="100" :hideCircle="true"></loader-graph>
+                                </div>
+                            </div>
+                            <top-products
+                                v-else
+                                :items="items_by_sales"
+                                v-model="form.enabled_move_item"
+                                @order-change="loadDataAditional"
+                            ></top-products>
                         </div>
                     </template>
-                    <template v-if="configuration.dashboard_general">
+                    <div class="col-12 col-md-6 mb-2" :class="configuration.dashboard_products ? 'col-xl-4' : 'col-xl-6'">
+                        <payment-methods :filters="form"></payment-methods>
+                    </div>
+                    <div class="col-12 col-xl-8 mb-2">
+                        <cash-flow-chart :filters="form"></cash-flow-chart>
+                    </div>
+                    <div class="col-12 col-xl-4 mb-2 d-flex flex-column">
+                        <sunat-status :filters="form"></sunat-status>
+                        <template v-if="configuration.dashboard_products">
+                            <low-stock :filters="form"></low-stock>
+                        </template>
+                    </div>
+                    
+                    <template v-if="showLegacyCards && configuration.dashboard_general">
                         <div class="col-12 col-sm-6 col-xl-3">
                             <section class="card card-dashboard">
                                 <div class="card-body" v-if="loaders.balance">
@@ -460,56 +469,7 @@
                             </section>
                         </div>
                     </template>
-                    <template v-if="configuration.dashboard_products">
-                        <div class="col-xl-3 col-md-6">
-                            <section class="card card-dashboard">
-                                <div class="card-body" v-if="loaders.items_by_sales">
-                                    <template>
-                                        <loader-graph :rows="4" :columns="1" :radius="100" :hideCircle="true"></loader-graph>
-                                    </template>
-                                </div>
-                                <div class="card-body pb-0" v-show="!loaders.items_by_sales">
-                                    <label>Ventas por producto</label>
-                                    <div class="mt-3">
-                                        <el-checkbox  v-model="form.enabled_move_item" @change="loadDataAditional">Ordenar por movimientos</el-checkbox><br>
-                                    </div>
-                                </div>
-                                <div class="card-body p-0" v-show="!loaders.items_by_sales">
-                                    <div class="table-responsive">
-                                        <table class="table">
-                                            <thead>
-                                                <tr>
-                                                    <th>#</th>
-                                                    <th>Código</th>
-                                                    <th>Nombre</th>
-                                                    <th class="text-end">
-                                                        Mov.
-                                                        <el-tooltip class="item" effect="dark" content="Movimientos (Cantidad de veces vendido)" placement="top-start"><i class="fa fa-info-circle"></i></el-tooltip>
-                                                    </th>
-                                                    <th class="text-end">Total</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                <template v-for="(row, index) in items_by_sales">
-                                                    <tr :key="index">
-                                                        <td>{{ index + 1 }}</td>
-                                                        <td>{{ row.internal_id }}</td>
-                                                        <td>{{ row.description }}</td>
-                                                        <td class="text-end">{{ row.move_quantity }}</td>
-                                                        <td class="text-end">{{ row.total }}</td>
-                                                    </tr>
-                                                </template>
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </div>
-                                <div class="card-body">
-                                    <a class="btn btn-primary btn-sm" href="dashboard/sales-by-product">Ver todo</a>
-                                </div>
-                            </section>
-                        </div>
-                    </template>
-                    <template v-if="configuration.dashboard_clients">
+                    <template v-if="showLegacyCards && configuration.dashboard_clients">
                         <div class="col-xl-3 col-md-6">
                             <section class="card card-dashboard">
                                 <div class="card-body" v-if="loaders.top_customers">
@@ -560,12 +520,7 @@
                             </section>
                         </div>
                     </template>
-                    <template v-if="configuration.dashboard_products">
-                        <div class="col-xl-6 col-md-12 col-lg-12">
-                            <dashboard-stock></dashboard-stock>
-                        </div>
-                    </template>
-                    <template v-if="configuration.dashboard_products">
+                    <template v-if="showLegacyCards && configuration.dashboard_products">
                         <div class="col-xl-6 col-md-12 col-lg-12">
                             <dashboard-inventory></dashboard-inventory>
                         </div>
@@ -589,6 +544,136 @@
     font-size: 0.9rem;
     font-weight: 500;
 }
+.sn-panel {
+  height: 100%;
+}
+.sn-head {
+  align-items: flex-start;
+  display: flex;
+  gap: 1rem;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+.sn-body {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+.sn-chart {
+  flex: 1 1 170px;
+  min-width: 160px;
+}
+.sn-legend {
+  flex: 1 1 155px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.sn-legend-item {
+  align-items: center;
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.35rem 0;
+}
+.sn-dot {
+  border-radius: 3px;
+  flex-shrink: 0;
+  height: 10px;
+  width: 10px;
+}
+.sn-label {
+  flex: 1 1 auto;
+  font-size: 0.85rem;
+  min-width: 0;
+}
+.sn-value {
+  flex-shrink: 0;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+.sn-empty {
+  padding: 2rem 0 1.5rem;
+}
+.sn-panel .apexcharts-tooltip,
+.sn-panel .apexcharts-tooltip *,
+.sn-panel .apexcharts-tooltip-title {
+  color: #fff !important;
+}
+.gt-panel {
+  height: 100%;
+}
+.gt-head {
+  align-items: flex-start;
+  display: flex;
+  gap: 1rem;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+.gt-title {
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+.gt-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.85rem;
+  justify-content: flex-end;
+}
+.gt-legend-item {
+  align-items: center;
+  color: #6b7280;
+  display: flex;
+  font-size: 0.78rem;
+  font-weight: 700;
+  gap: 0.4rem;
+}
+.gt-dot {
+  border-radius: 50%;
+  display: inline-block;
+  height: 9px;
+  width: 9px;
+}
+.gt-metrics {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-bottom: 0.75rem;
+}
+.gt-metric {
+  background: color-mix(in srgb,var(--primary) 4%,transparent);
+  border-radius: 8px;
+  padding: 0.7rem 0.8rem;
+}
+.gt-metric small {
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  margin-bottom: 0.25rem;
+  text-transform: uppercase;
+}
+.gt-metric strong {
+  display: block;
+  font-size: 0.95rem;
+  overflow-wrap: anywhere;
+}
+.gt-empty {
+  padding: 2.5rem 0;
+}
+.sn-title {
+    font-weight: 600;
+}
+@media (max-width: 767.98px) {
+  .gt-head {
+    flex-direction: column;
+  }
+  .gt-legend {
+    justify-content: flex-start;
+  }
+  .gt-metrics {
+    grid-template-columns: 1fr;
+  }
+}
 </style>
 <script>
 import DashboardStock from "./partials/dashboard_stock.vue";
@@ -596,14 +681,25 @@ import queryString from "query-string";
 import LoaderGraph from "../components/loaders/l-graph.vue";
 import RowTop from "./RowTop.vue";
 import DashboardInventory from "./partials/dashboard_inventory.vue";
+import NewDashboard from "./partials/new_dashboard/NewDashboard.vue";
+import TopProducts from "./partials/TopProducts.vue";
+import CashFlowChart from "./partials/CashFlowChart.vue";
+import LowStock from "./partials/LowStock.vue";
+import WeeklySalesChart from "./partials/WeeklySalesChart.vue";
+import PaymentMethods from "./partials/PaymentMethods.vue";
+import SunatStatus from "./partials/SunatStatus.vue";
+import Debtors from "./partials/Debtors.vue";
+import MonthGoal from "./partials/MonthGoal.vue";
 import {mapActions, mapState} from "vuex/dist/vuex.mjs";
 
 export default {
   props: ["typeUser", "soapCompany",'configuration'],
-  components: { DashboardStock, LoaderGraph, RowTop, DashboardInventory },
+  components: { DashboardStock, LoaderGraph, RowTop, DashboardInventory, NewDashboard, TopProducts, CashFlowChart, LowStock, WeeklySalesChart, PaymentMethods, SunatStatus, Debtors, MonthGoal },
   data() {
     return {
             showWelcomePanel: true,
+      showLegacyDashboard: true,
+      showLegacyCards: false,
       showFilters: false,
       loading_search: false,
       records_base: [],
@@ -659,7 +755,17 @@ export default {
       items: [],
       company: {},
       loaders: {},
-            welcomeObserver: null,
+      welcomeObserver: null,
+      dashboardThemeObserver: null,
+      dashboardThemeChangeHandler: null,
+      dashboardThemeRefreshFrame: null,
+      themeColors: {
+        primary: "#2447e8",
+        danger: "#fe006c",
+        success: "#00c666",
+        warning: "#ff8400",
+        info: "#00cfe8",
+      },
     };
   },
   async created() {
@@ -680,12 +786,14 @@ export default {
   },
     mounted() {
         this.initWelcomeVisibility();
+        this.initDashboardThemeColors();
     },
     beforeDestroy() {
         if (this.welcomeObserver) {
             this.welcomeObserver.disconnect();
             this.welcomeObserver = null;
         }
+        this.teardownDashboardThemeObserver();
     },
 
   computed: {
@@ -734,12 +842,361 @@ export default {
         4: 'col-md-3 col-12'       // 4 inputs = 25% cada uno
       };
       return colMap[count] || 'col-md-3 col-12';
+    },
+    saleNoteDataset() {
+      const graph = this.sale_note && this.sale_note.graph ? this.sale_note.graph : {};
+      const datasets = Array.isArray(graph.datasets) ? graph.datasets : [];
+      return datasets.length ? datasets[0] : {};
+    },
+    saleNoteLabels() {
+      const graph = this.sale_note && this.sale_note.graph ? this.sale_note.graph : {};
+      const labels = Array.isArray(graph.labels) ? graph.labels : [];
+      return labels.length ? labels : ["Total cobrado", "Pendiente de cobro"];
+    },
+    saleNoteValues() {
+      const data = Array.isArray(this.saleNoteDataset.data) ? this.saleNoteDataset.data : [];
+      return this.saleNoteLabels.map((label, index) => Number(data[index]) || 0);
+    },
+    saleNoteColors() {
+      return [this.themeColors.primary, this.themeColors.danger];
+    },
+    saleNoteLegendItems() {
+      const items = this.saleNoteLabels.map((label, index) => ({
+        label,
+        value: this.saleNoteValues[index] || 0,
+        color: this.saleNoteColors[index % this.saleNoteColors.length],
+      }));
+
+      items.push({
+        label: "Total",
+        value: this.saleNoteTotal,
+        color: this.themeColors.success,
+      });
+
+      return items;
+    },
+    saleNotePaid() {
+      return Number(this.sale_note && this.sale_note.totals ? this.sale_note.totals.total_payment : 0) || 0;
+    },
+    saleNotePending() {
+      return Number(this.sale_note && this.sale_note.totals ? this.sale_note.totals.total_to_pay : 0) || 0;
+    },
+    saleNoteTotal() {
+      return Number(this.sale_note && this.sale_note.totals ? this.sale_note.totals.total : 0) || 0;
+    },
+    saleNoteHasData() {
+      return this.saleNoteValues.some((value) => Number(value) > 0);
+    },
+    saleNoteChartOptions() {
+      return {
+        chart: { fontFamily: "inherit" },
+        labels: this.saleNoteLabels,
+        colors: this.saleNoteColors,
+        stroke: { width: 0 },
+        legend: { show: false },
+        dataLabels: { enabled: false },
+        plotOptions: {
+          pie: {
+            donut: {
+              size: "72%",
+              labels: {
+                show: true,
+                value: {
+                  fontSize: "18px",
+                  fontWeight: 700,
+                  formatter: (val) => "S/ " + this.formatSaleNoteK(val),
+                },
+                total: {
+                  show: true,
+                  showAlways: true,
+                  label: "TOTAL",
+                  color: "#9ca3af",
+                  fontSize: "11px",
+                  formatter: () => "S/ " + this.formatSaleNoteK(this.saleNoteTotal),
+                },
+              },
+            },
+          },
+        },
+        tooltip: {
+          y: {
+            formatter: (val) =>
+              "S/ " +
+              Number(val).toLocaleString("es-PE", {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              }),
+          },
+        },
+      };
+    },
+    documentDataset() {
+      const graph = this.document && this.document.graph ? this.document.graph : {};
+      const datasets = Array.isArray(graph.datasets) ? graph.datasets : [];
+      return datasets.length ? datasets[0] : {};
+    },
+    documentLabels() {
+      const graph = this.document && this.document.graph ? this.document.graph : {};
+      const labels = Array.isArray(graph.labels) ? graph.labels : [];
+      return labels.length ? labels : ["Total cobrado", "Pendiente de cobro"];
+    },
+    documentValues() {
+      const data = Array.isArray(this.documentDataset.data) ? this.documentDataset.data : [];
+      return this.documentLabels.map((label, index) => Number(data[index]) || 0);
+    },
+    documentColors() {
+      return [this.themeColors.primary, this.themeColors.danger];
+    },
+    documentLegendItems() {
+      const items = this.documentLabels.map((label, index) => ({
+        label,
+        value: this.documentValues[index] || 0,
+        color: this.documentColors[index % this.documentColors.length],
+      }));
+
+      items.push({
+        label: "Total",
+        value: this.documentTotal,
+        color: this.themeColors.success,
+      });
+
+      return items;
+    },
+    documentPaid() {
+      return Number(this.document && this.document.totals ? this.document.totals.total_payment : 0) || 0;
+    },
+    documentPending() {
+      return Number(this.document && this.document.totals ? this.document.totals.total_to_pay : 0) || 0;
+    },
+    documentTotal() {
+      return Number(this.document && this.document.totals ? this.document.totals.total : 0) || 0;
+    },
+    documentHasData() {
+      return this.documentValues.some((value) => Number(value) > 0);
+    },
+    documentChartOptions() {
+      return {
+        chart: { fontFamily: "inherit" },
+        labels: this.documentLabels,
+        colors: this.documentColors,
+        stroke: { width: 0 },
+        legend: { show: false },
+        dataLabels: { enabled: false },
+        plotOptions: {
+          pie: {
+            donut: {
+              size: "72%",
+              labels: {
+                show: true,
+                value: {
+                  fontSize: "18px",
+                  fontWeight: 700,
+                  formatter: (val) => "S/ " + this.formatSaleNoteK(val),
+                },
+                total: {
+                  show: true,
+                  showAlways: true,
+                  label: "TOTAL",
+                  color: "#9ca3af",
+                  fontSize: "11px",
+                  formatter: () => "S/ " + this.formatSaleNoteK(this.documentTotal),
+                },
+              },
+            },
+          },
+        },
+        tooltip: {
+          y: {
+            formatter: (val) =>
+              "S/ " +
+              Number(val).toLocaleString("es-PE", {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              }),
+          },
+        },
+      };
+    },
+    generalDatasets() {
+      const graph = this.general && this.general.graph ? this.general.graph : {};
+      return Array.isArray(graph.datasets) ? graph.datasets : [];
+    },
+    generalLabels() {
+      const graph = this.general && this.general.graph ? this.general.graph : {};
+      const labels = Array.isArray(graph.labels) ? graph.labels : [];
+      return labels;
+    },
+    generalFormattedLabels() {
+      return this.generalLabels.map((label, index) => this.formatGeneralChartLabel(label, index));
+    },
+    generalColors() {
+      return this.generalDatasets.map((dataset, index) => {
+        const label = (dataset.label || "").toLowerCase();
+        if (label.includes("nota")) return this.themeColors.danger;
+        if (label.includes("comprobante")) return this.themeColors.primary;
+        if (label.includes("total")) return this.themeColors.success;
+
+        const fallback = [this.themeColors.danger, this.themeColors.primary, this.themeColors.success];
+        return fallback[index % fallback.length];
+      });
+    },
+    generalSeries() {
+      return this.generalDatasets.map((dataset) => ({
+        name: dataset.label || "Total",
+        data: Array.isArray(dataset.data) ? dataset.data.map((value) => Number(value) || 0) : [],
+      }));
+    },
+    generalLegendItems() {
+      return [
+        {
+          label: "Notas de venta",
+          value: this.generalSaleNotesTotal,
+          color: this.generalColors[0] || this.themeColors.danger,
+        },
+        {
+          label: "Comprobantes",
+          value: this.generalDocumentsTotal,
+          color: this.generalColors[1] || this.themeColors.primary,
+        },
+        {
+          label: "Total",
+          value: this.generalTotal,
+          color: this.themeColors.success,
+        },
+      ];
+    },
+    generalSaleNotesTotal() {
+      return Number(this.general && this.general.totals ? this.general.totals.total_sale_notes : 0) || 0;
+    },
+    generalDocumentsTotal() {
+      return Number(this.general && this.general.totals ? this.general.totals.total_documents : 0) || 0;
+    },
+    generalTotal() {
+      return Number(this.general && this.general.totals ? this.general.totals.total : 0) || 0;
+    },
+    generalHasData() {
+      return this.generalSeries.some((serie) => serie.data.some((value) => Number(value) > 0));
+    },
+    generalChartOptions() {
+      return {
+        chart: { toolbar: { show: false }, fontFamily: "inherit", zoom: { enabled: false } },
+        colors: this.generalColors,
+        stroke: { curve: "smooth", width: 2 },
+        fill: {
+          type: "gradient",
+          gradient: { opacityFrom: 0.18, opacityTo: 0, stops: [0, 100] },
+        },
+        dataLabels: { enabled: false },
+        legend: { show: false },
+        grid: { borderColor: "#eef0f3", strokeDashArray: 4, padding: { left: 8, right: 8 } },
+        markers: { size: 0, hover: { size: 5 } },
+        xaxis: {
+          categories: this.generalFormattedLabels,
+          axisBorder: { show: false },
+          axisTicks: { show: false },
+          labels: { style: { colors: "#9ca3af", fontSize: "12px" } },
+        },
+        yaxis: {
+          labels: {
+            style: { colors: "#9ca3af", fontSize: "12px" },
+            formatter: (val) => this.formatSaleNoteK(val),
+          },
+        },
+        tooltip: {
+          y: {
+            formatter: (val) =>
+              "S/ " +
+              Number(val).toLocaleString("es-PE", {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              }),
+          },
+        },
+      };
     }
   },
   methods: {
     ...mapActions([
             'loadConfiguration',
         ]),
+        initDashboardThemeColors() {
+            this.refreshDashboardThemeColors();
+            this.setupDashboardThemeObserver();
+        },
+        getDashboardCssColor(names, fallback) {
+            const styles = getComputedStyle(document.documentElement);
+            const colorNames = Array.isArray(names) ? names : [names];
+
+            for (const name of colorNames) {
+                const value = styles.getPropertyValue(name).trim();
+                if (value) {
+                    return value;
+                }
+            }
+
+            return fallback;
+        },
+        refreshDashboardThemeColors() {
+            this.themeColors = {
+                primary: this.getDashboardCssColor(['--primary', '--primary-color'], this.themeColors.primary),
+                danger: this.getDashboardCssColor('--danger', this.themeColors.danger),
+                success: this.getDashboardCssColor('--success', this.themeColors.success),
+                warning: this.getDashboardCssColor('--warning', this.themeColors.warning),
+                info: this.getDashboardCssColor('--info', this.themeColors.info),
+            };
+        },
+        scheduleDashboardThemeRefresh() {
+            if (this.dashboardThemeRefreshFrame) {
+                window.cancelAnimationFrame(this.dashboardThemeRefreshFrame);
+            }
+
+            this.dashboardThemeRefreshFrame = window.requestAnimationFrame(() => {
+                this.dashboardThemeRefreshFrame = null;
+                this.refreshDashboardThemeColors();
+            });
+        },
+        setupDashboardThemeObserver() {
+            this.teardownDashboardThemeObserver();
+
+            this.dashboardThemeChangeHandler = () => {
+                this.scheduleDashboardThemeRefresh();
+            };
+
+            window.addEventListener('theme:change', this.dashboardThemeChangeHandler);
+
+            if (typeof MutationObserver !== 'undefined') {
+                this.dashboardThemeObserver = new MutationObserver(() => {
+                    this.scheduleDashboardThemeRefresh();
+                });
+
+                this.dashboardThemeObserver.observe(document.head, {
+                    childList: true,
+                    subtree: true,
+                    characterData: true,
+                });
+
+                this.dashboardThemeObserver.observe(document.documentElement, {
+                    attributes: true,
+                    attributeFilter: ['class', 'style'],
+                });
+            }
+        },
+        teardownDashboardThemeObserver() {
+            if (this.dashboardThemeObserver) {
+                this.dashboardThemeObserver.disconnect();
+                this.dashboardThemeObserver = null;
+            }
+
+            if (this.dashboardThemeChangeHandler) {
+                window.removeEventListener('theme:change', this.dashboardThemeChangeHandler);
+                this.dashboardThemeChangeHandler = null;
+            }
+
+            if (this.dashboardThemeRefreshFrame) {
+                window.cancelAnimationFrame(this.dashboardThemeRefreshFrame);
+                this.dashboardThemeRefreshFrame = null;
+            }
+        },
         initWelcomeVisibility() {
             this.showWelcomePanel = this.isWelcomeVisible();
 
@@ -949,6 +1406,50 @@ export default {
       this.loaders.purchase = false;
       this.loaders.items_by_sales = false;
       this.loaders.top_customers = false;
+    },
+    formatSaleNoteK(val) {
+      const num = Number(val) || 0;
+      if (Math.abs(num) >= 1000000) return (num / 1000000).toFixed(1).replace(/\.0$/, "") + "M";
+      if (Math.abs(num) >= 1000) return (num / 1000).toFixed(1).replace(/\.0$/, "") + "K";
+      return num.toFixed(0);
+    },
+    formatGeneralChartLabel(label, index) {
+      const value = String(label || "");
+
+      if (moment(value, "YYYY-MM-DD", true).isValid()) {
+        return moment(value, "YYYY-MM-DD").format("DD/MM");
+      }
+
+      if (/^\d{1,2}d$/.test(value)) {
+        const startDate = this.getGeneralChartStartDate();
+
+        if (startDate && startDate.isValid()) {
+          return startDate.clone().add(index, "days").format("DD/MM");
+        }
+
+        return value.replace("d", "");
+      }
+
+      return value;
+    },
+    getGeneralChartStartDate() {
+      if (["last_week", "date", "between_dates"].includes(this.form.period) && this.form.date_start) {
+        return moment(this.form.date_start, "YYYY-MM-DD", true);
+      }
+
+      if (["month", "between_months"].includes(this.form.period) && this.form.month_start) {
+        return moment(this.form.month_start, "YYYY-MM", true).startOf("month");
+      }
+
+      return null;
+    },
+  },
+  filters: {
+    saleNoteMoney(value) {
+      return (Number(value) || 0).toLocaleString("es-PE", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      });
     },
   },
 };

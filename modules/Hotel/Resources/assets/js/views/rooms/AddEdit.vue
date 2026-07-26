@@ -164,11 +164,17 @@
           <small class="text-muted">La primera imagen se usa como principal en las tarjetas de la web.</small>
         </div>
 
-        <div class="col-6 form-group">
+        <div class="col-4 form-group">
           <label class="d-block">Mostrar habitación</label>
           <el-switch v-model="form.active"></el-switch>
+          <small class="d-block text-muted">Desactiva la habitación en todo el sistema.</small>
         </div>
-        <div class="col-6 form-group">
+        <div class="col-4 form-group">
+          <label class="d-block">Visible en la web</label>
+          <el-switch v-model="form.web_visible"></el-switch>
+          <small class="d-block text-muted">Oculta la habitación solo en la web de reservas.</small>
+        </div>
+        <div class="col-4 form-group">
           <label class="d-block">Destacar en la web</label>
           <el-switch v-model="form.featured"></el-switch>
         </div>
@@ -394,6 +400,7 @@ export default {
         this.form = {
           ...this.room,
           featured: !!this.room.featured,
+          web_visible: this.room.web_visible === undefined ? true : !!this.room.web_visible,
           capacity: this.room.capacity || undefined,
           size: this.room.size || undefined,
           web_price: this.room.web_price ? Number(this.room.web_price) : undefined,
@@ -406,6 +413,7 @@ export default {
         this.form = {
           active: true,
           featured: false,
+          web_visible: true,
           establishment_id: this.establishmentId,
           amenities: [],
           images: [],

@@ -36,6 +36,7 @@ class HotelRoomRequest extends FormRequest
             'beds'              => 'nullable|string|max:100',
             'size'              => 'nullable|integer|min:1|max:9999',
             'featured'          => 'nullable|boolean',
+            'web_visible'       => 'nullable|boolean',
             'amenities'         => 'nullable|array',
             'amenities.*'       => 'nullable|string|max:80',
             'images'            => 'nullable|array',

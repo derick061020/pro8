@@ -291,6 +291,13 @@ export default {
         table: {
           contentToolbar: ["tableColumn", "tableRow", "mergeTableCells"],
         },
+        // Config de enlaces: si el usuario escribe una URL sin protocolo
+        // (ej. "www.sitio.com") se le antepone https:// para que el enlace
+        // funcione, y los enlaces externos abren en pestaña nueva.
+        link: {
+          addTargetToExternalLinks: true,
+          defaultProtocol: "https://",
+        },
       },
     };
   },
@@ -656,5 +663,26 @@ export default {
 .blog-preview__content :deep(table th) {
   border: 1px solid #dbe2e6;
   padding: 8px 10px;
+}
+</style>
+
+<!--
+  Estilos GLOBALES (no scoped): los "balloons"/desplegables de CKEditor 5
+  (formulario de enlace/URL, selector de encabezados, tablas, caracteres, etc.)
+  se montan en <body>, fuera del componente. Por defecto tienen un z-index
+  (~1000) MENOR que el del el-dialog de Element UI (~2001), por lo que quedaban
+  OCULTOS detrás del modal y parecía que "no funcionaban" (no se podía escribir
+  la URL de un enlace ni usar los desplegables). Elevamos su z-index por encima
+  del diálogo para que sean utilizables.
+-->
+<style>
+:root {
+  --ck-z-default: 100;
+  --ck-z-modal: 20000;
+}
+.ck.ck-balloon-panel,
+.ck.ck-dropdown__panel,
+.ck-body-wrapper .ck.ck-balloon-panel {
+  z-index: 20000 !important;
 }
 </style>

@@ -522,7 +522,7 @@ class HotelLandingController extends Controller
         try {
             $room = HotelRoom::with('category', 'rates.rate')->find($request->room);
 
-            if (!$room || !$room->active) {
+            if (!$room || !$room->active || !$room->web_visible) {
                 DB::connection('tenant')->rollBack();
                 return $this->alert('danger', 'La habitación seleccionada no está disponible.');
             }
@@ -876,6 +876,9 @@ class HotelLandingController extends Controller
     {
         return HotelRoom::with('category', 'floor', 'rates.rate')
             ->where('active', true)
+            // Ocultar habitaciones marcadas como NO visibles en la web. Se
+            // mantienen activas y operativas en el sistema (recepción, etc.).
+            ->where('web_visible', true)
             ->when($establishmentId, fn ($q) => $q->where('establishment_id', $establishmentId))
             ->orderBy('name')
             ->get()
