@@ -979,6 +979,18 @@ class HotelRentController extends Controller
     $rent = HotelRent::with('room', 'room.category', 'items')
       ->findOrFail($rentId);
 
+    // Reconciliar el estado de pago de los items con lo realmente pagado antes
+    // de mostrar el checkout. Sin esto, una reserva pagada por adelantado (o
+    // pagada al reservar por la web) abría el checkout con los items todavía en
+    // DEBT y se veía como "falta pagar" aunque ya estuviera pagada. Es
+    // idempotente: solo marca PAID lo que el crédito disponible cubre.
+    try {
+        $this->applyAdvanceCreditToDebtItems($rent);
+        $rent->refresh();
+    } catch (\Throwable $th) {
+        // No bloquear la carga del checkout si la reconciliación falla.
+    }
+
 	$items = HotelRentItem::select(
 			'hotel_rent_items.*',
 			DB::raw("COALESCE(
@@ -1558,10 +1570,127 @@ class HotelRentController extends Controller
                 ->get();
 
             if ($openHabItems->isEmpty()) {
+                // === Cambio de habitación cuando la estadía YA tiene comprobantes ===
+                // Todos los items HAB están facturados (document_id / sale_note_id),
+                // así que no hay nada "abierto" que cerrar/dividir. Antes esto
+                // abortaba con "No se encontró un item de habitación abierto para
+                // cerrar". Ahora se permite el cambio: las noches ya facturadas
+                // quedan en la habitación anterior y las noches RESTANTES (desde la
+                // fecha del cambio) se cobran en la nueva habitación como un item
+                // nuevo en DEBT, con su propia tarifa → aparece como una segunda
+                // línea con el precio diferente (igual que en la pro7).
+                $oldRentalPrice = (float) $rent->rental_price;
+                $totalDuration  = max(1, (int) ($rent->duration ?? 0));
+
+                [$consumed, $remaining, $unitLabel] = $this->calculateRoomChangeSplit(
+                    $period,
+                    $inputAt,
+                    $changeAt,
+                    $totalDuration
+                );
+
+                // JSON base tomado del último HAB (aunque esté facturado) para
+                // preservar la estructura de IGV/charges en el nuevo item.
+                $allHab  = $rent->items()->where('type', 'HAB')->orderBy('id')->get();
+                $lastHab = $allHab->last();
+                $baseJsonForNew = $lastHab && is_object($lastHab->item)
+                    ? (array) $lastHab->item
+                    : ($lastHab->item ?? []);
+                if (!is_array($baseJsonForNew)) $baseJsonForNew = [];
+
+                $newItemRecord  = Item::find($newRoom->item_id);
+                $newTotal       = round($newUnitPrice * $remaining, 4);
+                $newDescription = sprintf(
+                    'Estadía en %s - %d %s (%s → %s)',
+                    $newRoom->name,
+                    $remaining,
+                    $unitLabel,
+                    $changeAt->format('d/m/Y H:i'),
+                    $outputAt->format('d/m/Y H:i')
+                );
+
+                $newItemJson = $this->rewriteHotelItemForRoom(
+                    $baseJsonForNew,
+                    $newItemRecord,
+                    $newRoom,
+                    $newDescription,
+                    $newUnitPrice,
+                    $remaining,
+                    $newTotal
+                );
+
+                $newItem = HotelRentItem::create([
+                    'type'                => 'HAB',
+                    'hotel_rent_id'       => $rent->id,
+                    'item_id'             => $newRoom->item_id,
+                    'item'                => $newItemJson,
+                    'payment_status'      => 'DEBT',
+                    'hotel_rent_order_id' => null,
+                    'quantity'            => $remaining,
+                    'unit_price'          => $newUnitPrice,
+                    'total'               => $newTotal,
+                    'description'         => $newDescription,
+                ]);
+
+                // Actualizar alquiler y estados de habitaciones.
+                $rent->hotel_room_id = $newRoom->id;
+                $rent->hotel_rate_id = $newRateId;
+                $rent->rental_price  = $newUnitPrice;
+                $rent->save();
+
+                $oldRoom->status = 'LIMPIEZA';
+                $oldRoom->save();
+                $newRoom->status = 'OCUPADO';
+                $newRoom->save();
+
+                // Aplicar crédito disponible (saldo a favor) a la nueva deuda.
+                $this->applyAdvanceCreditToDebtItems($rent);
+
+                HotelRentChange::create([
+                    'hotel_rent_id'    => $rent->id,
+                    'change_type'      => 'ROOM_CHANGE',
+                    'old_values'       => [
+                        'hotel_room_id' => $oldRoom->id,
+                        'room_name'     => $oldRoom->name,
+                        'hotel_rate_id' => $oldHotelRateId,
+                        'unit_price'    => $oldRentalPrice,
+                        'item_id'       => $lastHab->id ?? null,
+                        'invoiced'      => true,
+                    ],
+                    'new_values'       => [
+                        'hotel_room_id' => $newRoom->id,
+                        'room_name'     => $newRoom->name,
+                        'hotel_rate_id' => (int) $newRateId,
+                        'unit_price'    => $newUnitPrice,
+                        'item_id'       => $newItem->id,
+                        'consumed'      => $consumed,
+                        'remaining'     => $remaining,
+                        'unit'          => $unitLabel,
+                        'changed_at'    => $changeAt->toDateTimeString(),
+                    ],
+                    'notes'            => "Cambio de habitación (con comprobante): {$oldRoom->name} → {$newRoom->name}",
+                    'price_difference' => $newTotal,
+                    'user_id'          => auth()->id(),
+                ]);
+
+                DB::connection('tenant')->commit();
+
+                $rent->load(['room', 'customer', 'items']);
+
                 return response()->json([
-                    'success' => false,
-                    'message' => 'No se encontró un item de habitación abierto para cerrar.'
-                ], 400);
+                    'success' => true,
+                    'message' => 'Habitación cambiada. Las noches ya facturadas quedan en la habitación anterior; las restantes se cobran en la nueva habitación.',
+                    'data'    => [
+                        'rent'             => $rent,
+                        'old_room'         => $oldRoom->name,
+                        'new_room'         => $newRoom->name,
+                        'consumed'         => $consumed,
+                        'remaining'        => $remaining,
+                        'unit'             => $unitLabel,
+                        'new_item_id'      => $newItem->id,
+                        'price_difference' => $newTotal,
+                    ],
+                ], 200);
             }
 
             // Resuelve la cantidad real de noches de un item. OJO: los items

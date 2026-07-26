@@ -41,12 +41,12 @@
                 v-model="form.duration"
                 controls-position="right"
                 @change="updateDuration"
-                :min="1"
+                :min="0"
                 style="width: 100%"
               ></el-input-number>
               <small class="form-control-feedback" v-if="errors.duration" v-text="errors.duration[0]"></small>
             </div>
-            
+
             <div class="col-12 col-md-4 form-group" :class="{ 'has-danger': errors.output_date }">
               <label class="control-label">Fecha de salida</label>
               <el-date-picker
@@ -55,7 +55,8 @@
                 placeholder="Seleccione una fecha"
                 value-format="yyyy-MM-dd"
                 format="dd-MM-yyyy"
-                readonly
+                :picker-options="outputDatePickerOptions"
+                @change="onOutputDateChange"
                 style="width: 100%"
               ></el-date-picker>
               <small class="form-control-feedback" v-if="errors.output_date" v-text="errors.output_date[0]"></small>
@@ -309,6 +310,19 @@ export default {
       const ext = this.extensionTotalNumber;
       const paid = parseFloat(this.savedPaymentsTotal) || 0;
       return Math.max(0, consumed + ext - paid);
+    },
+    outputDatePickerOptions() {
+      // Permitir seleccionar la fecha de salida desde el día de ENTRADA en
+      // adelante (incluye el mismo día). Antes el campo estaba readonly y no se
+      // podía extender para el mismo día, como sí permitía la pro7.
+      const inputDate = this.room?.rent?.input_date;
+      return {
+        disabledDate: (date) => {
+          if (!inputDate) return false;
+          const start = moment(inputDate, 'YYYY-MM-DD').startOf('day');
+          return moment(date).isBefore(start, 'day');
+        },
+      };
     }
   },
   methods: {
@@ -524,6 +538,33 @@ export default {
       // Actualizar el item (clon) con la nueva duración. No volvemos a llamar a
       // getItem() aquí: reclonaría desde room.rent.items y reiniciaría
       // price_per_day, descartando la tarifa que el usuario haya seleccionado.
+      this.updateItemWithNewDuration();
+    },
+    onOutputDateChange(value) {
+      // El usuario elige la fecha de salida directamente. Derivamos la cantidad
+      // de períodos ADICIONALES respecto a la salida actual del alquiler. Puede
+      // ser 0 (extensión el mismo día de la salida actual) y nunca negativa.
+      if (!value) return;
+      const period = this.periodType;
+      const unit = period === 'hour' ? 'hours' : (period === 'month' ? 'months' : 'days');
+
+      const currentOut = moment(
+        `${this.room.rent.output_date} ${this.room.rent.output_time || '12:00'}`,
+        'YYYY-MM-DD HH:mm'
+      );
+      const newOut = moment(
+        `${value} ${this.form.output_time || this.room.rent.output_time || '12:00'}`,
+        'YYYY-MM-DD HH:mm'
+      );
+
+      let additional = period === 'hour'
+        ? Math.round(newOut.diff(currentOut, 'hours', true))
+        : Math.ceil(newOut.diff(currentOut, 'days', true));
+
+      if (!Number.isFinite(additional) || additional < 0) additional = 0;
+
+      this.form.duration = additional;
+      this.recalcExtensionTotal();
       this.updateItemWithNewDuration();
     },
     updateItemWithNewDuration() {
