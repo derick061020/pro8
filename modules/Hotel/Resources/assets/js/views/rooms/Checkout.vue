@@ -1445,6 +1445,7 @@ export default {
             form_cash_document: {},
             showDialogSaleNoteOptions: false,
             showInvoicesHistoryModal: false,
+            reopenInvoicesHistory: false,
             invoicesHistory: [],
             loadingInvoicesHistory: false,
             showDialogExtendStay: false,
@@ -1613,6 +1614,20 @@ export default {
                 const total = parseFloat(this.room.item.total) + parseFloat(value);
                 this.total = total;
                 this.onCalculatePaidAndDebts();
+            }
+        },
+        // Al cerrar el modal de opciones abierto desde el historial de
+        // comprobantes se devuelve al usuario al historial.
+        showDialogDocumentOptions(value) {
+            if (!value && this.reopenInvoicesHistory) {
+                this.reopenInvoicesHistory = false;
+                this.showInvoicesHistoryModal = true;
+            }
+        },
+        showDialogSaleNoteOptions(value) {
+            if (!value && this.reopenInvoicesHistory) {
+                this.reopenInvoicesHistory = false;
+                this.showInvoicesHistoryModal = true;
             }
         },
     },
@@ -2585,13 +2600,21 @@ export default {
             this.showInvoicesHistoryModal = true;
         },
         printInvoice(invoice) {
-            // Las notas de venta usan su ruta dedicada (/sale-notes/print/...).
-            // Para documentos (boletas/facturas) la ruta correcta es la genérica
-            // /print/{model}/{external_id}/{format} expuesta por DownloadController.
-            const url = invoice.type === 'sale_note'
-                ? `/sale-notes/print/${invoice.external_id}/a4`
-                : `/print/document/${invoice.external_id}/a4`;
-            window.open(url, '_blank');
+            // Se reutiliza el mismo modal de opciones que aparece al generar el
+            // comprobante (formatos A4/A5/tickets, envío por correo/WhatsApp) en
+            // lugar de abrir directamente el PDF. Ambos componentes cargan el
+            // registro por `recordId` al abrirse (@open="create").
+            this.documentNewId = invoice.id;
+            // Se cierra el historial para evitar dos diálogos superpuestos; se
+            // reabre al cerrar el de opciones (ver watchers).
+            this.reopenInvoicesHistory = true;
+            this.showInvoicesHistoryModal = false;
+
+            if (invoice.type === 'sale_note') {
+                this.showDialogSaleNoteOptions = true;
+            } else {
+                this.showDialogDocumentOptions = true;
+            }
         },
         onUpdateItemsWithExtras() {
             this.document.items = this.document.items.map((it) => {
