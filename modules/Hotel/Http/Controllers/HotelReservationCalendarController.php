@@ -802,6 +802,13 @@ class HotelReservationCalendarController extends Controller
             'output_date'        => 'nullable|date_format:Y-m-d',
             'output_time'        => 'nullable|date_format:H:i',
             'status'             => 'nullable|string|max:30',
+            // Estado de pago editable desde el formulario de la reserva.
+            'payment_status'                      => 'nullable|string|max:20',
+            'rent_payment'                        => 'nullable|array',
+            'rent_payment.payment'                => 'nullable|numeric|min:0',
+            'rent_payment.payment_method_type_id' => 'nullable|string|max:5',
+            'rent_payment.payment_destination_id' => 'nullable|string|max:50',
+            'rent_payment.reference'              => 'nullable|string|max:255',
         ]);
 
         DB::connection('tenant')->beginTransaction();
@@ -909,6 +916,15 @@ class HotelReservationCalendarController extends Controller
             // Sincronizar el item HAB asociado (si es seguro hacerlo) para que
             // el checkout/factura refleje los nuevos datos de la reserva.
             $this->syncReservationHabItem($rent);
+
+            // Aplicar el estado de pago elegido en el formulario. Va DESPUÉS de
+            // sincronizar el item para que el monto a cobrar use el total ya
+            // actualizado (tarifa/noches nuevas).
+            $this->applyReservationPaymentUpdate(
+                $rent,
+                $validated['payment_status'] ?? null,
+                $validated['rent_payment'] ?? []
+            );
 
             DB::connection('tenant')->commit();
 
@@ -1109,13 +1125,129 @@ class HotelReservationCalendarController extends Controller
         // se registró un adelanto (item en DEBT con un monto parcial abonado).
         if (in_array($item->payment_status, ['PAID', 'DEBT'], true)
             && ($rentPayment['payment'] ?? 0) > 0) {
-            $item->payments()->create([
+            $payment = $item->payments()->create([
                 'date_of_payment' => date('Y-m-d'),
                 'payment_method_type_id' => $rentPayment['payment_method_type_id'],
                 'reference' => $rentPayment['reference'] ?? null,
                 'payment' => $rentPayment['payment'],
             ]);
+
+            $this->linkReservationPaymentToOpenCash($payment, $rentPayment['payment_destination_id'] ?? null);
         }
+    }
+
+    /**
+     * Aplica el estado de pago elegido al editar la reserva.
+     *
+     * Antes el formulario permitía marcar la reserva como "Pagado", pero el
+     * update no registraba nada: la reserva seguía sin pagos y por eso la barra
+     * del calendario conservaba su color (el color sale de la deuda real,
+     * ver computeReservationPayment). Ahora:
+     *   - PAID    → se registra el saldo pendiente completo y los items quedan PAID.
+     *   - ADVANCE → se registra el monto indicado (pago parcial); sigue en DEBT.
+     *   - DEBT / otros → no se toca nada: un pago ya registrado no se revierte
+     *     desde aquí (para eso está la reversión de pagos del checkout).
+     */
+    private function applyReservationPaymentUpdate(HotelRent $rent, $paymentStatus, $rentPayment = [])
+    {
+        $paymentStatus = $paymentStatus ? strtoupper(trim($paymentStatus)) : null;
+
+        if (!in_array($paymentStatus, ['PAID', 'ADVANCE'], true)) {
+            return;
+        }
+
+        $rentPayment = is_array($rentPayment) ? $rentPayment : [];
+
+        $rent->load('items');
+        $debt = (float) $this->computeReservationPayment($rent)['debt'];
+
+        // Ya está saldada: solo reconciliar el estado de los items para que el
+        // calendario y el checkout la muestren como pagada.
+        if ($debt <= 0.009) {
+            if ($paymentStatus === 'PAID') {
+                $this->markReservationAsPaid($rent);
+            }
+            return;
+        }
+
+        $amount = $paymentStatus === 'PAID'
+            ? $debt
+            : round((float) ($rentPayment['payment'] ?? 0), 2);
+
+        if ($amount <= 0) {
+            return;
+        }
+
+        $amount = min($amount, $debt);
+
+        // El pago se cuelga del item de habitación vigente (el más reciente).
+        $item = $rent->items()->where('type', 'HAB')->orderBy('id', 'desc')->first()
+            ?: $rent->items()->where('type', '!=', 'PAY')->orderBy('id', 'desc')->first();
+
+        if (!$item) {
+            return;
+        }
+
+        $payment = $item->payments()->create([
+            'date_of_payment'        => date('Y-m-d'),
+            'payment_method_type_id' => $rentPayment['payment_method_type_id'] ?? '01',
+            'reference'              => $rentPayment['reference'] ?? null,
+            'payment'                => $amount,
+        ]);
+
+        $this->linkReservationPaymentToOpenCash($payment, $rentPayment['payment_destination_id'] ?? null);
+
+        if ($paymentStatus === 'PAID') {
+            $this->markReservationAsPaid($rent);
+        }
+    }
+
+    /**
+     * Marca la reserva y sus cargos como pagados.
+     */
+    private function markReservationAsPaid(HotelRent $rent)
+    {
+        HotelRentItem::where('hotel_rent_id', $rent->id)
+            ->where('type', '!=', 'PAY')
+            ->where('payment_status', '!=', 'PAID')
+            ->update(['payment_status' => 'PAID']);
+
+        $rent->payment_status = 'PAID';
+        $rent->save();
+    }
+
+    /**
+     * Registra el pago de la reserva en la caja abierta.
+     *
+     * La caja suma los pagos de hotel por su `global_payment`
+     * (ver Cash::getHotelRentIncome), así que un pago sin este enlace nunca
+     * aparece en caja chica. Mismo criterio que
+     * HotelRentController::linkRentPaymentToOpenCash.
+     */
+    private function linkReservationPaymentToOpenCash(HotelRentItemPayment $payment, $paymentDestinationId = null)
+    {
+        if (empty($paymentDestinationId)) {
+            $paymentDestinationId = 'cash';
+        }
+
+        // Sin caja abierta no se registra el movimiento, pero tampoco se
+        // interrumpe la operación de la reserva.
+        if ($paymentDestinationId === 'cash') {
+            $cash = $this->getCash();
+            if (!$cash || empty($cash['cash_id'])) {
+                return;
+            }
+        }
+
+        // Evitar duplicar el pago global al reprocesar.
+        $payment->load('global_payment');
+        if ($payment->global_payment) {
+            $payment->global_payment()->delete();
+        }
+
+        $this->createGlobalPayment($payment, [
+            'payment_destination_id' => $paymentDestinationId,
+        ]);
     }
 
     /**

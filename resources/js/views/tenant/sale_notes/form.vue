@@ -2015,6 +2015,16 @@
 </template>
 
 <style>
+/* La cabecera de la tabla de pagos heredaba el fondo blanco del tema (viene de
+   la hoja del theme, no de este componente) y cortaba el fondo de la sección de
+   pagos. Se deja sin fondo; el box-shadow cubre el "accent" de Bootstrap 5, que
+   pinta la celda con inset box-shadow en vez de background-color. */
+.table-responsive.payment table thead,
+.table-responsive.payment table thead tr,
+.table-responsive.payment table thead th {
+    background: none !important;
+    box-shadow: none !important;
+}
 .el-upload-list__item {
     max-width: 150px;
 }
