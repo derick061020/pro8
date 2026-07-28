@@ -18,6 +18,14 @@
                     >
                         <i class="fa fa-arrow-left"></i> Atras
                     </button>
+                    <button
+                        class="btn btn-primary btn-sm mt-2 me-2"
+                        type="button"
+                        title="Agregar productos a la habitación"
+                        @click="onGoToAddProducts"
+                    >
+                        <i class="fa fa-plus"></i> Agregar Producto
+                    </button>
                 </div>
             </div>
         </div>
@@ -2879,6 +2887,11 @@ export default {
         },
         onGotoBack() {
             window.location.href = "/hotels/reception";
+        },
+        // Agregar productos sin perder el contexto: `return=checkout` hace que
+        // la pantalla de productos vuelva aquí al guardar o cancelar.
+        onGoToAddProducts() {
+            window.location.href = `/hotels/reception/${this.currentRent.id}/rent/products?return=checkout`;
         },
         clickCancel(index) {
             this.document.payments.splice(index, 1);

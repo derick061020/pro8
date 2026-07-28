@@ -95,6 +95,7 @@ if ($hostname) {
             Route::post('/{id}/rent/finalized', 'HotelRentController@finalizeRent');
             Route::post('/{id}/rent/mark-items-invoiced', 'HotelRentController@markItemsInvoiced');
             Route::get('/{id}/rent/invoices-history', 'HotelRentController@invoicesHistory');
+            Route::post('/{id}/rent/sale-note', 'HotelRentController@generateSaleNoteFromRent');
             Route::post('/{id}/rent/extend-stay', 'HotelRentController@extendStay');
             Route::post('/{id}/rent/save-payment', 'HotelRentController@savePayment');
             Route::post('/{id}/reverse-payment', 'HotelRentController@reversePayment');

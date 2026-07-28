@@ -405,6 +405,12 @@
             <div slot="footer" class="rcal-modal-footer">
                 <template v-if="!editing">
                     <el-button size="small" @click="showDetail = false">Cerrar</el-button>
+                    <el-button size="small" type="warning"
+                               v-if="canGenerateSaleNote"
+                               :loading="generatingSaleNote"
+                               @click="generateSaleNote">
+                        Nota de venta
+                    </el-button>
                     <el-button size="small" type="danger"
                                v-if="isEditableStatus(detail && detail.status)"
                                @click="deleteReservation(detail)"
@@ -515,11 +521,23 @@
             </div>
         </el-dialog>
 
+        <!-- Opciones de la nota de venta generada desde el detalle de la reserva
+             (mismo modal que aparece al emitir una NV desde el checkout). -->
+        <sale-note-options :recordId="saleNoteId"
+                           :showClose="true"
+                           :showDialog.sync="showDialogSaleNoteOptions">
+        </sale-note-options>
+
     </div>
 </template>
 
 <script>
+import SaleNoteOptions from "@views/sale_notes/partials/options.vue";
+
 export default {
+    components: {
+        SaleNoteOptions,
+    },
     data() {
         return {
             // View
@@ -554,6 +572,10 @@ export default {
             editing: false,
             saving: false,
             editForm: this.emptyEditForm(),
+            // Nota de venta emitida desde el detalle de la reserva
+            generatingSaleNote: false,
+            saleNoteId: null,
+            showDialogSaleNoteOptions: false,
             // New reservation popup
             showReservationPopup: false,
             selectedRoom: null,
@@ -590,6 +612,13 @@ export default {
         }
     },
     computed: {
+        // La nota de venta solo se ofrece cuando la reserva está saldada
+        // (payment_state 'paid' = deuda <= 0, ver computeReservationPayment).
+        canGenerateSaleNote() {
+            if (!this.detail || this.editing) return false
+            const totals = this.detail.totals || {}
+            return totals.payment_state === 'paid' && Number(totals.total || 0) > 0
+        },
         monthTitle() {
             if (!this.days.length) return ''
             const first = this.days[0].date
@@ -1400,6 +1429,30 @@ export default {
                 this.populateEditForm(null, res);
             } finally {
                 this.loadingDetail = false;
+            }
+        },
+        // Emite la nota de venta de la reserva y abre el modal de opciones
+        // (el mismo del checkout: formatos, envío por correo/WhatsApp).
+        async generateSaleNote() {
+            if (!this.detail || !this.detail.id) return
+            this.generatingSaleNote = true
+            try {
+                const { data } = await this.$http.post(`/hotels/reception/${this.detail.id}/rent/sale-note`)
+                if (!data.success) {
+                    this.$message.error(data.message || 'No se pudo generar la nota de venta.')
+                    return
+                }
+                this.$message.success(data.message || 'Nota de venta generada.')
+                this.saleNoteId = data.sale_note_id
+                // Se cierra el detalle para que el modal de opciones quede al
+                // frente (el detalle usa append-to-body y lo taparía).
+                this.showDetail = false
+                this.showDialogSaleNoteOptions = true
+            } catch (e) {
+                const message = e.response?.data?.message || 'No se pudo generar la nota de venta.'
+                this.$message.error(message)
+            } finally {
+                this.generatingSaleNote = false
             }
         },
         populateEditForm(detail, fallbackEvent) {
