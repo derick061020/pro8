@@ -284,7 +284,31 @@
                                     <tfoot>
                                     <tr>
                                         <td class="text-end"
-                                            colspan="5">Pagado
+                                            colspan="5">Total consumo
+                                        </td>
+                                        <td>
+                                            <h3 class="my-0">
+                                                <span class="badge badge-pill badge-dark">
+                                                    {{ totalConsumption | toDecimals }}
+                                                </span>
+                                            </h3>
+                                        </td>
+                                    </tr>
+                                    <tr v-if="arrearsAmount > 0">
+                                        <td class="text-end"
+                                            colspan="5">Mora
+                                        </td>
+                                        <td>
+                                            <h3 class="my-0">
+                                                <span class="badge badge-pill badge-warning">
+                                                    {{ arrearsAmount | toDecimals }}
+                                                </span>
+                                            </h3>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td class="text-end"
+                                            colspan="5">Total pagado
                                         </td>
                                         <td>
                                             <h3 class="my-0">
@@ -296,7 +320,7 @@
                                     </tr>
                                     <tr>
                                         <td class="text-end"
-                                            colspan="5">Debe
+                                            colspan="5">{{ totalDebt >= 0 ? 'Falta pagar' : 'Vuelto a favor' }}
                                         </td>
                                         <td>
                                             <h3 class="my-0">
@@ -1349,6 +1373,12 @@ export default {
         {
             return this.totalDebt > 0
         },
+        // Mora cobrada por salida tardía; se muestra aparte del consumo para que
+        // "consumo + mora - pagado = falta pagar" cuadre en el resumen.
+        arrearsAmount()
+        {
+            return parseFloat(this.arrears) || 0
+        },
         rentPaidItems()
         {
             // Solo productos pagados.
@@ -1439,6 +1469,8 @@ export default {
             loading: false,
             totalPaid: 0,
             totalDebt: 0,
+            // Suma de los cargos del alquiler (items no-PAY), sin mora.
+            totalConsumption: 0,
             response: {},
             document: {
                 payments: [],
@@ -2759,7 +2791,11 @@ export default {
                     return total;
                 })
                 .reduce((a, b) => a + b, 0);
-            
+
+            // Total consumo: lo que se le cargó a la habitación (habitación,
+            // extensiones y productos), sin contar la mora ni los pagos.
+            this.totalConsumption = totalOriginalItems;
+
             // Calcular pagos positivos reales
             const totalPositivePayments = this.savedPayments
                 .filter((payment) => parseFloat(payment.amount) > 0)
