@@ -16,13 +16,21 @@ use Carbon\Carbon;
 class HotelCleaningController extends Controller
 {
     /**
-     * Obtener limpiadores disponibles
+     * Obtener limpiadores disponibles.
+     *
+     * Solo los de la sucursal actual: recepción trabaja siempre sobre
+     * `auth()->user()->establishment_id` (el mismo valor que cambia
+     * HotelReceptionController::changeUserEstablishment), así que el selector
+     * de limpiadores no debe ofrecer personal de otras sucursales.
      */
     public function getCleaners()
     {
+        $establishmentId = auth()->user()->establishment_id;
+
         $cleaners = DB::connection('tenant')->table('users')
             ->where('type', 'limpiador')
             ->where('active', true)
+            ->where('establishment_id', $establishmentId)
             ->select('id', 'name', 'email')
             ->orderBy('name')
             ->get();

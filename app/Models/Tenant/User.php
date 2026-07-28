@@ -651,6 +651,9 @@ $withEstablishment = true){
             case 'client':
                 $type =  'Cliente' ;
                 break;
+            case 'limpiador':
+                $type =  'Limpieza' ;
+                break;
             default:
                 # code...
                 break;
