@@ -284,6 +284,39 @@ class PersonController extends Controller
 
     }
 
+    /**
+     * Actualizar las observaciones del cliente.
+     *
+     * Lo consume el modal "Observaciones" del checkout del Hotel
+     * (POST /persons/{id}/observations).
+     */
+    public function updateObservations(Request $request, $id)
+    {
+        try {
+
+            $person = Person::findOrFail($id);
+            $person->observation = $request->input('observations');
+            $person->save();
+
+            return [
+                'success' => true,
+                'message' => 'Observaciones actualizadas con éxito',
+                'data' => [
+                    'id' => $person->id,
+                    'observation' => $person->observation,
+                ],
+            ];
+
+        } catch (Exception $e) {
+
+            return [
+                'success' => false,
+                'message' => 'No se pudo actualizar las observaciones: ' . $e->getMessage()
+            ];
+
+        }
+    }
+
     public function export($type, Request $request)
     {
 

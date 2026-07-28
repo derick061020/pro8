@@ -305,6 +305,8 @@ if ($hostname) {
                 Route::get('/search/{barcode}', 'Tenant\PersonController@getPersonByBarcode');
                 Route::get('accumulated-points/{id}', 'Tenant\PersonController@getAccumulatedPoints');
                 Route::get('search-data/{type}', 'Tenant\PersonController@searchData');
+                // Observaciones del cliente (modal del checkout del Hotel).
+                Route::post('/{person}/observations', 'Tenant\PersonController@updateObservations');
 
             });
 
