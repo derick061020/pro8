@@ -83,6 +83,13 @@ import VueClipboard from 'vue-clipboard2'
 Vue.use(VueClipboard)
 
 
+// Gráficos del dashboard (<apexchart>). Sin este registro global los paneles
+// del dashboard se dibujan vacíos porque Vue no resuelve el componente.
+import VueApexCharts from 'vue-apexcharts'
+Vue.use(VueApexCharts)
+Vue.component('apexchart', VueApexCharts)
+
+
 import moment from 'moment';
 
 // Formato de fecha/hora configurable por el usuario (Configuración general > formato).
