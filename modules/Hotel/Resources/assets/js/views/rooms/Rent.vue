@@ -1423,6 +1423,13 @@ export default {
                 this.form.reservation_origin = reservationData.reservation_origin || null;
                 this.form.notes = reservationData.notes || '';
                 
+                // Estado de pago real de la reserva. Sin esto el selector abría
+                // siempre en "Falta pagar" (valor por defecto del formulario),
+                // aunque la reserva ya estuviera pagada.
+                this.form.payment_status = reservationData.totals?.payment_state === 'paid'
+                    ? 'PAID'
+                    : 'DEBT';
+
                 // Establecer que es edición de reserva (no check-in)
                 this.form.is_edit_from_reservation = true;
                 this.form.reservation_id = reservationId;
@@ -1497,6 +1504,16 @@ export default {
                     // precio correcto (incluye el precio propio de la web) y no se
                     // sobreescriba con la tarifa base al guardar.
                     rental_price: parseFloat(this.form.rate_price) || 0,
+                    // Estado de pago: sin esto, marcar la reserva como "Pagado"
+                    // no registraba nada y la barra del calendario conservaba su
+                    // color (el color se calcula con la deuda real).
+                    payment_status: this.form.payment_status,
+                    rent_payment: {
+                        payment_method_type_id: this.form.rent_payment.payment_method_type_id,
+                        payment_destination_id: this.form.rent_payment.payment_destination_id,
+                        reference: this.form.rent_payment.reference,
+                        payment: parseFloat(this.form.rent_payment.payment) || 0,
+                    },
                 };
 
                 console.log('Actualizando reserva con payload:', payload);
