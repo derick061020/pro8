@@ -2100,13 +2100,28 @@ export default {
             if (isNaN(inputAt) || isNaN(outputAt)) return null;
 
             const period = rent.rental_period_type || 'day';
-            const divisor = period === 'hour' ? 3600e3 : period === 'month' ? 30 * 86400e3 : 86400e3;
             const unit = period === 'hour' ? 'hora(s)' : period === 'month' ? 'mes(es)' : 'noche(s)';
 
             const duration = Math.max(1, parseInt(rent.duration, 10) || 1);
-            // floor: solo cuenta el período cuando se cumple por completo
-            const elapsed = Math.max(0, (now - inputAt) / divisor);
-            const consumed = Math.max(0, Math.min(Math.floor(elapsed), duration - 1));
+
+            // Noches: se cuentan por CALENDARIO (igual que el backend en
+            // calculateRoomChangeSplit). Quien entra el 20 a las 14:00 y cambia
+            // de habitación el 22 a las 10:00 ya durmió 2 noches en la anterior,
+            // aunque solo hayan pasado 1.83 días. Horas/meses siguen usando el
+            // período completo transcurrido (floor).
+            let elapsed;
+            if (period === 'hour') {
+                elapsed = Math.floor(Math.max(0, (now - inputAt) / 3600e3));
+            } else if (period === 'month') {
+                elapsed = Math.floor(Math.max(0, (now - inputAt) / (30 * 86400e3)));
+            } else {
+                const startOfDay = d => new Date(d.getFullYear(), d.getMonth(), d.getDate());
+                elapsed = Math.max(0, Math.round(
+                    (startOfDay(now) - startOfDay(inputAt)) / 86400e3
+                ));
+            }
+
+            const consumed = Math.max(0, Math.min(elapsed, duration - 1));
             const remaining = Math.max(1, duration - consumed);
 
             const oldUnit = parseFloat(rent.rental_price) || 0;

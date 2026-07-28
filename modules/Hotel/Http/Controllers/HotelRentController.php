@@ -2000,11 +2000,27 @@ class HotelRentController extends Controller
                 return $resolveQuantity($it);
             }));
 
+            // Noches YA facturadas (items HAB con comprobante/nota de venta).
+            // Corresponden a los primeros días de la estadía, así que las noches
+            // transcurridas se imputan primero a ellas: sin este descuento el
+            // tramo abierto "consumía" noches que en realidad ya estaban
+            // cobradas en otro item y se pasaban de más a la habitación nueva.
+            $closedHabUnits = (int) $rent->items()
+                ->where('type', 'HAB')
+                ->where(function ($q) {
+                    $q->whereNotNull('sale_note_id')->orWhereNotNull('document_id');
+                })
+                ->get()
+                ->sum(function (HotelRentItem $it) use ($resolveQuantity) {
+                    return $resolveQuantity($it);
+                });
+
             [$consumed, $remaining, $unitLabel] = $this->calculateRoomChangeSplit(
                 $period,
                 $inputAt,
                 $changeAt,
-                $openDuration
+                $openDuration,
+                $closedHabUnits
             );
 
             // Snapshot de TODOS los items abiertos para poder revertir con fidelidad.
@@ -2220,34 +2236,51 @@ class HotelRentController extends Controller
     /**
      * Calcula períodos consumidos y restantes para un cambio de habitación.
      *
-     * Una "noche" (o "hora" / "mes") solo cuenta cuando el período completo
-     * ha transcurrido — por eso `floor`, no `ceil`. Si el cambio ocurre
-     * dentro del primer período (p. ej. minutos después del check-in),
-     * `consumed = 0` y arriba se hace reemplazo directo sin split.
+     * NOCHES (period = day): se cuentan por CALENDARIO, no por bloques de 24 h.
+     * Un huésped que entra el 20 a las 14:00 y cambia de habitación el 22 a las
+     * 10:00 ya durmió 2 noches en la habitación anterior (20→21 y 21→22), aunque
+     * hayan transcurrido solo 1.83 días "flotantes". Antes se usaba
+     * floatDiffInDays + floor, que devolvía 1 → se cobraba una noche de menos en
+     * la habitación vieja y una de más (a la tarifa nueva) en la habitación nueva.
      *
+     * HORAS / MESES: se sigue usando el período completo transcurrido (floor), de
+     * modo que un cambio a los pocos minutos del check-in da `consumed = 0` y
+     * arriba se hace reemplazo directo sin split.
+     *
+     * @param  int $closedUnits  Períodos que ya están cubiertos por items HAB
+     *                           facturados (y por lo tanto NO forman parte del
+     *                           tramo abierto que se va a dividir). Las noches
+     *                           transcurridas se descuentan contra ellos antes de
+     *                           imputarse al tramo abierto.
      * @return array{0:int,1:int,2:string} [consumidos, restantes, etiqueta]
      */
-    private function calculateRoomChangeSplit($period, Carbon $inputAt, Carbon $changeAt, $duration)
+    private function calculateRoomChangeSplit($period, Carbon $inputAt, Carbon $changeAt, $duration, $closedUnits = 0)
     {
         switch ($period) {
             case 'hour':
                 $unit    = 'hora(s)';
-                $elapsed = $inputAt->floatDiffInHours($changeAt);
+                $elapsed = (int) floor($inputAt->floatDiffInHours($changeAt));
                 break;
             case 'month':
                 $unit    = 'mes(es)';
-                $elapsed = $inputAt->floatDiffInMonths($changeAt);
+                $elapsed = (int) floor($inputAt->floatDiffInMonths($changeAt));
                 break;
             case 'day':
             default:
                 $unit    = 'noche(s)';
-                $elapsed = $inputAt->floatDiffInDays($changeAt);
+                // Noches de calendario entre la fecha de ingreso y la del cambio.
+                $elapsed = (int) $inputAt->copy()->startOfDay()
+                    ->diffInDays($changeAt->copy()->startOfDay());
                 break;
         }
 
+        // Los períodos ya facturados corresponden a los primeros días de la
+        // estadía: se descuentan para saber cuánto del tramo ABIERTO se consumió.
+        $elapsed = max(0, $elapsed - max(0, (int) $closedUnits));
+
         $duration  = max(1, (int) $duration);
         // consumed acotado a [0, duration-1] para que siempre quede al menos 1 para la nueva habitación
-        $consumed  = max(0, min((int) floor($elapsed), $duration - 1));
+        $consumed  = max(0, min($elapsed, $duration - 1));
         $remaining = max(1, $duration - $consumed);
 
         return [$consumed, $remaining, $unit];
@@ -2289,12 +2322,17 @@ class HotelRentController extends Controller
             'unit_price'       => $unitPrice,
         ]);
 
-        // Nivel exterior — claves de identidad y de precio/cantidad/total
+        // Nivel exterior — claves de identidad y de precio/cantidad/total.
+        // `is_extension` se limpia explícitamente: el JSON base puede venir de un
+        // item de extensión y, si se heredara la marca, el checkout trataría el
+        // cargo de la habitación NUEVA como una extensión y lo fusionaría con la
+        // habitación original promediando la tarifa.
         return array_merge($base, [
             'id'                     => $itemId,
             'item_id'                => $itemId,
             'internal_id'            => $internalId,
             'name'                   => $name,
+            'is_extension'           => false,
             'description'            => $description,
             'full_description'       => $description,
             'name_product_pdf'       => $description,
@@ -2334,6 +2372,10 @@ class HotelRentController extends Controller
             'unit_price_value'       => $unitPrice,
             'input_unit_price_value' => $unitPrice,
             'total'                  => $total,
+            // El tramo que queda en la habitación anterior es un cargo de
+            // habitación, no una extensión: si conservara la marca el checkout
+            // lo fusionaría con otra línea promediando la tarifa.
+            'is_extension'           => false,
             'item'                   => $innerNew,
         ]);
     }

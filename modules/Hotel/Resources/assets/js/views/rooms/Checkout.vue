@@ -230,6 +230,24 @@
                                             <span v-else>{{ getRoomItemTotal(r) | toDecimals }}</span>
                                         </td>
                                     </tr>
+                                    <!-- Extensiones pagadas con una tarifa distinta a la de su
+                                         habitación base: se listan como cargo independiente para
+                                         no promediar el precio por noche. -->
+                                    <tr v-for="(r, idx) in standaloneRoomExtensions" :key="`hab-ext-${r.id}`">
+                                        <td>{{ roomItems.length + idx + 1 }}</td>
+                                        <td class="text-start">
+                                            <div>{{ getRawItemUnitPrice(r) | toDecimals }}</div>
+                                            <small class="text-muted" v-if="r.item && r.item.description">
+                                                {{ r.item.description }}
+                                            </small>
+                                        </td>
+                                        <td>{{ getRawItemQuantity(r) }}</td>
+                                        <td class="float-right"><span>—</span></td>
+                                        <td>{{ r.document }}</td>
+                                        <td class="float-right">
+                                            <span>{{ getRawItemTotal(r) | toDecimals }}</span>
+                                        </td>
+                                    </tr>
                                     <tr class="text-start" v-if="rentPaidItems.length > 0">
                                         <td colspan="6"><b class="h6">
                                             <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-receipt-2"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M5 21v-16a2 2 0 0 1 2 -2h10a2 2 0 0 1 2 2v16l-3 -2l-2 2l-2 -2l-2 2l-2 -2l-3 2" /><path d="M14 8h-2.5a1.5 1.5 0 0 0 0 3h1a1.5 1.5 0 0 1 0 3h-2.5m2 0v1.5m0 -9v1.5" /></svg> Servicio a la habitación (Pagado)</b></td>
@@ -1416,6 +1434,18 @@ export default {
                 .slice()
                 .sort((a, b) => (a.id || 0) - (b.id || 0));
         },
+        standaloneRoomExtensions()
+        {
+            // Extensiones PAGADAS que NO se pueden fusionar con su habitación
+            // base porque se hicieron con otra tarifa. Se listan como filas
+            // propias del cuadro de alojamiento, con su precio y sus noches.
+            // (Las extensiones con deuda ya se muestran aparte, en el bloque de
+            // cargos pendientes.)
+            return this.getSourceRentItemsForCheckout()
+                .filter(it => this.isPaidHabExtension(it) && !this.isMergeableExtension(it))
+                .slice()
+                .sort((a, b) => (a.id || 0) - (b.id || 0));
+        },
         activeRoomItemId()
         {
             // El item HAB vigente (más reciente) es donde se aplican arrears / total editable.
@@ -1804,6 +1834,31 @@ export default {
 
             return target || baseItems[baseItems.length - 1];
         },
+        getRawItemUnitPrice(item) {
+            // Tarifa REAL del item, sin mezclarla con la de ninguna extensión.
+            if (!item) return 0;
+
+            const quantity = this.getRawItemQuantity(item);
+            const total = this.getRawItemTotal(item);
+            if (quantity > 0 && total > 0) {
+                return total / quantity;
+            }
+
+            const json = item.item && (item.item.unit_price ?? item.item.unit_price_value
+                ?? item.item.input_unit_price_value);
+            const jsonPrice = parseFloat(json);
+            if (Number.isFinite(jsonPrice) && jsonPrice > 0) return jsonPrice;
+
+            return parseFloat(item.unit_price) || 0;
+        },
+        haveSameUnitPrice(a, b) {
+            // Dos cargos de habitación solo pueden mostrarse/emitirse en una
+            // misma línea si comparten tarifa; si no, sumar cantidades y totales
+            // produciría un precio unitario promedio que no existe.
+            const priceA = this.getRawItemUnitPrice(a);
+            const priceB = this.getRawItemUnitPrice(b);
+            return Math.abs(priceA - priceB) < 0.005;
+        },
         getPaidExtensionAggregationForRoomItem(roomItem) {
             if (!roomItem || !roomItem.id) {
                 return { quantity: 0, total: 0 };
@@ -1818,12 +1873,22 @@ export default {
             return extensions.reduce((acc, extensionItem) => {
                 const targetRoomItem = this.resolveBaseRoomItemForExtension(extensionItem, baseRoomItems);
                 if (!targetRoomItem || targetRoomItem.id !== roomItem.id) return acc;
+                // Extensión con tarifa distinta: se muestra en su propia fila
+                // (ver `standaloneRoomExtensions`), no se fusiona.
+                if (!this.haveSameUnitPrice(extensionItem, roomItem)) return acc;
 
                 acc.quantity += this.getRawItemQuantity(extensionItem);
                 acc.total += this.getRawItemTotal(extensionItem);
 
                 return acc;
             }, { quantity: 0, total: 0 });
+        },
+        isMergeableExtension(extensionItem) {
+            // ¿La extensión se consolida con su item de habitación base?
+            const baseRoomItems = this.roomItems || [];
+            const targetRoomItem = this.resolveBaseRoomItemForExtension(extensionItem, baseRoomItems);
+            if (!targetRoomItem) return false;
+            return this.haveSameUnitPrice(extensionItem, targetRoomItem);
         },
         rebuildDocumentItemsFromRent() {
             const sourceItems = this.getSourceRentItemsForCheckout();
@@ -1978,35 +2043,69 @@ export default {
                 if (extensionRows.length === 0) return;
 
                 const baseRow = rowByRentItemId[baseId];
+                const baseUsable = !!(baseRow && !baseRow._invoiced);
+                const basePrice = baseUsable ? this.getDocumentRowUnitPrice(baseRow) : null;
 
-                // Destino de la consolidación:
-                //  - el item base de la habitación si está disponible y todavía no
-                //    se facturó (habitación + extensiones salen como una sola línea);
-                //  - de lo contrario, la primera fila de extensión (caso típico: el
-                //    comprobante de la habitación ya se emitió y solo se facturan las
-                //    extensiones nuevas, que deben verse como un único item).
-                const targetRow = (baseRow && !baseRow._invoiced) ? baseRow : extensionRows[0];
-
+                // Solo se consolidan cargos con la MISMA tarifa: al sumar
+                // cantidades y totales de noches con precios distintos la línea
+                // resultante quedaría con un precio unitario promedio inexistente.
+                // Las extensiones se agrupan por precio; cada grupo con tarifa
+                // distinta a la de la habitación sale como su propia línea del
+                // comprobante.
+                const buckets = new Map();
                 extensionRows.forEach((extensionRow) => {
-                    if (extensionRow === targetRow) return;
-
-                    this.mergeDocumentRowTotals(targetRow, extensionRow);
-                    targetRow._rent_item_ids = _.uniq([
-                        ...(targetRow._rent_item_ids || []),
-                        ...(extensionRow._rent_item_ids || []),
-                    ]);
-                    extensionRow._merged_into = targetRow._rent_item_id;
+                    const price = this.getDocumentRowUnitPrice(extensionRow);
+                    const key = price.toFixed(4);
+                    if (!buckets.has(key)) buckets.set(key, []);
+                    buckets.get(key).push(extensionRow);
                 });
 
-                // Si el destino es una extensión (la habitación ya fue facturada por
-                // separado), reescribir su descripción para que refleje el total de
-                // noches consolidadas en lugar de la cantidad de la primera fila.
-                if (targetRow !== baseRow) {
-                    this.relabelConsolidatedExtensionRow(targetRow);
-                }
+                buckets.forEach((bucketRows, key) => {
+                    const price = parseFloat(key) || 0;
+
+                    // Destino de la consolidación:
+                    //  - el item base de la habitación si está disponible, no se
+                    //    facturó y comparte tarifa (habitación + extensiones salen
+                    //    como una sola línea);
+                    //  - de lo contrario, la primera fila del grupo (caso típico: el
+                    //    comprobante de la habitación ya se emitió, o la extensión se
+                    //    hizo con otra tarifa, y debe verse como un item aparte).
+                    const mergeWithBase = baseUsable && Math.abs(basePrice - price) < 0.005;
+                    const targetRow = mergeWithBase ? baseRow : bucketRows[0];
+
+                    bucketRows.forEach((extensionRow) => {
+                        if (extensionRow === targetRow) return;
+
+                        this.mergeDocumentRowTotals(targetRow, extensionRow);
+                        targetRow._rent_item_ids = _.uniq([
+                            ...(targetRow._rent_item_ids || []),
+                            ...(extensionRow._rent_item_ids || []),
+                        ]);
+                        extensionRow._merged_into = targetRow._rent_item_id;
+                    });
+
+                    // Si el destino es una extensión (la habitación ya fue facturada
+                    // por separado o la tarifa es otra), reescribir su descripción
+                    // para que refleje el total de noches consolidadas en lugar de la
+                    // cantidad de la primera fila.
+                    if (targetRow !== baseRow) {
+                        this.relabelConsolidatedExtensionRow(targetRow);
+                    }
+                });
             });
 
             return rows.filter(row => !row._merged_into);
+        },
+        getDocumentRowUnitPrice(row) {
+            if (!row) return 0;
+
+            const quantity = parseFloat(row.quantity) || 0;
+            const total = parseFloat(row.total) || 0;
+            if (quantity > 0 && total > 0) {
+                return total / quantity;
+            }
+
+            return parseFloat(row.unit_price) || 0;
         },
         relabelConsolidatedExtensionRow(row) {
             const quantity = parseFloat(row && row.quantity) || 0;
@@ -2030,9 +2129,12 @@ export default {
             row.name_product_pdf = name;
         },
         mergeDocumentRowTotals(targetRow, sourceRow) {
+            // Solo se suman cantidad y totales. `unit_value` / `unit_price` NO se
+            // suman ni se recalculan: la fusión únicamente ocurre entre cargos con
+            // la misma tarifa, de modo que el valor unitario del destino ya es el
+            // correcto (sumarlo duplicaba el precio por noche del comprobante).
             const numericFields = [
                 'quantity',
-                'unit_value',
                 'total_base_igv',
                 'total_igv',
                 'total_taxes',
