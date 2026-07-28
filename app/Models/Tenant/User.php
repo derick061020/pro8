@@ -649,6 +649,9 @@ $modules_levels = []){
             case 'client':
                 $type =  'Cliente' ;
                 break;
+            case 'limpiador':
+                $type =  'Limpieza' ;
+                break;
             default:
                 # code...
                 break;

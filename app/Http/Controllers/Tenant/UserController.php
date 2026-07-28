@@ -81,6 +81,10 @@ class UserController extends Controller
         $types = [
             ['type' => 'admin', 'description' => 'Administrador'],
             ['type' => 'seller', 'description' => 'Vendedor'],
+            // Perfil del módulo Hotel: el usuario solo ve las habitaciones que
+            // tiene asignadas para limpiar (ver HotelReceptionController) y es
+            // el que aparece en el selector de limpiadores de recepción.
+            ['type' => 'limpiador', 'description' => 'Limpieza'],
         ];
 
         $configuration = Configuration::select(['permission_to_edit_cpe', 'regex_password_user'])->first();
