@@ -29,6 +29,7 @@ use Modules\Hotel\Exports\HotelRentExport;
 use Carbon\Carbon;
 use App\Models\Tenant\SaleNote;
 use App\Models\Tenant\Document;
+use App\Http\Controllers\Tenant\SaleNoteController;
 
 class HotelRentController extends Controller
 {
@@ -1206,6 +1207,284 @@ class HotelRentController extends Controller
 			'message' => "Items marcados como facturados ({$updated}).",
 			'updated_count' => $updated,
 		]);
+	}
+
+	/**
+	 * Genera una nota de venta con los consumos pendientes de una reserva/renta.
+	 *
+	 * Pensado para el modal de detalle del calendario de reservas: permite emitir
+	 * la NV sin pasar por el checkout, pero SOLO cuando la reserva ya está
+	 * pagada (deuda <= 0). Reutiliza SaleNoteController::storeWithData, que es
+	 * el mismo camino que usa el checkout al hacer POST /sale-notes.
+	 *
+	 * La nota queda ligada a la renta (hotel_rent_id) para que la caja NO la
+	 * cuente dos veces: el ingreso de hotel se reporta por los pagos de la
+	 * reserva (ver Cash::getHotelRentIncome). Por la misma razón los pagos
+	 * copiados llevan `hotel_rent_item_payment_id`, marcador que savePayments
+	 * usa para no volver a registrarlos en caja.
+	 */
+	public function generateSaleNoteFromRent($rentId)
+	{
+		$rent = HotelRent::with('items')->findOrFail($rentId);
+
+		// Reconciliar adelantos → items PAID antes de evaluar la deuda (misma
+		// llamada que hace el checkout al abrirse).
+		try {
+			$this->applyAdvanceCreditToDebtItems($rent);
+			$rent->refresh();
+			$rent->load('items');
+		} catch (\Throwable $th) {
+			// No bloquear la emisión si la reconciliación falla.
+		}
+
+		$debt = $this->calculateRentDebt($rent);
+		if ($debt > 0.009) {
+			return response()->json([
+				'success' => false,
+				'message' => 'La reserva tiene un saldo pendiente de S/ ' . number_format($debt, 2)
+					. '. Solo se puede generar la nota de venta cuando está pagada.',
+			], 422);
+		}
+
+		$pendingItems = HotelRentItem::where('hotel_rent_id', $rent->id)
+			->whereNotIn('type', ['PAY', '9'])
+			->whereNull('sale_note_id')
+			->whereNull('document_id')
+			->orderBy('id', 'asc')
+			->get();
+
+		if ($pendingItems->isEmpty()) {
+			return response()->json([
+				'success' => false,
+				'message' => 'Todos los consumos de esta reserva ya cuentan con comprobante.',
+			], 422);
+		}
+
+		$establishmentId = $rent->establishment_id ?: auth()->user()->establishment_id;
+
+		$series = Series::where('establishment_id', $establishmentId)
+			->where('document_type_id', '80')
+			->first();
+
+		if (!$series) {
+			return response()->json([
+				'success' => false,
+				'message' => 'No hay una serie configurada para notas de venta en esta sucursal.',
+			], 422);
+		}
+
+		// Filas del comprobante: el JSON guardado en hotel_rent_items.item ya es
+		// la fila calculada por calculateRowItem (el mismo objeto que arma el
+		// checkout), así que se reutiliza tal cual.
+		$rows = [];
+		$itemIds = [];
+
+		foreach ($pendingItems as $rentItem) {
+			$row = $rentItem->item;
+			$row = is_object($row) ? json_decode(json_encode($row), true) : (is_array($row) ? $row : []);
+
+			if (empty($row) || empty($row['item'])) {
+				continue;
+			}
+
+			// `record_id` apunta a filas de otro comprobante; en una nota nueva
+			// debe ir en null para que SaleNoteItem cree registros nuevos.
+			$row['record_id'] = null;
+			unset($row['id']);
+
+			foreach ([
+				'quantity', 'unit_value', 'unit_price', 'total_base_igv', 'percentage_igv',
+				'total_igv', 'total_base_isc', 'percentage_isc', 'total_isc',
+				'total_base_other_taxes', 'percentage_other_taxes', 'total_other_taxes',
+				'total_taxes', 'total_value', 'total_charge', 'total_discount', 'total',
+				'total_plastic_bag_taxes',
+			] as $numeric) {
+				$row[$numeric] = isset($row[$numeric]) ? (float) $row[$numeric] : 0;
+			}
+
+			$row['attributes'] = $row['attributes'] ?? [];
+			$row['charges']    = $row['charges'] ?? [];
+			$row['discounts']  = $row['discounts'] ?? [];
+
+			$rows[] = $row;
+			$itemIds[] = $rentItem->id;
+		}
+
+		if (empty($rows)) {
+			return response()->json([
+				'success' => false,
+				'message' => 'La reserva no tiene consumos facturables.',
+			], 422);
+		}
+
+		$totals = $this->calculateSaleNoteTotals($rows);
+
+		$inputs = [
+			'customer_id'              => $rent->customer_id,
+			'establishment_id'         => $establishmentId,
+			'series_id'                => $series->id,
+			'prefix'                   => 'NV',
+			'date_of_issue'            => date('Y-m-d'),
+			'time_of_issue'            => date('H:i:s'),
+			'due_date'                 => date('Y-m-d'),
+			'currency_type_id'         => 'PEN',
+			'purchase_order'           => null,
+			'exchange_rate_sale'       => 0,
+			'operation_type_id'        => '0101',
+			'items'                    => $rows,
+			'charges'                  => [],
+			'discounts'                => [],
+			'attributes'               => [],
+			'guides'                   => [],
+			'payments'                 => $this->buildSaleNotePaymentsFromRent($rent, $totals['total']),
+			'additional_information'   => null,
+			'actions'                  => ['format_pdf' => 'a4'],
+			'hotel_data_persons'       => $rent->data_persons,
+			'source_module'            => 'HOTEL',
+			'hotel_rent_id'            => $rent->id,
+		] + $totals;
+
+		$result = (new SaleNoteController())->storeWithData($inputs);
+
+		if (!isset($result['success']) || !$result['success']) {
+			return response()->json([
+				'success' => false,
+				'message' => $result['message'] ?? 'No se pudo generar la nota de venta.',
+			], 500);
+		}
+
+		$saleNoteId = $result['data']['id'];
+
+		HotelRentItem::where('hotel_rent_id', $rent->id)
+			->whereIn('id', $itemIds)
+			->update([
+				'sale_note_id'   => $saleNoteId,
+				'invoiced_at'    => now(),
+				'payment_status' => 'PAID',
+			]);
+
+		return response()->json([
+			'success'     => true,
+			'message'     => 'Nota de venta ' . ($result['data']['number_full'] ?? '') . ' generada.',
+			'sale_note_id' => $saleNoteId,
+			'number_full' => $result['data']['number_full'] ?? null,
+		]);
+	}
+
+	/**
+	 * Totales del comprobante a partir de sus filas. Réplica de
+	 * onCalculateTotals() de Checkout.vue para que la NV emitida desde el
+	 * calendario cuadre igual que la emitida desde el checkout.
+	 */
+	private function calculateSaleNoteTotals(array $rows)
+	{
+		$taxed = $exonerated = $unaffected = $free = $exportation = 0;
+		$igv = $value = $total = $plasticBag = $discount = $charge = 0;
+
+		foreach ($rows as $row) {
+			$affectation = (string) ($row['affectation_igv_type_id'] ?? '');
+
+			$discount += (float) $row['total_discount'];
+			$charge   += (float) $row['total_charge'];
+
+			if ($affectation === '10') {
+				$taxed += (float) $row['total_value'];
+			}
+
+			if ($affectation === '20') {
+				$exonerated += (float) $row['total_value'];
+			}
+
+			if (!in_array($affectation, ['10', '20', '30', '40'], true)) {
+				$free += (float) $row['total_value'];
+			} else {
+				$igv   += (float) $row['total_igv'];
+				$total += (float) $row['total'];
+			}
+
+			$value      += (float) $row['total_value'];
+			$plasticBag += (float) $row['total_plastic_bag_taxes'];
+		}
+
+		$plasticBag = round($plasticBag, 2);
+		$documentTotal = round($total + $plasticBag, 2);
+
+		return [
+			'total_prepayment'        => 0,
+			'total_charge'            => round($charge, 2),
+			'total_discount'          => round($discount, 2),
+			'total_exportation'       => round($exportation, 2),
+			'total_free'              => round($free, 2),
+			'total_taxed'             => round($taxed, 2),
+			'total_unaffected'        => round($unaffected, 2),
+			'total_exonerated'        => round($exonerated, 2),
+			'total_igv'               => round($igv, 2),
+			'total_base_isc'          => 0,
+			'total_isc'               => 0,
+			'total_base_other_taxes'  => 0,
+			'total_other_taxes'       => 0,
+			'total_taxes'             => round($igv, 2),
+			'total_value'             => round($value, 2),
+			'total_plastic_bag_taxes' => $plasticBag,
+			'total'                   => $documentTotal,
+			'subtotal'                => $documentTotal,
+		];
+	}
+
+	/**
+	 * Pagos de la reserva a copiar en la nota de venta, escalados al total del
+	 * comprobante (puede haber consumos ya facturados en otro comprobante).
+	 * Cada fila lleva `hotel_rent_item_payment_id` para que NO se vuelva a
+	 * registrar el pago en caja: ya está contabilizado por la reserva.
+	 */
+	private function buildSaleNotePaymentsFromRent(HotelRent $rent, $documentTotal)
+	{
+		$documentTotal = round((float) $documentTotal, 2);
+
+		if ($documentTotal <= 0) {
+			return [];
+		}
+
+		$payments = HotelRentItemPayment::whereHas('associated_record_payment', function ($q) use ($rent) {
+			$q->where('hotel_rent_id', $rent->id);
+		})->orderBy('id', 'asc')->get();
+
+		$paidTotal = round((float) $payments->sum('payment'), 2);
+
+		if ($payments->isEmpty() || $paidTotal <= 0) {
+			return [];
+		}
+
+		$rows = [];
+		$remaining = $documentTotal;
+		$lastIndex = $payments->count() - 1;
+
+		foreach ($payments->values() as $index => $payment) {
+			$amount = $index === $lastIndex
+				? round($remaining, 2)
+				: round(((float) $payment->payment * $documentTotal) / $paidTotal, 2);
+
+			$remaining = round($remaining - $amount, 2);
+
+			if ($amount <= 0) {
+				continue;
+			}
+
+			$rows[] = [
+				'id'                         => null,
+				'sale_note_id'               => null,
+				'hotel_rent_item_payment_id' => $payment->id,
+				'date_of_payment'            => $payment->date_of_payment
+					? Carbon::parse($payment->date_of_payment)->format('Y-m-d')
+					: date('Y-m-d'),
+				'payment_method_type_id'     => $payment->payment_method_type_id,
+				'reference'                  => $payment->reference,
+				'payment'                    => $amount,
+				'change'                     => 0,
+			];
+		}
+
+		return $rows;
 	}
 
 	/**

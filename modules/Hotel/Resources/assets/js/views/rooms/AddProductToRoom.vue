@@ -435,7 +435,7 @@ export default {
                 )
                 .then((response) => {
                     if(this.form.sale_note_id == null){
-                        window.location.href = "/hotels/reception";
+                        window.location.href = this.getReturnUrl();
                     }
                     this.$message({
                         message: response.data.message,
@@ -788,8 +788,18 @@ export default {
                 payment: item.total
             }));
         },
+        // Destino al salir de esta pantalla. Si se llegó desde el checkout
+        // (?return=checkout) se vuelve al checkout de esa renta; si no, a
+        // recepción como siempre.
+        getReturnUrl() {
+            const params = new URLSearchParams(window.location.search);
+            if (params.get('return') === 'checkout' && this.rent && this.rent.id) {
+                return `/hotels/reception/${this.rent.id}/rent/checkout`;
+            }
+            return "/hotels/reception";
+        },
         onGotoBack() {
-            window.location.href = "/hotels/reception";
+            window.location.href = this.getReturnUrl();
         },
 
     },
