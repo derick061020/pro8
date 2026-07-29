@@ -3480,36 +3480,11 @@ export default {
                     // Cerrar el diálogo PRIMERO para que el flujo sea ágil
                     this.showEditDatesModal = false;
 
-                    // Registrar el cambio en el historial
-                    const changeType = this.editDatesModal.editInput ? 'DATE_EDIT' : 'DATE_EDIT';
-                    const oldValues = {
-                        input_date: this.currentRent.input_date,
-                        input_time: this.currentRent.input_time,
-                        output_date: this.currentRent.output_date,
-                        output_time: this.currentRent.output_time
-                    };
-                    const newValues = {
-                        input_date: this.editDatesForm.inputDate,
-                        input_time: this.editDatesForm.inputTime,
-                        output_date: this.editDatesForm.outputDate,
-                        output_time: this.editDatesForm.outputTime
-                    };
-
-                    let notes = '';
-                    if (this.editDatesModal.editInput) {
-                        notes = 'Edición de fecha de ingreso';
-                    } else if (this.editDatesModal.editOutput) {
-                        notes = 'Edición de fecha de salida';
-                    }
-
-                    // Registrar el cambio SIN abrir el modal de historial
-                    this.recordRoomChange(
-                        changeType,
-                        oldValues,
-                        newValues,
-                        notes,
-                        this.editDatesForm.priceDifference
-                    );
+                    // NO registrar el cambio desde aquí: el endpoint edit-dates
+                    // ya crea el registro DATE_EDIT en el historial. Hacerlo
+                    // también en el front duplicaba el item en "Historial de
+                    // cambios". Solo refrescamos la lista en background.
+                    this.refreshRoomHistory();
 
                     // Recargar TODO el estado desde el servidor, igual que hace
                     // la extensión de estadía. No mutamos currentRent a mano: la
@@ -3915,6 +3890,20 @@ export default {
                 this.roomHistory = [];
             } finally {
                 this.loadingRoomHistory = false;
+            }
+        },
+        // Recarga el array del historial sin abrir el modal. Se usa después de
+        // operaciones cuyo backend ya registra el cambio (p. ej. edit-dates).
+        async refreshRoomHistory() {
+            try {
+                const response = await this.$http.get(
+                    `/hotels/reception/${this.currentRent.id}/room-history`
+                );
+                if (response.data && response.data.success) {
+                    this.roomHistory = response.data.history || [];
+                }
+            } catch (e) {
+                // si falla la recarga de historial, no es crítico
             }
         },
         async recordRoomChange(changeType, oldValues, newValues, notes = null, priceDifference = 0) {
