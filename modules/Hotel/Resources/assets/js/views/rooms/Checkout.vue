@@ -3210,7 +3210,7 @@ export default {
                 }
                 
                 const response = await this.$http.post(
-                    `/hotels/reception/${this.currentRent.id}/extend-stay`,
+                    `/hotels/reception/${this.currentRent.id}/rent/extend-stay`,
                     payload
                 );
                 
