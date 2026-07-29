@@ -552,6 +552,78 @@ class HotelRentController extends Controller
 		}
 	}
 
+  /**
+   * Crea el item HAB de una extensión de estadía, clonando el JSON del último
+   * item HAB del alquiler para preservar IGV/charges/afectación. Lo comparten
+   * extendTime (extender desde recepción) y extendStay (extender desde el
+   * checkout), que antes construían el item de formas distintas: el de
+   * extendStay salía sin campos de IGV y rompía la emisión del comprobante.
+   *
+   * @param  HotelRent      $rent
+   * @param  HotelRoom|null $room
+   * @param  int            $quantity
+   * @param  float          $unitPrice
+   * @param  float          $totalExt
+   * @param  string         $description
+   * @return HotelRentItem
+   */
+  private function createExtensionItem($rent, $room, $quantity, $unitPrice, $totalExt, $description)
+  {
+    // Construir JSON del item de extensión basado en el item original (para preservar IGV/charges)
+    $baseItem = $rent->items()->where('type', 'HAB')->orderByDesc('id')->first();
+    $baseJson = $baseItem && is_object($baseItem->item) ? (array) $baseItem->item : [];
+
+    $percentage_igv  = isset($baseJson['percentage_igv']) ? floatval($baseJson['percentage_igv']) : 18;
+    $total_base_igv  = $totalExt / (1 + ($percentage_igv / 100));
+    $total_igv       = $totalExt - $total_base_igv;
+
+    // Sub-objeto interno (lo que las vistas leen como it.item.item.description)
+    $baseInner = isset($baseJson['item']) ? $baseJson['item'] : [];
+    if (is_object($baseInner)) $baseInner = (array) $baseInner;
+    if (!is_array($baseInner)) $baseInner = [];
+
+    $innerNew = array_merge($baseInner, [
+      'description'      => $description,
+      'full_description' => $description,
+      'unit_price'       => round($unitPrice, 4),
+    ]);
+
+    $extensionJson = array_merge($baseJson, [
+      'description'            => $description,
+      'full_description'       => $description,
+      'name_product_pdf'       => $description,
+      'quantity'               => $quantity,
+      'unit_value'             => round($unitPrice, 4),
+      'unit_price'             => round($unitPrice, 4),
+      'unit_price_value'       => round($unitPrice, 4),
+      'input_unit_price_value' => round($unitPrice, 4),
+      'total'                  => round($totalExt, 4),
+      'total_value'            => round($total_base_igv, 4),
+      'total_base_igv'         => round($total_base_igv, 4),
+      'total_igv'              => round($total_igv, 4),
+      'total_taxes'            => round($total_igv, 4),
+      // Marca para que Checkout pueda separar extensiones del HAB original
+      'is_extension'           => true,
+      // Sub-objeto interno (las tablas de pagados/pendientes leen aquí)
+      'item'                   => $innerNew,
+    ]);
+
+    $extensionItem = new HotelRentItem();
+    $extensionItem->type = 'HAB';
+    $extensionItem->hotel_rent_id = $rent->id;
+    $extensionItem->item_id = $baseItem ? $baseItem->item_id : ($room ? $room->item_id : null);
+    $extensionItem->item = $extensionJson;
+    $extensionItem->quantity = $quantity;
+    $extensionItem->unit_price = $unitPrice;
+    $extensionItem->total = $totalExt;
+    $extensionItem->description = $description;
+    $extensionItem->payment_status = 'DEBT';
+    $extensionItem->hotel_rent_order_id = null;
+    $extensionItem->save();
+
+    return $extensionItem;
+  }
+
   public function extendTime(Request $request, $rentId)
   {
     try {
@@ -588,57 +660,7 @@ class HotelRentController extends Controller
       $roomName = $room ? $room->name : 'Habitación';
       $description = sprintf('Extensión %s - %d %s', $roomName, $quantity, $unitLabel);
 
-      // Construir JSON del item de extensión basado en el item original (para preservar IGV/charges)
-      $baseItem = $rent->items()->where('type', 'HAB')->orderByDesc('id')->first();
-      $baseJson = $baseItem && is_object($baseItem->item) ? (array) $baseItem->item : [];
-
-      $percentage_igv  = isset($baseJson['percentage_igv']) ? floatval($baseJson['percentage_igv']) : 18;
-      $total_base_igv  = $totalExt / (1 + ($percentage_igv / 100));
-      $total_igv       = $totalExt - $total_base_igv;
-
-      // Sub-objeto interno (lo que las vistas leen como it.item.item.description)
-      $baseInner = isset($baseJson['item']) ? $baseJson['item'] : [];
-      if (is_object($baseInner)) $baseInner = (array) $baseInner;
-      if (!is_array($baseInner)) $baseInner = [];
-
-      $innerNew = array_merge($baseInner, [
-        'description'      => $description,
-        'full_description' => $description,
-        'unit_price'       => round($unitPrice, 4),
-      ]);
-
-      $extensionJson = array_merge($baseJson, [
-        'description'            => $description,
-        'full_description'       => $description,
-        'name_product_pdf'       => $description,
-        'quantity'               => $quantity,
-        'unit_value'             => round($unitPrice, 4),
-        'unit_price'             => round($unitPrice, 4),
-        'unit_price_value'       => round($unitPrice, 4),
-        'input_unit_price_value' => round($unitPrice, 4),
-        'total'                  => round($totalExt, 4),
-        'total_value'            => round($total_base_igv, 4),
-        'total_base_igv'         => round($total_base_igv, 4),
-        'total_igv'              => round($total_igv, 4),
-        'total_taxes'            => round($total_igv, 4),
-        // Marca para que Checkout pueda separar extensiones del HAB original
-        'is_extension'           => true,
-        // Sub-objeto interno (las tablas de pagados/pendientes leen aquí)
-        'item'                   => $innerNew,
-      ]);
-
-      $extensionItem = new HotelRentItem();
-      $extensionItem->type = 'HAB';
-      $extensionItem->hotel_rent_id = $rent->id;
-      $extensionItem->item_id = $baseItem ? $baseItem->item_id : ($room ? $room->item_id : null);
-      $extensionItem->item = $extensionJson;
-      $extensionItem->quantity = $quantity;
-      $extensionItem->unit_price = $unitPrice;
-      $extensionItem->total = $totalExt;
-      $extensionItem->description = $description;
-      $extensionItem->payment_status = 'DEBT';
-      $extensionItem->hotel_rent_order_id = null;
-      $extensionItem->save();
+      $extensionItem = $this->createExtensionItem($rent, $room, $quantity, $unitPrice, $totalExt, $description);
 
       // Guardar fechas/duración antiguas para el historial
       $oldDuration   = $previousDuration;
@@ -2392,11 +2414,14 @@ class HotelRentController extends Controller
         try {
             $rent = HotelRent::findOrFail($id);
             
-            // Validar que el alquiler esté activo
-            if ($rent->status !== 'ACTIVE') {
+            // Validar que el alquiler siga vigente. OJO: la columna `status`
+            // guarda 'INICIADO' (default) / 'FINALIZADO'; nunca 'ACTIVE'. Antes
+            // se comparaba contra 'ACTIVE' y por eso TODA extensión desde el
+            // checkout se rechazaba con "no está activo".
+            if ($rent->status === 'FINALIZADO') {
                 return response()->json([
                     'success' => false,
-                    'message' => 'No se puede extender la estadía de un registro que no está activo'
+                    'message' => 'No se puede extender la estadía de un alquiler finalizado'
                 ], 400);
             }
             
@@ -2436,69 +2461,59 @@ class HotelRentController extends Controller
             $rent->output_time = $newOutputTime;
             $rent->save();
             
-            // Crear un nuevo item de cargo por la extensión
+            // Crear un nuevo item de cargo por la extensión.
             $room = $rent->room;
-            $rate = $room->rates()->where('id', $rent->hotel_rate_id)->first();
-            
-            if ($rate) {
-                $description = "Extensión de estadía - {$days} día(s) adicional(es)";
-                $extensionTotal = $rate->rate_price * $days;
 
-                $itemData = [
-                    'type' => 'HAB',
-                    'hotel_rent_id' => $rent->id,
-                    'item_id' => $room->item_id,
-                    'item' => [
-                        'description' => $description,
-                        'unit_price' => $rate->rate_price,
-                        'quantity' => $days,
-                        'total' => $extensionTotal,
-                        'is_extension' => true,
-                        'item' => [
-                            'description' => $description,
-                            'unit_price' => $rate->rate_price,
-                        ],
-                    ],
-                    'quantity' => $days,
-                    'unit_price' => $rate->rate_price,
-                    'total' => $extensionTotal,
-                    'description' => $description,
-                    'payment_status' => 'DEBT',
-                    'created_at' => now(),
-                    'updated_at' => now()
-                ];
-                
-                $extensionItem = HotelRentItem::create($itemData);
+            // Precio unitario: manda el `price_per_day` que el usuario ve y puede
+            // editar en el modal del checkout. Antes se ignoraba y siempre se
+            // cobraba la tarifa configurada, así que editar el precio no tenía
+            // efecto. Se cae a la tarifa del alquiler y, si tampoco está, al
+            // precio del último item HAB.
+            $unitPrice = (float) $request->input('price_per_day', 0);
+            if ($unitPrice <= 0 && $room) {
+                $rate = $room->rates()->where('id', $rent->hotel_rate_id)->first();
+                $unitPrice = $rate ? (float) $rate->rate_price : 0;
+            }
+            if ($unitPrice <= 0) {
+                $unitPrice = (float) ($rent->rental_price ?? 0);
+            }
 
-                // Si se incluye pago al extender, registrarlo y marcar pagado
-                // cuando cubra el total de la extensión.
-                if ($request->boolean('include_payment') && (float) $request->input('payment_amount', 0) > 0) {
-                    $paymentMethodId = $this->getPaymentMethodId($request->input('payment_method'));
-                    if (!$paymentMethodId) {
-                        throw new \Exception('No se encontró un método de pago válido para registrar la extensión.');
-                    }
+            $description    = "Extensión de estadía - {$days} día(s) adicional(es)";
+            $extensionTotal = round($unitPrice * $days, 4);
 
-                    $paymentAmount = (float) $request->input('payment_amount', 0);
-                    $extensionPayment = HotelRentItemPayment::create([
-                        'hotel_rent_item_id' => $extensionItem->id,
-                        'date_of_payment' => date('Y-m-d H:i:s'),
-                        'payment_method_type_id' => $paymentMethodId,
-                        'reference' => $request->input('payment_reference'),
-                        'payment' => $paymentAmount,
-                    ]);
+            // El item se construye con el mismo helper que usa extendTime, para
+            // que herede IGV/afectación del item original; el JSON plano que se
+            // creaba aquí dejaba la extensión sin datos de impuestos.
+            $extensionItem = $this->createExtensionItem($rent, $room, $days, $unitPrice, $extensionTotal, $description);
 
-                    $this->linkRentPaymentToOpenCash($extensionPayment, $request->input('payment_destination_id'));
-
-                    if ($paymentAmount >= $extensionTotal) {
-                        $extensionItem->payment_status = 'PAID';
-                        $extensionItem->save();
-                    }
+            // Si se incluye pago al extender, registrarlo y marcar pagado
+            // cuando cubra el total de la extensión.
+            if ($request->boolean('include_payment') && (float) $request->input('payment_amount', 0) > 0) {
+                $paymentMethodId = $this->getPaymentMethodId($request->input('payment_method'));
+                if (!$paymentMethodId) {
+                    throw new \Exception('No se encontró un método de pago válido para registrar la extensión.');
                 }
 
-                // Aplicar adelantos existentes a items con deuda.
-                $this->applyAdvanceCreditToDebtItems($rent);
+                $paymentAmount = (float) $request->input('payment_amount', 0);
+                $extensionPayment = HotelRentItemPayment::create([
+                    'hotel_rent_item_id' => $extensionItem->id,
+                    'date_of_payment' => date('Y-m-d H:i:s'),
+                    'payment_method_type_id' => $paymentMethodId,
+                    'reference' => $request->input('payment_reference'),
+                    'payment' => $paymentAmount,
+                ]);
+
+                $this->linkRentPaymentToOpenCash($extensionPayment, $request->input('payment_destination_id'));
+
+                if ($paymentAmount >= $extensionTotal) {
+                    $extensionItem->payment_status = 'PAID';
+                    $extensionItem->save();
+                }
             }
-            
+
+            // Aplicar adelantos existentes a items con deuda.
+            $this->applyAdvanceCreditToDebtItems($rent);
+
             DB::connection('tenant')->commit();
             
             // Cargar el alquiler actualizado con sus relaciones

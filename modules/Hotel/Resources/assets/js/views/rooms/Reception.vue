@@ -349,7 +349,7 @@
         
         <!-- Modal para opciones de habitación ocupada -->
         <el-dialog
-            :title="selectedRoom ? `Opciones - ${selectedRoom.name}` : 'Opciones de habitación ocupada'"
+            :title="selectedRoom ? `Opciones - Habitación ${selectedRoom.name}` : 'Opciones de habitación ocupada'"
             :visible.sync="showOccupiedOptionsModal"
             width="600px"
             :close-on-click-modal="false"
@@ -951,6 +951,14 @@
     border: 0 !important;
     box-shadow: 0 4px 14px rgba(107, 33, 168, 0.38) !important;
 }
+/* Próxima a vencer (≤ 1h). Necesita la misma especificidad que .occupied,
+   si no el rojo base gana y la tarjeta nunca se pinta morada. */
+.room-container .room-el-card.occupied-soon,
+.hotel-rooms .room-el-card.occupied-soon.el-card {
+    background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%) !important;
+    border: 0 !important;
+    box-shadow: 0 4px 14px rgba(109, 40, 217, 0.38) !important;
+}
 .room-container .room-el-card.cleaning,
 .hotel-rooms .room-el-card.cleaning.el-card {
     background: linear-gradient(135deg, #29b6f6 0%, #0277bd 100%) !important;
@@ -960,6 +968,7 @@
 .room-container .room-el-card.available .el-card__body,
 .room-container .room-el-card.occupied .el-card__body,
 .room-container .room-el-card.occupied-last .el-card__body,
+.room-container .room-el-card.occupied-soon .el-card__body,
 .room-container .room-el-card.cleaning .el-card__body {
     background: transparent !important;
 }
