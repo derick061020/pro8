@@ -248,6 +248,20 @@
                                     </p>-->
 
                                 </div>
+                                <!-- Fechas de la estadía, justo encima de los botones -->
+                                <div
+                                    v-if="ro.rent && (ro.rent.input_date || ro.rent.output_date)"
+                                    class="stay-dates-row"
+                                >
+                                    <span class="stay-date">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M4 7a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2v-12z" /><path d="M16 3v4" /><path d="M8 3v4" /><path d="M4 11h16" /></svg>
+                                        Entrada: <b>{{ formatStayDate(ro.rent.input_date) }}</b>
+                                    </span>
+                                    <span class="stay-date">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M4 7a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2v-12z" /><path d="M16 3v4" /><path d="M8 3v4" /><path d="M4 11h16" /></svg>
+                                        Salida: <b>{{ formatStayDate(ro.rent.output_date) }}</b>
+                                    </span>
+                                </div>
                                 <div class="row" style="margin-right:0px;margin-left:0px;margin-top: auto;">
                                     <div class="col-3" style="padding-left:0px;">
                                         <button
@@ -259,12 +273,11 @@
                                         <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-hotel-service"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M8.5 10a1.5 1.5 0 0 1 -1.5 -1.5a5.5 5.5 0 0 1 11 0v10.5a2 2 0 0 1 -2 2h-7a2 2 0 0 1 -2 -2v-2c0 -1.38 .71 -2.444 1.88 -3.175l4.424 -2.765c1.055 -.66 1.696 -1.316 1.696 -2.56a2.5 2.5 0 1 0 -5 0a1.5 1.5 0 0 1 -1.5 1.5z" /></svg> 
                                         </button>
                                     </div>
-                                    <div class="col-9" style="padding-right:0px;position:relative;">
-                                        <!-- Indicador de deuda flotante: esquina superior derecha del botón,
-                                             solapando ~50% por encima para no ocupar espacio del card. -->
+                                    <div class="col-9 room-actions-right" style="padding-right:0px;position:relative;">
+                                        <!-- Indicador de deuda: a la izquierda del botón de estado. -->
                                         <span
                                             v-if="(ro.status !== 'DISPONIBLE' || ro.is_active_reservation) && getRoomDebt(ro) > 0"
-                                            class="debt-indicator-floating"
+                                            class="debt-indicator-btn"
                                         >
                                             Falta pagar: {{ getFormattedDebt(ro) }}
                                         </span>
@@ -1131,24 +1144,67 @@
     justify-content: flex-end;
 }
 
-/* Indicador de deuda flotante: posicionado en la esquina superior derecha
-   del botón (Ocupado / Reservado), justo por encima con un margen de
-   separación para no solaparse con el botón. */
-.debt-indicator-floating {
-    position: absolute;
-    right: 0;
-    bottom: 100%;
-    margin-bottom: 6px;
-    z-index: 6;
-    padding: 4px 10px;
+/* Fechas de la estadía (entrada / salida) justo encima de la fila de botones. */
+.room-container .room-el-card .stay-dates-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 14px;
+    margin-top: auto;
+    margin-bottom: 8px;
+    font-size: 12px;
+    line-height: 1.3;
+    opacity: 0.95;
+}
+
+/* Cuando hay línea de fechas, es ella la que absorbe el espacio libre; la fila
+   de botones va pegada debajo (si no, el `margin-top:auto` de ambas se reparte
+   el hueco y las separa). */
+.room-container .room-el-card .card-rent > .stay-dates-row + .row {
+    margin-top: 0 !important;
+}
+
+.room-container .room-el-card .stay-date {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    white-space: nowrap;
+}
+
+.room-container .room-el-card .stay-date svg {
+    flex-shrink: 0;
+    opacity: 0.85;
+}
+
+/* Fila de acciones de la habitación ocupada/reservada: el indicador de deuda
+   va a la izquierda y el botón de estado (Ocupado / Reservado) a la derecha. */
+.room-container .room-el-card .card-rent > .row > .col-9.room-actions-right {
+    display: flex;
+    align-items: stretch;
+    gap: 6px;
+}
+
+.room-container .room-el-card .card-rent > .row > .col-9.room-actions-right > .btn {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.debt-indicator-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 1 auto;
+    min-width: 0;
+    padding: 8px 10px;
     background: #ff4757;
     color: white;
-    border-radius: 10px;
+    border-radius: 8px;
     font-size: 13px;
     font-weight: 700;
     line-height: 1.3;
     animation: pulse 2s infinite;
     white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
     pointer-events: none;
 }
@@ -2462,6 +2518,13 @@ export default {
             if (!dateString) return "";
             const [year, month, day] = dateString.split("-");
             return `${day}/${month}`;
+        },
+        // Fecha de entrada/salida de la estadía en formato d/m/aaaa (14/9/2026)
+        formatStayDate(dateString) {
+            if (!dateString) return "—";
+            const [year, month, day] = String(dateString).split("T")[0].split(" ")[0].split("-");
+            if (!year || !month || !day) return dateString;
+            return `${parseInt(day, 10)}/${parseInt(month, 10)}/${year}`;
         },
         showOccupiedModal(room) {
             this.selectedRoom = room;
