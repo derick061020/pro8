@@ -122,14 +122,11 @@
                             <div class="card-body py-0">
                             <div class="row">
                                 <div
-                                    class="form-group col-12 col-md-5"
+                                    class="form-group col-12 col-md-5 position-relative"
                                     :class="{ 'has-danger': errors.customer_id }"
                                 >
                                     <label class="control-label font-weight-bold text-info">
                                         Cliente
-                                        <a href="#" @click.prevent="showDialogNewPerson = true"
-                                        >[+ Nuevo]</a
-                                        >
                                     </label>
                                     <el-select
                                         v-model="form.customer_id"
@@ -167,6 +164,18 @@
                                             </div>
                                         </template>
                                     </el-select>
+                                    <template v-if="form.customer_id">
+                                        <span class="btn-add-new btn-edit-person btn-add-new-invoice"
+                                              @click.prevent="clickEditPerson"
+                                              title="Editar cliente">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-user-edit"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0" /><path d="M6 21v-2a4 4 0 0 1 4 -4h3.5" /><path d="M18.42 15.61a2.1 2.1 0 0 1 2.97 2.97l-3.39 3.42h-3v-3l3.42 -3.39" /></svg>
+                                        </span>
+                                    </template>
+                                    <span class="btn-add-new btn-add-new-invoice"
+                                          @click.prevent="clickNewPerson"
+                                          title="Agregar nuevo cliente">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-user-plus"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0" /><path d="M16 19h6" /><path d="M19 16v6" /><path d="M6 21v-2a4 4 0 0 1 4 -4h4" /></svg>
+                                    </span>
                                     <el-checkbox v-model="search_item_by_barcode"
                                                 :disabled="recordItem != null">Buscar por
                                         código de
@@ -776,6 +785,7 @@
             :external="true"
             :input_person="input_person"
             :document_type_id="form.document_type_id"
+            :recordId="editPerson ? form.customer_id : null"
         ></person-form>
 
         <quantity-persons
@@ -894,6 +904,7 @@ export default {
             submitted: false,
             submittedMessage: '',
             showDialogNewPerson: false,
+            editPerson: false,
             showDialogPersons: false,
             search_item_by_barcode: false,
             input_person: {},
@@ -914,13 +925,6 @@ export default {
             showDialogSaleNoteOptions: false,
             customerSearchTerm: '',
         };
-    },
-    watch: {
-        showDialogNewPerson(newVal) {
-            if (!newVal) {
-                //this.customerSearchTerm = ''
-            }
-        }
     },
     async mounted() {
         console.log('=== MOUNTED - INICIO ===');
@@ -1084,6 +1088,11 @@ export default {
         },
     },
     watch: {
+        showDialogNewPerson(newVal) {
+            if (!newVal) {
+                this.editPerson = false;
+            }
+        },
         'form.adults': {
             handler: function(newVal) {
                 this.updateTotalPersons();
@@ -1166,12 +1175,21 @@ export default {
             },
             immediate: true,
         },
-        openNewPersonDialog() {
-            this.personRecordId = null
-            this.showDialogNewPerson = true
-        },
     },
     methods: {
+        openNewPersonDialog() {
+            this.editPerson = false;
+            this.showDialogNewPerson = true;
+        },
+        clickNewPerson() {
+            this.editPerson = false;
+            this.showDialogNewPerson = true;
+        },
+        clickEditPerson() {
+            if (!this.form.customer_id) return;
+            this.editPerson = true;
+            this.showDialogNewPerson = true;
+        },
         updateTotalPersons() {
             const adults = parseInt(this.form.adults) || 0;
             const children = parseInt(this.form.children) || 0;
@@ -1811,18 +1829,37 @@ export default {
             this.onUpdateTotalToPay();
         },
         async reloadDataCustomers(customerId) {
+            // Al editar el cliente ya seleccionado no se debe perder la lista de
+            // huéspedes registrados, solo se actualizan sus datos.
+            const keepPersons =
+                this.editPerson &&
+                this.form.customer_id === customerId &&
+                this.form.data_persons &&
+                this.form.data_persons.length > 0;
+            const data_persons = keepPersons ? [...this.form.data_persons] : null;
+
             await this.$http
                 .get(`/persons/search/${customerId}`)
                 .then((response) => {
                     this.customers = response.data.customers;
                     this.form.customer_id = customerId;
                     this.changeCustomer();
+
+                    if (data_persons) {
+                        data_persons[0] = {
+                            ...data_persons[0],
+                            number: this.form.customer.number,
+                            name: this.form.customer.name,
+                        };
+                        this.form.data_persons = data_persons;
+                    }
                 });
 
         },
         keyupCustomer() {
             if (this.input_person.number) {
                 if (!isNaN(parseInt(this.input_person.number))) {
+                    this.editPerson = false;
                     switch (this.input_person.number.length) {
                         case 8:
                             this.input_person.identity_document_type_id = "1";
