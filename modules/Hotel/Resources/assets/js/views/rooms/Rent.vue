@@ -1013,6 +1013,12 @@ export default {
                 return href.includes('is_reservation=true')
                     || search.includes('is_reservation=true')
                     || search.includes('source=calendar')
+                    // Check-in de una reserva: se detecta por la URL para que el
+                    // formulario esté disponible desde el primer render. Con solo
+                    // form.is_checkin_from_reservation (que se marca al terminar
+                    // de cargar la reserva) la pantalla "Habitación no disponible"
+                    // aparecía mientras tanto si el cuarto no estaba DISPONIBLE.
+                    || search.includes('checkin=true')
                     || ref.includes('reservations/calendar');
             } catch (e) {
                 return false;
