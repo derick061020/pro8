@@ -21847,6 +21847,9 @@ div.sub-title.text-muted {
     top: 34px;
     right: 14px;
 }
+.btn-edit-person {
+    right: 30px;
+}
 .btn-add-new:hover{
     opacity: 1;
 }
