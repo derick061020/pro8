@@ -238,6 +238,14 @@ class HotelReceptionController extends Controller
             $room->is_active_reservation = false;
             $room->ready_for_checkin     = false;
         } elseif ($currentReservation) {
+            // Sin renta real, un OCUPADO es residual (p. ej. quedó marcado al
+            // terminar la limpieza con una reserva pendiente). Se corrige aquí
+            // también, si no la habitación llega a su hora de entrada en estado
+            // OCUPADO y el check-in se rechazaba por "habitación no disponible".
+            if ($room->status === 'OCUPADO') {
+                $room->status = 'DISPONIBLE';
+                $room->save();
+            }
             $this->attachRentBalances($currentReservation);
             $room->rent                  = $currentReservation;
             $room->has_reservation       = true;

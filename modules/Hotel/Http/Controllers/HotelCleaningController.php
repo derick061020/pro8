@@ -165,11 +165,17 @@ class HotelCleaningController extends Controller
             $room = \Modules\Hotel\Models\HotelRoom::find($cleaning->hotel_room_id);
             if ($room) {
                 if ($room->status === 'LIMPIEZA') {
-                    // Verificar si hay un rent activo
+                    // Verificar si hay una RENTA activa (huésped dentro). Las
+                    // reservas (is_reserve = true) no cuentan: nadie ocupa aún la
+                    // habitación, y marcarla OCUPADO por una reserva pendiente
+                    // bloqueaba luego su propio check-in.
                     $activeRent = \Modules\Hotel\Models\HotelRent::where('hotel_room_id', $room->id)
                         ->where('status', '!=', 'FINALIZADO')
+                        ->where(function ($q) {
+                            $q->where('is_reserve', false)->orWhereNull('is_reserve');
+                        })
                         ->first();
-                    
+
                     if ($activeRent) {
                         // Hay rent activo, cambiar a OCUPADO para que el huésped pueda usarla
                         $room->status = 'OCUPADO';

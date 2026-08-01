@@ -49,12 +49,42 @@ class HotelRentController extends Controller
 		$reservation = null;
 
 		if ($isCheckin) {
-			// Buscar la reserva activa para esta habitación
-			$reservation = HotelRent::with('customer', 'items.payments')
+			// Reservas vigentes (no finalizadas) de la habitación, ordenadas por
+			// inicio. Se busca la que corresponde al check-in:
+			//  1. La indicada explícitamente por la recepción (reservation_id).
+			//  2. La que está vigente AHORA (entrada ya llegó, salida no).
+			//  3. La próxima por empezar (llegada anticipada).
+			// Antes se tomaba la de mayor id, lo que cargaba una reserva futura
+			// (o una ya finalizada) cuando la habitación tenía varias.
+			$now = Carbon::now();
+
+			$reservations = HotelRent::with('customer', 'items.payments')
 				->where('hotel_room_id', $roomId)
 				->where('is_reserve', true)
-				->orderBy('id', 'DESC')
-				->first();
+				->where('status', '!=', 'FINALIZADO')
+				->orderBy('input_date', 'ASC')
+				->orderBy('input_time', 'ASC')
+				->get();
+
+			$requestedId = request()->get('reservation_id');
+			$reservation = $requestedId
+				? $reservations->firstWhere('id', (int) $requestedId)
+				: null;
+
+			if (!$reservation) {
+				$reservation = $reservations->first(function ($r) use ($now) {
+					$start = Carbon::parse($r->input_date . ' ' . ($r->input_time ?: '14:00'));
+					$end   = Carbon::parse($r->output_date . ' ' . ($r->output_time ?: '12:00'));
+					return $start->lte($now) && $end->gt($now);
+				});
+			}
+
+			if (!$reservation) {
+				$reservation = $reservations->first(function ($r) use ($now) {
+					$end = Carbon::parse($r->output_date . ' ' . ($r->output_time ?: '12:00'));
+					return $end->gt($now);
+				});
+			}
 
 			if (!$reservation) {
 				return redirect()->back()->with('error', 'No se encontró una reserva para check-in');
@@ -86,6 +116,15 @@ class HotelRentController extends Controller
 			$isFromCalendar    = $refererHeader && strpos($refererHeader, 'reservations/calendar') !== false;
 			$isReservationCtx  = $isReservationFlag || $isFromCalendar || $request->input('source') === 'calendar';
 
+			// Check-in que proviene de una reserva existente: la reserva de origen
+			// cubre el mismo rango de fechas, por lo que NO debe contar como un
+			// conflicto consigo misma. La excluimos del chequeo de solapamiento.
+			$isCheckinFromReservation = (bool) $request->input('is_checkin_from_reservation', false);
+			$sourceReservationId      = $request->input('reservation_id');
+			$excludeReservationId     = ($isCheckinFromReservation && $sourceReservationId)
+				? $sourceReservationId
+				: null;
+
 			// Validación de estado de la habitación.
 			// Para check-in inmediato: la habitación debe estar DISPONIBLE.
 			// Para reservas futuras: aceptamos cualquier estado salvo MANTENIMIENTO
@@ -97,7 +136,12 @@ class HotelRentController extends Controller
 					'message' => 'La habitación está en mantenimiento y no puede recibir reservas.',
 				], 422);
 			}
-			if (!$isReservationCtx && $room->status !== 'DISPONIBLE') {
+			// El check-in de una reserva ya existente tampoco se valida por el
+			// estado actual: la habitación puede haber quedado en LIMPIEZA (tras
+			// el checkout anterior) o con un OCUPADO obsoleto, y aun así la
+			// reserva tiene derecho a entrar. El solapamiento de fechas de más
+			// abajo es la validación real de disponibilidad.
+			if (!$isReservationCtx && !$isCheckinFromReservation && $room->status !== 'DISPONIBLE') {
 				DB::connection('tenant')->rollBack();
 				$label = ['OCUPADO' => 'ocupada', 'LIMPIEZA' => 'en limpieza', 'MANTENIMIENTO' => 'en mantenimiento'][$room->status] ?? strtolower((string) $room->status);
 				return response()->json([
@@ -113,15 +157,6 @@ class HotelRentController extends Controller
 			$newEnd   = Carbon::parse(
 				$request->input('output_date') . ' ' . ($request->input('output_time') ?: '12:00')
 			);
-
-			// Check-in que proviene de una reserva existente: la reserva de origen
-			// cubre el mismo rango de fechas, por lo que NO debe contar como un
-			// conflicto consigo misma. La excluimos del chequeo de solapamiento.
-			$isCheckinFromReservation = (bool) $request->input('is_checkin_from_reservation', false);
-			$sourceReservationId      = $request->input('reservation_id');
-			$excludeReservationId     = ($isCheckinFromReservation && $sourceReservationId)
-				? $sourceReservationId
-				: null;
 
 			$conflict = HotelRent::findOverlappingRent($roomId, $newStart, $newEnd, $excludeReservationId);
 			if ($conflict) {

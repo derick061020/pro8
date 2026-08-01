@@ -2348,8 +2348,11 @@ export default {
                 return;
             }
             
-            // Redirigir a la página de rent con el parámetro checkin=true
-            window.location.href = `/hotels/reception/${room.id}/rent?checkin=true`;
+            // Redirigir a la página de rent con el parámetro checkin=true.
+            // Se envía la reserva concreta que muestra la tarjeta: si la
+            // habitación tiene varias reservas, el backend cargaba la última
+            // creada y no la que corresponde a este check-in.
+            window.location.href = `/hotels/reception/${room.id}/rent?checkin=true&reservation_id=${room.rent.id}`;
         },
         onToRent(room) {
             if (room.rates.length > 0) {
