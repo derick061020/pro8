@@ -258,17 +258,6 @@
                                         Salida: <b>{{ formatStayDate(ro.rent.output_date) }}</b>
                                     </span>
                                 </div>
-                                <!-- Deuda pendiente: en su propia línea. Compartiendo fila con el
-                                     botón de estado le robaba el ancho y en móvil el botón se
-                                     encogía y se salía de la tarjeta. -->
-                                <div
-                                    v-if="(ro.status !== 'DISPONIBLE' || ro.is_active_reservation) && getRoomDebt(ro) > 0"
-                                    class="debt-row"
-                                >
-                                    <span class="debt-indicator-btn">
-                                        Falta pagar: {{ getFormattedDebt(ro) }}
-                                    </span>
-                                </div>
                                 <div class="row" style="margin-right:0px;margin-left:0px;margin-top: auto;">
                                     <div class="col-3" style="padding-left:0px;">
                                         <button
@@ -280,7 +269,21 @@
                                         <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-hotel-service"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M8.5 10a1.5 1.5 0 0 1 -1.5 -1.5a5.5 5.5 0 0 1 11 0v10.5a2 2 0 0 1 -2 2h-7a2 2 0 0 1 -2 -2v-2c0 -1.38 .71 -2.444 1.88 -3.175l4.424 -2.765c1.055 -.66 1.696 -1.316 1.696 -2.56a2.5 2.5 0 1 0 -5 0a1.5 1.5 0 0 1 -1.5 1.5z" /></svg> 
                                         </button>
                                     </div>
-                                    <div class="col-9 room-actions-right" style="padding-right:0px;position:relative;">
+                                    <div
+                                        :class="['col-9', 'room-actions-right', {
+                                            'has-debt': (ro.status !== 'DISPONIBLE' || ro.is_active_reservation) && getRoomDebt(ro) > 0
+                                        }]"
+                                        style="padding-right:0px;position:relative;"
+                                    >
+                                        <!-- Deuda pendiente: en medio de los dos botones y ocupando
+                                             todo el espacio libre; los botones se ajustan a su
+                                             contenido para no quitarle ancho. -->
+                                        <span
+                                            v-if="(ro.status !== 'DISPONIBLE' || ro.is_active_reservation) && getRoomDebt(ro) > 0"
+                                            class="debt-indicator-btn"
+                                        >
+                                            Falta pagar: {{ getFormattedDebt(ro) }}
+                                        </span>
                                         <!-- Habitación reservada: el botón hace Check-in -->
                                         <button
                                             v-if="ro.is_active_reservation"
@@ -1081,8 +1084,8 @@
    Hacemos que la columna grande sea flexible para que el gap se reparta
    dentro del 100% y el padding quede simétrico a ambos lados. */
 .room-container .room-el-card .card-rent > .row > .col-3 {
-    flex: 0 0 44px;
-    max-width: 44px;
+    flex: 0 0 40px;
+    max-width: 40px;
 }
 .room-container .room-el-card .card-rent > .row > .col-9 {
     flex: 1 1 auto;
@@ -1202,32 +1205,22 @@
     min-width: 0;
 }
 
-/* Línea propia para la deuda, encima de los botones. */
-.room-container .room-el-card .card-rent > .debt-row {
-    display: flex;
-    margin-top: auto;
-    margin-bottom: 8px;
+/* Con deuda, el botón de estado se ajusta a su texto (lo más angosto posible)
+   para que el aviso de deuda se quede con todo el espacio libre. */
+.room-container .room-el-card .card-rent > .row > .col-9.room-actions-right.has-debt > .btn {
+    flex: 0 0 auto;
+    width: auto !important;
 }
 
-/* Si ya hay línea de fechas, es ella la que absorbe el espacio libre. */
-.room-container .room-el-card .card-rent > .stay-dates-row + .debt-row {
-    margin-top: 0;
-}
-
-/* La fila de botones va pegada debajo de la deuda (el margin-top:auto en línea
-   la separaría). */
-.room-container .room-el-card .card-rent > .debt-row + .row {
-    margin-top: 0 !important;
-}
-
-/* Aviso de deuda: el elemento más grande de la tarjeta. */
+/* Aviso de deuda: el elemento más grande de la fila, en medio de los dos botones. */
 .debt-indicator-btn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 100%;
-    min-height: 42px;
-    padding: 8px 12px;
+    flex: 1 1 auto;
+    min-width: 0;
+    min-height: 34px;
+    padding: 6px 8px;
     background: #ff4757;
     color: white;
     border-radius: 8px;
