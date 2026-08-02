@@ -248,15 +248,11 @@
                                     </p>-->
 
                                 </div>
-                                <!-- Fechas de la estadía, justo encima de los botones -->
+                                <!-- Fecha de salida, justo encima de los botones -->
                                 <div
-                                    v-if="ro.rent && (ro.rent.input_date || ro.rent.output_date)"
+                                    v-if="ro.rent && ro.rent.output_date"
                                     class="stay-dates-row"
                                 >
-                                    <span class="stay-date">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M4 7a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2v-12z" /><path d="M16 3v4" /><path d="M8 3v4" /><path d="M4 11h16" /></svg>
-                                        Entrada: <b>{{ formatStayDate(ro.rent.input_date) }}</b>
-                                    </span>
                                     <span class="stay-date">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M4 7a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2v-12z" /><path d="M16 3v4" /><path d="M8 3v4" /><path d="M4 11h16" /></svg>
                                         Salida: <b>{{ formatStayDate(ro.rent.output_date) }}</b>
@@ -1085,8 +1081,8 @@
    Hacemos que la columna grande sea flexible para que el gap se reparta
    dentro del 100% y el padding quede simétrico a ambos lados. */
 .room-container .room-el-card .card-rent > .row > .col-3 {
-    flex: 0 0 25%;
-    max-width: 25%;
+    flex: 0 0 44px;
+    max-width: 44px;
 }
 .room-container .room-el-card .card-rent > .row > .col-9 {
     flex: 1 1 auto;
@@ -1116,6 +1112,20 @@
     width: 18px;
     height: 18px;
     flex-shrink: 0;
+}
+
+/* La fila de acciones (agregar productos + Ocupado/Reservado) va compacta: el
+   elemento que debe destacar en la tarjeta es el aviso de deuda, que ocupa su
+   propia línea justo encima. */
+.room-container .room-el-card .card-rent > .row .btn {
+    min-height: 34px;
+    padding: 5px 8px !important;
+    font-size: 12px;
+}
+
+.room-container .room-el-card .card-rent > .row .btn svg {
+    width: 16px;
+    height: 16px;
 }
 
 /* El botón grande (Disponible / Check-in) anclado al final */
@@ -1210,16 +1220,18 @@
     margin-top: 0 !important;
 }
 
+/* Aviso de deuda: el elemento más grande de la tarjeta. */
 .debt-indicator-btn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    max-width: 100%;
-    padding: 6px 12px;
+    width: 100%;
+    min-height: 42px;
+    padding: 8px 12px;
     background: #ff4757;
     color: white;
     border-radius: 8px;
-    font-size: 12px;
+    font-size: 15px;
     font-weight: 700;
     line-height: 1.3;
     animation: pulse 2s infinite;
