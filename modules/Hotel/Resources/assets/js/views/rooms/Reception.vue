@@ -282,7 +282,7 @@
                                             v-if="(ro.status !== 'DISPONIBLE' || ro.is_active_reservation) && getRoomDebt(ro) > 0"
                                             class="debt-indicator-btn"
                                         >
-                                            Falta pagar: {{ getFormattedDebt(ro) }}
+                                            Debe: {{ getFormattedDebt(ro) }}
                                         </span>
                                         <!-- Habitación reservada: el botón hace Check-in -->
                                         <button
@@ -1121,7 +1121,9 @@
    elemento que debe destacar en la tarjeta es el aviso de deuda, que ocupa su
    propia línea justo encima. */
 .room-container .room-el-card .card-rent > .row .btn {
-    min-height: 34px;
+    /* Mismo alto que el botón grande "Disponible"; lo que se reduce es el
+       ancho, no la altura. */
+    min-height: 40px;
     padding: 5px 8px !important;
     font-size: 12px;
 }
@@ -1219,7 +1221,7 @@
     justify-content: center;
     flex: 1 1 auto;
     min-width: 0;
-    min-height: 34px;
+    min-height: 40px;
     padding: 6px 8px;
     background: #ff4757;
     color: white;
