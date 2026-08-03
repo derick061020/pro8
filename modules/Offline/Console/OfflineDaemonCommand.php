@@ -5,6 +5,7 @@ namespace Modules\Offline\Console;
 use Illuminate\Console\Command;
 use Modules\Offline\Models\OfflineConfiguration;
 use Modules\Offline\Services\Connectivity;
+use Modules\Offline\Services\StatusSnapshot;
 use Modules\Offline\Services\SyncClient;
 use Throwable;
 
@@ -67,6 +68,9 @@ class OfflineDaemonCommand extends Command
             }
 
             $summary = (new SyncClient($configuration))->synchronize();
+
+            // El launcher de Windows lee esta foto para la bandeja del sistema.
+            StatusSnapshot::write();
 
             if (empty($summary['online'])) {
                 return;

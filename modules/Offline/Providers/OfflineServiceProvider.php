@@ -5,6 +5,7 @@ namespace Modules\Offline\Providers;
 use Illuminate\Routing\Router;
 use Illuminate\Support\ServiceProvider;
 use Modules\Offline\Console\OfflineDaemonCommand;
+use Modules\Offline\Console\OfflineInstallCommand;
 use Modules\Offline\Console\OfflinePairCommand;
 use Modules\Offline\Console\OfflineStatusCommand;
 use Modules\Offline\Console\OfflineSyncCommand;
@@ -41,10 +42,8 @@ class OfflineServiceProvider extends ServiceProvider
      */
     protected function registerMiddleware()
     {
-        /** @var Router $router */
-        $router = $this->app['router'];
-
-        $router->aliasMiddleware('offline.terminal', EnsureTerminalIsRegistered::class);
+        $this->app->make(Router::class)
+            ->aliasMiddleware('offline.terminal', EnsureTerminalIsRegistered::class);
     }
 
     protected function registerCommands()
@@ -54,6 +53,7 @@ class OfflineServiceProvider extends ServiceProvider
         }
 
         $this->commands([
+            OfflineInstallCommand::class,
             OfflinePairCommand::class,
             OfflineSyncCommand::class,
             OfflineDaemonCommand::class,

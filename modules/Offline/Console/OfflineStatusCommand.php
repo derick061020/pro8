@@ -4,10 +4,7 @@ namespace Modules\Offline\Console;
 
 use Illuminate\Console\Command;
 use Modules\Offline\Models\OfflineConfiguration;
-use Modules\Offline\Services\Connectivity;
-use Modules\Offline\Services\NumberRangeService;
-use Modules\Offline\Services\SyncClient;
-use Modules\Offline\Services\SyncQueue;
+use Modules\Offline\Services\StatusSnapshot;
 
 /**
  * Estado del terminal.
@@ -24,27 +21,11 @@ class OfflineStatusCommand extends Command
 
     public function handle(): int
     {
-        $configuration = OfflineConfiguration::current();
+        $status = StatusSnapshot::build();
 
-        $status = [
-            'mode'          => $configuration->mode,
-            'terminal_code' => $configuration->terminal_code,
-            'terminal_name' => $configuration->terminal_name,
-            'server'        => $configuration->serverUrl(),
-            'paired'        => $configuration->canSync(),
-            'online'        => $configuration->canSync() ? Connectivity::isOnline() : false,
-            'last_push_at'  => optional($configuration->last_push_at)->toDateTimeString(),
-            'last_pull_at'  => optional($configuration->last_pull_at)->toDateTimeString(),
-        ];
-
-        if ($configuration->isClient()) {
-            $status['pending']           = SyncQueue::pendingCount();
-            $status['stuck']             = SyncQueue::stuckCount();
-            $status['pending_documents'] = $configuration->canSync()
-                ? (new SyncClient($configuration))->pendingDocumentsCount()
-                : 0;
-            $status['ranges']            = NumberRangeService::summary();
-        }
+        // Deja la foto actualizada también cuando se consulta a mano: si el
+        // demonio no está corriendo, el launcher igual ve algo reciente.
+        StatusSnapshot::write($status);
 
         if ($this->option('json')) {
             $this->line(json_encode($status, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));

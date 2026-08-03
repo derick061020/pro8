@@ -1,0 +1,143 @@
+#!/usr/bin/env bash
+#
+# Arma el instalador de pro8 para Windows desde Linux.
+#
+#   ./desktop/build/build.sh
+#
+# Pasos:
+#   1. Compila el launcher (Go, cross-compile a Windows).
+#   2. Prepara la copia del sistema que se va a empaquetar, con vendor/ y los
+#      assets ya compilados, para que la PC del cliente no necesite composer
+#      ni node.
+#   3. Arma el instalador con NSIS.
+#
+# Requisitos en la máquina de compilación:
+#   go, php, composer, npm, makensis, rsync
+#   y haber corrido antes ./desktop/build/fetch-runtime.sh
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+DESKTOP_DIR="$(dirname "$SCRIPT_DIR")"
+PROJECT_DIR="$(dirname "$DESKTOP_DIR")"
+
+RUNTIME_DIR="${SCRIPT_DIR}/runtime"
+PAYLOAD_DIR="${SCRIPT_DIR}/payload"
+DIST_DIR="${SCRIPT_DIR}/dist"
+
+# Rama del repositorio desde la que se actualiza el terminal.
+DEPLOY_BRANCH="${DEPLOY_BRANCH:-deploy/offline}"
+
+info() { printf '\033[1;34m→\033[0m %s\n' "$1"; }
+ok()   { printf '\033[1;32m✓\033[0m %s\n' "$1"; }
+fail() { printf '\033[1;31m✗\033[0m %s\n' "$1" >&2; exit 1; }
+
+for tool in go rsync makensis; do
+    command -v "$tool" >/dev/null || fail "Falta $tool. En Arch: sudo pacman -S go rsync nsis"
+done
+
+[[ -f "${RUNTIME_DIR}/php/php.exe" ]] \
+    || fail "No está el stack de Windows. Corré primero: ./desktop/build/fetch-runtime.sh"
+
+VERSION="$(cd "$PROJECT_DIR" && git rev-parse --short HEAD)"
+info "Compilando versión ${VERSION}"
+
+# ---------------------------------------------------------------------------
+# 1. Launcher
+# ---------------------------------------------------------------------------
+
+info "Compilando el launcher..."
+
+(
+    cd "${DESKTOP_DIR}/launcher"
+
+    # CGO apagado: es lo que permite cross-compilar a Windows desde Linux sin
+    # instalar un toolchain de MinGW.
+    GOOS=windows GOARCH=amd64 CGO_ENABLED=0 \
+        go build -trimpath -ldflags "-H=windowsgui -s -w -X main.version=${VERSION}" \
+        -o "${SCRIPT_DIR}/pro8.exe" .
+)
+
+ok "Launcher compilado ($(du -h "${SCRIPT_DIR}/pro8.exe" | cut -f1))"
+
+# ---------------------------------------------------------------------------
+# 2. Copia del sistema
+# ---------------------------------------------------------------------------
+
+info "Preparando la copia del sistema..."
+
+rm -rf "$PAYLOAD_DIR"
+mkdir -p "${PAYLOAD_DIR}/app"
+
+# Se copia el árbol de trabajo y no un git archive, porque hacen falta vendor/
+# y public/build, que no están versionados.
+rsync -a --delete \
+    --exclude '.git' \
+    --exclude 'node_modules' \
+    --exclude 'desktop/build/cache' \
+    --exclude 'desktop/build/runtime' \
+    --exclude 'desktop/build/payload' \
+    --exclude 'desktop/build/dist' \
+    --exclude 'storage/logs/*' \
+    --exclude 'storage/framework/cache/*' \
+    --exclude 'storage/framework/sessions/*' \
+    --exclude 'storage/framework/views/*' \
+    --exclude 'storage/app/backups/*' \
+    --exclude '.env' \
+    --exclude 'pro8-main-actualizado' \
+    --exclude '*.zip' \
+    "${PROJECT_DIR}/" "${PAYLOAD_DIR}/app/"
+
+[[ -d "${PAYLOAD_DIR}/app/vendor" ]] \
+    || fail "Falta vendor/. Corré: composer install --no-dev --optimize-autoloader"
+
+[[ -d "${PAYLOAD_DIR}/app/public/build" ]] \
+    || fail "Faltan los assets compilados. Corré: npm run build"
+
+# El terminal se actualiza con git pull, así que necesita un repositorio
+# apuntando a la rama de despliegue.
+info "Inicializando el repositorio de actualizaciones..."
+(
+    cd "${PAYLOAD_DIR}/app"
+    ORIGIN="$(cd "$PROJECT_DIR" && git remote get-url origin)"
+
+    git init -q
+    git remote add origin "$ORIGIN"
+    git config core.autocrlf false
+    # Sin objetos: el primer `offline:update` traerá lo que falte.
+    printf '%s\n' "$DEPLOY_BRANCH" > .deploy-branch
+)
+
+# Configuración propia del terminal
+mkdir -p "${PAYLOAD_DIR}/config" "${PAYLOAD_DIR}/runtime"
+cp "${DESKTOP_DIR}/config/Caddyfile"             "${PAYLOAD_DIR}/config/"
+cp "${DESKTOP_DIR}/config/my.ini"                "${PAYLOAD_DIR}/config/"
+cp "${DESKTOP_DIR}/config/env.terminal.example"  "${PAYLOAD_DIR}/config/"
+cp "${RUNTIME_DIR}/cacert.pem"                   "${PAYLOAD_DIR}/config/"
+
+rsync -a "${RUNTIME_DIR}/php/"     "${PAYLOAD_DIR}/runtime/php/"
+rsync -a "${RUNTIME_DIR}/mariadb/" "${PAYLOAD_DIR}/runtime/mariadb/"
+rsync -a "${RUNTIME_DIR}/caddy/"   "${PAYLOAD_DIR}/runtime/caddy/"
+
+# El php.ini va en la carpeta de PHP, que es donde lo busca php-cgi.
+cp "${DESKTOP_DIR}/config/php.ini" "${PAYLOAD_DIR}/runtime/php/php.ini"
+
+cp "${SCRIPT_DIR}/pro8.exe" "${PAYLOAD_DIR}/pro8.exe"
+
+ok "Copia lista ($(du -sh "$PAYLOAD_DIR" | cut -f1))"
+
+# ---------------------------------------------------------------------------
+# 3. Instalador
+# ---------------------------------------------------------------------------
+
+info "Armando el instalador..."
+
+mkdir -p "$DIST_DIR"
+
+makensis -DVERSION="$VERSION" \
+         -DPAYLOAD="$PAYLOAD_DIR" \
+         -DOUTFILE="${DIST_DIR}/pro8-terminal-${VERSION}.exe" \
+         "${DESKTOP_DIR}/installer/pro8.nsi"
+
+ok "Instalador listo: ${DIST_DIR}/pro8-terminal-${VERSION}.exe"
+du -h "${DIST_DIR}/pro8-terminal-${VERSION}.exe"
