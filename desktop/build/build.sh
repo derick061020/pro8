@@ -12,8 +12,11 @@
 #   3. Arma el instalador con NSIS.
 #
 # Requisitos en la máquina de compilación:
-#   go, php, composer, npm, makensis, rsync
-#   y haber corrido antes ./desktop/build/fetch-runtime.sh
+#   go, rsync, y haber corrido antes ./desktop/build/fetch-runtime.sh
+#   (más composer y npm, para dejar vendor/ y los assets compilados)
+#
+# makensis es opcional: si no está, en vez del instalador con ventanas se
+# genera un ZIP con un .bat que hace lo mismo por consola.
 
 set -euo pipefail
 
@@ -32,9 +35,18 @@ info() { printf '\033[1;34m→\033[0m %s\n' "$1"; }
 ok()   { printf '\033[1;32m✓\033[0m %s\n' "$1"; }
 fail() { printf '\033[1;31m✗\033[0m %s\n' "$1" >&2; exit 1; }
 
-for tool in go rsync makensis; do
-    command -v "$tool" >/dev/null || fail "Falta $tool. En Arch: sudo pacman -S go rsync nsis"
+for tool in go rsync; do
+    command -v "$tool" >/dev/null || fail "Falta $tool. En Arch: sudo pacman -S go rsync"
 done
+
+# NSIS no está en los repos oficiales de Arch (vive en AUR: paru -S nsis).
+# Sin él igual se puede entregar el terminal, como ZIP con un .bat de
+# instalación, así que no se corta el build por eso.
+HAS_NSIS=0
+command -v makensis >/dev/null && HAS_NSIS=1
+
+command -v zip >/dev/null || [[ $HAS_NSIS -eq 1 ]] \
+    || fail "Sin makensis ni zip no hay con qué empaquetar. Instalá uno: paru -S nsis  /  sudo pacman -S zip"
 
 [[ -f "${RUNTIME_DIR}/php/php.exe" ]] \
     || fail "No está el stack de Windows. Corré primero: ./desktop/build/fetch-runtime.sh"
@@ -130,14 +142,35 @@ ok "Copia lista ($(du -sh "$PAYLOAD_DIR" | cut -f1))"
 # 3. Instalador
 # ---------------------------------------------------------------------------
 
-info "Armando el instalador..."
-
 mkdir -p "$DIST_DIR"
 
-makensis -DVERSION="$VERSION" \
-         -DPAYLOAD="$PAYLOAD_DIR" \
-         -DOUTFILE="${DIST_DIR}/pro8-terminal-${VERSION}.exe" \
-         "${DESKTOP_DIR}/installer/pro8.nsi"
+if [[ $HAS_NSIS -eq 1 ]]; then
+    info "Armando el instalador..."
 
-ok "Instalador listo: ${DIST_DIR}/pro8-terminal-${VERSION}.exe"
-du -h "${DIST_DIR}/pro8-terminal-${VERSION}.exe"
+    makensis -DVERSION="$VERSION" \
+             -DPAYLOAD="$PAYLOAD_DIR" \
+             -DOUTFILE="${DIST_DIR}/pro8-terminal-${VERSION}.exe" \
+             "${DESKTOP_DIR}/installer/pro8.nsi"
+
+    ok "Instalador listo: ${DIST_DIR}/pro8-terminal-${VERSION}.exe"
+    du -h "${DIST_DIR}/pro8-terminal-${VERSION}.exe"
+else
+    # Sin NSIS se entrega un ZIP con un .bat que hace lo mismo que el
+    # instalador, pero preguntando por consola. Sirve para probar el terminal
+    # sin esperar a tener el toolchain completo.
+    info "makensis no está disponible: se genera un paquete ZIP..."
+
+    cp "${DESKTOP_DIR}/installer/instalar.bat" "${PAYLOAD_DIR}/instalar.bat"
+
+    ZIP_FILE="${DIST_DIR}/pro8-terminal-${VERSION}.zip"
+    rm -f "$ZIP_FILE"
+
+    (cd "$PAYLOAD_DIR" && zip -qr "$ZIP_FILE" .)
+
+    ok "Paquete listo: ${ZIP_FILE}"
+    du -h "$ZIP_FILE"
+
+    printf '\n\033[1;33m!\033[0m %s\n' \
+        "Se descomprime en C:\\Pro8 y se ejecuta instalar.bat como administrador."
+    printf '  %s\n' "Para el instalador con ventanas: paru -S nsis && ./desktop/build/build.sh"
+fi

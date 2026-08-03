@@ -105,9 +105,10 @@ Se compila entero desde Arch, sin necesidad de una máquina Windows.
 
 ```bash
 # Dependencias de la máquina de compilación
-sudo pacman -S go rsync nsis
+sudo pacman -S go rsync
+paru -S nsis          # NSIS no está en los repos oficiales, vive en AUR
 
-# 1. Bajar PHP, MariaDB y Caddy para Windows (una sola vez, ~400 MB)
+# 1. Bajar PHP, MariaDB y Caddy para Windows (una sola vez, unos 400 MB)
 ./desktop/build/fetch-runtime.sh
 
 # 2. Dejar el proyecto listo para empaquetar
@@ -118,7 +119,16 @@ npm ci && npm run build
 ./desktop/build/build.sh
 ```
 
+> Si copiás y pegás estos bloques en zsh, sacá los comentarios: zsh interactivo
+> no trata `#` como comentario y falla al intentar expandir cosas como `~400`.
+
 Resultado: `desktop/build/dist/pro8-terminal-<commit>.exe`
+
+**Sin NSIS**, el build no se corta: genera
+`desktop/build/dist/pro8-terminal-<commit>.zip`, que se descomprime en `C:\Pro8`
+y se instala ejecutando `instalar.bat` como administrador. Pide los mismos datos
+que el instalador gráfico, solo que por consola. Sirve para probar el terminal
+sin esperar a tener el toolchain completo.
 
 Estructura que queda instalada en la PC:
 
@@ -153,6 +163,7 @@ PC de tienda es normal que ya haya un XAMPP o un Laragon ocupando los habituales
    - token de acceso
    - código del terminal (único por PC, ej. `T01`)
    - nombre visible (ej. `Caja principal`)
+   - nombre de la base del negocio en el servidor (ej. `tenant_miempresa`)
    - el archivo `.sql` del paso 1
 
 3. **Primer arranque.** El launcher levanta los servicios y corre
@@ -161,11 +172,6 @@ PC de tienda es normal que ya haya un XAMPP o un Laragon ocupando los habituales
 
 4. **Verificar.** En el sistema, *Configuración → Modo offline*: debe decir
    **EN LÍNEA** y mostrar la numeración reservada.
-
-> Falta un dato en el instalador: el campo `tenant_uuid` de `config\pairing.json`
-> queda vacío y hay que completarlo a mano con el nombre de la base del servidor
-> (ej. `tenant_miempresa`) antes del primer arranque. Está pendiente agregarlo
-> como campo del instalador.
 
 ---
 
@@ -273,9 +279,10 @@ Lo que está escrito y verificado hasta dónde se pudo:
 - **Motor de sincronización (PHP)** — completo. Sintaxis validada; el panel
   compila con Vite.
 - **Panel web** — completo y compilando.
-- **Launcher (Go)** y **instalador (NSIS)** — escritos, **sin compilar**: la
-  máquina donde se desarrollaron no tiene `go` ni `makensis` instalados. Hay que
-  correr `./desktop/build/build.sh` y corregir lo que aparezca.
+- **Launcher (Go)**, **instalador (NSIS)** y **`instalar.bat`** — escritos,
+  **sin compilar ni ejecutar**: la máquina donde se desarrollaron no tiene `go`
+  ni `makensis`. Hay que correr `./desktop/build/build.sh` y corregir lo que
+  aparezca.
 - **Prueba de punta a punta** — pendiente. No se probó contra un servidor real
   ni en una PC con Windows.
 

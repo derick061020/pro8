@@ -14,6 +14,9 @@ Unicode true
 !include "nsDialogs.nsh"
 !include "LogicLib.nsh"
 !include "FileFunc.nsh"
+!include "WordFunc.nsh"
+
+!insertmacro WordReplace
 
 !ifndef VERSION
   !define VERSION "dev"
@@ -48,12 +51,14 @@ Var ServerURL
 Var ServerToken
 Var TerminalCode
 Var TerminalName
+Var TenantUUID
 Var DumpPath
 
 Var TxtServerURL
 Var TxtServerToken
 Var TxtTerminalCode
 Var TxtTerminalName
+Var TxtTenantUUID
 Var TxtDumpPath
 
 ; ---------------------------------------------------------------------------
@@ -92,32 +97,37 @@ Function PairingPage
   !insertmacro MUI_HEADER_TEXT "Conexión con el servidor" \
     "Estos datos permiten que el terminal suba sus ventas cuando hay internet."
 
-  ${NSD_CreateLabel} 0 0 100% 12u "Dirección del servidor pro8 online:"
+  ${NSD_CreateLabel} 0 0 100% 10u "Dirección del servidor pro8 online:"
   Pop $0
-  ${NSD_CreateText} 0 13u 100% 12u "https://"
+  ${NSD_CreateText} 0 11u 100% 12u "https://"
   Pop $TxtServerURL
 
-  ${NSD_CreateLabel} 0 30u 100% 12u "Token de acceso (se genera en el servidor):"
+  ${NSD_CreateLabel} 0 26u 100% 10u "Token de acceso (se genera en el servidor):"
   Pop $0
-  ${NSD_CreateText} 0 43u 100% 12u ""
+  ${NSD_CreateText} 0 37u 100% 12u ""
   Pop $TxtServerToken
 
-  ${NSD_CreateLabel} 0 60u 48% 12u "Código del terminal (único por PC):"
+  ${NSD_CreateLabel} 0 52u 48% 10u "Código del terminal (único por PC):"
   Pop $0
-  ${NSD_CreateText} 0 73u 48% 12u "T01"
+  ${NSD_CreateText} 0 63u 48% 12u "T01"
   Pop $TxtTerminalCode
 
-  ${NSD_CreateLabel} 52% 60u 48% 12u "Nombre del terminal:"
+  ${NSD_CreateLabel} 52% 52u 48% 10u "Nombre del terminal:"
   Pop $0
-  ${NSD_CreateText} 52% 73u 48% 12u "Caja principal"
+  ${NSD_CreateText} 52% 63u 48% 12u "Caja principal"
   Pop $TxtTerminalName
 
-  ${NSD_CreateLabel} 0 92u 100% 20u \
-    "Respaldo (.sql) de la base del negocio, exportado desde el servidor. El terminal debe arrancar con los mismos datos que el servidor:"
+  ; Sin este dato el terminal no sabe sobre qué base restaurar el respaldo.
+  ${NSD_CreateLabel} 0 78u 100% 10u "Base del negocio en el servidor (ej. tenant_miempresa):"
   Pop $0
-  ${NSD_CreateFileRequest} 0 113u 82% 12u ""
+  ${NSD_CreateText} 0 89u 100% 12u "tenant_"
+  Pop $TxtTenantUUID
+
+  ${NSD_CreateLabel} 0 104u 100% 10u "Respaldo (.sql) exportado desde el servidor:"
+  Pop $0
+  ${NSD_CreateFileRequest} 0 115u 82% 12u ""
   Pop $TxtDumpPath
-  ${NSD_CreateBrowseButton} 84% 113u 16% 12u "Buscar"
+  ${NSD_CreateBrowseButton} 84% 115u 16% 12u "Buscar"
   Pop $0
   ${NSD_OnClick} $0 BrowseDump
 
@@ -138,6 +148,7 @@ Function PairingPageLeave
   ${NSD_GetText} $TxtServerToken  $ServerToken
   ${NSD_GetText} $TxtTerminalCode $TerminalCode
   ${NSD_GetText} $TxtTerminalName $TerminalName
+  ${NSD_GetText} $TxtTenantUUID   $TenantUUID
   ${NSD_GetText} $TxtDumpPath     $DumpPath
 
   ${If} $TerminalCode == ""
@@ -148,6 +159,13 @@ Function PairingPageLeave
   ${If} $DumpPath != ""
     ${IfNot} ${FileExists} $DumpPath
       MessageBox MB_ICONEXCLAMATION "No se encontró el archivo de respaldo indicado."
+      Abort
+    ${EndIf}
+
+    ; El respaldo sin saber sobre qué base restaurarlo no sirve de nada.
+    ${If} $TenantUUID == ""
+    ${OrIf} $TenantUUID == "tenant_"
+      MessageBox MB_ICONEXCLAMATION "Indicá el nombre de la base del negocio en el servidor."
       Abort
     ${EndIf}
   ${Else}
@@ -221,6 +239,14 @@ FunctionEnd
 
 ; Deja los datos de pareo para que el launcher haga la instalación inicial.
 Function WritePairing
+  ; El archivo es JSON y las rutas de Windows vienen con barras invertidas,
+  ; que ahí son escapes. Se pasan a barras normales, que PHP acepta igual.
+  StrCpy $R0 $DumpPath
+
+  ${If} $R0 != ""
+    ${WordReplace} $R0 "\" "/" "+" $R0
+  ${EndIf}
+
   FileOpen $0 "$INSTDIR\config\pairing.json" w
 
   FileWrite $0 '{$\r$\n'
@@ -228,8 +254,8 @@ Function WritePairing
   FileWrite $0 '  "token": "$ServerToken",$\r$\n'
   FileWrite $0 '  "terminal_code": "$TerminalCode",$\r$\n'
   FileWrite $0 '  "terminal_name": "$TerminalName",$\r$\n'
-  FileWrite $0 '  "tenant_uuid": "",$\r$\n'
-  FileWrite $0 '  "dump": "$DumpPath",$\r$\n'
+  FileWrite $0 '  "tenant_uuid": "$TenantUUID",$\r$\n'
+  FileWrite $0 '  "dump": "$R0",$\r$\n'
   FileWrite $0 '  "series": []$\r$\n'
   FileWrite $0 '}$\r$\n'
 
