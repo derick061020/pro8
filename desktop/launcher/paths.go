@@ -60,10 +60,10 @@ func (p Paths) EnsureDirs() error {
 	return nil
 }
 
-func (p Paths) PHP() string     { return filepath.Join(p.Runtime, "php", "php.exe") }
-func (p Paths) PHPCGI() string  { return filepath.Join(p.Runtime, "php", "php-cgi.exe") }
-func (p Paths) Caddy() string   { return filepath.Join(p.Runtime, "caddy", "caddy.exe") }
-func (p Paths) MySQLD() string  { return filepath.Join(p.Runtime, "mariadb", "bin", "mysqld.exe") }
+func (p Paths) PHP() string    { return filepath.Join(p.Runtime, "php", "php.exe") }
+func (p Paths) PHPCGI() string { return filepath.Join(p.Runtime, "php", "php-cgi.exe") }
+func (p Paths) Caddy() string  { return filepath.Join(p.Runtime, "caddy", "caddy.exe") }
+func (p Paths) MySQLD() string { return filepath.Join(p.Runtime, "mariadb", "bin", "mysqld.exe") }
 func (p Paths) MySQLCli() string {
 	return filepath.Join(p.Runtime, "mariadb", "bin", "mysql.exe")
 }
@@ -72,8 +72,8 @@ func (p Paths) MySQLCli() string {
 // que una actualización del motor no toque nunca la información del negocio.
 func (p Paths) MySQLData() string { return filepath.Join(p.Data, "mysql") }
 
-func (p Paths) Caddyfile() string  { return filepath.Join(p.Config, "Caddyfile") }
-func (p Paths) MySQLIni() string   { return filepath.Join(p.Config, "my.ini") }
+func (p Paths) Caddyfile() string   { return filepath.Join(p.Config, "Caddyfile") }
+func (p Paths) MySQLIni() string    { return filepath.Join(p.Config, "my.ini") }
 func (p Paths) PairingFile() string { return filepath.Join(p.Config, "pairing.json") }
 
 // InitMarker indica que la base ya se creó y no hay que rehacer el arranque.

@@ -1,0 +1,10 @@
+# Artefactos de compilación del instalador de Windows.
+#
+# Nada de esto se versiona: son cientos de megas de binarios descargados o
+# generados, que se rehacen con fetch-runtime.sh y build.sh.
+
+cache/
+runtime/
+payload/
+dist/
+pro8.exe

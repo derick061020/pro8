@@ -45,8 +45,36 @@ done
 HAS_NSIS=0
 command -v makensis >/dev/null && HAS_NSIS=1
 
-command -v zip >/dev/null || [[ $HAS_NSIS -eq 1 ]] \
-    || fail "Sin makensis ni zip no hay con qué empaquetar. Instalá uno: paru -S nsis  /  sudo pacman -S zip"
+# Para el ZIP sirve cualquiera de los tres; en Arch bsdtar viene de fábrica con
+# libarchive, así que en la práctica siempre hay alguno.
+comprimir_zip() {
+    local destino="$1" origen="$2"
+
+    if command -v zip >/dev/null; then
+        (cd "$origen" && zip -qr "$destino" .)
+    elif command -v bsdtar >/dev/null; then
+        (cd "$origen" && bsdtar -a -cf "$destino" .)
+    elif command -v python3 >/dev/null; then
+        python3 - "$destino" "$origen" <<'PY'
+import os, sys, zipfile
+
+destino, origen = sys.argv[1], sys.argv[2]
+
+with zipfile.ZipFile(destino, "w", zipfile.ZIP_DEFLATED) as z:
+    for raiz, _, archivos in os.walk(origen):
+        for nombre in archivos:
+            completo = os.path.join(raiz, nombre)
+            z.write(completo, os.path.relpath(completo, origen))
+PY
+    else
+        return 1
+    fi
+}
+
+if [[ $HAS_NSIS -eq 0 ]]; then
+    command -v zip >/dev/null || command -v bsdtar >/dev/null || command -v python3 >/dev/null \
+        || fail "No hay con qué empaquetar. Instalá uno: paru -S nsis  /  sudo pacman -S zip"
+fi
 
 [[ -f "${RUNTIME_DIR}/php/php.exe" ]] \
     || fail "No está el stack de Windows. Corré primero: ./desktop/build/fetch-runtime.sh"
@@ -165,7 +193,7 @@ else
     ZIP_FILE="${DIST_DIR}/pro8-terminal-${VERSION}.zip"
     rm -f "$ZIP_FILE"
 
-    (cd "$PAYLOAD_DIR" && zip -qr "$ZIP_FILE" .)
+    comprimir_zip "$ZIP_FILE" "$PAYLOAD_DIR" || fail "Falló la compresión."
 
     ok "Paquete listo: ${ZIP_FILE}"
     du -h "$ZIP_FILE"

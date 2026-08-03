@@ -130,6 +130,9 @@ y se instala ejecutando `instalar.bat` como administrador. Pide los mismos datos
 que el instalador gráfico, solo que por consola. Sirve para probar el terminal
 sin esperar a tener el toolchain completo.
 
+Para el ZIP se usa `zip`, `bsdtar` o `python3`, lo que haya. En Arch `bsdtar`
+viene con libarchive, así que no hace falta instalar nada.
+
 Estructura que queda instalada en la PC:
 
 ```
@@ -279,10 +282,11 @@ Lo que está escrito y verificado hasta dónde se pudo:
 - **Motor de sincronización (PHP)** — completo. Sintaxis validada; el panel
   compila con Vite.
 - **Panel web** — completo y compilando.
-- **Launcher (Go)**, **instalador (NSIS)** y **`instalar.bat`** — escritos,
-  **sin compilar ni ejecutar**: la máquina donde se desarrollaron no tiene `go`
-  ni `makensis`. Hay que correr `./desktop/build/build.sh` y corregir lo que
-  aparezca.
+- **Launcher (Go)** — compila para Windows (`GOOS=windows`, 6,7 MB, modo GUI) y
+  pasa `go vet` limpio. No se ejecutó nunca: que compile no dice nada sobre si
+  levanta bien MariaDB o si el ícono de bandeja se ve.
+- **Instalador (NSIS)** y **`instalar.bat`** — escritos, **sin compilar ni
+  ejecutar**.
 - **Prueba de punta a punta** — pendiente. No se probó contra un servidor real
   ni en una PC con Windows.
 
