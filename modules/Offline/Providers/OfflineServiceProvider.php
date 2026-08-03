@@ -2,7 +2,15 @@
 
 namespace Modules\Offline\Providers;
 
+use Illuminate\Routing\Router;
 use Illuminate\Support\ServiceProvider;
+use Modules\Offline\Console\OfflineDaemonCommand;
+use Modules\Offline\Console\OfflinePairCommand;
+use Modules\Offline\Console\OfflineStatusCommand;
+use Modules\Offline\Console\OfflineSyncCommand;
+use Modules\Offline\Console\OfflineUpdateCommand;
+use Modules\Offline\Http\Middleware\EnsureTerminalIsRegistered;
+use Modules\Offline\Services\SyncWatcher;
 // use Illuminate\Database\Eloquent\Factory;
 
 class OfflineServiceProvider extends ServiceProvider
@@ -19,6 +27,39 @@ class OfflineServiceProvider extends ServiceProvider
         $this->registerViews();
     // $this->registerFactories();
         $this->loadMigrationsFrom(__DIR__ . '/../Database/Migrations');
+
+        $this->registerMiddleware();
+        $this->registerCommands();
+
+        // Deja la bandeja de salida escuchando los cambios del sistema.
+        // Internamente no hace nada si esta instalación no es un terminal.
+        SyncWatcher::register();
+    }
+
+    /**
+     * Alias del middleware que valida el terminal en la API de sincronización.
+     */
+    protected function registerMiddleware()
+    {
+        /** @var Router $router */
+        $router = $this->app['router'];
+
+        $router->aliasMiddleware('offline.terminal', EnsureTerminalIsRegistered::class);
+    }
+
+    protected function registerCommands()
+    {
+        if (!$this->app->runningInConsole()) {
+            return;
+        }
+
+        $this->commands([
+            OfflinePairCommand::class,
+            OfflineSyncCommand::class,
+            OfflineDaemonCommand::class,
+            OfflineStatusCommand::class,
+            OfflineUpdateCommand::class,
+        ]);
     }
 
     /**

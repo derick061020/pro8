@@ -1,18 +1,35 @@
 <?php
 
-use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Route;
 
 /*
 |--------------------------------------------------------------------------
-| API Routes
+| API de sincronización offline
 |--------------------------------------------------------------------------
 |
-| Here is where you can register API routes for your application. These
-| routes are loaded by the RouteServiceProvider within a group which
-| is assigned the "api" middleware group. Enjoy building your API!
+| Estas rutas las publica la instalación ONLINE y las consume cada terminal
+| Windows. El token que manda el terminal es el api_token de un usuario del
+| tenant, y además el terminal tiene que estar dado de alta (offline.terminal).
+|
+| El pareo (handshake) no exige alta previa: justamente sirve para darla.
 |
 */
 
-Route::middleware('auth:api')->get('/offline', function (Request $request) {
-    return $request->user();
-});
+$hostname = app(Hyn\Tenancy\Contracts\CurrentHostname::class);
+
+if ($hostname) {
+    Route::domain($hostname->fqdn)->group(function () {
+        Route::prefix('offline')->middleware(['auth:api'])->group(function () {
+
+            Route::post('handshake', 'Api\OfflineSyncController@handshake');
+
+            Route::middleware(['offline.terminal'])->group(function () {
+                Route::get('ping', 'Api\OfflineSyncController@ping');
+                Route::post('push', 'Api\OfflineSyncController@push');
+                Route::get('pull', 'Api\OfflineSyncController@pull');
+                Route::post('ranges/allocate', 'Api\OfflineSyncController@allocateRange');
+                Route::post('ranges/report', 'Api\OfflineSyncController@reportRanges');
+            });
+        });
+    });
+}

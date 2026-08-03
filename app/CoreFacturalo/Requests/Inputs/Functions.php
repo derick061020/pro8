@@ -7,6 +7,7 @@ use App\Models\Tenant\Series;
 use Carbon\Carbon;
 use Exception;
 use Modules\Document\Models\SeriesConfiguration;
+use Modules\Offline\Services\NumberRangeService;
 
 class Functions
 {
@@ -14,6 +15,15 @@ class Functions
     {
 
         if ($number === '#') {
+
+            // En un terminal offline el correlativo sale del bloque que le
+            // reservó el servidor, no del último número emitido: así dos
+            // instalaciones desconectadas entre sí no pueden repetir número.
+            $offline_number = NumberRangeService::nextForModel($model, $document_type_id, $series);
+
+            if ($offline_number !== null) {
+                return $offline_number;
+            }
 
             $document = $model::select('number')
                                     ->where('soap_type_id', $soap_type_id)
@@ -24,14 +34,18 @@ class Functions
 
             if($document){
 
-                return (int)$document->number+1;
+                $next_number = (int)$document->number+1;
 
             }else{
 
                 $series_configuration = SeriesConfiguration::where([['document_type_id',$document_type_id],['series',$series]])->first();
-                return ($series_configuration) ? (int) $series_configuration->number:1;
+                $next_number = ($series_configuration) ? (int) $series_configuration->number:1;
 
             }
+
+            // En el servidor: si el número cae dentro de un bloque prestado a
+            // un terminal, se saltea hasta después del bloque.
+            return NumberRangeService::skipReservedForModel($model, $document_type_id, $series, $next_number);
 
         }
 
