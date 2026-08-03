@@ -161,7 +161,18 @@ PC de tienda es normal que ya haya un XAMPP o un Laragon ocupando los habituales
    mysqldump -u root -p tenant_miempresa > tenant_miempresa.sql
    ```
 
-2. **Correr el instalador** en la PC. Pide:
+2. **Copiar los archivos del negocio.** El instalador no los trae: son datos de
+   un cliente concreto y no pueden viajar dentro de un paquete que se reparte.
+   Del servidor, a la instalación del terminal:
+
+   ```
+   storage/app/tenancy/<uuid>/   →   C:\Pro8\app\storage\app\tenancy\<uuid>\
+   ```
+
+   Ahí vive el **certificado de firma**. Sin él el terminal arranca y vende,
+   pero no puede firmar comprobantes electrónicos estando sin internet.
+
+3. **Correr el instalador** en la PC. Pide:
    - dirección del servidor online
    - token de acceso
    - código del terminal (único por PC, ej. `T01`)
@@ -169,11 +180,11 @@ PC de tienda es normal que ya haya un XAMPP o un Laragon ocupando los habituales
    - nombre de la base del negocio en el servidor (ej. `tenant_miempresa`)
    - el archivo `.sql` del paso 1
 
-3. **Primer arranque.** El launcher levanta los servicios y corre
+4. **Primer arranque.** El launcher levanta los servicios y corre
    `offline:install`, que crea las bases, restaura el respaldo, registra el
    negocio y hace el pareo. Tarda varios minutos según el tamaño del respaldo.
 
-4. **Verificar.** En el sistema, *Configuración → Modo offline*: debe decir
+5. **Verificar.** En el sistema, *Configuración → Modo offline*: debe decir
    **EN LÍNEA** y mostrar la numeración reservada.
 
 ---

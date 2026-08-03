@@ -111,6 +111,11 @@ mkdir -p "${PAYLOAD_DIR}/app"
 
 # Se copia el árbol de trabajo y no un git archive, porque hacen falta vendor/
 # y public/build, que no están versionados.
+#
+# storage/app/tenancy y storage/app/certificates quedan fuera a propósito: son
+# los datos del negocio de la máquina donde se compila. Meter el certificado de
+# firma de un cliente dentro de un instalador que se reparte sería un problema
+# serio. En el terminal se copian aparte, junto con el respaldo de la base.
 rsync -a --delete \
     --exclude '.git' \
     --exclude 'node_modules' \
@@ -123,6 +128,8 @@ rsync -a --delete \
     --exclude 'storage/framework/sessions/*' \
     --exclude 'storage/framework/views/*' \
     --exclude 'storage/app/backups/*' \
+    --exclude 'storage/app/tenancy' \
+    --exclude 'storage/app/certificates' \
     --exclude '.env' \
     --exclude 'pro8-main-actualizado' \
     --exclude '*.zip' \
