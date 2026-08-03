@@ -28,6 +28,10 @@ var trayIcon []byte
 // Cada cuánto se relee el estado que deja el demonio de sincronización.
 const statusRefresh = 10 * time.Second
 
+// version la inyecta el script de compilación con el commit del sistema.
+// Sirve para saber, mirando el log de una PC, qué versión tiene instalada.
+var version = "dev"
+
 var (
 	paths     Paths
 	stack     *Stack
@@ -45,6 +49,7 @@ func main() {
 	}
 
 	openLog()
+	logf("pro8 launcher %s — instalación en %s", version, paths.Root)
 
 	stack = NewStack(paths)
 

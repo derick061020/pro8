@@ -125,10 +125,7 @@ func (s *Stack) ensureDataDir() error {
 			continue
 		}
 
-		cmd := s.command(installer,
-			"--datadir="+s.paths.MySQLData(),
-			"--service=",
-		)
+		cmd := s.command(installer, "--datadir="+s.paths.MySQLData())
 
 		if output, err := cmd.CombinedOutput(); err != nil {
 			return fmt.Errorf("no se pudo preparar la base de datos: %s", string(output))
