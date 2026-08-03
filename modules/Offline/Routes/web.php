@@ -12,6 +12,12 @@ if($current_hostname) {
                 Route::get('', 'OfflineConfigurationController@index')->name('tenant.offline_configurations.index')->middleware('redirect.level');
                 Route::post('', 'OfflineConfigurationController@store');
                 Route::get('record', 'OfflineConfigurationController@record');
+
+                // Panel de sincronización
+                Route::get('status', 'OfflineConfigurationController@status');
+                Route::post('sync', 'OfflineConfigurationController@sync');
+                Route::post('retry', 'OfflineConfigurationController@retry');
+                Route::post('ranges/allocate', 'OfflineConfigurationController@allocateRange');
             });
 
         });
