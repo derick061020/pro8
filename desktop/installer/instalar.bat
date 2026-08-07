@@ -115,10 +115,9 @@ if not exist "%RAIZ%\app\.env" (
     echo   Se conserva el .env existente.
 )
 
-echo   Generando la clave de la aplicacion...
-pushd "%RAIZ%\app"
-"%RAIZ%\runtime\php\php.exe" artisan key:generate --force >nul 2>&1
-popd
+rem  La clave de la aplicacion la genera el launcher en el primer arranque:
+rem  artisan levanta el sistema entero y el sistema consulta la base al
+rem  arrancar, y aca todavia no existe ni hay un MariaDB corriendo.
 
 rem --- Accesos directos -------------------------------------------------------
 echo   Creando accesos directos...

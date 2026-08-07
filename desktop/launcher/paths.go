@@ -72,6 +72,7 @@ func (p Paths) MySQLCli() string {
 // que una actualización del motor no toque nunca la información del negocio.
 func (p Paths) MySQLData() string { return filepath.Join(p.Data, "mysql") }
 
+func (p Paths) EnvFile() string     { return filepath.Join(p.App, ".env") }
 func (p Paths) Caddyfile() string   { return filepath.Join(p.Config, "Caddyfile") }
 func (p Paths) MySQLIni() string    { return filepath.Join(p.Config, "my.ini") }
 func (p Paths) PairingFile() string { return filepath.Join(p.Config, "pairing.json") }

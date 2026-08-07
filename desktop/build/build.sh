@@ -79,6 +79,26 @@ fi
 [[ -f "${RUNTIME_DIR}/php/php.exe" ]] \
     || fail "No está el stack de Windows. Corré primero: ./desktop/build/fetch-runtime.sh"
 
+# El vendor/ se resuelve en esta máquina, así que puede exigir un PHP más nuevo
+# que el embebido. Si no se controla acá, el terminal instala bien y recién
+# falla en el cliente, al primer artisan ("Composer detected issues in your
+# platform"). Ya pasó una vez, con PHP 8.1 embebido y un vendor de PHP 8.5.
+PHP_EMBEBIDO="$(cat "${RUNTIME_DIR}/php/.version" 2>/dev/null || true)"
+[[ -n "$PHP_EMBEBIDO" ]] \
+    || fail "El PHP embebido no dice qué versión es. Recorré: ./desktop/build/fetch-runtime.sh"
+
+PLATFORM_CHECK="${PROJECT_DIR}/vendor/composer/platform_check.php"
+
+if [[ -f "$PLATFORM_CHECK" ]]; then
+    PHP_REQUERIDO="$(grep -o 'PHP_VERSION_ID >= [0-9]\+' "$PLATFORM_CHECK" | grep -o '[0-9]\+$' | head -1)"
+    PHP_EMBEBIDO_ID="$(awk -F. '{ printf "%d", $1 * 10000 + $2 * 100 + $3 }' <<< "$PHP_EMBEBIDO")"
+
+    if [[ -n "$PHP_REQUERIDO" && "$PHP_EMBEBIDO_ID" -lt "$PHP_REQUERIDO" ]]; then
+        fail "vendor/ necesita PHP ${PHP_REQUERIDO} (id) y el embebido es ${PHP_EMBEBIDO}.
+  Subí PHP_VERSION en desktop/build/fetch-runtime.sh y volvé a correrlo."
+    fi
+fi
+
 VERSION="$(cd "$PROJECT_DIR" && git rev-parse --short HEAD)"
 info "Compilando versión ${VERSION}"
 

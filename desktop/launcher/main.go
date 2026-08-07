@@ -135,6 +135,8 @@ func startEverything() error {
 		}
 	}
 
+	stack.StartSyncDaemon()
+
 	return nil
 }
 

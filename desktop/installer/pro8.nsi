@@ -195,9 +195,9 @@ Section "pro8" SecMain
   Call WriteEnv
   Call WritePairing
 
-  DetailPrint "Generando la clave de la aplicación..."
-  nsExec::ExecToLog '"$INSTDIR\runtime\php\php.exe" artisan key:generate --force'
-  Pop $0
+  ; La clave de la aplicación la genera el launcher en el primer arranque.
+  ; Acá no se puede: artisan levanta el sistema entero y el sistema consulta la
+  ; base al arrancar, y la base todavía no existe ni hay un MariaDB corriendo.
 
   DetailPrint "Creando accesos directos..."
   CreateDirectory "$SMPROGRAMS\pro8"

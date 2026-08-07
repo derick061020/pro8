@@ -182,7 +182,8 @@ PC de tienda es normal que ya haya un XAMPP o un Laragon ocupando los habituales
 
 4. **Primer arranque.** El launcher levanta los servicios y corre
    `offline:install`, que crea las bases, restaura el respaldo, registra el
-   negocio y hace el pareo. Tarda varios minutos según el tamaño del respaldo.
+   negocio, instala el motor de sincronización y hace el pareo. Tarda varios
+   minutos según el tamaño del respaldo.
 
 5. **Verificar.** En el sistema, *Configuración → Modo offline*: debe decir
    **EN LÍNEA** y mostrar la numeración reservada.
@@ -265,6 +266,28 @@ php artisan tenancy:run offline:pair        # reparear con el servidor
 `offline:install` es la excepción: corre sin `tenancy:run`, porque justamente
 crea el tenant.
 
+### El arranque en frío tiene un orden obligado
+
+Cualquier comando de artisan levanta el sistema entero, y el sistema consulta la
+base apenas arranca (`AppServiceProvider` pregunta por la tabla
+`configurations`). O sea: **sin base central no corre ni el comando que iba a
+crear la base central**. Por eso el launcher, antes de tocar artisan, crea la
+base con el cliente de MariaDB y genera el `APP_KEY` si el `.env` todavía trae
+el marcador de la plantilla (`Stack.ensureCentralDatabase` / `ensureAppKey`).
+Con la base creada y vacía el arranque sí funciona: la consulta responde que no
+existe la tabla y sigue de largo.
+
+Una vez instalado, **no hay que volver a correr `key:generate`**: hyn deriva de
+esa clave la contraseña con la que se conecta a la base del negocio, así que
+cambiarla deja el sistema sin acceso a sus propios datos. El launcher la genera
+una sola vez, cuando el `.env` todavía trae el marcador de la plantilla.
+
+Del lado de PHP, `offline:install` restaura el respaldo **antes** de registrar
+el negocio, y registra con las migraciones automáticas de hyn desactivadas: la
+base ya viene completa del servidor, y correr la historia entera de migraciones
+sobre un sistema con años encima es justamente lo que suele fallar. Lo único que
+se aplica después es `database/sql/offline_sync_engine.sql`, que es idempotente.
+
 `offline:status --json` devuelve el estado en JSON. Ese formato es contrato con
 el launcher (`desktop/launcher/status.go`): si cambia, hay que actualizar los
 dos lados.
@@ -293,19 +316,32 @@ Lo que está escrito y verificado hasta dónde se pudo:
 - **Motor de sincronización (PHP)** — completo. Sintaxis validada; el panel
   compila con Vite.
 - **Panel web** — completo y compilando.
-- **Launcher (Go)** — compila para Windows (`GOOS=windows`, 6,7 MB, modo GUI) y
-  pasa `go vet` limpio. No se ejecutó nunca: que compile no dice nada sobre si
-  levanta bien MariaDB o si el ícono de bandeja se ve.
-- **Instalador (NSIS)** y **`instalar.bat`** — escritos, **sin compilar ni
-  ejecutar**.
-- **Prueba de punta a punta** — pendiente. No se probó contra un servidor real
-  ni en una PC con Windows.
+- **Launcher (Go)** — compila para Windows (`GOOS=windows`, modo GUI) y **ya
+  corrió en Windows**: levanta MariaDB, php-cgi y Caddy, y el sistema responde
+  en `http://127.0.0.1:8099`.
+- **Instalador (NSIS)** — compila y se instaló en `C:\Pro8`.
+- **Prueba de punta a punta** — pendiente. No se probó el pareo contra un
+  servidor real: la primera corrida murió en `offline:install` porque el PHP
+  embebido era 8.1 y el `vendor/` empaquetado pide 8.2 (ver más abajo).
 
 Lo que hay que probar antes de ponerlo en un local:
 
-1. Compilar el launcher y el instalador.
-2. Instalar en una PC de prueba con un respaldo real.
-3. Emitir un comprobante con el cable de red desconectado y verificar que toma
+1. Instalar en una PC de prueba con un respaldo real.
+2. Emitir un comprobante con el cable de red desconectado y verificar que toma
    el correlativo del bloque reservado.
-4. Reconectar y confirmar que sube sin duplicar.
-5. Repetir con una estadía de hotel.
+3. Reconectar y confirmar que sube sin duplicar.
+4. Repetir con una estadía de hotel.
+
+### La versión de PHP no es libre
+
+El `vendor/` se empaqueta tal como quedó en la máquina de compilación, así que
+el PHP embebido tiene que ser al menos el que pide ese `vendor/`. Hoy son 8.2
+(symfony 7.4), y por eso `fetch-runtime.sh` fija **8.2.30**: la última rama que
+Laravel 9.52 soporta oficialmente.
+
+Si algún día se resuelve el `vendor/` con dependencias que pidan más, `build.sh`
+corta el build comparando `runtime/php/.version` contra
+`vendor/composer/platform_check.php`; la salida dice qué versión subir en
+`fetch-runtime.sh`. Sin ese control el instalador sale bien y el terminal recién
+falla en el cliente, con *"Composer detected issues in your platform"* en cada
+comando de artisan.

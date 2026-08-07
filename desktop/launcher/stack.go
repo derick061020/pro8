@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 )
@@ -41,6 +42,17 @@ func (s *Stack) Start() (string, error) {
 		return "", err
 	}
 
+	// Antes de PHP: cualquier comando de artisan levanta los proveedores del
+	// sistema, y esos consultan la base apenas arrancan. Sin base central ni
+	// APP_KEY no corre ni siquiera la instalación inicial.
+	if err := s.ensureCentralDatabase(); err != nil {
+		return "", err
+	}
+
+	if err := s.ensureAppKey(); err != nil {
+		return "", err
+	}
+
 	if err := s.startPHP(); err != nil {
 		return "", err
 	}
@@ -54,10 +66,6 @@ func (s *Stack) Start() (string, error) {
 	if err := waitHTTP(url, 60*time.Second); err != nil {
 		return "", fmt.Errorf("el sistema no respondió a tiempo: %w", err)
 	}
-
-	// El demonio de sincronización arranca al final, cuando ya hay base y app:
-	// si algo de lo anterior falló, no tiene sentido intentar sincronizar.
-	s.startSyncDaemon()
 
 	return url, nil
 }
@@ -139,6 +147,93 @@ func (s *Stack) ensureDataDir() error {
 	return nil
 }
 
+// ensureCentralDatabase crea la base central del sistema si no está.
+//
+// El sistema no arranca sin ella: los proveedores preguntan por la tabla
+// configurations al bootear, y con la base ausente eso revienta con "Unknown
+// database" en cualquier comando, incluido offline:install, que es justamente
+// el que iba a crearla. Con la base creada y vacía, en cambio, la consulta
+// responde que no hay tabla y el arranque sigue.
+//
+// La base del negocio no se toca acá: la crea offline:install junto con la
+// restauración del respaldo del servidor.
+func (s *Stack) ensureCentralDatabase() error {
+	name := envValue("DB_DATABASE", "pro8")
+
+	// El nombre viaja dentro de un CREATE DATABASE, así que se admite solo lo
+	// que puede ser un identificador y no necesita comillas.
+	if !isPlainIdentifier(name) {
+		return fmt.Errorf("el nombre de la base en app\\.env no es válido: %q", name)
+	}
+
+	client := s.paths.MySQLCli()
+
+	if !Exists(client) {
+		return fmt.Errorf("falta el cliente de MariaDB (%s). Reinstalá pro8", client)
+	}
+
+	args := []string{
+		"--host=127.0.0.1",
+		"--port=" + MySQLPort,
+		"--user=" + envValue("DB_USERNAME", "root"),
+	}
+
+	if password := envValue("DB_PASSWORD", ""); password != "" {
+		args = append(args, "--password="+password)
+	}
+
+	args = append(args, "--execute=CREATE DATABASE IF NOT EXISTS `"+name+
+		"` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci")
+
+	output, err := s.command(client, args...).CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("no se pudo crear la base %s: %s", name, strings.TrimSpace(string(output)))
+	}
+
+	return nil
+}
+
+// ensureAppKey genera la clave de la aplicación si el .env todavía trae el
+// marcador de la plantilla.
+//
+// El instalador no puede generarla: lo intenta antes de que exista la base y
+// artisan falla ahí mismo, en silencio. Sin clave válida el sistema arranca
+// pero no puede cifrar la sesión, así que no se llega ni a la pantalla de
+// ingreso.
+func (s *Stack) ensureAppKey() error {
+	if strings.HasPrefix(envValue("APP_KEY", ""), "base64:") {
+		return nil
+	}
+
+	logf("generando la clave de la aplicación")
+
+	output, err := s.RunArtisan("key:generate", "--force")
+	if err != nil {
+		return fmt.Errorf("no se pudo generar la clave de la aplicación: %s", strings.TrimSpace(output))
+	}
+
+	return nil
+}
+
+// isPlainIdentifier acepta lo que MariaDB permite como nombre de base sin
+// necesidad de escapes.
+func isPlainIdentifier(name string) bool {
+	if name == "" {
+		return false
+	}
+
+	for _, r := range name {
+		switch {
+		case r >= 'a' && r <= 'z', r >= 'A' && r <= 'Z', r >= '0' && r <= '9':
+		case r == '_', r == '-', r == '$':
+		default:
+			return false
+		}
+	}
+
+	return true
+}
+
 func (s *Stack) startPHP() error {
 	// php-cgi atiende a Caddy por FastCGI. PHP_FCGI_MAX_REQUESTS=0 evita que
 	// el proceso se recicle solo y deje la caja sin sistema en medio de una
@@ -166,11 +261,14 @@ func (s *Stack) startCaddy() error {
 	return nil
 }
 
-// startSyncDaemon deja corriendo la sincronización en segundo plano.
+// StartSyncDaemon deja corriendo la sincronización en segundo plano.
 //
 // En Windows no hay cron, así que en vez de depender del Programador de
 // tareas el demonio vive mientras pro8 esté abierto.
-func (s *Stack) startSyncDaemon() {
+//
+// Lo llama el launcher recién después de la instalación inicial: antes de eso
+// no hay negocio que sincronizar y el demonio se caería al arrancar.
+func (s *Stack) StartSyncDaemon() {
 	cmd := s.artisan("tenancy:run", "offline:daemon")
 
 	if err := s.launch(cmd, "sync"); err != nil {

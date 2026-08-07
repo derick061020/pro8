@@ -14,7 +14,14 @@
 
 set -euo pipefail
 
-PHP_VERSION="8.1.31"
+# PHP tiene que ser >= 8.2: el vendor/ que se empaqueta se resuelve en la
+# máquina de compilación y hoy arrastra symfony 7.4, que exige esa versión.
+# vendor/composer/platform_check.php es la fuente de verdad, y build.sh lo
+# compara contra lo que haya acá antes de armar el paquete.
+#
+# Se queda en la rama 8.2 y no en una más nueva porque es la última que Laravel
+# 9.52 (el framework de este sistema) soporta oficialmente.
+PHP_VERSION="8.2.30"
 MARIADB_VERSION="10.11.10"
 CADDY_VERSION="2.8.4"
 
@@ -50,29 +57,36 @@ descargar() {
     mv "${destino}.tmp" "$destino"
 }
 
+# La versión de lo extraído queda anotada al lado, para que subir una versión
+# acá arriba alcance: sin esto se reusaba en silencio lo que ya estaba bajado.
+version_extraida() { cat "${RUNTIME_DIR}/$1/.version" 2>/dev/null || true; }
+anotar_version()   { printf '%s\n' "$2" > "${RUNTIME_DIR}/$1/.version"; }
+
 # --- PHP -------------------------------------------------------------------
 
-descargar "$PHP_URL" "${CACHE_DIR}/php.zip"
+descargar "$PHP_URL" "${CACHE_DIR}/php-${PHP_VERSION}.zip"
 
-if [[ ! -f "${RUNTIME_DIR}/php/php.exe" ]]; then
-    info "Extrayendo PHP..."
+if [[ "$(version_extraida php)" != "$PHP_VERSION" ]]; then
+    info "Extrayendo PHP ${PHP_VERSION}..."
     rm -rf "${RUNTIME_DIR}/php"
     mkdir -p "${RUNTIME_DIR}/php"
-    unzip -q "${CACHE_DIR}/php.zip" -d "${RUNTIME_DIR}/php"
+    unzip -q "${CACHE_DIR}/php-${PHP_VERSION}.zip" -d "${RUNTIME_DIR}/php"
 
     [[ -f "${RUNTIME_DIR}/php/php-cgi.exe" ]] \
         || fail "El paquete de PHP no trae php-cgi.exe; hace falta la variante NTS."
+
+    anotar_version php "$PHP_VERSION"
 fi
 
 # --- MariaDB ---------------------------------------------------------------
 
-descargar "$MARIADB_URL" "${CACHE_DIR}/mariadb.zip"
+descargar "$MARIADB_URL" "${CACHE_DIR}/mariadb-${MARIADB_VERSION}.zip"
 
-if [[ ! -f "${RUNTIME_DIR}/mariadb/bin/mysqld.exe" ]]; then
-    info "Extrayendo MariaDB..."
+if [[ "$(version_extraida mariadb)" != "$MARIADB_VERSION" ]]; then
+    info "Extrayendo MariaDB ${MARIADB_VERSION}..."
     rm -rf "${RUNTIME_DIR}/mariadb" "${CACHE_DIR}/mariadb-tmp"
     mkdir -p "${CACHE_DIR}/mariadb-tmp"
-    unzip -q "${CACHE_DIR}/mariadb.zip" -d "${CACHE_DIR}/mariadb-tmp"
+    unzip -q "${CACHE_DIR}/mariadb-${MARIADB_VERSION}.zip" -d "${CACHE_DIR}/mariadb-tmp"
 
     # El zip trae una carpeta raíz con el nombre de la versión.
     mv "${CACHE_DIR}/mariadb-tmp/mariadb-${MARIADB_VERSION}-winx64" "${RUNTIME_DIR}/mariadb"
@@ -85,17 +99,21 @@ if [[ ! -f "${RUNTIME_DIR}/mariadb/bin/mysqld.exe" ]]; then
            "${RUNTIME_DIR}/mariadb/mysql-test" \
            "${RUNTIME_DIR}/mariadb/sql-bench" \
            "${RUNTIME_DIR}/mariadb/docs"
+
+    anotar_version mariadb "$MARIADB_VERSION"
 fi
 
 # --- Caddy -----------------------------------------------------------------
 
-descargar "$CADDY_URL" "${CACHE_DIR}/caddy.zip"
+descargar "$CADDY_URL" "${CACHE_DIR}/caddy-${CADDY_VERSION}.zip"
 
-if [[ ! -f "${RUNTIME_DIR}/caddy/caddy.exe" ]]; then
-    info "Extrayendo Caddy..."
+if [[ "$(version_extraida caddy)" != "$CADDY_VERSION" ]]; then
+    info "Extrayendo Caddy ${CADDY_VERSION}..."
     rm -rf "${RUNTIME_DIR}/caddy"
     mkdir -p "${RUNTIME_DIR}/caddy"
-    unzip -q "${CACHE_DIR}/caddy.zip" -d "${RUNTIME_DIR}/caddy"
+    unzip -q "${CACHE_DIR}/caddy-${CADDY_VERSION}.zip" -d "${RUNTIME_DIR}/caddy"
+
+    anotar_version caddy "$CADDY_VERSION"
 fi
 
 # --- Certificados ----------------------------------------------------------
