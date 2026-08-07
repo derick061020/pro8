@@ -15,7 +15,13 @@
         </button> -->
             <select
                 class="el-input__inner input-select-establishment"
-                name="multi_user_id"
+                name="establishment_selector_header"
+                autocomplete="off"
+                data-establishment-selector
+                @pointerdown="markGesture"
+                @mousedown="markGesture"
+                @touchstart="markGesture"
+                @keydown="markGesture"
                 @change="clickChangeEstablishment()"
                 v-model="establishment_id"
             >
@@ -62,28 +68,81 @@ export default {
     },
     data() {
         return {
-            establishment_id: undefined
+            establishment_id: undefined,
+            // Sucursal realmente guardada; se mantiene al día tras cada cambio.
+            current_id: undefined,
+            last_gesture_at: 0
         };
     },
     mounted() {
-        this.establishment_id = this.current_establishment;
+        const shared = window.establishmentState && window.establishmentState.current;
+        this.current_id = parseInt(shared || this.current_establishment, 10) || undefined;
+        this.establishment_id = this.current_id;
+
+        // Al restaurar la pestaña (suspensión/reposo del equipo, botón atrás) el
+        // navegador puede reponer otro valor en el <select>; se descarta el gesto
+        // pendiente y se devuelve el selector a la sucursal real.
+        this._onPageShow = () => {
+            this.last_gesture_at = 0;
+            this.establishment_id = this.current_id;
+        };
+        window.addEventListener("pageshow", this._onPageShow);
+        document.addEventListener("visibilitychange", this._onPageShow);
+    },
+    beforeDestroy() {
+        if (this._onPageShow) {
+            window.removeEventListener("pageshow", this._onPageShow);
+            document.removeEventListener("visibilitychange", this._onPageShow);
+        }
     },
     methods: {
+        markGesture() {
+            this.last_gesture_at = Date.now();
+        },
         clickChangeEstablishment() {
+            const next_id = parseInt(this.establishment_id, 10);
+
+            // Valor inválido: nunca se envía, dejaría al usuario sin sucursal.
+            if (!next_id) {
+                this.establishment_id = this.current_id;
+                return;
+            }
+
+            // Sólo se guarda si el cambio lo hizo el usuario y es real.
+            if (Date.now() - this.last_gesture_at > 5000) {
+                this.establishment_id = this.current_id;
+                return;
+            }
+
+            if (next_id === this.current_id) {
+                return;
+            }
+
             this.loading = true;
             const payload = {
-                establishment_id: this.establishment_id
+                establishment_id: next_id
             };
             this.$http
                 .post(`/hotels/reception/change-user-establishment`, payload)
                 .then(response => {
+                    this.current_id = response.data.establishment_id || next_id;
+                    this.establishment_id = this.current_id;
+
+                    // Mantiene alineado el estado del selector del sidebar.
+                    if (window.establishmentState) {
+                        window.establishmentState.current = this.current_id;
+                    }
+
                     this.$message({
                         type: "success",
                         message: response.data.message
                     });
 
-                    this.$eventHub.$emit('establishmentChanged', this.establishment_id);
+                    this.$eventHub.$emit('establishmentChanged', this.current_id);
                     //location.reload();
+                })
+                .catch(() => {
+                    this.establishment_id = this.current_id;
                 })
                 .finally(() => (this.loading = false));
         }

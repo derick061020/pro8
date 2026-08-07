@@ -385,12 +385,31 @@ class HotelReceptionController extends Controller
 
     public function changeUserEstablishment(Request $request)
     {
+        // Sin esta validación un envío con establishment_id vacío/nulo dejaba al
+        // usuario sin sucursal y el sistema lo mostraba en otra.
+        $request->validate([
+            'establishment_id' => ['required', 'integer', 'exists:tenant.establishments,id'],
+        ]);
+
         $user = User::findOrFail(auth()->user()->id);
-        $user->establishment_id = $request->establishment_id;
+        $establishment_id = (int) $request->input('establishment_id');
+
+        if ((int) $user->establishment_id === $establishment_id) {
+            return response()->json([
+                'success' => true,
+                'changed' => false,
+                'establishment_id' => $establishment_id,
+                'message'   => "Ya se encuentra en esa sucursal",
+            ], 200);
+        }
+
+        $user->establishment_id = $establishment_id;
         $user->save();
 
         return response()->json([
             'success' => true,
+            'changed' => true,
+            'establishment_id' => $establishment_id,
             'message'   => "Establecimiento actualizado con éxito",
         ], 200);
     }

@@ -185,11 +185,27 @@ class EstablishmentController extends Controller
         ]);
 
         $user = User::findOrFail(auth()->user()->id);
-        $user->establishment_id = $request->establishment_id;
+        $establishment_id = (int) $request->input('establishment_id');
+
+        // Si ya está en esa sucursal no se escribe nada: evita que un evento
+        // "change" no provocado por el usuario (restauración de formularios del
+        // navegador al despertar/restaurar la pestaña) reescriba la sucursal.
+        if ((int) $user->establishment_id === $establishment_id) {
+            return response()->json([
+                'success' => true,
+                'changed' => false,
+                'establishment_id' => $establishment_id,
+                'message' => 'Ya se encuentra en esa sucursal',
+            ], 200);
+        }
+
+        $user->establishment_id = $establishment_id;
         $user->save();
 
         return response()->json([
             'success' => true,
+            'changed' => true,
+            'establishment_id' => $establishment_id,
             'message' => 'Establecimiento actualizado con éxito',
         ], 200);
     }

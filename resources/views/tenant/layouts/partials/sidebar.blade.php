@@ -122,7 +122,9 @@ $showTransfer = collect($vc_module_levels)->intersect(['inventory', 'inventory_d
                         class="el-input__inner input-select-establishment"
                         name="establishment_selector"
                         id="sidebar-establishment-selector"
-                        onchange="changeSidebarEstablishment(this.value)"
+                        autocomplete="off"
+                        data-establishment-selector
+                        onchange="changeSidebarEstablishment(this.value, this)"
                     >
                         @foreach($establishments as $establishment)
                             <option
@@ -167,7 +169,9 @@ $showTransfer = collect($vc_module_levels)->intersect(['inventory', 'inventory_d
                                 class="el-input__inner input-select-establishment"
                                 name="establishment_selector_dropdown"
                                 id="dropdown-establishment-selector"
-                                onchange="changeSidebarEstablishment(this.value)"
+                                autocomplete="off"
+                                data-establishment-selector
+                                onchange="changeSidebarEstablishment(this.value, this)"
                             >
                                 @foreach($establishments as $establishment)
                                     <option
@@ -1840,13 +1844,70 @@ $showTransfer = collect($vc_module_levels)->intersect(['inventory', 'inventory_d
 </aside>
 
 <script>
+    /**
+     * Estado de la sucursal activa.
+     *
+     * El cambio de sucursal escribe en users.establishment_id, así que sólo debe
+     * ejecutarse cuando el usuario realmente toca el selector. Los navegadores
+     * restauran el valor de los <select> al recuperar una pestaña (suspensión /
+     * reposo del equipo, restauración de sesión, recarga) y Firefox además
+     * dispara un evento "change" confiable al restaurarlos: eso cambiaba la
+     * sucursal solo. Por eso exigimos un gesto reciente del usuario.
+     */
+    window.establishmentState = window.establishmentState || {
+        current: {{ (int) $current }},
+        lastGestureAt: 0
+    };
+
+    function establishmentSelectors() {
+        return Array.prototype.slice.call(
+            document.querySelectorAll('select[data-establishment-selector]')
+        );
+    }
+
+    // Reescribe los selectores al valor real sin disparar "change".
+    function syncEstablishmentSelectors() {
+        if (!window.establishmentState.current) return;
+        const current = String(window.establishmentState.current);
+        establishmentSelectors().forEach(function(select) {
+            if (select.value !== current) {
+                select.value = current;
+            }
+        });
+    }
+
+    function markEstablishmentGesture() {
+        window.establishmentState.lastGestureAt = Date.now();
+    }
+
     // Función para cambiar establecimiento desde el sidebar
-    function changeSidebarEstablishment(establishmentId) {
+    function changeSidebarEstablishment(establishmentId, sourceSelect) {
+        const state = window.establishmentState;
+        const nextId = parseInt(establishmentId, 10);
+
+        // Valor inválido (por ejemplo un select restaurado en blanco).
+        if (!nextId) {
+            syncEstablishmentSelectors();
+            return;
+        }
+
+        // Sin gesto reciente el cambio no lo hizo el usuario: se descarta y se
+        // devuelve el selector a la sucursal real.
+        if (Date.now() - state.lastGestureAt > 5000) {
+            syncEstablishmentSelectors();
+            return;
+        }
+
+        // Ya está en esa sucursal, no hay nada que guardar.
+        if (nextId === parseInt(state.current, 10)) {
+            return;
+        }
+
         const payload = {
-            establishment_id: establishmentId
+            establishment_id: nextId
         };
 
-        const selector = document.getElementById('sidebar-establishment-selector');
+        const selector = sourceSelect || document.getElementById('sidebar-establishment-selector');
         if (selector) {
             selector.disabled = true;
         }
@@ -1862,6 +1923,9 @@ $showTransfer = collect($vc_module_levels)->intersect(['inventory', 'inventory_d
         .then(response => response.json())
         .then(data => {
             if (data.success) {
+                state.current = data.establishment_id || nextId;
+                syncEstablishmentSelectors();
+
                 const mainWrapper = document.getElementById('main-wrapper');
                 if (mainWrapper && mainWrapper.__vue__) {
                     const vueInstance = mainWrapper.__vue__;
@@ -1874,7 +1938,7 @@ $showTransfer = collect($vc_module_levels)->intersect(['inventory', 'inventory_d
                     }
 
                     if (vueInstance.$eventHub) {
-                        vueInstance.$eventHub.$emit('establishmentChanged', establishmentId);
+                        vueInstance.$eventHub.$emit('establishmentChanged', state.current);
                     }
                 }
 
@@ -1885,6 +1949,9 @@ $showTransfer = collect($vc_module_levels)->intersect(['inventory', 'inventory_d
         })
         .catch(error => {
             console.error('Error al cambiar establecimiento:', error);
+
+            // No se guardó: el selector vuelve a la sucursal real.
+            syncEstablishmentSelectors();
 
             const mainWrapper = document.getElementById('main-wrapper');
             if (mainWrapper && mainWrapper.__vue__ && mainWrapper.__vue__.$message) {
@@ -1899,6 +1966,36 @@ $showTransfer = collect($vc_module_levels)->intersect(['inventory', 'inventory_d
             }
         });
     }
+
+    (function registerEstablishmentGuards() {
+        function bindGestureListeners() {
+            establishmentSelectors().forEach(function(select) {
+                if (select.dataset.gestureBound === '1') return;
+                select.dataset.gestureBound = '1';
+                ['pointerdown', 'mousedown', 'touchstart', 'keydown'].forEach(function(evt) {
+                    select.addEventListener(evt, markEstablishmentGesture, true);
+                });
+            });
+            syncEstablishmentSelectors();
+        }
+
+        document.addEventListener('DOMContentLoaded', bindGestureListeners);
+        if (document.readyState !== 'loading') bindGestureListeners();
+
+        // Al volver de la caché del navegador (suspensión, reposo, botón atrás)
+        // el navegador puede haber repuesto otro valor en el selector.
+        window.addEventListener('pageshow', function() {
+            window.establishmentState.lastGestureAt = 0;
+            syncEstablishmentSelectors();
+        });
+
+        document.addEventListener('visibilitychange', function() {
+            if (document.visibilityState === 'visible') {
+                window.establishmentState.lastGestureAt = 0;
+                syncEstablishmentSelectors();
+            }
+        });
+    })();
 
     document.addEventListener('DOMContentLoaded', function() {
         const sidebarToggle = document.querySelector('.sidebar-toggle');
