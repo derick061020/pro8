@@ -199,19 +199,11 @@
 
                                 <template v-if="ro.status === 'OCUPADO' || (ro.is_active_reservation && ro.status === 'DISPONIBLE')">
                                     <div>
-                                        <p :style="ro.rent.license_plate ? 'margin: 0;' : ''">
+                                        <p>
                                         <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-user"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0" /><path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2" /></svg>
                                     <span class="">{{ ro.rent.customer.name }}</span>
                                     <span v-if="ro.rent.customer.person_type && ro.rent.customer.person_type_id" class="customer-type-badge ml-2" style="height: 100%;margin-left: 10px;">
                                         {{ ro.rent.customer.person_type?.description }}
-                                    </span><br>
-                                    <span class="license-plate-display" v-if="ro.rent.license_plate">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                            <path d="M5 17a2 2 0 0 1 2 -2h10a2 2 0 0 1 2 2v2a2 2 0 0 1 -2 2h-10a2 2 0 0 1 -2 -2z"></path>
-                                            <path d="M7 9v0a2 2 0 0 1 2 -2h6a2 2 0 0 1 2 2v0"></path>
-                                            <circle cx="12" cy="15" r="1"></circle>
-                                        </svg>
-                                        {{ ro.rent.license_plate }}
                                     </span>
                                     </p>
                                     <!-- Contenedor para contador y tooltip en esquina superior derecha -->
@@ -248,14 +240,22 @@
                                     </p>-->
 
                                 </div>
-                                <!-- Fecha de salida, justo encima de los botones -->
+                                <!-- Fecha de salida y placa, justo encima de los botones -->
                                 <div
-                                    v-if="ro.rent && ro.rent.output_date"
+                                    v-if="ro.rent && (ro.rent.output_date || ro.rent.license_plate)"
                                     class="stay-dates-row"
                                 >
-                                    <span class="stay-date">
+                                    <span class="stay-date" v-if="ro.rent.output_date">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M4 7a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2v-12z" /><path d="M16 3v4" /><path d="M8 3v4" /><path d="M4 11h16" /></svg>
                                         Salida: <b>{{ formatStayDate(ro.rent.output_date) }}</b>
+                                    </span>
+                                    <span class="license-plate-display" v-if="ro.rent.license_plate">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M5 17a2 2 0 0 1 2 -2h10a2 2 0 0 1 2 2v2a2 2 0 0 1 -2 2h-10a2 2 0 0 1 -2 -2z"></path>
+                                            <path d="M7 9v0a2 2 0 0 1 2 -2h6a2 2 0 0 1 2 2v0"></path>
+                                            <circle cx="12" cy="15" r="1"></circle>
+                                        </svg>
+                                        {{ ro.rent.license_plate }}
                                     </span>
                                 </div>
                                 <div class="row" style="margin-right:0px;margin-left:0px;margin-top: auto;">
@@ -1167,7 +1167,8 @@
 .room-container .room-el-card .stay-dates-row {
     display: flex;
     flex-wrap: wrap;
-    gap: 4px 14px;
+    align-items: center;
+    gap: 6px 10px;
     margin-top: auto;
     margin-bottom: 8px;
     font-size: 12px;
@@ -1256,25 +1257,31 @@
     white-space: nowrap;
 }
 
-/* Placa: contraste asegurado, no se sale */
+/* Placa: va en la misma línea que la fecha de salida, sin romper el layout. */
 .license-plate-display {
     display: inline-flex;
     align-items: center;
     gap: 4px;
-    margin-left: 0 !important;
-    margin-top: 4px;
-    padding: 3px 8px;
-    background: rgba(0, 0, 0, 0.22);
+    margin: 0 !important;
+    padding: 2px 6px;
+    background: rgba(255, 255, 255, 0.2);
     border: 1px solid rgba(255, 255, 255, 0.25);
-    border-radius: 6px;
+    border-radius: 4px;
     font-size: 11px;
-    font-weight: 700;
+    font-weight: 600;
     color: #ffffff;
     letter-spacing: 0.5px;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+    min-width: 0;
     max-width: 100%;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+}
+
+.license-plate-display svg {
+    flex-shrink: 0;
+    opacity: 0.9;
 }
 
 /* Info de cliente reservado */
@@ -1775,25 +1782,6 @@
 
 .change-room-preview .preview-diff.is-down strong {
     color: #2e7d32;
-}
-
-/* Estilos para matrícula en recepción */
-.license-plate-display {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    margin-left: 8px;
-    padding: 2px 6px;
-    background: rgba(255, 255, 255, 0.2);
-    border-radius: 4px;
-    font-size: 11px;
-    font-weight: 600;
-    color: #ffffff;
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
-}
-
-.license-plate-display svg {
-    opacity: 0.9;
 }
 
 /* Estilos para información adicional de habitación */
