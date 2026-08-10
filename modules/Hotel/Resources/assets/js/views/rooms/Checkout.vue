@@ -3595,7 +3595,11 @@ export default {
                     payment_destination_id: this.paymentForm.payment_destination_id,
                     reference: this.paymentForm.reference,
                     received: this.paymentForm.received,
-                    change: this.paymentForm.change
+                    change: this.paymentForm.change,
+                    // La mora se envía con el pago: en el backend forma parte de
+                    // la deuda real, si no se cobraría de menos y el resto saldría
+                    // como vuelto.
+                    arrears: this.arrearsAmount
                 };
                 
                 // Si es edición, agregar el ID del pago
