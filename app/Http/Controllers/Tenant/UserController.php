@@ -220,7 +220,15 @@ class UserController extends Controller
         $user->personal_email = $request->personal_email;
         $user->corporate_email = $request->corporate_email;
         $user->personal_cell_phone = $request->personal_cell_phone;
-        $user->bot_enabled = (bool) $request->bot_enabled;
+
+        // `bot_enabled` llegó con el bot de WhatsApp y vive en una migración
+        // posterior. En tenants que todavía no la han aplicado, asignarla sin
+        // más hacía fallar el INSERT con «Unknown column 'bot_enabled'», así
+        // que no se podía dar de alta NINGÚN usuario.
+        if ($this->usersTableHasBotEnabled()) {
+            $user->bot_enabled = (bool) $request->bot_enabled;
+        }
+
         $user->corporate_cell_phone = $request->corporate_cell_phone;
         $user->date_of_birth = $request->date_of_birth;
         $user->contract_date = $request->contract_date;
@@ -228,6 +236,30 @@ class UserController extends Controller
         $user->photo_filename = $request->photo_filename;
 
         $user->multiple_default_document_types = $request->multiple_default_document_types;
+    }
+
+
+    /**
+     * ¿El tenant ya tiene la columna `users.bot_enabled`?
+     *
+     * Se cachea por petición: `Schema::hasColumn` consulta el esquema y este
+     * método se llama en cada alta/edición de usuario.
+     *
+     * @return bool
+     */
+    private function usersTableHasBotEnabled()
+    {
+        static $has = null;
+
+        if ($has === null) {
+            try {
+                $has = \Illuminate\Support\Facades\Schema::connection('tenant')->hasColumn('users', 'bot_enabled');
+            } catch (Exception $e) {
+                $has = false;
+            }
+        }
+
+        return $has;
     }
 
 
@@ -336,6 +368,14 @@ class UserController extends Controller
     {
         $request->validate(['bot_enabled' => 'required|boolean']);
         $user = User::findOrFail($userId);
+
+        if (!$this->usersTableHasBotEnabled()) {
+            return [
+                'success' => false,
+                'message' => 'El bot de WhatsApp no está disponible en esta base de datos todavía. Ejecute las migraciones pendientes.',
+                'bot_enabled' => false,
+            ];
+        }
 
         if ($user->locked) {
             return [
