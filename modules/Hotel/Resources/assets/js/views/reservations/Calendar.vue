@@ -28,6 +28,9 @@
                     <button class="rcal-vbtn" title="Buscar" @click="toggleSearch">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
                     </button>
+                    <button class="rcal-vbtn" title="Exportar reservas a Excel" @click="openExport">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                    </button>
                     <button class="rcal-vbtn rcal-vbtn-add" title="Nueva reserva" @click="newReservation">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                     </button>
@@ -521,6 +524,97 @@
             </div>
         </el-dialog>
 
+        <!-- Exportar reservas a Excel (por día o por rango, con filtros) -->
+        <el-dialog :visible.sync="showExport" width="560px" custom-class="rcal-modal" :show-close="true" append-to-body>
+            <template slot="title">
+                <div class="rcal-modal-title"><span>Exportar reporte de reservas</span></div>
+            </template>
+
+            <div class="rcal-export-body">
+                <!-- Alcance: un día concreto o un rango -->
+                <div class="rcal-export-tabs">
+                    <button class="rcal-export-tab" :class="{ active: exportForm.mode === 'day' }" @click="setExportMode('day')">Por día</button>
+                    <button class="rcal-export-tab" :class="{ active: exportForm.mode === 'range' }" @click="setExportMode('range')">Por rango</button>
+                </div>
+
+                <div class="rcal-export-row" v-if="exportForm.mode === 'day'">
+                    <label>Día</label>
+                    <el-date-picker v-model="exportForm.start" type="date" size="small" style="width:100%"
+                                    value-format="yyyy-MM-dd" placeholder="Selecciona el día"
+                                    :clearable="false"></el-date-picker>
+                </div>
+
+                <div class="rcal-export-row rcal-export-row-2" v-else>
+                    <div>
+                        <label>Desde</label>
+                        <el-date-picker v-model="exportForm.start" type="date" size="small" style="width:100%"
+                                        value-format="yyyy-MM-dd" placeholder="Desde" :clearable="false"></el-date-picker>
+                    </div>
+                    <div>
+                        <label>Hasta</label>
+                        <el-date-picker v-model="exportForm.end" type="date" size="small" style="width:100%"
+                                        value-format="yyyy-MM-dd" placeholder="Hasta" :clearable="false"></el-date-picker>
+                    </div>
+                </div>
+
+                <div class="rcal-export-row">
+                    <label>¿Qué reservas incluir?</label>
+                    <el-select v-model="exportForm.date_field" size="small" style="width:100%">
+                        <el-option value="input"   label="Llegadas — ingresan en la fecha"></el-option>
+                        <el-option value="output"  label="Salidas — salen en la fecha"></el-option>
+                        <el-option value="stay"    label="Alojados — están hospedados en la fecha"></el-option>
+                        <el-option value="created" label="Registradas — se crearon en la fecha"></el-option>
+                    </el-select>
+                    <small class="rcal-export-hint">{{ exportCriterionHint }}</small>
+                </div>
+
+                <div class="rcal-export-row rcal-export-row-2">
+                    <div>
+                        <label>Tipo de habitación</label>
+                        <el-select v-model="exportForm.category_id" size="small" style="width:100%" clearable placeholder="Todos">
+                            <el-option v-for="c in categories" :key="c.id" :value="c.id" :label="c.description"></el-option>
+                        </el-select>
+                    </div>
+                    <div>
+                        <label>Habitación</label>
+                        <el-select v-model="exportForm.room_id" size="small" style="width:100%" clearable filterable placeholder="Todas">
+                            <el-option v-for="r in rooms" :key="r.id" :value="r.id" :label="r.name"></el-option>
+                        </el-select>
+                    </div>
+                </div>
+
+                <div class="rcal-export-row rcal-export-row-2">
+                    <div>
+                        <label>Estado</label>
+                        <el-select v-model="exportForm.status" size="small" style="width:100%" clearable placeholder="Todos">
+                            <el-option value="INICIADO" label="En curso"></el-option>
+                            <el-option value="FINALIZADO" label="Finalizado"></el-option>
+                        </el-select>
+                    </div>
+                    <div>
+                        <label>Estado de pago</label>
+                        <el-select v-model="exportForm.payment_state" size="small" style="width:100%" clearable placeholder="Todos">
+                            <el-option value="paid" label="Pagado"></el-option>
+                            <el-option value="partial" label="Adelanto / parcial"></el-option>
+                            <el-option value="unpaid" label="Sin pagar"></el-option>
+                        </el-select>
+                    </div>
+                </div>
+
+                <div class="rcal-export-row">
+                    <label>Medio de reserva</label>
+                    <el-select v-model="exportForm.origin" size="small" style="width:100%" clearable placeholder="Todos">
+                        <el-option v-for="o in reservationOrigins" :key="o.value" :value="o.value" :label="o.label"></el-option>
+                    </el-select>
+                </div>
+            </div>
+
+            <div slot="footer" class="rcal-modal-footer">
+                <el-button size="small" @click="showExport = false">Cancelar</el-button>
+                <el-button size="small" type="primary" @click="downloadExport">Descargar Excel</el-button>
+            </div>
+        </el-dialog>
+
         <!-- Opciones de la nota de venta generada desde el detalle de la reserva
              (mismo modal que aparece al emitir una NV desde el checkout). -->
         <sale-note-options :recordId="saleNoteId"
@@ -608,10 +702,33 @@ export default {
                 { value: 'correo',     label: 'Correo' },
                 { value: 'celular',    label: 'Celular' },
                 { value: 'presencial', label: 'Presencial' },
+                { value: 'web',        label: 'Web' },
             ],
+            // Exportación del reporte de reservas
+            showExport: false,
+            exportForm: {
+                mode: 'day',            // 'day' | 'range'
+                start: null,
+                end: null,
+                date_field: 'input',    // llegadas del día por defecto
+                category_id: null,
+                room_id: null,
+                status: null,
+                payment_state: null,
+                origin: null,
+            },
         }
     },
     computed: {
+        exportCriterionHint() {
+            const hints = {
+                input:   'Reservas cuya fecha de INGRESO cae en el periodo (llegadas del día).',
+                output:  'Reservas cuya fecha de SALIDA cae en el periodo (salidas del día).',
+                stay:    'Reservas que ocupan la habitación durante el periodo, aunque hayan entrado antes.',
+                created: 'Reservas registradas en el sistema durante el periodo.',
+            }
+            return hints[this.exportForm.date_field] || ''
+        },
         // La nota de venta solo se ofrece cuando la reserva está saldada
         // (payment_state 'paid' = deuda <= 0, ver computeReservationPayment).
         canGenerateSaleNote() {
@@ -863,6 +980,14 @@ export default {
     },
     beforeDestroy() {
         window.removeEventListener('mouseup', this._onWindowMouseUp)
+    },
+    watch: {
+        // En modo "por día" el rango siempre es un único día.
+        'exportForm.start'(value) {
+            if (this.exportForm.mode === 'day') {
+                this.exportForm.end = value
+            }
+        },
     },
     methods: {
         /* ── Date Helpers ── */
@@ -1651,6 +1776,61 @@ export default {
             // Mostrar diálogo para seleccionar habitación
             this.showReservationPopup = true;
         },
+        // ---- Exportación del reporte de reservas ----
+        openExport() {
+            // Por defecto: el día visible en el calendario (o hoy) — el uso más
+            // habitual es "las reservas de hoy".
+            const base = this.days && this.days.length ? this.days[0].date : new Date();
+            const today = new Date();
+            const inView = this.days && this.days.some(d => d.isToday);
+            const day = this.toDateInput(inView ? today : base);
+
+            this.exportForm.start = day;
+            this.exportForm.end = this.days && this.days.length
+                ? this.toDateInput(this.days[this.days.length - 1].date)
+                : day;
+
+            this.showExport = true;
+        },
+        setExportMode(mode) {
+            this.exportForm.mode = mode;
+            if (mode === 'day') {
+                this.exportForm.end = this.exportForm.start;
+            } else if (!this.exportForm.end || this.exportForm.end < this.exportForm.start) {
+                this.exportForm.end = this.exportForm.start;
+            }
+        },
+        toDateInput(date) {
+            const d = new Date(date);
+            const p = n => String(n).padStart(2, '0');
+            return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+        },
+        downloadExport() {
+            const f = this.exportForm;
+
+            if (!f.start) {
+                this.$message.error('Selecciona la fecha del reporte.');
+                return;
+            }
+
+            const start = f.start;
+            const end = f.mode === 'day' ? f.start : (f.end || f.start);
+
+            if (end < start) {
+                this.$message.error('La fecha final no puede ser anterior a la inicial.');
+                return;
+            }
+
+            const params = new URLSearchParams({ start, end, date_field: f.date_field });
+            ['category_id', 'room_id', 'status', 'payment_state', 'origin'].forEach(key => {
+                if (f[key] !== null && f[key] !== '' && f[key] !== undefined) {
+                    params.append(key, f[key]);
+                }
+            });
+
+            window.open(`/hotels/reservations/calendar/export?${params.toString()}`, '_blank');
+            this.showExport = false;
+        },
         selectRoomForReservation(room) {
             this.selectedRoom = room;
             // Cerrar el diálogo de selección
@@ -2080,6 +2260,44 @@ export default {
 .rcal-action-txt b { font-size: 15px; font-weight: 700; color: #111827; }
 .rcal-action-txt small { font-size: 12px; color: #6b7280; }
 .rcal-action-hint { font-size: 12.5px; color: #6b7280; line-height: 1.5; margin: 4px 0 0; }
+
+/* ── Exportar reservas ── */
+.rcal-export-body { display: flex; flex-direction: column; gap: 14px; padding-top: 2px; }
+.rcal-export-tabs {
+    display: inline-flex;
+    padding: 3px;
+    gap: 3px;
+    border-radius: 9px;
+    background: #f3f4f6;
+    align-self: flex-start;
+}
+.rcal-export-tab {
+    border: 0;
+    background: transparent;
+    padding: 6px 16px;
+    border-radius: 7px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #6b7280;
+    cursor: pointer;
+    transition: background .15s, color .15s;
+}
+.rcal-export-tab:hover { color: #374151; }
+.rcal-export-tab.active { background: #fff; color: #111827; box-shadow: 0 1px 3px rgba(0,0,0,.10); }
+.rcal-export-row { display: flex; flex-direction: column; gap: 5px; }
+.rcal-export-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.rcal-export-row-2 > div { display: flex; flex-direction: column; gap: 5px; }
+.rcal-export-row label,
+.rcal-export-row-2 label {
+    font-size: 12px;
+    font-weight: 600;
+    color: #374151;
+}
+.rcal-export-hint { font-size: 11.5px; color: #6b7280; line-height: 1.45; }
+
+@media (max-width: 560px) {
+    .rcal-export-row-2 { grid-template-columns: 1fr; }
+}
 
 /* ── Edit form layout ── */
 .rcal-edit { padding-top: 4px; }

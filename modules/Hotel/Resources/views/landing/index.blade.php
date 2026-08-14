@@ -58,6 +58,26 @@
   .hr-scroll:hover { background:rgba(18,20,15,.5); color:#fff; }
   @keyframes heroBounce { 0%,100% { transform:translate(-50%,0); } 50% { transform:translate(-50%,7px); } }
 
+  /* Botón de pausa/reproducción, integrado en la píldora de navegación. */
+  .hr-play { margin-left:4px; width:22px; height:22px; flex:0 0 22px; display:flex; align-items:center; justify-content:center; border:0; padding:0; border-radius:999px; background:rgba(255,255,255,.18); color:#fff; font-size:9px; cursor:pointer; transition:background .2s; }
+  .hr-play:hover { background:rgba(255,255,255,.34); }
+
+  /* Flechas de navegación (aparecen al acercar el puntero al hero). */
+  .hr-arrow { position:absolute; top:50%; z-index:7; width:46px; height:46px; margin-top:-23px; display:flex; align-items:center; justify-content:center; border-radius:999px; border:1px solid rgba(255,255,255,.28); background:rgba(18,20,15,.32); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); color:#fff; font-size:22px; cursor:pointer; opacity:0; transition:opacity .3s ease, background .2s ease, transform .2s ease; box-shadow:0 6px 20px rgba(0,0,0,.20); }
+  .hr-arrow--prev { left:22px; }
+  .hr-arrow--next { right:22px; }
+  .hr-stage:hover .hr-arrow, .hr-arrow:focus-visible { opacity:1; }
+  .hr-arrow:hover { background:rgba(18,20,15,.55); transform:scale(1.06); }
+  .hr-arrow:active { transform:scale(.96); }
+  /* En pantallas táctiles las flechas están siempre visibles (no hay hover). */
+  @media (hover:none) { .hr-arrow { opacity:.85; } }
+
+  /* Deslizar sin que el navegador secuestre el gesto ni seleccione texto. */
+  .hr-track { touch-action:pan-y; -webkit-user-select:none; user-select:none; }
+  .hr-photo, .hr-cell img { -webkit-user-drag:none; user-drag:none; }
+  /* Fondo neutro mientras la foto diferida termina de cargar. */
+  .hr-cell--img .hr-photo { background-color:#1b1e18; transition:transform 7.5s ease, opacity .5s ease; }
+
   /* ===== Celda intro: composición por capas de Makai (cielo · nubes · texto · edificio) ===== */
   .hr-hero-makai { background:#cfe7f5; }
   /* Cielo: SKY.png ya trae nubes; una deriva lenta las mueve sin costuras. */
@@ -165,6 +185,52 @@
   .hr-pop-field { margin-bottom:14px; }
   .hr-pop-field > label { display:block; font-size:13px; font-weight:600; color:#2b303b; margin-bottom:7px; }
   .hr-btn-search { height:46px; }
+  /* Nº de noches junto a la etiqueta de salida. */
+  .hr-nights-hint { margin-left:6px; font-size:11.5px; font-weight:600; color:#5c7c68; }
+  /* Aviso de validación del buscador (sustituye a los alert() del navegador). */
+  .hr-search__error { grid-column:1 / -1; margin:-4px 0 0; padding:10px 13px; border-radius:10px; background:#fdecec; border:1px solid #f7c9c9; color:#a02020; font-size:13px; font-weight:500; display:flex; align-items:center; gap:8px; }
+  .hr-search__card .hb-input.is-invalid { border-color:#e05252; box-shadow:0 0 0 3px rgba(224,82,82,.15); }
+
+  /* ===== Barra de resultados (resumen + filtros) ===== */
+  .hr-results-bar { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:14px; margin-bottom:24px; padding:14px 18px; background:#fff; border:1px solid #eaecf0; border-radius:16px; box-shadow:0 2px 10px rgba(10,13,20,.05); }
+  .hr-results-summary { display:flex; flex-wrap:wrap; align-items:center; gap:8px; }
+  .hr-results-chip { display:inline-flex; align-items:center; gap:6px; padding:6px 12px; border-radius:100px; background:#f2f5f8; color:#525866; font-size:12.5px; font-weight:600; }
+  .hr-results-edit, .hr-results-clear { display:inline-flex; align-items:center; gap:6px; padding:6px 12px; border:0; border-radius:100px; background:transparent; color:#5c7c68; font-size:12.5px; font-weight:600; cursor:pointer; transition:background .15s; }
+  .hr-results-edit:hover, .hr-results-clear:hover { background:#eef3ef; }
+  .hr-results-clear { color:#99a0ae; }
+  .hr-results-clear:hover { background:#f2f5f8; color:#525866; }
+  .hr-results-filters { display:flex; align-items:center; gap:12px; }
+  .hr-filter { display:inline-flex; align-items:center; gap:7px; font-size:12.5px; font-weight:600; color:#717784; white-space:nowrap; }
+  .hr-filter-select { height:38px; min-width:150px; font-size:13px; }
+
+  /* Alternativas de fechas cuando no hay disponibilidad. */
+  .hr-alt { margin-top:8px; padding:24px; border-radius:18px; background:#f7faf8; border:1px solid #e2ebe5; }
+  .hr-alt h4 { font-family:'Inter Tight','Inter',sans-serif; font-weight:700; font-size:16px; color:#2b303b; margin:0 0 4px; }
+  .hr-alt p { font-size:13.5px; color:#717784; margin:0 0 14px; }
+  .hr-alt-list { display:flex; flex-wrap:wrap; gap:10px; }
+  .hr-alt-btn { display:flex; flex-direction:column; align-items:flex-start; gap:2px; padding:11px 16px; border-radius:12px; border:1px solid #d7e3db; background:#fff; cursor:pointer; text-align:left; transition:border-color .2s, box-shadow .2s, transform .15s; }
+  .hr-alt-btn:hover { border-color:#5c7c68; box-shadow:0 6px 16px -8px rgba(92,124,104,.5); transform:translateY(-1px); }
+  .hr-alt-btn b { font-size:13.5px; font-weight:700; color:#2b303b; }
+  .hr-alt-btn small { font-size:11.5px; color:#5c7c68; font-weight:600; }
+
+  /* Habitaciones no disponibles (por qué no aparecen). */
+  .hr-unavail { margin-top:26px; }
+  .hr-unavail-toggle { display:inline-flex; align-items:center; gap:8px; padding:9px 16px; border-radius:100px; border:1px solid #eaecf0; background:#fff; color:#717784; font-size:13px; font-weight:600; cursor:pointer; transition:border-color .2s, color .2s; }
+  .hr-unavail-toggle:hover { border-color:#d7dce3; color:#525866; }
+  .hr-unavail-grid { display:grid; gap:12px; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); margin-top:16px; }
+  .hr-unavail-card { display:flex; gap:12px; align-items:center; padding:12px; border:1px solid #eef0f3; border-radius:14px; background:#fbfbfc; opacity:.85; }
+  .hr-unavail-card img { width:56px; height:56px; border-radius:10px; object-fit:cover; flex-shrink:0; filter:grayscale(.55); }
+  .hr-unavail-card .n { font-size:13.5px; font-weight:700; color:#525866; }
+  .hr-unavail-card .r { font-size:12px; color:#99a0ae; }
+
+  @media (max-width:640px) {
+    .hr-results-bar { flex-direction:column; align-items:stretch; }
+    .hr-results-filters { flex-direction:column; align-items:stretch; gap:10px; }
+    .hr-filter { justify-content:space-between; }
+    .hr-filter-select { flex:1 1 auto; min-width:0; }
+    .hr-alt-list { flex-direction:column; }
+    .hr-alt-btn { width:100%; }
+  }
 
   /* ---- Tablet ---- */
   @media (max-width:991px) {
@@ -172,6 +238,9 @@
     .hr-cell-caption { padding:104px 24px 140px; }
     .hr-nav { bottom:118px; }
     .hr-scroll { bottom:74px; }
+    .hr-arrow { width:40px; height:40px; margin-top:-20px; font-size:19px; }
+    .hr-arrow--prev { left:12px; }
+    .hr-arrow--next { right:12px; }
     .hr-search__card { grid-template-columns:1fr 1fr; }
     .hr-field--guests, .hr-field--submit { grid-column:auto; }
     .hr-field--submit { grid-column:1 / -1; }
@@ -189,6 +258,9 @@
     .hr-wordmark { font-size:clamp(40px,15vw,72px); }
     .hr-nav { bottom:64px; }
     .hr-scroll { display:none; }
+    /* En móvil manda el deslizamiento con el dedo: las flechas ocuparían
+       demasiado sobre la foto. */
+    .hr-arrow { display:none; }
     #reservation-form.hr-search { margin-top:-40px; }
     .hr-search__card { grid-template-columns:1fr; padding:16px; gap:14px; border-radius:18px; }
     .hr-guests-box { min-width:0; }
@@ -246,26 +318,39 @@
 @endphp
 
 <!-- ===== Hero ===== -->
-<section class="hr-stage {{ $cellCount > 1 ? 'has-slider' : '' }}" id="hero">
+<section class="hr-stage {{ $cellCount > 1 ? 'has-slider' : '' }}" id="hero"
+         aria-roledescription="carrusel" aria-label="Portada de {{ $hotelName }}">
   <div class="hr-track" id="hrTrack">
 
     <!-- Celda 0: portada intro — composición por capas de Makai
          (cielo · nubes · wordmark que cae · edificio que sube) -->
-    <div class="hr-cell hr-cell--hero hr-hero-makai is-active">
+    <div class="hr-cell hr-cell--hero hr-hero-makai is-active"
+         role="group" aria-roledescription="diapositiva" aria-label="1 de {{ $cellCount }}"
+         aria-hidden="false">
       <img class="hr-sky" src="/landing-reservas/images/hero/SKY.png" alt="" aria-hidden="true">
       <h1 class="hr-wordmark2">{{ $hotelName }}</h1>
       <img class="hr-building" src="/landing-reservas/images/hero/catedral.png" alt="{{ $hotelName }}">
     </div>
 
-    <!-- Celdas 1..n: slides -->
+    <!-- Celdas 1..n: slides.
+         La imagen de la primera diapositiva se precarga (fetchpriority alto) y
+         las demás se cargan de forma diferida cuando se acercan a pantalla,
+         para no penalizar el LCP con 5 fotos a pantalla completa. -->
     @foreach($restSlides as $slide)
       @php
         $slideImg   = HotelLandingSetting::imageUrl($slide['image'] ?? null, HotelLandingSetting::DEFAULT_SLIDE);
         $slideTitle = trim($slide['title'] ?? '') !== '' ? $slide['title'] : $hotelName;
         $showStars  = $slide['stars'] ?? true;
+        $eager      = $loop->first;
       @endphp
-      <div class="hr-cell hr-cell--img">
-        <div class="hr-photo" style="background-image:url('{{ $slideImg }}');"></div>
+      {{-- aria-hidden ya viene en el HTML (no solo cuando arranca el JS): las
+           diapositivas de fondo no deben leerse desde el primer pintado. --}}
+      <div class="hr-cell hr-cell--img"
+           role="group" aria-roledescription="diapositiva" aria-label="{{ $loop->index + 2 }} de {{ $cellCount }}"
+           aria-hidden="true">
+        <div class="hr-photo"
+             data-bg="{{ $slideImg }}"
+             @if($eager) style="background-image:url('{{ $slideImg }}');" @endif></div>
         <div class="hr-overlay"></div>
         <div class="hr-cell-caption">
           <div class="hr-caption-inner">
@@ -282,10 +367,22 @@
   </div>
 
   @if($cellCount > 1)
+    <button type="button" class="hr-arrow hr-arrow--prev" id="hrPrev" aria-label="Diapositiva anterior">
+      <i class="fa fa-angle-left"></i>
+    </button>
+    <button type="button" class="hr-arrow hr-arrow--next" id="hrNext" aria-label="Diapositiva siguiente">
+      <i class="fa fa-angle-right"></i>
+    </button>
+
     <div class="hr-nav" id="hrNav" role="tablist" aria-label="Portada">
       @for($s = 0; $s < $cellCount; $s++)
-        <button type="button" class="hr-seg {{ $s === 0 ? 'is-active' : '' }}" data-i="{{ $s }}" aria-label="Ir a la vista {{ $s + 1 }}"><span class="hr-seg-fill"></span></button>
+        <button type="button" class="hr-seg {{ $s === 0 ? 'is-active' : '' }}" data-i="{{ $s }}"
+                role="tab" aria-selected="{{ $s === 0 ? 'true' : 'false' }}"
+                aria-label="Ir a la vista {{ $s + 1 }} de {{ $cellCount }}"><span class="hr-seg-fill"></span></button>
       @endfor
+      <button type="button" class="hr-play" id="hrPlay" aria-label="Pausar la reproducción automática" aria-pressed="false">
+        <i class="fa fa-pause"></i>
+      </button>
     </div>
   @endif
 
@@ -296,41 +393,219 @@
 (function () {
   // Controlador del hero: track horizontal (celda intro + slides) con
   // indicador de píldora, arrancado tras la revelación del loader.
+  //
+  // Además del avance automático soporta: flechas, teclado, arrastre/deslizado
+  // táctil, pausa al pasar el ratón o al enfocar con el teclado, pausa cuando
+  // la pestaña no está visible o el hero sale de pantalla, botón de
+  // pausa/reproducción y carga diferida de las imágenes.
   var hero  = document.getElementById('hero');
   var track = document.getElementById('hrTrack');
   var nav   = document.getElementById('hrNav');
   if (!hero || !track) return;
+
   var cells = track.children, count = cells.length;
   var segs  = nav ? nav.querySelectorAll('.hr-seg') : [];
+  var prevBtn = document.getElementById('hrPrev');
+  var nextBtn = document.getElementById('hrNext');
+  var playBtn = document.getElementById('hrPlay');
+
   var INTRO_MS = 6200, SLIDE_MS = 5200;
   var idx = 0, timer = null, revealed = false;
+  var userPaused = false;      // el visitante pulsó "pausa"
+  var hoverPaused = false;     // ratón/foco sobre el hero
+  var offscreen = false;       // hero fuera de la pantalla o pestaña oculta
+
+  var reduceMotion = window.matchMedia
+    && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* ---- Carga diferida de las fotos de las diapositivas ---- */
+  function loadPhoto(i) {
+    var cell = cells[i];
+    if (!cell) return;
+    var photo = cell.querySelector('.hr-photo[data-bg]');
+    if (!photo) return;
+    var url = photo.getAttribute('data-bg');
+    photo.removeAttribute('data-bg');
+    if (!url) return;
+    // Precarga real: solo se pinta cuando la imagen está lista, así no se ve
+    // el salto de un fondo vacío a la foto.
+    var img = new Image();
+    img.onload = function () { photo.style.backgroundImage = "url('" + url + "')"; };
+    img.src = url;
+  }
+  // Cargar la diapositiva actual y la siguiente (una de adelanto).
+  function ensureLoaded(i) {
+    loadPhoto(i);
+    loadPhoto((i + 1) % count);
+  }
+
+  function duration(i) { return i === 0 ? INTRO_MS : SLIDE_MS; }
 
   function fill(seg, active, dur) {
     var f = seg.querySelector('.hr-seg-fill');
     if (!f) return;
-    if (active) {
+    if (active && !reduceMotion) {
       f.style.transition = 'none'; f.style.width = '0'; void f.offsetWidth;
       f.style.transition = 'width ' + dur + 'ms linear'; f.style.width = '100%';
-    } else { f.style.transition = 'none'; f.style.width = '0'; }
-  }
-  function activate(n) {
-    idx = (n + count) % count;
-    track.style.transform = 'translateX(' + (-idx * 100) + '%)';
-    for (var i = 0; i < count; i++) cells[i].classList.toggle('is-active', i === idx);
-    var dur = idx === 0 ? INTRO_MS : SLIDE_MS;
-    for (var k = 0; k < segs.length; k++) {
-      segs[k].classList.toggle('is-active', k === idx);
-      fill(segs[k], k === idx, dur);
+    } else if (active) {
+      f.style.transition = 'none'; f.style.width = '100%';
+    } else {
+      f.style.transition = 'none'; f.style.width = '0';
     }
   }
+
+  function activate(n) {
+    idx = (n + count) % count;
+    ensureLoaded(idx);
+    track.style.transform = 'translateX(' + (-idx * 100) + '%)';
+    for (var i = 0; i < count; i++) {
+      cells[i].classList.toggle('is-active', i === idx);
+      // Las diapositivas ocultas no deben ser alcanzables con el tabulador.
+      cells[i].setAttribute('aria-hidden', i === idx ? 'false' : 'true');
+    }
+    var dur = duration(idx);
+    for (var k = 0; k < segs.length; k++) {
+      var on = k === idx;
+      segs[k].classList.toggle('is-active', on);
+      segs[k].setAttribute('aria-selected', on ? 'true' : 'false');
+      fill(segs[k], on, dur);
+    }
+  }
+
+  function paused() { return userPaused || hoverPaused || offscreen || reduceMotion; }
+
+  function stop() { clearTimeout(timer); timer = null; }
+
   function schedule() {
-    if (count < 2) return;
-    clearTimeout(timer);
-    timer = setTimeout(function () { activate(idx + 1); schedule(); }, idx === 0 ? INTRO_MS : SLIDE_MS);
+    stop();
+    if (count < 2 || !revealed || paused()) return;
+    timer = setTimeout(function () { activate(idx + 1); schedule(); }, duration(idx));
   }
+
+  // Un cambio manual reinicia el temporizador y la barra de progreso.
+  function goTo(n) { activate(n); schedule(); }
+  function next() { goTo(idx + 1); }
+  function prev() { goTo(idx - 1); }
+
+  /* ---- Controles ---- */
   for (var k = 0; k < segs.length; k++) {
-    segs[k].addEventListener('click', function () { activate(parseInt(this.getAttribute('data-i'), 10)); schedule(); });
+    segs[k].addEventListener('click', function () {
+      goTo(parseInt(this.getAttribute('data-i'), 10));
+    });
   }
+  if (nextBtn) nextBtn.addEventListener('click', next);
+  if (prevBtn) prevBtn.addEventListener('click', prev);
+
+  if (playBtn) {
+    playBtn.addEventListener('click', function () {
+      userPaused = !userPaused;
+      playBtn.setAttribute('aria-pressed', userPaused ? 'true' : 'false');
+      playBtn.setAttribute('aria-label', userPaused
+        ? 'Reanudar la reproducción automática'
+        : 'Pausar la reproducción automática');
+      playBtn.innerHTML = userPaused
+        ? '<i class="fa fa-play"></i>'
+        : '<i class="fa fa-pause"></i>';
+      if (userPaused) {
+        stop();
+        // Congelar la barra de progreso donde esté.
+        var f = segs[idx] && segs[idx].querySelector('.hr-seg-fill');
+        if (f) {
+          var w = f.getBoundingClientRect().width;
+          var parentW = f.parentNode.getBoundingClientRect().width || 1;
+          f.style.transition = 'none';
+          f.style.width = (w / parentW * 100) + '%';
+        }
+      } else {
+        activate(idx);
+        schedule();
+      }
+    });
+  }
+
+  // Teclado: flechas para navegar cuando el hero tiene el foco.
+  hero.setAttribute('tabindex', '-1');
+  hero.addEventListener('keydown', function (e) {
+    if (e.key === 'ArrowRight') { e.preventDefault(); next(); }
+    else if (e.key === 'ArrowLeft') { e.preventDefault(); prev(); }
+  });
+
+  // Pausa mientras el visitante está leyendo (ratón encima o foco dentro).
+  function setHoverPause(v) {
+    if (hoverPaused === v) return;
+    hoverPaused = v;
+    if (v) { stop(); } else { activate(idx); schedule(); }
+  }
+  hero.addEventListener('mouseenter', function () { setHoverPause(true); });
+  hero.addEventListener('mouseleave', function () { setHoverPause(false); });
+  hero.addEventListener('focusin',  function () { setHoverPause(true); });
+  hero.addEventListener('focusout', function (e) {
+    if (!hero.contains(e.relatedTarget)) setHoverPause(false);
+  });
+
+  // No gastar CPU ni "saltarse" diapositivas con la pestaña oculta.
+  document.addEventListener('visibilitychange', function () {
+    offscreen = document.hidden;
+    if (offscreen) stop(); else { activate(idx); schedule(); }
+  });
+
+  // Tampoco animar si el hero ya no está en pantalla.
+  if ('IntersectionObserver' in window) {
+    new IntersectionObserver(function (entries) {
+      var visible = entries[0] && entries[0].isIntersecting;
+      offscreen = !visible || document.hidden;
+      if (offscreen) stop(); else if (revealed) { activate(idx); schedule(); }
+    }, { threshold: 0.15 }).observe(hero);
+  }
+
+  /* ---- Deslizar con el dedo / arrastrar con el ratón ---- */
+  var dragStartX = 0, dragStartY = 0, dragging = false, dragLocked = false;
+  var SWIPE_MIN = 45;   // px mínimos para considerar un deslizamiento
+
+  function pointerDown(x, y) {
+    dragStartX = x; dragStartY = y; dragging = true; dragLocked = false;
+    stop();
+  }
+  function pointerMove(x, y, ev) {
+    if (!dragging) return;
+    var dx = x - dragStartX, dy = y - dragStartY;
+    // Solo se toma como deslizamiento horizontal si domina sobre el vertical,
+    // así no se secuestra el scroll de la página.
+    if (!dragLocked && Math.abs(dx) > 10 && Math.abs(dx) > Math.abs(dy)) {
+      dragLocked = true;
+    }
+    if (dragLocked && ev && ev.cancelable) ev.preventDefault();
+  }
+  function pointerUp(x) {
+    if (!dragging) return;
+    var dx = x - dragStartX;
+    dragging = false;
+    if (dragLocked && Math.abs(dx) >= SWIPE_MIN) {
+      dx < 0 ? next() : prev();
+    } else {
+      schedule();
+    }
+    dragLocked = false;
+  }
+
+  track.addEventListener('touchstart', function (e) {
+    var t = e.changedTouches[0];
+    pointerDown(t.clientX, t.clientY);
+  }, { passive: true });
+  track.addEventListener('touchmove', function (e) {
+    var t = e.changedTouches[0];
+    pointerMove(t.clientX, t.clientY, e);
+  }, { passive: false });
+  track.addEventListener('touchend', function (e) {
+    pointerUp(e.changedTouches[0].clientX);
+  });
+
+  track.addEventListener('mousedown', function (e) {
+    if (e.button !== 0) return;
+    pointerDown(e.clientX, e.clientY);
+  });
+  window.addEventListener('mousemove', function (e) { pointerMove(e.clientX, e.clientY, null); });
+  window.addEventListener('mouseup', function (e) { if (dragging) pointerUp(e.clientX); });
 
   window.hbHeroReveal = function () {
     if (revealed) return; revealed = true;
@@ -368,7 +643,10 @@
         <input name="checkin" type="date" id="checkin_date" class="hb-input" required>
       </div>
       <div class="hr-field">
-        <label class="hb-label" for="checkout_date"><i class="fa fa-calendar"></i> Salida</label>
+        <label class="hb-label" for="checkout_date">
+          <i class="fa fa-calendar"></i> Salida
+          <span class="hr-nights-hint" id="nightsHint"></span>
+        </label>
         <input name="checkout" type="date" id="checkout_date" class="hb-input" required>
       </div>
       <div class="hr-field hr-field--guests hr-guests">
@@ -396,6 +674,7 @@
       <div class="hr-field hr-field--submit">
         <button type="submit" id="btn-search" class="hb-btn hb-btn-primary hr-btn-search"><i class="fa fa-search"></i> Buscar</button>
       </div>
+      <div class="hr-search__error" id="searchError" role="alert" hidden></div>
     </form>
   </div>
 </section>
@@ -431,7 +710,72 @@
     aSel.addEventListener('change', updateSummary);
     cSel.addEventListener('change', updateSummary);
     updateSummary();
+    // El resumen debe poder refrescarse desde fuera (p. ej. al restaurar una
+    // búsqueda compartida por enlace).
+    window.hbUpdateGuestsSummary = updateSummary;
   }
+
+  /* ---- Fechas coherentes desde el primer momento ----
+     Antes ambos campos salían vacíos y sin límites: se podía pedir una entrada
+     en el pasado o una salida anterior a la entrada, y el error solo aparecía
+     al pulsar "Buscar". Ahora el formulario llega relleno (hoy → mañana), no
+     deja elegir fechas pasadas y la salida se reajusta sola. */
+  var inEl  = document.getElementById('checkin_date');
+  var outEl = document.getElementById('checkout_date');
+  var hint  = document.getElementById('nightsHint');
+  if (!inEl || !outEl) return;
+
+  function iso(d) {
+    var p = function (n) { return (n < 10 ? '0' : '') + n; };
+    return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate());
+  }
+  function addDays(dateStr, n) {
+    var parts = dateStr.split('-');
+    var d = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+    d.setDate(d.getDate() + n);
+    return iso(d);
+  }
+  function nightsBetween(a, b) {
+    if (!a || !b) return 0;
+    var pa = a.split('-'), pb = b.split('-');
+    var da = new Date(pa[0], pa[1] - 1, pa[2]), db = new Date(pb[0], pb[1] - 1, pb[2]);
+    return Math.round((db - da) / 86400000);
+  }
+
+  var today = iso(new Date());
+  inEl.min = today;
+
+  // Valores iniciales: los del enlace compartido (?checkin=&checkout=) o
+  // hoy → mañana.
+  var qs = new URLSearchParams(window.location.search);
+  var qIn = qs.get('checkin'), qOut = qs.get('checkout');
+  inEl.value  = (qIn && qIn >= today) ? qIn : today;
+  outEl.value = (qOut && qOut > inEl.value) ? qOut : addDays(inEl.value, 1);
+
+  var qAdults = parseInt(qs.get('adults'), 10);
+  var qChildren = parseInt(qs.get('children'), 10);
+  if (aSel && qAdults >= 1) { aSel.value = String(Math.min(qAdults, 8)); }
+  if (cSel && qChildren >= 0) { cSel.value = String(Math.min(qChildren, 6)); }
+  if (window.hbUpdateGuestsSummary) window.hbUpdateGuestsSummary();
+
+  function syncDates() {
+    if (inEl.value && inEl.value < today) inEl.value = today;
+    // La salida nunca puede ser anterior o igual a la entrada.
+    outEl.min = inEl.value ? addDays(inEl.value, 1) : today;
+    if (outEl.value && inEl.value && outEl.value <= inEl.value) {
+      outEl.value = addDays(inEl.value, 1);
+    }
+    var n = nightsBetween(inEl.value, outEl.value);
+    if (hint) hint.textContent = n > 0 ? '· ' + n + (n === 1 ? ' noche' : ' noches') : '';
+  }
+
+  inEl.addEventListener('change', syncDates);
+  outEl.addEventListener('change', syncDates);
+  syncDates();
+
+  // Exponer utilidades a la lógica de reservas (más abajo).
+  window.hbDates = { iso: iso, addDays: addDays, nightsBetween: nightsBetween, today: today };
+  if (aSel && cSel) window.hbGuestSelects = { adults: aSel, children: cSel };
 })();
 </script>
 
@@ -443,7 +787,37 @@
       <h2 class="hb-h2" id="rooms-heading">{{ $cfg['rooms_heading'] ?? 'Nuestras habitaciones' }}</h2>
       <p class="hb-sub" id="rooms-subheading">{{ $cfg['rooms_subheading'] ?? 'Selecciona fechas para ver disponibilidad y precios.' }}</p>
     </div>
+
+    <!-- Resumen de la búsqueda + filtros de los resultados -->
+    <div class="hr-results-bar" id="resultsBar" hidden>
+      <div class="hr-results-summary" id="resultsSummary" hidden>
+        <span class="hr-results-chip" id="chipDates"></span>
+        <span class="hr-results-chip" id="chipGuests"></span>
+        <button type="button" class="hr-results-edit" id="btnEditSearch"><i class="fa fa-pencil"></i> Modificar búsqueda</button>
+        <button type="button" class="hr-results-clear" id="btnClearSearch"><i class="fa fa-times"></i> Quitar filtros</button>
+      </div>
+      <div class="hr-results-filters">
+        <label class="hr-filter">
+          <span>Tipo</span>
+          <select id="filterCategory" class="hb-select hr-filter-select"><option value="">Todos</option></select>
+        </label>
+        <label class="hr-filter">
+          <span>Ordenar</span>
+          <select id="filterSort" class="hb-select hr-filter-select">
+            <option value="featured">Recomendadas</option>
+            <option value="price_asc">Precio: menor a mayor</option>
+            <option value="price_desc">Precio: mayor a menor</option>
+            <option value="capacity_desc">Mayor capacidad</option>
+          </select>
+        </label>
+      </div>
+    </div>
+
     <div id="rooms-grid"></div>
+
+    <!-- Alternativas y habitaciones no disponibles -->
+    <div id="rooms-suggestions"></div>
+    <div id="rooms-unavailable"></div>
   </div>
 </section>
 
@@ -862,40 +1236,252 @@ jQuery(function ($) {
         $('#rooms-heading').text('Habitaciones destacadas');
     }
 
+    // Filtros disponibles desde el primer momento (sin necesidad de buscar):
+    // el visitante puede acotar por tipo y ordenar el catálogo completo.
+    (function initFilters() {
+        var cats = [];
+        (DATA.rooms || []).forEach(function (r) {
+            if (r.category && cats.indexOf(r.category) === -1) cats.push(r.category);
+        });
+        var $cat = $('#filterCategory').empty().append('<option value="">Todos los tipos</option>');
+        cats.forEach(function (c) { $cat.append('<option value="' + esc(c) + '">' + esc(c) + '</option>'); });
+
+        if ((DATA.rooms || []).length > 1) $('#resultsBar').removeAttr('hidden');
+    })();
+
     // ---- Buscar disponibilidad ----
-    $('#searchform').on('submit', function (e) {
-        e.preventDefault();
+    //
+    // Mejoras sobre la versión anterior:
+    //  · La validación se muestra dentro del formulario (nada de alert()).
+    //  · Los resultados llevan resumen, filtro por tipo y orden, sin repetir
+    //    la búsqueda a mano.
+    //  · Las habitaciones descartadas se muestran aparte CON el motivo.
+    //  · Sin disponibilidad se proponen las fechas libres más cercanas.
+    //  · La búsqueda queda en la URL (enlace compartible) y se restaura al
+    //    volver a la página.
+
+    function showSearchError(msg, $field) {
+        var $box = $('#searchError');
+        $('.hr-search__card .hb-input').removeClass('is-invalid');
+        if (!msg) { $box.attr('hidden', true).empty(); return; }
+        $box.removeAttr('hidden').html('<i class="fa fa-exclamation-circle"></i> ' + esc(msg));
+        if ($field && $field.length) { $field.addClass('is-invalid').focus(); }
+    }
+
+    function scrollToResults() {
+        var el = document.getElementById('rooms-results');
+        if (!el) return;
+        var top = el.getBoundingClientRect().top + window.scrollY - 76;
+        window.scrollTo({ top: top, behavior: 'smooth' });
+    }
+
+    // Guarda la búsqueda en la URL para poder compartirla / recargar sin perderla.
+    function persistSearch(s) {
+        if (!window.history || !window.history.replaceState) return;
+        var qs = new URLSearchParams(window.location.search);
+        qs.set('checkin', s.checkin);
+        qs.set('checkout', s.checkout);
+        qs.set('adults', s.adults);
+        if (s.children) qs.set('children', s.children); else qs.delete('children');
+        window.history.replaceState(null, '', window.location.pathname + '?' + qs.toString() + '#rooms-results');
+    }
+
+    function renderSuggestions(suggestions) {
+        var $box = $('#rooms-suggestions').empty();
+        if (!suggestions || !suggestions.length) return;
+
+        var items = suggestions.map(function (s) {
+            return '<button type="button" class="hr-alt-btn" data-checkin="' + s.checkin + '" data-checkout="' + s.checkout + '">' +
+                     '<b>' + esc(s.label) + '</b>' +
+                     '<small>' + s.rooms + ' habitación(es)' + (s.min_price > 0 ? ' · desde ' + money(s.min_price) : '') + '</small>' +
+                   '</button>';
+        }).join('');
+
+        $box.html(
+            '<div class="hr-alt">' +
+              '<h4><i class="fa fa-calendar-check-o"></i> Fechas cercanas con disponibilidad</h4>' +
+              '<p>No hay habitaciones libres en las fechas elegidas, pero sí en estas:</p>' +
+              '<div class="hr-alt-list">' + items + '</div>' +
+            '</div>'
+        );
+    }
+
+    function renderUnavailable(list) {
+        var $box = $('#rooms-unavailable').empty();
+        if (!list || !list.length) return;
+
+        var cards = list.map(function (r) {
+            var img = r.main_image || PLACEHOLDER;
+            return '<div class="hr-unavail-card">' +
+                     '<img src="' + img + '" alt="' + esc(r.name) + '">' +
+                     '<div><div class="n">' + esc(r.name) + '</div>' +
+                     '<div class="r">' + esc(r.unavailable_label || 'No disponible') + '</div></div>' +
+                   '</div>';
+        }).join('');
+
+        $box.html(
+            '<div class="hr-unavail">' +
+              '<button type="button" class="hr-unavail-toggle" id="btnToggleUnavail">' +
+                '<i class="fa fa-eye-slash"></i> Ver ' + list.length + ' habitación(es) no disponible(s)' +
+              '</button>' +
+              '<div class="hr-unavail-grid" id="unavailGrid" hidden>' + cards + '</div>' +
+            '</div>'
+        );
+    }
+
+    $(document).on('click', '#btnToggleUnavail', function () {
+        var $grid = $('#unavailGrid');
+        var hidden = $grid.prop('hidden');
+        $grid.prop('hidden', !hidden);
+        $(this).html(hidden
+            ? '<i class="fa fa-eye"></i> Ocultar habitaciones no disponibles'
+            : '<i class="fa fa-eye-slash"></i> Ver ' + $grid.children().length + ' habitación(es) no disponible(s)');
+    });
+
+    // Al pulsar una fecha alternativa se relanza la búsqueda con ella.
+    $(document).on('click', '.hr-alt-btn', function () {
+        $('#checkin_date').val($(this).data('checkin'));
+        $('#checkout_date').val($(this).data('checkout')).trigger('change');
+        $('#searchform').trigger('submit');
+    });
+
+    function renderResultsBar(res) {
+        $('#resultsBar').removeAttr('hidden');
+        $('#resultsSummary').removeAttr('hidden');
+        $('#chipDates').html('<i class="fa fa-calendar"></i> ' + esc(res.checkin) + ' → ' + esc(res.checkout) + ' · ' + res.nights + ' noche(s)');
+        $('#chipGuests').html('<i class="fa fa-users"></i> ' + res.adults + ' adulto(s)' + (res.children ? ', ' + res.children + ' niño(s)' : ''));
+
+        // Tipos disponibles para filtrar, conservando la selección actual.
+        var $cat = $('#filterCategory');
+        var current = $cat.val();
+        $cat.empty().append('<option value="">Todos los tipos</option>');
+        (res.categories || []).forEach(function (c) {
+            $cat.append('<option value="' + esc(c) + '">' + esc(c) + '</option>');
+        });
+        if (current) $cat.val(current);
+    }
+
+    $('#btnEditSearch').on('click', function () {
+        var el = document.getElementById('reservation-form');
+        if (!el) return;
+        window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - 90, behavior: 'smooth' });
+        $('#checkin_date').focus();
+    });
+
+    // Volver al listado completo (sin fechas ni filtros).
+    $('#btnClearSearch').on('click', function () {
+        SEARCH.active = false;
+        $('#filterCategory').val('');
+        $('#filterSort').val('featured');
+        $('#resultsSummary').attr('hidden', true);
+        $('#rooms-suggestions').empty();
+        $('#rooms-unavailable').empty();
+        window.__lastList = (DATA.featured && DATA.featured.length) ? DATA.featured : DATA.rooms;
+        renderRooms(window.__lastList);
+        $('#rooms-heading').text((DATA.featured && DATA.featured.length) ? 'Habitaciones destacadas' : {!! json_encode($cfg['rooms_heading'] ?? 'Nuestras habitaciones') !!});
+        $('#rooms-subheading').text({!! json_encode($cfg['rooms_subheading'] ?? 'Selecciona fechas para ver disponibilidad y precios.') !!});
+        if (window.history && window.history.replaceState) {
+            window.history.replaceState(null, '', window.location.pathname);
+        }
+    });
+
+    // Cambiar tipo u orden relanza la búsqueda; sin búsqueda activa se filtra y
+    // ordena el listado ya cargado en el navegador (respuesta instantánea).
+    $('#filterCategory, #filterSort').on('change', function () {
+        if (SEARCH.active) { runSearch({ silent: true }); return; }
+
+        var cat = $('#filterCategory').val();
+        var sort = $('#filterSort').val();
+        var list = (DATA.rooms || []).slice();
+
+        if (cat) list = list.filter(function (r) { return r.category === cat; });
+        list.sort(function (a, b) {
+            if (sort === 'price_asc')     return (a.min_price || 0) - (b.min_price || 0);
+            if (sort === 'price_desc')    return (b.min_price || 0) - (a.min_price || 0);
+            if (sort === 'capacity_desc') return (b.capacity || 0) - (a.capacity || 0);
+            // Recomendadas: destacadas primero y, dentro, por precio.
+            var f = (a.featured ? 0 : 1) - (b.featured ? 0 : 1);
+            return f !== 0 ? f : (a.min_price || 0) - (b.min_price || 0);
+        });
+
+        window.__lastList = list;
+        renderRooms(list);
+        $('#rooms-heading').text(cat || 'Nuestras habitaciones');
+    });
+
+    function runSearch(opts) {
+        opts = opts || {};
         var checkin = $('#checkin_date').val(), checkout = $('#checkout_date').val();
         var checkinTime = $('#checkin_time').val() || '14:00', checkoutTime = $('#checkout_time').val() || '12:00';
-        if (!checkin || !checkout) { alert('Selecciona las fechas de entrada y salida.'); return; }
-        if ((checkout + ' ' + checkoutTime) <= (checkin + ' ' + checkinTime)) {
-            alert('La salida debe ser posterior a la entrada (revisa la fecha y la hora).'); return;
+
+        if (!checkin || !checkout) {
+            showSearchError('Selecciona las fechas de entrada y salida.', $(!checkin ? '#checkin_date' : '#checkout_date'));
+            return;
         }
+        if ((checkout + ' ' + checkoutTime) <= (checkin + ' ' + checkinTime)) {
+            showSearchError('La salida debe ser posterior a la entrada.', $('#checkout_date'));
+            return;
+        }
+        showSearchError(null);
 
         var $btn = $('#btn-search').prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Buscando...');
         $('#rooms-grid').html('<div class="text-center py-16 text-ink-400"><i class="fa fa-spinner fa-spin fa-2x"></i><p class="mt-4">Buscando habitaciones disponibles...</p></div>');
+        $('#rooms-suggestions').empty();
+        $('#rooms-unavailable').empty();
 
         $.post('/reservas/search', {
             checkin: checkin, checkout: checkout,
             checkin_time: checkinTime, checkout_time: checkoutTime,
             adults: $('#adults').val(), children: $('#children').val(),
+            category: $('#filterCategory').val() || '',
+            sort: $('#filterSort').val() || 'featured',
             establishment_id: CURRENT_ESTABLISHMENT
         }).done(function (res) {
-            if (!res.success) { $('#rooms-grid').html('<div class="text-center py-16 text-ink-400">' + esc(res.message || 'No se pudo buscar.') + '</div>'); return; }
-            SEARCH = { checkin: checkin, checkout: checkout, checkin_time: checkinTime, checkout_time: checkoutTime, adults: parseInt($('#adults').val(),10), children: parseInt($('#children').val(),10), active: true };
+            if (!res.success) {
+                $('#rooms-grid').html('<div class="text-center py-16 text-ink-400">' + esc(res.message || 'No se pudo buscar.') + '</div>');
+                return;
+            }
+
+            SEARCH = {
+                checkin: checkin, checkout: checkout,
+                checkin_time: checkinTime, checkout_time: checkoutTime,
+                adults: parseInt($('#adults').val(), 10), children: parseInt($('#children').val(), 10),
+                active: true
+            };
+
             window.__lastList = res.rooms;
             renderRooms(res.rooms);
-            $('#rooms-heading').text(res.count + ' habitación(es) disponible(s)');
+            renderResultsBar(res);
+            renderSuggestions(res.suggestions);
+            renderUnavailable(res.unavailable);
+            persistSearch(SEARCH);
+
+            $('#rooms-heading').text(res.count > 0
+                ? res.count + ' habitación(es) disponible(s)'
+                : 'Sin disponibilidad en esas fechas');
             $('#rooms-subheading').text('Del ' + res.checkin + ' ' + res.checkin_time + ' al ' + res.checkout + ' ' + res.checkout_time + ' · ' + res.nights + ' noche(s) · ' + res.adults + ' adulto(s)' + (res.children ? ', ' + res.children + ' niño(s)' : ''));
-            var top = document.getElementById('rooms-results').getBoundingClientRect().top + window.scrollY - 76;
-            window.scrollTo({ top: top, behavior: 'smooth' });
+
+            if (!opts.silent) scrollToResults();
         }).fail(function (xhr) {
             var m = (xhr.responseJSON && xhr.responseJSON.message) ? xhr.responseJSON.message : 'No se pudo realizar la búsqueda.';
             $('#rooms-grid').html('<div class="text-center py-16 text-ink-400">' + esc(m) + '</div>');
         }).always(function () {
             $btn.prop('disabled', false).html('<i class="fa fa-search"></i> Buscar');
         });
+    }
+
+    $('#searchform').on('submit', function (e) {
+        e.preventDefault();
+        runSearch();
     });
+
+    // Enlace compartido con fechas (?checkin=...&checkout=...): buscar solo.
+    (function restoreSharedSearch() {
+        var qs = new URLSearchParams(window.location.search);
+        if (qs.get('checkin') && qs.get('checkout')) {
+            runSearch({ silent: true });
+        }
+    })();
 
     // ---- Detalle ----
     var DETAIL_SPINNER = '<div class="hb-spinner" style="margin:auto;"><i class="fa fa-spinner fa-spin fa-2x"></i></div>';

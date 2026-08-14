@@ -326,24 +326,49 @@ export default {
     }
   },
   methods: {
+    // Item de habitación VIGENTE del alquiler: el último cargo HAB registrado
+    // (la extensión más reciente si la hay, si no la estadía original).
+    //
+    // Antes se buscaba el primer item cuya descripción contuviera
+    // "habitación/room/alojamiento", con fallback al primer item de la lista:
+    // eso siempre devolvía la estadía ORIGINAL, así que tras extender con otro
+    // precio la siguiente extensión volvía a proponer la tarifa del check-in.
+    getCurrentRoomItem() {
+      const items = (this.room && this.room.rent && this.room.rent.items) || [];
+      if (!Array.isArray(items) || !items.length) return null;
+
+      const habItems = items.filter(it => it && it.type === 'HAB' && it.item);
+
+      // Sin items HAB tipados (datos antiguos), se recurre a la heurística por
+      // descripción para no quedarse sin precio.
+      const pool = habItems.length ? habItems : items.filter(it =>
+        it && it.item && it.item.description &&
+        (it.item.description.toLowerCase().includes('habitación') ||
+         it.item.description.toLowerCase().includes('room') ||
+         it.item.description.toLowerCase().includes('alojamiento') ||
+         it.item.description.toLowerCase().includes('extensión'))
+      );
+
+      const list = pool.length ? pool : items;
+
+      // El item más reciente es el de mayor id (los cargos se crean en orden).
+      return list.reduce((latest, it) => {
+        if (!latest) return it;
+        return (parseInt(it.id, 10) || 0) >= (parseInt(latest.id, 10) || 0) ? it : latest;
+      }, null);
+    },
     getCurrentRoomPrice() {
-      // Usar la misma lógica que getItem() para obtener el precio actual
-      if (this.room && this.room.rent && this.room.rent.items) {
-        // Buscar el item principal (generalmente el primero o el que corresponde a la habitación)
-        const mainItem = this.room.rent.items.find(item => 
-          item && item.item && item.item.description && 
-          (item.item.description.toLowerCase().includes('habitación') || 
-           item.item.description.toLowerCase().includes('room') ||
-           item.item.description.toLowerCase().includes('alojamiento'))
-        ) || this.room.rent.items[0];
-        
-        if (mainItem && mainItem.item) {
-          return parseFloat(mainItem.item.unit_price) || parseFloat(mainItem.item.unit_value) || 0;
-        }
+      const mainItem = this.getCurrentRoomItem();
+      if (mainItem && mainItem.item) {
+        const price = parseFloat(mainItem.item.unit_price) || parseFloat(mainItem.item.unit_value) || 0;
+        if (price > 0) return price;
       }
-      
-      // Fallbacks
-      return parseFloat(this.room.rent?.unit_price) || parseFloat(this.room.rent?.price_per_day) || 0;
+
+      // Fallbacks: la tarifa vigente guardada en el alquiler.
+      return parseFloat(this.room.rent?.rental_price)
+        || parseFloat(this.room.rent?.unit_price)
+        || parseFloat(this.room.rent?.price_per_day)
+        || 0;
     },
     getCurrentRoomDebt() {
       // Calcular deuda actual usando la misma lógica que reception.vue
@@ -657,22 +682,19 @@ export default {
     },
     getItem() {
       console.log('Obteniendo item para rent ID:', this.room.rent?.id);
-      
+
       // Usar la misma lógica que reception.vue para obtener el precio
       if (this.room && this.room.rent && this.room.rent.items) {
         console.log('Usando room.rent.items directamente');
         console.log('Items:', this.room.rent.items);
-        
-        // Buscar el item principal (generalmente el primero o el que corresponde a la habitación)
-        const mainItem = this.room.rent.items.find(item => 
-          item && item.item && item.item.description && 
-          (item.item.description.toLowerCase().includes('habitación') || 
-           item.item.description.toLowerCase().includes('room') ||
-           item.item.description.toLowerCase().includes('alojamiento'))
-        ) || this.room.rent.items[0];
-        
+
+        // Item de habitación vigente = el cargo HAB más reciente (extensión
+        // más reciente si la hay), para que el precio propuesto sea el de la
+        // última extensión y no el del check-in.
+        const mainItem = this.getCurrentRoomItem();
+
         if (mainItem && mainItem.item) {
-          const precio = parseFloat(mainItem.item.unit_price) || parseFloat(mainItem.item.unit_value) || 0;
+          const precio = this.getCurrentRoomPrice();
           console.log('Precio encontrado en room.rent.items:', precio);
           console.log('Item usado:', mainItem);
           this.form.price_per_day = precio;
@@ -858,6 +880,11 @@ export default {
         // Total de la extensión (editable). El backend lo usa como monto exacto
         // de la extensión en lugar de recomputar unit_price × cantidad.
         extension_total: this.extensionTotalNumber,
+        // Tarifa elegida del catálogo (si se eligió una): pasa a ser la tarifa
+        // vigente del alquiler junto con el precio de esta extensión.
+        hotel_rate_id: (this.selectedRateId && this.selectedRateId !== 'current')
+          ? this.selectedRateId
+          : null,
       };
       
       console.log('Duración actual:', currentDuration);

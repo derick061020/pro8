@@ -909,14 +909,27 @@ class HotelReceptionController extends Controller
 
     private function revertRoomChange(HotelRent $rent, array $old, array $new)
     {
-        $newItemId = $new['item_id'] ?? null;
-        $newItem = $newItemId
-            ? \Modules\Hotel\Models\HotelRentItem::where('hotel_rent_id', $rent->id)->where('id', $newItemId)->first()
-            : null;
-
-        if ($newItem) {
-            $this->assertItemNotInvoiced($newItem);
+        // Items creados por el cambio. Cuando la estadía ya estaba facturada el
+        // cambio puede generar hasta DOS cargos (noches sin comprobante +
+        // diferencia de tarifa) o ninguno, por eso se lee `item_ids` y se cae a
+        // `item_id` para los cambios registrados antes de esa mejora.
+        $newItemIds = $new['item_ids'] ?? null;
+        if (!is_array($newItemIds) || empty($newItemIds)) {
+            $newItemIds = array_filter([$new['item_id'] ?? null]);
         }
+
+        $newItems = empty($newItemIds)
+            ? collect()
+            : \Modules\Hotel\Models\HotelRentItem::where('hotel_rent_id', $rent->id)
+                ->whereIn('id', $newItemIds)
+                ->get();
+
+        foreach ($newItems as $created) {
+            $this->assertItemNotInvoiced($created);
+        }
+
+        // El item "principal" es el que conserva los pagos trasladados.
+        $newItem = $newItems->first();
 
         // Snapshots a restaurar. Formato nuevo (varios items HAB abiertos) o el
         // antiguo (un solo item) por compatibilidad con cambios históricos.
@@ -978,18 +991,27 @@ class HotelReceptionController extends Controller
             }
         }
 
-        // Eliminar el item de la nueva habitación (salvo que coincida con uno
-        // restaurado, caso de los cambios históricos sin split). Sus pagos
+        // Eliminar los items de la nueva habitación (salvo que coincidan con uno
+        // restaurado, caso de los cambios históricos sin split). Los pagos
         // trasladados se devuelven al primer item restaurado.
-        if ($newItem && !in_array($newItem->id, $restoredIds, true)) {
-            if ($firstRestored && !empty($migratedPaymentIds)) {
-                HotelRentItemPayment::whereIn('id', $migratedPaymentIds)
-                    ->update(['hotel_rent_item_id' => $firstRestored->id]);
-            } elseif (!$firstRestored) {
-                $newItem->payments()->delete();
+        foreach ($newItems as $created) {
+            if (in_array($created->id, $restoredIds, true)) {
+                continue;
             }
-            $newItem->refresh();
-            $newItem->delete();
+
+            if ($created->id === ($newItem->id ?? null)) {
+                if ($firstRestored && !empty($migratedPaymentIds)) {
+                    HotelRentItemPayment::whereIn('id', $migratedPaymentIds)
+                        ->update(['hotel_rent_item_id' => $firstRestored->id]);
+                } elseif (!$firstRestored) {
+                    $created->payments()->delete();
+                }
+            } else {
+                $created->payments()->delete();
+            }
+
+            $created->refresh();
+            $created->delete();
         }
 
         // Regresar el alquiler a la habitación/tarifa anterior.

@@ -317,39 +317,151 @@ class HotelLandingController extends Controller
 
         $establishment = $this->resolveEstablishment($request);
 
-        $available = $this->roomsCollection($establishment->id ?? null)
-            ->filter(function ($room) use ($newStart, $newEnd, $guests) {
-                // Mantenimiento -> no reservable.
-                if ($room['status'] === 'MANTENIMIENTO') {
-                    return false;
-                }
-                // Capacidad insuficiente (si está definida).
-                if ($room['capacity'] && $guests > $room['capacity']) {
-                    return false;
-                }
-                // Sin solapamiento con otras reservas.
-                $conflict = HotelRent::findOverlappingRent($room['id'], $newStart, $newEnd);
-                return $conflict === null;
-            })
-            ->map(function ($room) use ($nights) {
-                $room['nights'] = $nights;
-                $room['total']  = round(($room['min_price'] ?? 0) * $nights, 2);
-                return $room;
-            })
-            ->values();
+        $rooms = $this->roomsCollection($establishment->id ?? null);
+
+        // Filtro opcional por tipo de habitación (categoría) enviado desde la web.
+        $categoryFilter = trim((string) $request->input('category'));
+        if ($categoryFilter !== '') {
+            $rooms = $rooms->filter(fn ($room) => $room['category'] === $categoryFilter)->values();
+        }
+
+        // Se clasifica cada habitación en lugar de descartarla en silencio: así
+        // la web puede explicar POR QUÉ una habitación no aparece (ocupada,
+        // aforo insuficiente, en mantenimiento) en vez de mostrar una lista
+        // vacía sin motivo.
+        $available   = collect();
+        $unavailable = collect();
+
+        foreach ($rooms as $room) {
+            $reason = null;
+
+            if ($room['status'] === 'MANTENIMIENTO') {
+                $reason = 'maintenance';
+            } elseif ($room['capacity'] && $guests > $room['capacity']) {
+                $reason = 'capacity';
+            } elseif (HotelRent::findOverlappingRent($room['id'], $newStart, $newEnd) !== null) {
+                $reason = 'occupied';
+            }
+
+            $room['nights'] = $nights;
+            $room['total']  = round(($room['min_price'] ?? 0) * $nights, 2);
+
+            if ($reason === null) {
+                $available->push($room);
+                continue;
+            }
+
+            $room['available']          = false;
+            $room['unavailable_reason'] = $reason;
+            $room['unavailable_label']  = [
+                'maintenance' => 'En mantenimiento',
+                'capacity'    => 'Aforo insuficiente para ' . $guests . ' huésped(es)',
+                'occupied'    => 'Ocupada en esas fechas',
+            ][$reason];
+            $unavailable->push($room);
+        }
+
+        // Ordenación pedida por el visitante.
+        $available = $this->sortRoomResults($available, $request->input('sort'));
+
+        // Si no queda nada libre, proponer las fechas más cercanas con
+        // disponibilidad para la misma estancia (evita el callejón sin salida
+        // de "no hay habitaciones" sin ninguna alternativa).
+        $suggestions = $available->isEmpty()
+            ? $this->suggestAlternativeDates($rooms, $inDate, $nights, $inTime, $outTime, $guests)
+            : [];
+
+        // Tipos de habitación presentes (para los filtros de la web).
+        $categories = $rooms->pluck('category')->filter()->unique()->values();
 
         return response()->json([
             'success'       => true,
             'checkin'       => $inDate->format('d/m/Y'),
             'checkout'      => $outDate->format('d/m/Y'),
+            'checkin_iso'   => $inDate->format('Y-m-d'),
+            'checkout_iso'  => $outDate->format('Y-m-d'),
             'checkin_time'  => $inTime,
             'checkout_time' => $outTime,
             'nights'        => $nights,
             'adults'        => $adults,
             'children'      => $children,
+            'guests'        => $guests,
             'count'         => $available->count(),
-            'rooms'         => $available,
+            'rooms'         => $available->values(),
+            'unavailable'   => $unavailable->values(),
+            'categories'    => $categories,
+            'suggestions'   => $suggestions,
         ], 200);
+    }
+
+    /**
+     * Ordena los resultados de la búsqueda según la preferencia del visitante.
+     * Por defecto: destacadas primero y luego por precio ascendente.
+     */
+    private function sortRoomResults($rooms, $sort)
+    {
+        switch ($sort) {
+            case 'price_desc':
+                return $rooms->sortByDesc(fn ($r) => $r['min_price'] ?? 0)->values();
+            case 'capacity_desc':
+                return $rooms->sortByDesc(fn ($r) => $r['capacity'] ?? 0)->values();
+            case 'price_asc':
+                return $rooms->sortBy(fn ($r) => $r['min_price'] ?? 0)->values();
+            case 'featured':
+            default:
+                return $rooms
+                    ->sortBy(fn ($r) => [$r['featured'] ? 0 : 1, $r['min_price'] ?? 0])
+                    ->values();
+        }
+    }
+
+    /**
+     * Busca las fechas de entrada más cercanas (hasta 30 días hacia adelante)
+     * en las que haya al menos una habitación libre para la misma estancia.
+     *
+     * @return array<int, array{checkin:string, checkout:string, label:string, rooms:int}>
+     */
+    private function suggestAlternativeDates($rooms, Carbon $inDate, $nights, $inTime, $outTime, $guests, $maxSuggestions = 3, $horizonDays = 30)
+    {
+        // Solo habitaciones operativas y con aforo suficiente: no tiene sentido
+        // proponer otra fecha para una habitación que nunca podría servir.
+        $candidates = $rooms->filter(function ($room) use ($guests) {
+            if ($room['status'] === 'MANTENIMIENTO') return false;
+            if ($room['capacity'] && $guests > $room['capacity']) return false;
+            return true;
+        })->values();
+
+        if ($candidates->isEmpty()) {
+            return [];
+        }
+
+        $suggestions = [];
+
+        for ($offset = 1; $offset <= $horizonDays && count($suggestions) < $maxSuggestions; $offset++) {
+            $tryIn  = $inDate->copy()->addDays($offset);
+            $tryOut = $tryIn->copy()->addDays($nights);
+
+            $start = Carbon::parse($tryIn->format('Y-m-d') . ' ' . $inTime);
+            $end   = Carbon::parse($tryOut->format('Y-m-d') . ' ' . $outTime);
+
+            $free = $candidates->filter(function ($room) use ($start, $end) {
+                return HotelRent::findOverlappingRent($room['id'], $start, $end) === null;
+            });
+
+            if ($free->isEmpty()) {
+                continue;
+            }
+
+            $suggestions[] = [
+                'checkin'   => $tryIn->format('Y-m-d'),
+                'checkout'  => $tryOut->format('Y-m-d'),
+                'label'     => $tryIn->format('d/m/Y') . ' → ' . $tryOut->format('d/m/Y'),
+                'rooms'     => $free->count(),
+                'min_price' => round((float) $free->min('min_price'), 2),
+            ];
+        }
+
+        return $suggestions;
     }
 
     /**
