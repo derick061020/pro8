@@ -13,6 +13,16 @@ return new class extends Migration
      */
     public function up()
     {
+        // La tabla se creó fuera del runner en varios tenants, así que su fila
+        // nunca quedó registrada en `migrations`. Sin este guard el runner la
+        // reintenta, muere con «Table 'hotel_rent_changes' already exists» y
+        // bloquea TODAS las migraciones de tenant posteriores por orden de
+        // fecha (entre ellas las del perfil de limpieza y las de la web de
+        // reservas).
+        if (Schema::hasTable('hotel_rent_changes')) {
+            return;
+        }
+
         Schema::create('hotel_rent_changes', function (Blueprint $table) {
             $table->id();
             $table->unsignedInteger('hotel_rent_id');
