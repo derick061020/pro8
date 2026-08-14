@@ -573,9 +573,14 @@
                             <span>Restante en nueva habitación:</span>
                             <strong>{{ changePreview.remaining }} {{ changePreview.unit }} · S/ {{ changePreview.remainingTotal.toFixed(2) }}</strong>
                         </div>
-                        <div class="preview-row preview-diff" :class="changePreview.diff >= 0 ? 'is-up' : 'is-down'">
-                            <span>Diferencia de precio (restante):</span>
-                            <strong>S/ {{ changePreview.diff.toFixed(2) }}</strong>
+                        <div class="preview-row preview-diff" :class="changePreview.charge >= 0 ? 'is-up' : 'is-down'">
+                            <span>{{ changePreview.invoiced ? 'Se cobrará (diferencia de tarifa):' : 'Diferencia de precio (restante):' }}</span>
+                            <strong>S/ {{ changePreview.charge.toFixed(2) }}</strong>
+                        </div>
+                        <div v-if="changePreview.invoiced" class="preview-note">
+                            <i class="fa fa-info-circle"></i>
+                            La estadía ya tiene comprobante: las {{ changePreview.remaining }} {{ changePreview.unit }} restantes ya están facturadas y no se vuelven a cobrar.
+                            <template v-if="changePreview.diff < 0">La nueva tarifa es menor; si corresponde devolver la diferencia, emita una nota de crédito.</template>
                         </div>
                     </div>
                 </div>
@@ -1784,6 +1789,21 @@
     color: #2e7d32;
 }
 
+.change-room-preview .preview-note {
+    margin-top: 8px;
+    padding: 8px 10px;
+    border-radius: 6px;
+    background: #fff8e1;
+    border: 1px solid #ffe0a3;
+    color: #7a5b12;
+    font-size: 12px;
+    line-height: 1.45;
+}
+
+.change-room-preview .preview-note i {
+    margin-right: 4px;
+}
+
 /* Estilos para información adicional de habitación */
 .room-additional-info {
     margin: 8px 0;
@@ -2207,16 +2227,41 @@ export default {
             const consumed = Math.max(0, Math.min(elapsed, duration - 1));
             const remaining = Math.max(1, duration - consumed);
 
-            const oldUnit = parseFloat(rent.rental_price) || 0;
+            const items = Array.isArray(rent.items) ? rent.items : [];
+            const habItems = items.filter(it => it && it.type === 'HAB');
+
+            // Tarifa vigente: la del último cargo HAB (extensión más reciente),
+            // con respaldo en rental_price.
+            const latestHab = habItems.reduce((latest, it) => {
+                if (!latest) return it;
+                return (parseInt(it.id, 10) || 0) >= (parseInt(latest.id, 10) || 0) ? it : latest;
+            }, null);
+
+            const oldUnit = parseFloat(latestHab?.item?.unit_price)
+                || parseFloat(rent.rental_price)
+                || 0;
             const newUnit = parseFloat(this.getSelectedRatePrice()) || 0;
+
+            // Estadía ya facturada = todos los cargos de habitación tienen
+            // comprobante. En ese caso las noches restantes NO se vuelven a
+            // cobrar (ya están en el comprobante); solo se cobra la diferencia
+            // de tarifa cuando la nueva habitación es más cara.
+            const invoiced = habItems.length > 0 && habItems.every(
+                it => it.document_id != null || it.sale_note_id != null
+            );
+
+            const diff = (newUnit - oldUnit) * remaining;
+            const charge = invoiced ? Math.max(0, diff) : diff;
 
             return {
                 consumed,
                 remaining,
                 unit,
+                invoiced,
                 consumedTotal: oldUnit * consumed,
                 remainingTotal: newUnit * remaining,
-                diff: (newUnit - oldUnit) * remaining,
+                diff,
+                charge,
             };
         }
     },

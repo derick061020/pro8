@@ -13,10 +13,15 @@ use Modules\Hotel\Models\HotelRoom;
 use Modules\Hotel\Models\HotelRoomMaintenance;
 use Modules\Hotel\Models\HotelCategory;
 use Modules\Hotel\Http\Requests\HotelReservationRequest;
+use Modules\Hotel\Exports\HotelReservationExport;
 use App\Models\Tenant\Person;
 use App\Models\Tenant\PaymentMethodType;
 use App\Models\Tenant\Series;
 use App\Models\Tenant\Configuration;
+use App\Models\Tenant\Company;
+use App\Models\Tenant\Document;
+use App\Models\Tenant\Establishment;
+use App\Models\Tenant\SaleNote;
 use App\Models\Tenant\Catalogs\AffectationIgvType;
 use Modules\Finance\Traits\FinanceTrait;
 use Carbon\Carbon;
@@ -603,6 +608,243 @@ class HotelReservationCalendarController extends Controller
         return response()->json([
             'data' => $reservations
         ]);
+    }
+
+    /**
+     * Exportar a Excel el reporte de reservas con filtros.
+     *
+     * Pensado para el uso diario de recepción: por defecto exporta LAS RESERVAS
+     * DE UN DÍA (start = end), y admite también un rango. El criterio de fecha
+     * es configurable porque "las reservas del día" significa cosas distintas
+     * según la tarea:
+     *
+     *   - input   → las que ingresan ese día (llegadas del día). Por defecto.
+     *   - output  → las que salen ese día (salidas del día).
+     *   - stay    → las que están alojadas ese día (ocupación).
+     *   - created → las registradas ese día (producción de reservas).
+     *
+     * Filtros adicionales: estado, categoría, habitación, medio de reserva y
+     * estado de pago.
+     */
+    public function exportReservations(Request $request)
+    {
+        $establishmentId = $this->currentEstablishmentId();
+        $establishment   = Establishment::find($establishmentId);
+
+        $start = $this->parseReportDate($request->get('start')) ?: Carbon::now()->startOfDay();
+        $end   = $this->parseReportDate($request->get('end')) ?: $start->copy();
+
+        if ($end->lt($start)) {
+            [$start, $end] = [$end, $start];
+        }
+
+        $startStr = $start->format('Y-m-d');
+        $endStr   = $end->format('Y-m-d');
+
+        $dateField = in_array($request->get('date_field'), ['input', 'output', 'stay', 'created'], true)
+            ? $request->get('date_field')
+            : 'input';
+
+        $query = HotelRent::with(['room', 'room.category', 'items'])
+            ->whereHas('room', function ($q) use ($establishmentId) {
+                $q->where('establishment_id', $establishmentId);
+            });
+
+        switch ($dateField) {
+            case 'output':
+                $query->whereBetween('output_date', [$startStr, $endStr]);
+                break;
+            case 'stay':
+                // Estadías que se solapan con el rango.
+                $query->where('input_date', '<=', $endStr)
+                      ->where('output_date', '>=', $startStr);
+                break;
+            case 'created':
+                $query->whereBetween('created_at', [$startStr . ' 00:00:00', $endStr . ' 23:59:59']);
+                break;
+            case 'input':
+            default:
+                $query->whereBetween('input_date', [$startStr, $endStr]);
+                break;
+        }
+
+        if ($request->filled('status')) {
+            $query->where('status', $request->get('status'));
+        }
+
+        if ($request->filled('room_id')) {
+            $query->where('hotel_room_id', $request->get('room_id'));
+        }
+
+        if ($request->filled('category_id')) {
+            $categoryId = $request->get('category_id');
+            $query->whereHas('room', function ($q) use ($categoryId) {
+                $q->where('hotel_category_id', $categoryId);
+            });
+        }
+
+        if ($request->filled('origin')) {
+            $query->where('reservation_origin', $request->get('origin'));
+        }
+
+        if ($request->filled('reservation_type')) {
+            // web/manual: `is_reserve` marca las reservas (frente a check-in directo).
+            $query->where('is_reserve', $request->get('reservation_type') === 'reserve');
+        }
+
+        $reservations = $query
+            ->orderBy('input_date')
+            ->orderBy('input_time')
+            ->get();
+
+        // Pagos agregados en una sola consulta (evita N+1).
+        $paidByRent = HotelRentItemPayment::query()
+            ->join('hotel_rent_items', 'hotel_rent_items.id', '=', 'hotel_rent_item_payments.hotel_rent_item_id')
+            ->whereIn('hotel_rent_items.hotel_rent_id', $reservations->pluck('id'))
+            ->groupBy('hotel_rent_items.hotel_rent_id')
+            ->selectRaw('hotel_rent_items.hotel_rent_id as rent_id, SUM(hotel_rent_item_payments.payment) as paid')
+            ->pluck('paid', 'rent_id');
+
+        $rentIds       = $reservations->pluck('id')->all();
+        $documentsMap  = $rentIds
+            ? Document::whereIn('hotel_rent_id', $rentIds)->get()->keyBy('hotel_rent_id')
+            : collect();
+        $saleNotesMap  = $rentIds
+            ? SaleNote::whereIn('hotel_rent_id', $rentIds)->get()->keyBy('hotel_rent_id')
+            : collect();
+
+        $paymentStateLabels = [
+            'paid'    => 'Pagado',
+            'partial' => 'Adelanto / parcial',
+            'unpaid'  => 'Sin pagar',
+        ];
+
+        $paymentFilter = $request->get('payment_state');
+
+        $records = $reservations->map(function (HotelRent $reservation) use ($paidByRent, $documentsMap, $saleNotesMap, $paymentStateLabels) {
+            $pay = $this->computeReservationPayment($reservation, (float) ($paidByRent[$reservation->id] ?? 0));
+
+            $customerData = $reservation->customer;
+            $customerName = (is_object($customerData) && isset($customerData->name)) ? $customerData->name : '';
+
+            $document = $documentsMap->get($reservation->id) ?: $saleNotesMap->get($reservation->id);
+
+            return [
+                'id'                 => $reservation->id,
+                'status'             => $reservation->is_reserve ? 'Reserva' : ($reservation->status === 'FINALIZADO' ? 'Finalizado' : 'En curso'),
+                'room'               => $reservation->room->name ?? '',
+                'category'           => $reservation->room->category->description ?? '',
+                'customer'           => $customerName,
+                'customer_number'    => (is_object($customerData) && isset($customerData->number)) ? $customerData->number : '',
+                'customer_telephone' => (is_object($customerData) && isset($customerData->telephone)) ? $customerData->telephone : '',
+                'adults'             => $reservation->adults,
+                'children'           => $reservation->children,
+                'input_date'         => $reservation->input_date,
+                'input_time'         => $reservation->input_time,
+                'output_date'        => $reservation->output_date,
+                'output_time'        => $reservation->output_time,
+                'duration'           => $reservation->duration,
+                'origin'             => $this->reservationOriginLabel($reservation->reservation_origin),
+                'rental_price'       => (float) $reservation->rental_price,
+                'total'              => $this->computeReservationTotal($reservation),
+                'paid'               => $pay['paid'],
+                'debt'               => $pay['debt'],
+                'payment_key'        => $pay['state'],
+                'payment_state'      => $paymentStateLabels[$pay['state']] ?? $pay['state'],
+                'document_number'    => $document ? ($document->series . '-' . $document->number) : '',
+                'license_plate'      => $reservation->license_plate,
+                'travel_reason'      => $reservation->travel_reason,
+                'notes'              => $reservation->notes,
+                'created_at'         => optional($reservation->created_at)->format('d/m/Y H:i'),
+            ];
+        });
+
+        if (in_array($paymentFilter, ['paid', 'partial', 'unpaid'], true)) {
+            $records = $records->where('payment_key', $paymentFilter);
+        }
+
+        $records = $records->values();
+
+        $totals = [
+            'total'  => round($records->sum('total'), 2),
+            'paid'   => round($records->sum('paid'), 2),
+            'debt'   => round($records->sum('debt'), 2),
+            'nights' => (int) $records->sum('duration'),
+            'count'  => $records->count(),
+        ];
+
+        $dateFieldLabels = [
+            'input'   => 'Fecha de ingreso',
+            'output'  => 'Fecha de salida',
+            'stay'    => 'Alojados en la fecha',
+            'created' => 'Fecha de registro',
+        ];
+
+        $filters = [
+            'Periodo'        => $startStr === $endStr
+                ? $start->format('d/m/Y')
+                : $start->format('d/m/Y') . ' al ' . $end->format('d/m/Y'),
+            'Criterio'       => $dateFieldLabels[$dateField],
+            'Reservas'       => $totals['count'],
+        ];
+
+        if ($request->filled('status')) {
+            $filters['Estado'] = $request->get('status') === 'FINALIZADO' ? 'Finalizado' : 'En curso';
+        }
+        if ($request->filled('category_id')) {
+            $filters['Tipo de habitación'] = optional(HotelCategory::find($request->get('category_id')))->description;
+        }
+        if ($request->filled('room_id')) {
+            $filters['Habitación'] = optional(HotelRoom::find($request->get('room_id')))->name;
+        }
+        if ($request->filled('origin')) {
+            $filters['Medio de reserva'] = $this->reservationOriginLabel($request->get('origin'));
+        }
+        if (in_array($paymentFilter, ['paid', 'partial', 'unpaid'], true)) {
+            $filters['Estado de pago'] = $paymentStateLabels[$paymentFilter];
+        }
+
+        $filename = 'Reporte_reservas_' . $startStr . ($startStr === $endStr ? '' : '_al_' . $endStr) . '.xlsx';
+
+        return (new HotelReservationExport)
+            ->records($records)
+            ->company(Company::first())
+            ->establishment($establishment)
+            ->filters($filters)
+            ->totals($totals)
+            ->download($filename);
+    }
+
+    /**
+     * Parsea una fecha del reporte, tolerando formato vacío o inválido.
+     */
+    private function parseReportDate($value)
+    {
+        if (!$value) {
+            return null;
+        }
+
+        try {
+            return Carbon::parse($value)->startOfDay();
+        } catch (\Throwable $th) {
+            return null;
+        }
+    }
+
+    /**
+     * Etiqueta legible del medio de reserva.
+     */
+    private function reservationOriginLabel($origin)
+    {
+        $labels = [
+            'whatsapp'   => 'WhatsApp',
+            'correo'     => 'Correo',
+            'celular'    => 'Celular',
+            'presencial' => 'Presencial',
+            'web'        => 'Web',
+        ];
+
+        return $origin ? ($labels[$origin] ?? ucfirst($origin)) : '';
     }
 
     /**

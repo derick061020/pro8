@@ -134,6 +134,8 @@ if ($hostname) {
             Route::get('calendar/{id}/details', 'HotelReservationCalendarController@getReservationDetails');
             Route::put('calendar/{id}/status', 'HotelReservationCalendarController@updateReservationStatus');
             Route::get('calendar/range', 'HotelReservationCalendarController@getReservationsByDateRange');
+            // Exportación del reporte de reservas (por día o por rango, con filtros)
+            Route::get('calendar/export', 'HotelReservationCalendarController@exportReservations');
             // CRUD de reservas desde el calendario
             Route::get('calendar/form-tables', 'HotelReservationCalendarController@getFormTables');
             Route::get('calendar/search-customers', 'HotelReservationCalendarController@searchCustomers');

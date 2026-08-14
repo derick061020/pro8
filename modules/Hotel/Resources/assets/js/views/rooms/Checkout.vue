@@ -3146,9 +3146,20 @@ export default {
             this.extendForm.newOutputTime = this.currentRent.output_time;
             this.extendForm.days = 1;
             
-            // Obtener precio actual de la habitación
-            const roomItem = this.currentRent.items.find(item => item.type === 'HAB');
-            this.extendForm.pricePerDay = roomItem ? parseFloat(roomItem.item.unit_price) || 0 : 0;
+            // Precio vigente de la habitación: el ÚLTIMO cargo HAB (la extensión
+            // más reciente si la hay). Antes se tomaba el primero, que es
+            // siempre la estadía original, de modo que tras extender con otro
+            // precio la siguiente extensión volvía a proponer la tarifa del
+            // check-in.
+            const habItems = (this.currentRent.items || []).filter(item => item && item.type === 'HAB');
+            const roomItem = habItems.reduce((latest, item) => {
+                if (!latest) return item;
+                return (parseInt(item.id, 10) || 0) >= (parseInt(latest.id, 10) || 0) ? item : latest;
+            }, null);
+
+            this.extendForm.pricePerDay = (roomItem && roomItem.item)
+                ? parseFloat(roomItem.item.unit_price) || parseFloat(this.currentRent.rental_price) || 0
+                : parseFloat(this.currentRent.rental_price) || 0;
             
             // Inicializar campos de pago
             this.extendForm.includePayment = false;
