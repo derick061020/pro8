@@ -39,6 +39,9 @@
      texto (no oscurece la foto alrededor). */
   .hr-title { font-family:'Inter Tight','Inter',sans-serif; font-size:clamp(33px,5.6vw,62px); font-weight:700; line-height:1.06; letter-spacing:-.025em; margin:0 auto 18px; max-width:14ch; text-shadow:0 2px 6px rgba(0,0,0,.45), 0 6px 34px rgba(0,0,0,.5); }
   .hr-subtitle { font-size:clamp(15px,2vw,20px); font-weight:400; max-width:600px; margin:0 auto; color:rgba(255,255,255,.95); text-shadow:0 1px 4px rgba(0,0,0,.5), 0 3px 20px rgba(0,0,0,.45); line-height:1.55; }
+  /* Botón de la diapositiva (texto y enlace configurables desde el panel). */
+  .hr-cta { margin-top:28px; }
+  .hr-cta .hb-btn { box-shadow:0 12px 30px -14px rgba(0,0,0,.6); }
 
   /* Wordmark gigante de la celda intro ("imagen con texto" makai). */
   .hr-wordmark { display:block; font-family:'Inter Tight','Inter',sans-serif; font-weight:800; text-transform:uppercase; font-size:clamp(42px,10.5vw,138px); line-height:.9; letter-spacing:-.01em; max-width:13ch; margin:0 auto 8px; text-wrap:balance;
@@ -103,6 +106,10 @@
   .hr-building { position:absolute; left:0; bottom:-1%; width:100%; height:auto; z-index:4; pointer-events:none; user-select:none; }
   /* Fundido inferior del edificio hacia el fondo de la página / buscador. */
   .hr-hero-makai::after { content:""; position:absolute; left:0; right:0; bottom:-1px; height:16%; z-index:5; pointer-events:none; background:linear-gradient(to top, #f4f4f4 0%, rgba(244,244,244,.65) 42%, rgba(244,244,244,0) 100%); }
+  /* Botón de la portada: va por encima del edificio (z-index 4) y del fundido
+     inferior, y despejado de la píldora de navegación (bottom:132px). */
+  .hr-hero-cta { position:absolute; left:0; right:0; bottom:196px; z-index:6; display:flex; justify-content:center; padding:0 22px; }
+  .hr-hero-cta .hb-btn { box-shadow:0 14px 34px -16px rgba(18,20,15,.75); }
 
   /* Entradas exactas de Makai: el texto cae desde arriba, el edificio sube desde abajo. */
   .hr-wordmark2 { opacity:0; transform:translateY(-180%); }
@@ -371,6 +378,13 @@
       <img class="hr-sky" src="/landing-reservas/images/hero/SKY.png" alt="" aria-hidden="true">
       <h1 class="hr-wordmark2">{{ $hotelName }}</h1>
       <img class="hr-building" src="/landing-reservas/images/hero/catedral.png" alt="{{ $hotelName }}">
+      @if(!empty($firstSlide['button_text']))
+        <div class="hr-hero-cta hr-anim-up d2">
+          <a href="{{ $firstSlide['button_link'] ?: '#rooms-results' }}" class="nav-scroll hb-btn hb-btn-primary hb-btn-lg">
+            {{ $firstSlide['button_text'] }} <i class="fa fa-angle-right"></i>
+          </a>
+        </div>
+      @endif
     </div>
 
     <!-- Celdas 1..n: slides.
@@ -401,6 +415,13 @@
             </span>
             <h2 class="hr-title">{{ $slideTitle }}</h2>
             @if(!empty($slide['subtitle']))<p class="hr-subtitle">{{ $slide['subtitle'] }}</p>@endif
+            @if(!empty($slide['button_text']))
+              <div class="hr-cta">
+                <a href="{{ $slide['button_link'] ?: '#rooms-results' }}" class="nav-scroll hb-btn hb-btn-light hb-btn-lg">
+                  {{ $slide['button_text'] }} <i class="fa fa-angle-right"></i>
+                </a>
+              </div>
+            @endif
           </div>
         </div>
       </div>
@@ -501,8 +522,14 @@
     track.style.transform = 'translateX(' + (-idx * 100) + '%)';
     for (var i = 0; i < count; i++) {
       cells[i].classList.toggle('is-active', i === idx);
-      // Las diapositivas ocultas no deben ser alcanzables con el tabulador.
+      // Las diapositivas ocultas no deben ser alcanzables con el tabulador
+      // (aria-hidden no lo impide: hay que retirar el botón del recorrido).
       cells[i].setAttribute('aria-hidden', i === idx ? 'false' : 'true');
+      var links = cells[i].querySelectorAll('a, button');
+      for (var j = 0; j < links.length; j++) {
+        if (i === idx) links[j].removeAttribute('tabindex');
+        else links[j].setAttribute('tabindex', '-1');
+      }
     }
     var dur = duration(idx);
     for (var k = 0; k < segs.length; k++) {
