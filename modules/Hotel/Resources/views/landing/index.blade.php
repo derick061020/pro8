@@ -76,10 +76,6 @@
   .hr-scroll:hover { background:rgba(18,20,15,.5); color:#fff; }
   @keyframes heroBounce { 0%,100% { transform:translate(-50%,0); } 50% { transform:translate(-50%,7px); } }
 
-  /* Botón de pausa/reproducción, integrado en la píldora de navegación. */
-  .hr-play { margin-left:4px; width:22px; height:22px; flex:0 0 22px; display:flex; align-items:center; justify-content:center; border:0; padding:0; border-radius:999px; background:rgba(255,255,255,.18); color:#fff; font-size:9px; cursor:pointer; transition:background .2s; }
-  .hr-play:hover { background:rgba(255,255,255,.34); }
-
   /* Flechas de navegación (aparecen al acercar el puntero al hero). */
   .hr-arrow { position:absolute; top:50%; z-index:7; width:46px; height:46px; margin-top:-23px; display:flex; align-items:center; justify-content:center; border-radius:999px; border:1px solid rgba(255,255,255,.28); background:rgba(18,20,15,.32); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); color:#fff; font-size:22px; cursor:pointer; opacity:0; transition:opacity .3s ease, background .2s ease, transform .2s ease; box-shadow:0 6px 20px rgba(0,0,0,.20); }
   .hr-arrow--prev { left:22px; }
@@ -446,9 +442,6 @@
                 role="tab" aria-selected="{{ $s === 0 ? 'true' : 'false' }}"
                 aria-label="Ir a la vista {{ $s + 1 }} de {{ $cellCount }}"><span class="hr-seg-fill"></span></button>
       @endfor
-      <button type="button" class="hr-play" id="hrPlay" aria-label="Pausar la reproducción automática" aria-pressed="false">
-        <i class="fa fa-pause"></i>
-      </button>
     </div>
   @endif
 
@@ -461,9 +454,9 @@
   // indicador de píldora, arrancado tras la revelación del loader.
   //
   // Además del avance automático soporta: flechas, teclado, arrastre/deslizado
-  // táctil, pausa al pasar el ratón o al enfocar con el teclado, pausa cuando
-  // la pestaña no está visible o el hero sale de pantalla, botón de
-  // pausa/reproducción y carga diferida de las imágenes.
+  // táctil, pausa mientras se navega con el teclado dentro del hero, pausa
+  // cuando la pestaña no está visible o el hero sale de pantalla, y carga
+  // diferida de las imágenes.
   var hero  = document.getElementById('hero');
   var track = document.getElementById('hrTrack');
   var nav   = document.getElementById('hrNav');
@@ -473,12 +466,10 @@
   var segs  = nav ? nav.querySelectorAll('.hr-seg') : [];
   var prevBtn = document.getElementById('hrPrev');
   var nextBtn = document.getElementById('hrNext');
-  var playBtn = document.getElementById('hrPlay');
 
   var INTRO_MS = 6200, SLIDE_MS = 5200;
   var idx = 0, timer = null, revealed = false;
-  var userPaused = false;      // el visitante pulsó "pausa"
-  var hoverPaused = false;     // ratón/foco sobre el hero
+  var focusPaused = false;     // foco del teclado dentro del hero
   var offscreen = false;       // hero fuera de la pantalla o pestaña oculta
 
   var reduceMotion = window.matchMedia
@@ -544,7 +535,7 @@
     }
   }
 
-  function paused() { return userPaused || hoverPaused || offscreen || reduceMotion; }
+  function paused() { return focusPaused || offscreen || reduceMotion; }
 
   function stop() { clearTimeout(timer); timer = null; }
 
@@ -568,33 +559,6 @@
   if (nextBtn) nextBtn.addEventListener('click', next);
   if (prevBtn) prevBtn.addEventListener('click', prev);
 
-  if (playBtn) {
-    playBtn.addEventListener('click', function () {
-      userPaused = !userPaused;
-      playBtn.setAttribute('aria-pressed', userPaused ? 'true' : 'false');
-      playBtn.setAttribute('aria-label', userPaused
-        ? 'Reanudar la reproducción automática'
-        : 'Pausar la reproducción automática');
-      playBtn.innerHTML = userPaused
-        ? '<i class="fa fa-play"></i>'
-        : '<i class="fa fa-pause"></i>';
-      if (userPaused) {
-        stop();
-        // Congelar la barra de progreso donde esté.
-        var f = segs[idx] && segs[idx].querySelector('.hr-seg-fill');
-        if (f) {
-          var w = f.getBoundingClientRect().width;
-          var parentW = f.parentNode.getBoundingClientRect().width || 1;
-          f.style.transition = 'none';
-          f.style.width = (w / parentW * 100) + '%';
-        }
-      } else {
-        activate(idx);
-        schedule();
-      }
-    });
-  }
-
   // Teclado: flechas para navegar cuando el hero tiene el foco.
   hero.setAttribute('tabindex', '-1');
   hero.addEventListener('keydown', function (e) {
@@ -602,17 +566,23 @@
     else if (e.key === 'ArrowLeft') { e.preventDefault(); prev(); }
   });
 
-  // Pausa mientras el visitante está leyendo (ratón encima o foco dentro).
-  function setHoverPause(v) {
-    if (hoverPaused === v) return;
-    hoverPaused = v;
+  // El carrusel avanza siempre; solo se detiene mientras alguien navega con el
+  // teclado dentro del hero (si no, el foco saltaría a una diapositiva que ya
+  // no está en pantalla). Pasar el ratón por encima ya no lo pausa.
+  function setFocusPause(v) {
+    if (focusPaused === v) return;
+    focusPaused = v;
     if (v) { stop(); } else { activate(idx); schedule(); }
   }
-  hero.addEventListener('mouseenter', function () { setHoverPause(true); });
-  hero.addEventListener('mouseleave', function () { setHoverPause(false); });
-  hero.addEventListener('focusin',  function () { setHoverPause(true); });
+  hero.addEventListener('focusin', function (e) {
+    // Solo el foco por teclado pausa: al pulsar una flecha con el ratón el
+    // botón también recibe el foco, y ahí el carrusel debe seguir avanzando.
+    var t = e.target, keyboard = false;
+    try { keyboard = !!(t && t.matches && t.matches(':focus-visible')); } catch (err) {}
+    if (keyboard) setFocusPause(true);
+  });
   hero.addEventListener('focusout', function (e) {
-    if (!hero.contains(e.relatedTarget)) setHoverPause(false);
+    if (!hero.contains(e.relatedTarget)) setFocusPause(false);
   });
 
   // No gastar CPU ni "saltarse" diapositivas con la pestaña oculta.
