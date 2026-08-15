@@ -1121,6 +1121,23 @@ class HotelReservationCalendarController extends Controller
                 }
             }
 
+            // La tarifa se normaliza contra el catálogo (`hotel_rates`): si el id
+            // enviado no existe allí se descarta en vez de romper la FK del
+            // alquiler con un error SQL.
+            if (isset($updatable['hotel_rate_id'])) {
+                $resolvedRateId = \Modules\Hotel\Models\HotelRate::resolveCatalogId(
+                    $updatable['hotel_rate_id'],
+                    $newRoomId
+                );
+
+                if ($resolvedRateId) {
+                    $updatable['hotel_rate_id'] = $resolvedRateId;
+                    $validated['hotel_rate_id'] = $resolvedRateId;
+                } else {
+                    unset($updatable['hotel_rate_id'], $validated['hotel_rate_id']);
+                }
+            }
+
             // Si cambia la tarifa, refrescar rental_price con el precio configurado
             if (isset($validated['hotel_rate_id']) && $validated['hotel_rate_id'] != $rent->hotel_rate_id) {
                 $rate = \Modules\Hotel\Models\HotelRoomRate::where('hotel_room_id', $newRoomId)

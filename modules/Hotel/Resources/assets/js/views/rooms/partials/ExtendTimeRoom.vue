@@ -78,7 +78,7 @@
                 <el-option 
                   v-for="rate in (room.rates || [])" 
                   :key="rate.id"
-                  :label="`${rate.description || rate.name || getRateTypeLabel(rate.type) || 'Tarifa'} - S/ ${parseFloat(rate.price || 0).toFixed(2)}`"
+                  :label="`${getRateLabel(rate)} - S/ ${parseFloat(rate.price || 0).toFixed(2)}`"
                   :value="rate.id"
                 ></el-option>
               </el-select>
@@ -279,6 +279,19 @@ export default {
       // Helper numérico seguro (extensionTotal puede venir como string del input)
       return parseFloat(this.extensionTotal) || 0;
     },
+    selectedCatalogRateId() {
+      // El selector trabaja con las tarifas ASIGNADAS a la habitación (filas de
+      // hotel_room_rates: traen el precio propio de esta habitación), pero el
+      // alquiler guarda `hotel_rate_id`, que apunta al CATÁLOGO de tarifas.
+      // Enviar el id de la fila asignada rompía la clave foránea al extender.
+      if (!this.selectedRateId || this.selectedRateId === 'current') return null;
+
+      const rate = (this.room?.rates || []).find(r => r.id === this.selectedRateId)
+        || this.selectedRate;
+      const catalogId = rate && (rate.hotel_rate_id || (rate.rate && rate.rate.id));
+
+      return catalogId ? parseInt(catalogId, 10) : null;
+    },
     totalConsumption() {
       // Consumo total tras la extensión = consumo previo (items actuales sin
       // mutar, excluyendo pseudo-items PAY) + la extensión que se está creando
@@ -435,6 +448,18 @@ export default {
       this.recalcExtensionTotal();
       // Propagar el nuevo precio al item (clon) que se enviará al backend.
       this.updateItemWithNewPrice();
+    },
+    getRateLabel(rate) {
+      // Nombre de la tarifa: viene del catálogo (relación `rate`) cuando la
+      // habitación tiene tarifas asignadas; los otros campos son respaldo para
+      // respuestas antiguas que no traían la relación cargada.
+      if (!rate) return 'Tarifa';
+
+      return (rate.rate && rate.rate.description)
+        || rate.description
+        || rate.name
+        || this.getRateTypeLabel(rate.type)
+        || 'Tarifa';
     },
     getRateTypeLabel(type) {
       const types = {
@@ -882,9 +907,7 @@ export default {
         extension_total: this.extensionTotalNumber,
         // Tarifa elegida del catálogo (si se eligió una): pasa a ser la tarifa
         // vigente del alquiler junto con el precio de esta extensión.
-        hotel_rate_id: (this.selectedRateId && this.selectedRateId !== 'current')
-          ? this.selectedRateId
-          : null,
+        hotel_rate_id: this.selectedCatalogRateId,
       };
       
       console.log('Duración actual:', currentDuration);

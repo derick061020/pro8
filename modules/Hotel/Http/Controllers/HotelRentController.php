@@ -13,6 +13,7 @@ use Modules\Hotel\Models\HotelRentItem;
 use Modules\Hotel\Models\HotelRentItemPayment;
 use Modules\Hotel\Models\HotelRoom;
 use Modules\Hotel\Models\HotelRoomRate;
+use Modules\Hotel\Models\HotelRate;
 use Modules\Hotel\Models\HotelRentChange;
 use App\Models\Tenant\Item;
 use App\Models\Tenant\Configuration;
@@ -245,6 +246,22 @@ class HotelRentController extends Controller
 			$rentData['rental_date_time'] = $rentalDateTime;
 			$rentData['rental_price'] = $rentalPrice;
 			$rentData['rental_period_type'] = $rentalPeriodType;
+
+			// La tarifa siempre se guarda con el id del catálogo (`hotel_rates`);
+			// si llega el id de la tarifa asignada a la habitación se traduce, y
+			// si no corresponde a ninguna se omite en lugar de romper la FK.
+			if (!empty($rentData['hotel_rate_id'])) {
+				$resolvedRateId = HotelRate::resolveCatalogId(
+					$rentData['hotel_rate_id'],
+					$rentData['hotel_room_id'] ?? null
+				);
+
+				if ($resolvedRateId) {
+					$rentData['hotel_rate_id'] = $resolvedRateId;
+				} else {
+					unset($rentData['hotel_rate_id']);
+				}
+			}
 			
 			\Log::info('Rent data before save: ' . json_encode($rentData));
 			
@@ -716,9 +733,20 @@ class HotelRentController extends Controller
       }
 
       // Si la extensión se hizo eligiendo una tarifa del catálogo, esa pasa a
-      // ser la tarifa vigente de la reserva.
+      // ser la tarifa vigente de la reserva. El id se normaliza contra
+      // `hotel_rates`: el modal envía la tarifa asignada a la habitación y un
+      // id que no exista en el catálogo rompía la FK con un error SQL. Si no se
+      // puede resolver, se conserva la tarifa anterior (el precio de la
+      // extensión ya quedó guardado en el item y en `rental_price`).
       if ($request->filled('hotel_rate_id')) {
-        $rent->hotel_rate_id = $request->input('hotel_rate_id');
+        $resolvedRateId = HotelRate::resolveCatalogId(
+          $request->input('hotel_rate_id'),
+          $rent->hotel_room_id
+        );
+
+        if ($resolvedRateId) {
+          $rent->hotel_rate_id = $resolvedRateId;
+        }
       }
 
       $rent->save();
