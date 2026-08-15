@@ -143,6 +143,15 @@
     .ml-bar span { animation:none; width:100%; }
   }
 
+  /* ===== Rejilla de tipos de habitación =====
+     Flex en vez de grid para que la última fila (o un listado de 1-2 tipos)
+     quede centrada en lugar de pegada a la izquierda. Los anchos replican las
+     columnas de antes: 1 / 2 / 3 por fila según el ancho de pantalla. */
+  .rooms-grid { display:flex; flex-wrap:wrap; justify-content:center; gap:24px; }
+  .rooms-grid > .rc { width:100%; }
+  @media (min-width:640px)  { .rooms-grid > .rc { width:calc((100% - 24px) / 2); } }
+  @media (min-width:1024px) { .rooms-grid > .rc { width:calc((100% - 48px) / 3); } }
+
   /* ===== Tarjeta de habitación (estilo unit card Makai) ===== */
   .rc { position:relative; display:flex; flex-direction:column; background:#fff; border:1px solid #eaecf0; border-radius:24px; overflow:hidden; transition:box-shadow .35s cubic-bezier(.16,1,.3,1), transform .35s cubic-bezier(.16,1,.3,1); }
   .rc:hover { box-shadow:0 22px 48px -14px rgba(10,13,20,.24); transform:translateY(-3px); }
@@ -1326,7 +1335,7 @@ jQuery(function ($) {
             return;
         }
 
-        $grid.html('<div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">' +
+        $grid.html('<div class="rooms-grid">' +
                    groups.map(groupCard).join('') + '</div>');
         $grid.find('.reveal').each(function (i) { this.style.setProperty('--reveal-i', i % 6); });
         if (window.hbInitReveal) window.hbInitReveal();
