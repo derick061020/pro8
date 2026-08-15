@@ -90,11 +90,13 @@ class HotelLandingController extends Controller
         $configuration   = Configuration::first();
         $rooms           = $this->roomsCollection($establishmentId);
         $featured        = $rooms->where('featured', true)->values();
+        // Vista por defecto de la web: tipos de habitación, no el listado plano.
+        $roomGroups      = $this->groupRoomsByCategory($rooms);
         $blogPosts       = $this->publishedPosts($establishmentId)->take(3);
         $settings        = $this->landingConfig($establishment);
         $documentTypes   = $this->identityDocumentTypes();
 
-        return view('hotel::landing.index', compact('establishment', 'establishments', 'establishmentId', 'configuration', 'rooms', 'featured', 'blogPosts', 'settings', 'documentTypes'));
+        return view('hotel::landing.index', compact('establishment', 'establishments', 'establishmentId', 'configuration', 'rooms', 'featured', 'roomGroups', 'blogPosts', 'settings', 'documentTypes'));
     }
 
     /**
@@ -388,10 +390,86 @@ class HotelLandingController extends Controller
             'guests'        => $guests,
             'count'         => $available->count(),
             'rooms'         => $available->values(),
+            // Resultados agrupados por tipo de habitación: es lo que ve el
+            // huésped por defecto (ver groupRoomsByCategory).
+            'groups'        => $this->groupRoomsByCategory($available, $request->input('sort')),
             'unavailable'   => $unavailable->values(),
             'categories'    => $categories,
             'suggestions'   => $suggestions,
         ], 200);
+    }
+
+    /**
+     * Agrupa habitaciones por tipo (categoría) para la web pública.
+     *
+     * Un huésped no reserva "la habitación 203": reserva un TIPO de habitación.
+     * Mostrar el listado plano obligaba a comparar decenas de tarjetas casi
+     * idénticas, así que la web muestra una tarjeta por tipo —con el precio
+     * más bajo, cuántas quedan y sus características— y solo despliega las
+     * habitaciones concretas si el visitante quiere elegir una.
+     *
+     * Dentro de cada grupo las habitaciones van de más barata a más cara, de
+     * modo que la que se reserva por defecto es la mejor oferta del tipo.
+     */
+    private function groupRoomsByCategory($rooms, $sort = null)
+    {
+        return collect($rooms)
+            ->groupBy(fn ($room) => $room['category'] ?: 'Habitación')
+            ->map(function ($group, $category) {
+                $sorted = $group
+                    ->sortBy(fn ($r) => [$r['min_price'] ?? 0, $r['name'] ?? ''])
+                    ->values();
+
+                // Habitación representativa: la más barata con imagen propia;
+                // si ninguna tiene foto, la más barata sin más.
+                $representative = $sorted->first(fn ($r) => !empty($r['main_image'])) ?: $sorted->first();
+
+                $prices = $sorted->pluck('min_price')->filter(fn ($p) => $p > 0);
+
+                return [
+                    'category'          => $category,
+                    'count'             => $sorted->count(),
+                    'min_price'         => (float) ($prices->min() ?? 0),
+                    'max_price'         => (float) ($prices->max() ?? 0),
+                    'nights'            => $representative['nights'] ?? null,
+                    'total'             => $sorted->min('total'),
+                    // Aforo máximo del tipo: es el dato que decide si le sirve.
+                    'capacity'          => (int) $sorted->max('capacity'),
+                    'beds'              => $representative['beds'] ?? null,
+                    'size'              => $representative['size'] ?? null,
+                    'featured'          => (bool) $sorted->contains(fn ($r) => !empty($r['featured'])),
+                    'description'       => $representative['short_description'] ?: ($representative['description'] ?? null),
+                    'amenities'         => $representative['amenities'] ?? [],
+                    'main_image'        => $representative['main_image'] ?? null,
+                    'images'            => $representative['images'] ?? [],
+                    // Habitación que se reserva si el huésped no elige una
+                    // concreta (la más barata del tipo).
+                    'default_room_id'   => $sorted->first()['id'] ?? null,
+                    'rooms'             => $sorted->all(),
+                ];
+            })
+            ->pipe(fn ($groups) => $this->sortGroups($groups->values(), $sort))
+            ->values();
+    }
+
+    /**
+     * Ordena los grupos con el mismo criterio elegido para las habitaciones.
+     */
+    private function sortGroups($groups, $sort)
+    {
+        switch ($sort) {
+            case 'price_desc':
+                return $groups->sortByDesc(fn ($g) => $g['min_price'])->values();
+            case 'capacity_desc':
+                return $groups->sortByDesc(fn ($g) => $g['capacity'])->values();
+            case 'price_asc':
+                return $groups->sortBy(fn ($g) => $g['min_price'])->values();
+            case 'featured':
+            default:
+                return $groups
+                    ->sortBy(fn ($g) => [$g['featured'] ? 0 : 1, $g['min_price']])
+                    ->values();
+        }
     }
 
     /**
