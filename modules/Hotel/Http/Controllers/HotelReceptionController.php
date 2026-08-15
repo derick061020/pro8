@@ -80,7 +80,7 @@ class HotelReceptionController extends Controller
     public function  searchRooms(Request $request ){
 
         $user = auth()->user();
-        $rooms = HotelRoom::with('category', 'floor', 'rates')
+        $rooms = HotelRoom::with('category', 'floor', 'rates.rate')
             ->where('establishment_id', $user->establishment_id)
             ->where('active', true);
 
@@ -143,7 +143,7 @@ class HotelReceptionController extends Controller
         // terminaron vuelven a DISPONIBLE.
         HotelRoomMaintenance::reconcile($user->establishment_id);
 
-        $rooms = HotelRoom::with('category', 'floor', 'rates', 'establishment')
+        $rooms = HotelRoom::with('category', 'floor', 'rates.rate', 'establishment')
             ->where('establishment_id', $user->establishment_id)
             ->where('active', true);
 
@@ -645,7 +645,7 @@ class HotelReceptionController extends Controller
     {
         try {
             $user = auth()->user();
-            $room = HotelRoom::with('category', 'floor', 'rates', 'establishment')
+            $room = HotelRoom::with('category', 'floor', 'rates.rate', 'establishment')
                 ->where('establishment_id', $user->establishment_id)
                 ->where('id', $id)
                 ->first();

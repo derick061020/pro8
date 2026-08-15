@@ -1438,13 +1438,17 @@ export default {
         {
             // Extensiones PAGADAS que NO se pueden fusionar con su habitación
             // base porque se hicieron con otra tarifa. Se listan como filas
-            // propias del cuadro de alojamiento, con su precio y sus noches.
+            // propias del cuadro de alojamiento, con su precio y sus noches, y
+            // las que comparten tarifa se consolidan en UNA sola fila (varias
+            // extensiones de una noche al mismo precio se veían repetidas).
             // (Las extensiones con deuda ya se muestran aparte, en el bloque de
             // cargos pendientes.)
-            return this.getSourceRentItemsForCheckout()
+            const extensions = this.getSourceRentItemsForCheckout()
                 .filter(it => this.isPaidHabExtension(it) && !this.isMergeableExtension(it))
                 .slice()
                 .sort((a, b) => (a.id || 0) - (b.id || 0));
+
+            return this.consolidateExtensionsByRate(extensions);
         },
         activeRoomItemId()
         {
@@ -1760,7 +1764,13 @@ export default {
                     + (parseFloat(product.total) || 0);
             });
 
-            return groups;
+            // Las extensiones agrupadas se reetiquetan con el total de noches:
+            // de lo contrario quedaba "Extensión 41 - 1 noche(s)" con cantidad 4.
+            return groups.map(group => (
+                this.isExtensionItem(group)
+                    ? this.relabelExtensionRentItem(group, parseFloat(group.item && group.item.quantity) || 0)
+                    : group
+            ));
         },
         isExtensionItem(item) {
             if (!item) return false;
@@ -1882,6 +1892,76 @@ export default {
 
                 return acc;
             }, { quantity: 0, total: 0 });
+        },
+        // Unidad de tiempo del alquiler, para describir noches/horas/meses.
+        getRentPeriodUnitLabel() {
+            const period = this.currentRent && this.currentRent.rental_period_type;
+            if (period === 'hour') return 'hora(s)';
+            if (period === 'month') return 'mes(es)';
+            return 'noche(s)';
+        },
+        // Reescribe la descripción de una extensión consolidada para que refleje
+        // el total de períodos sumados y no el de la primera extensión (se veían
+        // filas con "1 noche(s)" y cantidad 4). Clona los sub-objetos: el item
+        // original del store no debe mutarse.
+        relabelExtensionRentItem(row, quantity) {
+            if (!row || !row.item) return row;
+
+            const nights = Math.round((parseFloat(quantity) || 0) * 100) / 100;
+            if (nights <= 0) return row;
+
+            const inner = row.item.item || {};
+            const original = row.item.description || inner.description || row.description || 'Extensión';
+            const prefix = String(original).split(' - ')[0] || 'Extensión';
+            const label = `${prefix} - ${nights} ${this.getRentPeriodUnitLabel()}`;
+
+            row.item = Object.assign({}, row.item, {
+                description: label,
+                full_description: label,
+                name_product_pdf: label,
+                item: Object.assign({}, inner, {
+                    description: label,
+                    full_description: label,
+                }),
+            });
+            row.description = label;
+
+            return row;
+        },
+        // Agrupa extensiones que comparten tarifa en una sola fila sumando
+        // períodos y totales. Nunca mezcla tarifas distintas: eso produciría un
+        // precio unitario promedio que no existe.
+        consolidateExtensionsByRate(extensions) {
+            const list = Array.isArray(extensions) ? extensions : [];
+            const groups = [];
+            const indexByKey = {};
+
+            list.forEach((it) => {
+                const key = this.getRawItemUnitPrice(it).toFixed(4);
+                const quantity = this.getRawItemQuantity(it);
+                const total = this.getRawItemTotal(it);
+
+                if (indexByKey[key] === undefined) {
+                    const clone = Object.assign({}, it, {
+                        item: Object.assign({}, it.item || {}),
+                    });
+                    clone.quantity = quantity;
+                    clone.total = total;
+                    clone.item.quantity = quantity;
+                    clone.item.total = total;
+                    indexByKey[key] = groups.length;
+                    groups.push(clone);
+                    return;
+                }
+
+                const target = groups[indexByKey[key]];
+                target.quantity += quantity;
+                target.total += total;
+                target.item.quantity = target.quantity;
+                target.item.total = target.total;
+            });
+
+            return groups.map(group => this.relabelExtensionRentItem(group, group.quantity));
         },
         isMergeableExtension(extensionItem) {
             // ¿La extensión se consolida con su item de habitación base?
@@ -2112,10 +2192,7 @@ export default {
             if (quantity <= 0 || !row.item) return;
 
             // Unidad de tiempo según el tipo de renta.
-            let unit = 'noche(s)';
-            const period = this.currentRent && this.currentRent.rental_period_type;
-            if (period === 'hour') unit = 'hora(s)';
-            else if (period === 'month') unit = 'mes(es)';
+            const unit = this.getRentPeriodUnitLabel();
 
             // Conservar el prefijo "Extensión <habitación>" de la descripción
             // original y reemplazar solo la cantidad por el total consolidado.
