@@ -166,6 +166,37 @@
   .rc-btn-cta:hover { background:#4a6354; }
   .rc-btn-cta:active { transform:scale(.98); }
 
+  /* ===== Tarjeta de TIPO de habitación (vista por defecto de la web) ===== */
+  .gc-desc { font-size:12.5px; color:#717784; line-height:1.5; margin:4px 0 0; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+  .gc-avail { display:inline-flex; align-items:center; padding:5px 12px; border-radius:100px; background:rgba(255,255,255,.92); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); color:#4a6354; font-size:11px; font-weight:600; box-shadow:0 2px 8px rgba(0,0,0,.10); }
+  .gc-avail.is-low { color:#b5540f; }
+  .gc-amenities { display:flex; flex-wrap:wrap; gap:6px; }
+  .gc-amenity { display:inline-flex; align-items:center; gap:5px; padding:4px 10px; border-radius:100px; background:#f5f8f6; color:#5c7c68; font-size:11.5px; font-weight:500; }
+  .gc-amenity i { font-size:11px; }
+  .gc-btn-pick { flex-shrink:0; display:inline-flex; align-items:center; justify-content:center; gap:6px; padding:11px 14px; background:#f2f5f8; border:0; border-radius:12px; font-weight:600; font-size:13px; color:#717784; cursor:pointer; white-space:nowrap; transition:background .2s, color .2s; }
+  .gc-btn-pick:hover { background:#e7eaef; color:#525866; }
+
+  /* Desglose por habitación (solo si el visitante quiere elegir una). */
+  .gc-rooms { margin-top:4px; padding-top:12px; border-top:1px dashed #e6e9ee; display:flex; flex-direction:column; gap:8px; }
+  .gc-rooms-title { font-size:11.5px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; color:#99a0ae; }
+  .gc-room { display:flex; align-items:center; gap:10px; padding:9px 11px; border:1px solid #eef0f3; border-radius:11px; background:#fbfbfc; transition:border-color .2s, background .2s; }
+  .gc-room:hover { border-color:#d7e3db; background:#fff; }
+  .gc-room-info { display:flex; flex-direction:column; gap:1px; min-width:0; flex:1 1 auto; }
+  .gc-room-name { font-size:13px; font-weight:600; color:#2b303b; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .gc-room-meta { font-size:11px; color:#99a0ae; }
+  .gc-room-price { font-size:12px; font-weight:700; color:#5c7c68; white-space:nowrap; }
+  .gc-room-actions { display:flex; align-items:center; gap:6px; flex-shrink:0; }
+  .gc-room-detail { width:28px; height:28px; display:inline-flex; align-items:center; justify-content:center; border:0; border-radius:8px; background:#f2f5f8; color:#717784; font-size:11px; cursor:pointer; transition:background .2s; }
+  .gc-room-detail:hover { background:#e7eaef; }
+  .gc-room-reserve { padding:6px 13px; border:0; border-radius:8px; background:#5c7c68; color:#fff; font-size:12px; font-weight:600; cursor:pointer; transition:background .2s; }
+  .gc-room-reserve:hover { background:#4a6354; }
+
+  @media (max-width:400px) {
+    .gc-room { flex-wrap:wrap; }
+    .gc-room-price { order:3; }
+    .gc-room-actions { margin-left:auto; }
+  }
+
   /* ===== Buscador flotante ===== */
   .hr-search { position:relative; z-index:20; }
   #reservation-form.hr-search { margin-top:-70px; }
@@ -1119,7 +1150,11 @@ jQuery(function ($) {
     var CURRENT_ESTABLISHMENT = {!! json_encode($establishmentId ?? null) !!};
     var DATA = {
         rooms: {!! json_encode($rooms, JSON_UNESCAPED_UNICODE) !!},
-        featured: {!! json_encode($featured, JSON_UNESCAPED_UNICODE) !!}
+        featured: {!! json_encode($featured, JSON_UNESCAPED_UNICODE) !!},
+        // Catálogo agrupado por tipo de habitación (lo que se muestra por
+        // defecto); se calcula en el servidor con el mismo criterio que usa la
+        // búsqueda, para que ambas vistas coincidan.
+        groups: {!! json_encode($roomGroups ?? [], JSON_UNESCAPED_UNICODE) !!}
     };
     var SEARCH = { checkin: null, checkout: null, checkin_time: '14:00', checkout_time: '12:00', adults: 1, children: 0, active: false };
     var PLACEHOLDER = '/landing-reservas/images/rooms/356x228.gif';
@@ -1158,66 +1193,174 @@ jQuery(function ($) {
         return 'fa-check-circle';
     }
 
-    // ---- tarjeta de habitación (compacta, estilo unit card Makai) ----
-    // La card muestra sólo lo esencial (imagen, nombre, ubicación, precio y
-    // 3 datos clave). El resto de la información se ve en el modal de detalle.
-    function roomCard(room) {
-        var img = room.main_image || PLACEHOLDER;
+    // ---- tarjeta de TIPO de habitación ----
+    //
+    // Es lo que ve el visitante por defecto. Un huésped no reserva "la 203":
+    // reserva un tipo. Mostrar el listado plano obligaba a comparar decenas de
+    // tarjetas casi idénticas, así que aquí va una tarjeta por tipo con lo que
+    // realmente decide la reserva —foto, para cuántas personas, precio desde y
+    // cuántas quedan— y el desglose por habitación solo si lo pide.
+    function groupCard(group, index) {
+        var img = group.main_image || PLACEHOLDER;
 
-        var priceHtml = room.min_price > 0
-            ? '<span class="rc-price">' + money(room.min_price) + '</span><small>/ noche</small>'
+        var priceHtml = group.min_price > 0
+            ? '<span class="rc-price">' + money(group.min_price) + '</span><small>/ noche</small>'
             : '<span class="text-[14px] font-semibold text-ink-500">Consultar tarifa</span>';
-        var total = (room.total && room.nights)
-            ? '<span class="rc-total">· ' + room.nights + ' noche(s): ' + money(room.total) + '</span>' : '';
 
-        // Subtítulo: categoría + piso (breve, como el subtitle de makai).
-        var subParts = [esc(room.category)];
-        if (room.floor) subParts.push(esc(room.floor));
-        var sub = subParts.join(' · ');
+        var total = (group.total && group.nights)
+            ? '<span class="rc-total">· ' + group.nights + ' noche(s): ' + money(group.total) + '</span>' : '';
 
-        // Fila de estadísticas: sólo los datos disponibles.
         var stats = [];
-        if (room.capacity) stats.push('<div class="rc-stat"><i class="fa fa-users"></i><span class="v">' + room.capacity + ' huésp.</span></div>');
-        if (room.beds)     stats.push('<div class="rc-stat"><i class="fa fa-bed"></i><span class="v">' + esc(room.beds) + '</span></div>');
-        if (room.size)     stats.push('<div class="rc-stat"><i class="fa fa-expand"></i><span class="v">' + room.size + ' m²</span></div>');
+        if (group.capacity) stats.push('<div class="rc-stat"><i class="fa fa-users"></i><span class="v">Hasta ' + group.capacity + '</span></div>');
+        if (group.beds)     stats.push('<div class="rc-stat"><i class="fa fa-bed"></i><span class="v">' + esc(group.beds) + '</span></div>');
+        if (group.size)     stats.push('<div class="rc-stat"><i class="fa fa-expand"></i><span class="v">' + group.size + ' m²</span></div>');
         var statsHtml = stats.length ? '<div class="rc-stats">' + stats.join('') + '</div>' : '';
 
-        var fav = room.featured ? '<span class="rc-fav"><i class="fa fa-star"></i> Destacada</span>' : '<span></span>';
+        // Máximo 3 servicios: los suficientes para orientar, sin saturar.
+        var amenities = (group.amenities || []).slice(0, 3);
+        var amenitiesHtml = amenities.length
+            ? '<div class="gc-amenities">' + amenities.map(function (a) {
+                  return '<span class="gc-amenity"><i class="fa ' + amenityIcon(a) + '"></i>' + esc(a) + '</span>';
+              }).join('') + '</div>'
+            : '';
+
+        var fav = group.featured ? '<span class="rc-fav"><i class="fa fa-star"></i> Destacada</span>' : '<span></span>';
+
+        // Disponibilidad: tranquiliza (o urge) sin mentir.
+        var avail = SEARCH.active
+            ? '<span class="gc-avail' + (group.count <= 2 ? ' is-low' : '') + '">' +
+                (group.count === 1 ? '¡Última habitación!' : group.count + ' disponibles') + '</span>'
+            : '<span class="gc-avail">' + group.count + ' habitación(es)</span>';
+
+        var desc = group.description
+            ? '<p class="gc-desc">' + esc(group.description) + '</p>' : '';
+
+        // Elegir habitación concreta solo tiene sentido si hay más de una.
+        var pickBtn = group.count > 1
+            ? '<button class="gc-btn-pick" data-group="' + index + '">' +
+                '<i class="fa fa-th-list"></i> Ver las ' + group.count + '</button>'
+            : '<button class="rc-btn-info btn-detail" data-id="' + group.default_room_id + '">Detalle</button>';
 
         return '' +
-        '<div class="reveal rc">' +
+        '<div class="reveal rc gc" data-group="' + index + '">' +
           '<div class="rc-inner">' +
-            '<div class="rc-img btn-detail" data-id="' + room.id + '">' +
+            '<div class="rc-img btn-detail" data-id="' + group.default_room_id + '">' +
               '<div class="bg" style="background-image:url(\'' + img + '\');"></div>' +
-              '<div class="rc-chips"><span class="rc-cat">' + esc(room.category) + '</span>' + fav + '</div>' +
+              '<div class="rc-chips">' + avail + fav + '</div>' +
             '</div>' +
           '</div>' +
           '<div class="rc-body">' +
             '<div class="rc-head">' +
-              '<div class="rc-title-row"><span class="rc-name">' + esc(room.name) + '</span></div>' +
-              '<div class="rc-sub">' + sub + '</div>' +
+              '<div class="rc-title-row"><span class="rc-name">' + esc(group.category) + '</span></div>' +
+              desc +
               '<div class="rc-divider"></div>' +
               '<div class="rc-price-row">' + priceHtml + total + '</div>' +
             '</div>' +
             statsHtml +
+            amenitiesHtml +
             '<div class="rc-actions">' +
-              '<button class="rc-btn-info btn-detail" data-id="' + room.id + '">Detalle</button>' +
-              '<button class="rc-btn-cta btn-reserve" data-id="' + room.id + '"><i class="fa fa-calendar-check-o"></i> Reservar</button>' +
+              pickBtn +
+              '<button class="rc-btn-cta btn-reserve" data-id="' + group.default_room_id + '">' +
+                '<i class="fa fa-calendar-check-o"></i> Reservar</button>' +
             '</div>' +
+            '<div class="gc-rooms" id="gc-rooms-' + index + '" hidden></div>' +
           '</div>' +
         '</div>';
     }
 
-    function renderRooms(list) {
+    // Fila compacta de una habitación concreta dentro de su tipo.
+    function roomRow(room) {
+        var price = room.min_price > 0 ? money(room.min_price) + ' / noche' : 'Consultar tarifa';
+        var meta = [];
+        if (room.floor) meta.push(esc(room.floor));
+        if (room.capacity) meta.push(room.capacity + ' huésp.');
+
+        return '<div class="gc-room">' +
+                 '<div class="gc-room-info">' +
+                   '<span class="gc-room-name">Habitación ' + esc(room.name) + '</span>' +
+                   (meta.length ? '<span class="gc-room-meta">' + meta.join(' · ') + '</span>' : '') +
+                 '</div>' +
+                 '<span class="gc-room-price">' + price + '</span>' +
+                 '<div class="gc-room-actions">' +
+                   '<button class="gc-room-detail btn-detail" data-id="' + room.id + '" title="Ver detalle"><i class="fa fa-info"></i></button>' +
+                   '<button class="gc-room-reserve btn-reserve" data-id="' + room.id + '">Reservar</button>' +
+                 '</div>' +
+               '</div>';
+    }
+
+    // Desplegar / plegar las habitaciones de un tipo.
+    $(document).on('click', '.gc-btn-pick', function () {
+        var idx = parseInt($(this).data('group'), 10);
+        var group = (window.__lastGroups || [])[idx];
+        if (!group) return;
+
+        var $box = $('#gc-rooms-' + idx);
+        var open = !$box.prop('hidden');
+
+        if (open) {
+            $box.prop('hidden', true);
+            $(this).html('<i class="fa fa-th-list"></i> Ver las ' + group.count);
+            return;
+        }
+
+        if (!$box.children().length) {
+            $box.html('<div class="gc-rooms-title">Elige tu habitación</div>' +
+                      group.rooms.map(roomRow).join(''));
+        }
+        $box.prop('hidden', false);
+        $(this).html('<i class="fa fa-chevron-up"></i> Ocultar');
+    });
+
+    function renderGroups(groups) {
         var $grid = $('#rooms-grid');
-        if (!list || !list.length) {
+        window.__lastGroups = groups || [];
+
+        if (!groups || !groups.length) {
             $grid.html('<div class="text-center py-16 text-ink-400"><i class="fa fa-bed fa-3x"></i><p class="mt-4 text-[15px]">No hay habitaciones disponibles para los criterios seleccionados.</p></div>');
             return;
         }
-        $grid.html('<div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">' + list.map(roomCard).join('') + '</div>');
-        // Asignar retardo escalonado y activar el revelado por scroll.
+
+        $grid.html('<div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">' +
+                   groups.map(groupCard).join('') + '</div>');
         $grid.find('.reveal').each(function (i) { this.style.setProperty('--reveal-i', i % 6); });
         if (window.hbInitReveal) window.hbInitReveal();
+    }
+
+    // Agrupa en el navegador (mismo criterio que el backend) para el listado
+    // inicial y para los filtros que no requieren volver a consultar.
+    function groupLocally(list) {
+        var byCat = {}, order = [];
+        (list || []).forEach(function (r) {
+            var cat = r.category || 'Habitación';
+            if (!byCat[cat]) { byCat[cat] = []; order.push(cat); }
+            byCat[cat].push(r);
+        });
+
+        return order.map(function (cat) {
+            var rooms = byCat[cat].slice().sort(function (a, b) {
+                return (a.min_price || 0) - (b.min_price || 0);
+            });
+            var rep = rooms.filter(function (r) { return r.main_image; })[0] || rooms[0];
+            var prices = rooms.map(function (r) { return r.min_price || 0; }).filter(function (p) { return p > 0; });
+
+            return {
+                category: cat,
+                count: rooms.length,
+                min_price: prices.length ? Math.min.apply(null, prices) : 0,
+                max_price: prices.length ? Math.max.apply(null, prices) : 0,
+                nights: rep.nights || null,
+                total: rooms.reduce(function (m, r) { return (r.total && (m === null || r.total < m)) ? r.total : m; }, null),
+                capacity: Math.max.apply(null, rooms.map(function (r) { return r.capacity || 0; })),
+                beds: rep.beds || null,
+                size: rep.size || null,
+                featured: rooms.some(function (r) { return r.featured; }),
+                description: rep.short_description || rep.description || null,
+                amenities: rep.amenities || [],
+                main_image: rep.main_image || null,
+                default_room_id: rooms[0].id,
+                rooms: rooms,
+            };
+        });
     }
 
     function findRoom(id) {
@@ -1229,12 +1372,9 @@ jQuery(function ($) {
         return DATA.rooms.filter(function (x) { return x.id === id; })[0];
     }
 
-    // Render inicial: destacadas si las hay, si no todas
-    window.__lastList = (DATA.featured && DATA.featured.length) ? DATA.featured : DATA.rooms;
-    renderRooms(window.__lastList);
-    if (DATA.featured && DATA.featured.length) {
-        $('#rooms-heading').text('Habitaciones destacadas');
-    }
+    // Render inicial: tipos de habitación (el catálogo completo, agrupado).
+    window.__lastList = DATA.rooms;
+    renderGroups(DATA.groups && DATA.groups.length ? DATA.groups : groupLocally(DATA.rooms));
 
     // Filtros disponibles desde el primer momento (sin necesidad de buscar):
     // el visitante puede acotar por tipo y ordenar el catálogo completo.
@@ -1246,7 +1386,8 @@ jQuery(function ($) {
         var $cat = $('#filterCategory').empty().append('<option value="">Todos los tipos</option>');
         cats.forEach(function (c) { $cat.append('<option value="' + esc(c) + '">' + esc(c) + '</option>'); });
 
-        if ((DATA.rooms || []).length > 1) $('#resultsBar').removeAttr('hidden');
+        // Con un solo tipo no hay nada que filtrar ni ordenar.
+        if (cats.length > 1) $('#resultsBar').removeAttr('hidden');
     })();
 
     // ---- Buscar disponibilidad ----
@@ -1376,9 +1517,9 @@ jQuery(function ($) {
         $('#resultsSummary').attr('hidden', true);
         $('#rooms-suggestions').empty();
         $('#rooms-unavailable').empty();
-        window.__lastList = (DATA.featured && DATA.featured.length) ? DATA.featured : DATA.rooms;
-        renderRooms(window.__lastList);
-        $('#rooms-heading').text((DATA.featured && DATA.featured.length) ? 'Habitaciones destacadas' : {!! json_encode($cfg['rooms_heading'] ?? 'Nuestras habitaciones') !!});
+        window.__lastList = DATA.rooms;
+        renderGroups(DATA.groups && DATA.groups.length ? DATA.groups : groupLocally(DATA.rooms));
+        $('#rooms-heading').text({!! json_encode($cfg['rooms_heading'] ?? 'Nuestras habitaciones') !!});
         $('#rooms-subheading').text({!! json_encode($cfg['rooms_subheading'] ?? 'Selecciona fechas para ver disponibilidad y precios.') !!});
         if (window.history && window.history.replaceState) {
             window.history.replaceState(null, '', window.location.pathname);
@@ -1395,18 +1536,20 @@ jQuery(function ($) {
         var list = (DATA.rooms || []).slice();
 
         if (cat) list = list.filter(function (r) { return r.category === cat; });
-        list.sort(function (a, b) {
-            if (sort === 'price_asc')     return (a.min_price || 0) - (b.min_price || 0);
-            if (sort === 'price_desc')    return (b.min_price || 0) - (a.min_price || 0);
-            if (sort === 'capacity_desc') return (b.capacity || 0) - (a.capacity || 0);
+
+        var groups = groupLocally(list);
+        groups.sort(function (a, b) {
+            if (sort === 'price_asc')     return a.min_price - b.min_price;
+            if (sort === 'price_desc')    return b.min_price - a.min_price;
+            if (sort === 'capacity_desc') return b.capacity - a.capacity;
             // Recomendadas: destacadas primero y, dentro, por precio.
             var f = (a.featured ? 0 : 1) - (b.featured ? 0 : 1);
-            return f !== 0 ? f : (a.min_price || 0) - (b.min_price || 0);
+            return f !== 0 ? f : a.min_price - b.min_price;
         });
 
         window.__lastList = list;
-        renderRooms(list);
-        $('#rooms-heading').text(cat || 'Nuestras habitaciones');
+        renderGroups(groups);
+        $('#rooms-heading').text(cat || {!! json_encode($cfg['rooms_heading'] ?? 'Nuestras habitaciones') !!});
     });
 
     function runSearch(opts) {
@@ -1450,14 +1593,22 @@ jQuery(function ($) {
             };
 
             window.__lastList = res.rooms;
-            renderRooms(res.rooms);
+            renderGroups(res.groups && res.groups.length ? res.groups : groupLocally(res.rooms));
             renderResultsBar(res);
             renderSuggestions(res.suggestions);
             renderUnavailable(res.unavailable);
             persistSearch(SEARCH);
 
+            // El titular habla de TIPOS, que es lo que el visitante compara.
+            // Se cuenta sobre lo realmente pintado (`__lastGroups`), no sobre
+            // `res.groups`: si la respuesta no trae los grupos ya calculados,
+            // renderGroups los agrupa en el navegador y el titular debe seguir
+            // cuadrando con lo que se ve.
+            var tipos = (window.__lastGroups || []).length;
             $('#rooms-heading').text(res.count > 0
-                ? res.count + ' habitación(es) disponible(s)'
+                ? (tipos === 1
+                    ? '1 tipo de habitación disponible'
+                    : tipos + ' tipos de habitación disponibles')
                 : 'Sin disponibilidad en esas fechas');
             $('#rooms-subheading').text('Del ' + res.checkin + ' ' + res.checkin_time + ' al ' + res.checkout + ' ' + res.checkout_time + ' · ' + res.nights + ' noche(s) · ' + res.adults + ' adulto(s)' + (res.children ? ', ' + res.children + ' niño(s)' : ''));
 
