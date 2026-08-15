@@ -327,40 +327,38 @@ class HotelLandingController extends Controller
             $rooms = $rooms->filter(fn ($room) => $room['category'] === $categoryFilter)->values();
         }
 
-        // Se clasifica cada habitación en lugar de descartarla en silencio: así
-        // la web puede explicar POR QUÉ una habitación no aparece (ocupada,
-        // aforo insuficiente, en mantenimiento) en vez de mostrar una lista
-        // vacía sin motivo.
-        $available   = collect();
-        $unavailable = collect();
+        // La web pública SOLO muestra lo que se puede reservar en esas fechas.
+        //
+        // Las habitaciones ocupadas simplemente no aparecen: la ocupación del
+        // hotel es información interna y no debe deducirse desde la web (antes
+        // se listaban aparte con el motivo "Ocupada en esas fechas", lo que la
+        // dejaba a la vista de cualquiera).
+        //
+        // Sí se distingue internamente el descarte por AFORO, porque no es
+        // información del hotel sino de la propia búsqueda: si el visitante
+        // pide para más personas de las que caben, conviene decírselo en vez
+        // de dejarle una pantalla vacía.
+        $available      = collect();
+        $tooSmallCount  = 0;
 
         foreach ($rooms as $room) {
-            $reason = null;
-
             if ($room['status'] === 'MANTENIMIENTO') {
-                $reason = 'maintenance';
-            } elseif ($room['capacity'] && $guests > $room['capacity']) {
-                $reason = 'capacity';
-            } elseif (HotelRent::findOverlappingRent($room['id'], $newStart, $newEnd) !== null) {
-                $reason = 'occupied';
+                continue;
+            }
+
+            if ($room['capacity'] && $guests > $room['capacity']) {
+                $tooSmallCount++;
+                continue;
+            }
+
+            if (HotelRent::findOverlappingRent($room['id'], $newStart, $newEnd) !== null) {
+                continue;
             }
 
             $room['nights'] = $nights;
             $room['total']  = round(($room['min_price'] ?? 0) * $nights, 2);
 
-            if ($reason === null) {
-                $available->push($room);
-                continue;
-            }
-
-            $room['available']          = false;
-            $room['unavailable_reason'] = $reason;
-            $room['unavailable_label']  = [
-                'maintenance' => 'En mantenimiento',
-                'capacity'    => 'Aforo insuficiente para ' . $guests . ' huésped(es)',
-                'occupied'    => 'Ocupada en esas fechas',
-            ][$reason];
-            $unavailable->push($room);
+            $available->push($room);
         }
 
         // Ordenación pedida por el visitante.
@@ -393,9 +391,14 @@ class HotelLandingController extends Controller
             // Resultados agrupados por tipo de habitación: es lo que ve el
             // huésped por defecto (ver groupRoomsByCategory).
             'groups'        => $this->groupRoomsByCategory($available, $request->input('sort')),
-            'unavailable'   => $unavailable->values(),
             'categories'    => $categories,
             'suggestions'   => $suggestions,
+            // Mensaje del estado vacío. Solo se concreta cuando el motivo es el
+            // aforo pedido; si no hay sitio por ocupación se responde en
+            // genérico, sin revelar cuántas habitaciones hay ocupadas.
+            'empty_reason'  => $available->isEmpty() && $tooSmallCount > 0 && $guests > 1
+                ? 'capacity'
+                : null,
         ], 200);
     }
 

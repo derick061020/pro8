@@ -41,7 +41,15 @@
             <el-tabs v-else v-model="tab" type="border-card">
               <!-- ============ SLIDER ============ -->
               <el-tab-pane label="Slider" name="slider">
-                <p class="text-muted">Diapositivas del banner principal. Recomendado 1700×449 px.</p>
+                <p class="text-muted">
+                  Diapositivas del banner principal. <b>Recomendado 1920×1080 px</b> (proporción 16:9).
+                  <br>
+                  <small>
+                    El banner ocupa casi toda la pantalla, así que necesita una imagen alta.
+                    Con la medida anterior (1700×449) la foto salía ampliada y recortada por los lados.
+                    Deja el motivo principal hacia el centro: en pantallas anchas se recorta un poco arriba y abajo.
+                  </small>
+                </p>
                 <div v-for="(slide, i) in form.slides" :key="'slide'+i" class="ls-item">
                   <div class="row">
                     <div class="col-md-4">
