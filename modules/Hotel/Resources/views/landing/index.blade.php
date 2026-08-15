@@ -13,6 +13,11 @@
 <style>
   /* ===== Hero (patrón home Makai: intro imagen+texto + slider horizontal) ===== */
   .hr-stage { position:relative; background:#12140f; height:min(88vh, 880px); min-height:600px; overflow:hidden; }
+  /* Fundido inferior del hero hacia el fondo de la página / buscador.
+     Va en el escenario (no dentro de la celda de portada) para que se mantenga
+     igual en todas las diapositivas y no se desplace con el track. Queda por
+     debajo de los controles (píldora y flechas, z-index 6-7). */
+  .hr-stage::after { content:""; position:absolute; left:0; right:0; bottom:-1px; height:16%; z-index:5; pointer-events:none; background:linear-gradient(to top, #f4f4f4 0%, rgba(244,244,244,.65) 42%, rgba(244,244,244,0) 100%); }
   .hr-track { display:flex; height:100%; transform:translateX(0); transition:transform .85s cubic-bezier(.22,1,.36,1); will-change:transform; }
   .hr-cell { position:relative; flex:0 0 100%; width:100%; height:100%; overflow:hidden; }
   .hr-photo { position:absolute; inset:0; background-size:cover; background-position:center; transform:scale(1.08); transition:transform 7.5s ease; }
@@ -104,8 +109,7 @@
   /* Edificio: PNG con fondo transparente (sin cielo propio) → se compone limpio
      sobre SKY.png, sin ninguna costura. */
   .hr-building { position:absolute; left:0; bottom:-1%; width:100%; height:auto; z-index:4; pointer-events:none; user-select:none; }
-  /* Fundido inferior del edificio hacia el fondo de la página / buscador. */
-  .hr-hero-makai::after { content:""; position:absolute; left:0; right:0; bottom:-1px; height:16%; z-index:5; pointer-events:none; background:linear-gradient(to top, #f4f4f4 0%, rgba(244,244,244,.65) 42%, rgba(244,244,244,0) 100%); }
+  /* El fundido inferior lo pone .hr-stage::after (común a todas las diapositivas). */
   /* Botón de la portada: va por encima del edificio (z-index 4) y del fundido
      inferior, y despejado de la píldora de navegación (bottom:132px). */
   .hr-hero-cta { position:absolute; left:0; right:0; bottom:196px; z-index:6; display:flex; justify-content:center; padding:0 22px; }
