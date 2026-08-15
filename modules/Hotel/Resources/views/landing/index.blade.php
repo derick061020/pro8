@@ -17,18 +17,28 @@
   .hr-cell { position:relative; flex:0 0 100%; width:100%; height:100%; overflow:hidden; }
   .hr-photo { position:absolute; inset:0; background-size:cover; background-position:center; transform:scale(1.08); transition:transform 7.5s ease; }
   .hr-cell.is-active .hr-photo { transform:scale(1); }
-  /* Degradado en dos capas + viñeta: legible bajo el nav flotante y fundido abajo. */
+  /* Capa sobre la foto: SOLO lo justo para que se lea el texto.
+     Antes oscurecía la imagen entera (hasta un 82% de negro abajo, más una
+     viñeta del 34%), así que la foto subida se veía mucho más apagada que el
+     original. Ahora el centro queda limpio —la imagen se ve con sus colores—
+     y el oscurecido se limita a las dos franjas donde hay contenido: arriba
+     el menú flotante y abajo el fundido hacia la página. */
   .hr-overlay { position:absolute; inset:0; z-index:1; background:
-      linear-gradient(180deg, rgba(18,20,15,.56) 0%, rgba(18,20,15,.12) 30%, rgba(18,20,15,.30) 62%, rgba(18,20,15,.82) 100%),
-      radial-gradient(130% 90% at 50% 32%, rgba(18,20,15,0) 42%, rgba(18,20,15,.34) 100%); }
+      linear-gradient(180deg, rgba(18,20,15,.30) 0%, rgba(18,20,15,.06) 22%, rgba(18,20,15,0) 45%, rgba(18,20,15,.18) 72%, rgba(18,20,15,.55) 100%); }
   .hr-cell-caption { position:absolute; inset:0; z-index:3; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; color:#fff; padding:96px 22px 150px; }
-  .hr-caption-inner { width:100%; max-width:840px; }
+  /* Sombra suave detrás del bloque de texto: sustituye al oscurecido general.
+     Va pegada al título, así la foto se mantiene limpia alrededor. */
+  .hr-cell--img .hr-cell-caption::before { content:""; position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); width:min(1100px,92%); height:min(420px,60%); z-index:-1; pointer-events:none;
+      background:radial-gradient(closest-side ellipse, rgba(18,20,15,.42) 0%, rgba(18,20,15,.24) 55%, rgba(18,20,15,0) 100%); }
+  .hr-caption-inner { width:100%; max-width:840px; position:relative; }
 
   /* Chip / título / subtítulo (compartidos por las celdas de imagen). */
   .hr-chip { display:inline-flex; align-items:center; gap:9px; padding:7px 15px; margin-bottom:22px; border-radius:999px; background:rgba(255,255,255,.12); border:1px solid rgba(255,255,255,.24); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px); font-size:12.5px; font-weight:600; letter-spacing:.03em; color:#fff; }
   .hr-chip .stars { color:#f4c542; letter-spacing:1.5px; font-size:11px; }
-  .hr-title { font-family:'Inter Tight','Inter',sans-serif; font-size:clamp(33px,5.6vw,62px); font-weight:700; line-height:1.06; letter-spacing:-.025em; margin:0 auto 18px; max-width:14ch; text-shadow:0 4px 40px rgba(0,0,0,.4); }
-  .hr-subtitle { font-size:clamp(15px,2vw,20px); font-weight:400; max-width:600px; margin:0 auto; color:rgba(255,255,255,.9); text-shadow:0 2px 18px rgba(0,0,0,.4); line-height:1.55; }
+  /* Al aligerar la capa oscura, la legibilidad la sostiene la sombra del propio
+     texto (no oscurece la foto alrededor). */
+  .hr-title { font-family:'Inter Tight','Inter',sans-serif; font-size:clamp(33px,5.6vw,62px); font-weight:700; line-height:1.06; letter-spacing:-.025em; margin:0 auto 18px; max-width:14ch; text-shadow:0 2px 6px rgba(0,0,0,.45), 0 6px 34px rgba(0,0,0,.5); }
+  .hr-subtitle { font-size:clamp(15px,2vw,20px); font-weight:400; max-width:600px; margin:0 auto; color:rgba(255,255,255,.95); text-shadow:0 1px 4px rgba(0,0,0,.5), 0 3px 20px rgba(0,0,0,.45); line-height:1.55; }
 
   /* Wordmark gigante de la celda intro ("imagen con texto" makai). */
   .hr-wordmark { display:block; font-family:'Inter Tight','Inter',sans-serif; font-weight:800; text-transform:uppercase; font-size:clamp(42px,10.5vw,138px); line-height:.9; letter-spacing:-.01em; max-width:13ch; margin:0 auto 8px; text-wrap:balance;
@@ -244,15 +254,6 @@
   .hr-alt-btn b { font-size:13.5px; font-weight:700; color:#2b303b; }
   .hr-alt-btn small { font-size:11.5px; color:#5c7c68; font-weight:600; }
 
-  /* Habitaciones no disponibles (por qué no aparecen). */
-  .hr-unavail { margin-top:26px; }
-  .hr-unavail-toggle { display:inline-flex; align-items:center; gap:8px; padding:9px 16px; border-radius:100px; border:1px solid #eaecf0; background:#fff; color:#717784; font-size:13px; font-weight:600; cursor:pointer; transition:border-color .2s, color .2s; }
-  .hr-unavail-toggle:hover { border-color:#d7dce3; color:#525866; }
-  .hr-unavail-grid { display:grid; gap:12px; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); margin-top:16px; }
-  .hr-unavail-card { display:flex; gap:12px; align-items:center; padding:12px; border:1px solid #eef0f3; border-radius:14px; background:#fbfbfc; opacity:.85; }
-  .hr-unavail-card img { width:56px; height:56px; border-radius:10px; object-fit:cover; flex-shrink:0; filter:grayscale(.55); }
-  .hr-unavail-card .n { font-size:13.5px; font-weight:700; color:#525866; }
-  .hr-unavail-card .r { font-size:12px; color:#99a0ae; }
 
   @media (max-width:640px) {
     .hr-results-bar { flex-direction:column; align-items:stretch; }
@@ -846,9 +847,8 @@
 
     <div id="rooms-grid"></div>
 
-    <!-- Alternativas y habitaciones no disponibles -->
+    <!-- Fechas alternativas cuando no hay disponibilidad -->
     <div id="rooms-suggestions"></div>
-    <div id="rooms-unavailable"></div>
   </div>
 </section>
 
@@ -1311,12 +1311,18 @@ jQuery(function ($) {
         $(this).html('<i class="fa fa-chevron-up"></i> Ocultar');
     });
 
-    function renderGroups(groups) {
+    function renderGroups(groups, emptyReason) {
         var $grid = $('#rooms-grid');
         window.__lastGroups = groups || [];
 
         if (!groups || !groups.length) {
-            $grid.html('<div class="text-center py-16 text-ink-400"><i class="fa fa-bed fa-3x"></i><p class="mt-4 text-[15px]">No hay habitaciones disponibles para los criterios seleccionados.</p></div>');
+            // El texto nunca revela la ocupación del hotel: si no hay sitio se
+            // dice en genérico. Solo se concreta cuando el motivo es el aforo
+            // pedido, que es un dato de la propia búsqueda.
+            var msg = emptyReason === 'capacity'
+                ? 'No tenemos habitaciones con capacidad para ese número de huéspedes. Prueba a reducirlo o a reservar más de una habitación.'
+                : 'No hay habitaciones disponibles para esas fechas.';
+            $grid.html('<div class="text-center py-16 text-ink-400"><i class="fa fa-bed fa-3x"></i><p class="mt-4 text-[15px]">' + msg + '</p></div>');
             return;
         }
 
@@ -1447,38 +1453,6 @@ jQuery(function ($) {
         );
     }
 
-    function renderUnavailable(list) {
-        var $box = $('#rooms-unavailable').empty();
-        if (!list || !list.length) return;
-
-        var cards = list.map(function (r) {
-            var img = r.main_image || PLACEHOLDER;
-            return '<div class="hr-unavail-card">' +
-                     '<img src="' + img + '" alt="' + esc(r.name) + '">' +
-                     '<div><div class="n">' + esc(r.name) + '</div>' +
-                     '<div class="r">' + esc(r.unavailable_label || 'No disponible') + '</div></div>' +
-                   '</div>';
-        }).join('');
-
-        $box.html(
-            '<div class="hr-unavail">' +
-              '<button type="button" class="hr-unavail-toggle" id="btnToggleUnavail">' +
-                '<i class="fa fa-eye-slash"></i> Ver ' + list.length + ' habitación(es) no disponible(s)' +
-              '</button>' +
-              '<div class="hr-unavail-grid" id="unavailGrid" hidden>' + cards + '</div>' +
-            '</div>'
-        );
-    }
-
-    $(document).on('click', '#btnToggleUnavail', function () {
-        var $grid = $('#unavailGrid');
-        var hidden = $grid.prop('hidden');
-        $grid.prop('hidden', !hidden);
-        $(this).html(hidden
-            ? '<i class="fa fa-eye"></i> Ocultar habitaciones no disponibles'
-            : '<i class="fa fa-eye-slash"></i> Ver ' + $grid.children().length + ' habitación(es) no disponible(s)');
-    });
-
     // Al pulsar una fecha alternativa se relanza la búsqueda con ella.
     $(document).on('click', '.hr-alt-btn', function () {
         $('#checkin_date').val($(this).data('checkin'));
@@ -1516,7 +1490,6 @@ jQuery(function ($) {
         $('#filterSort').val('featured');
         $('#resultsSummary').attr('hidden', true);
         $('#rooms-suggestions').empty();
-        $('#rooms-unavailable').empty();
         window.__lastList = DATA.rooms;
         renderGroups(DATA.groups && DATA.groups.length ? DATA.groups : groupLocally(DATA.rooms));
         $('#rooms-heading').text({!! json_encode($cfg['rooms_heading'] ?? 'Nuestras habitaciones') !!});
@@ -1570,7 +1543,6 @@ jQuery(function ($) {
         var $btn = $('#btn-search').prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Buscando...');
         $('#rooms-grid').html('<div class="text-center py-16 text-ink-400"><i class="fa fa-spinner fa-spin fa-2x"></i><p class="mt-4">Buscando habitaciones disponibles...</p></div>');
         $('#rooms-suggestions').empty();
-        $('#rooms-unavailable').empty();
 
         $.post('/reservas/search', {
             checkin: checkin, checkout: checkout,
@@ -1593,10 +1565,12 @@ jQuery(function ($) {
             };
 
             window.__lastList = res.rooms;
-            renderGroups(res.groups && res.groups.length ? res.groups : groupLocally(res.rooms));
+            renderGroups(
+                res.groups && res.groups.length ? res.groups : groupLocally(res.rooms),
+                res.empty_reason
+            );
             renderResultsBar(res);
             renderSuggestions(res.suggestions);
-            renderUnavailable(res.unavailable);
             persistSearch(SEARCH);
 
             // El titular habla de TIPOS, que es lo que el visitante compara.
