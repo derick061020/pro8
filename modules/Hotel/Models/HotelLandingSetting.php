@@ -30,11 +30,24 @@ class HotelLandingSetting extends ModelTenant
     const IMAGES_FOLDER = 'hotel/landing';
 
     /** Rutas de las imágenes de demostración del tema (fallback si no hay subida). */
-    const DEFAULT_SLIDE    = '/landing-reservas/images/slides/1700x449.gif';
+    const DEFAULT_SLIDE    = '/landing-reservas/images/slides/default-1.svg';
     const DEFAULT_PARALLAX = '/landing-reservas/images/parallax/1900x911.gif';
     const DEFAULT_GALLERY  = '/landing-reservas/images/gallery/800x504.gif';
     const DEFAULT_REVIEW   = '/landing-reservas/images/reviews/100x100.gif';
     const DEFAULT_ABOUT    = '/landing-reservas/images/tab/197x147.gif';
+
+    /**
+     * Diseños de portada incluidos con el sistema (banners vectoriales 16:9,
+     * pensados para el hero: centro despejado para el texto y bordes oscuros).
+     * Se usan como diapositivas por defecto y el hotel puede reemplazarlos por
+     * sus propias fotos o banners de temporada desde Hotel -> Personalizar web.
+     */
+    const SLIDE_DESIGNS = [
+        '/landing-reservas/images/slides/default-1.svg',
+        '/landing-reservas/images/slides/default-2.svg',
+        '/landing-reservas/images/slides/default-3.svg',
+        '/landing-reservas/images/slides/default-4.svg',
+    ];
 
     /**
      * Devuelve (creando si hace falta) la configuración del establecimiento.
@@ -124,6 +137,9 @@ class HotelLandingSetting extends ModelTenant
     {
         return [
             // ---- Slider principal ----
+            // La 1ª entrada es la portada (composición cielo + edificio con el
+            // nombre del hotel): de ella sólo se usa el botón. Las 4 siguientes
+            // son las diapositivas de imagen, con los diseños incluidos.
             'slides' => [
                 [
                     'image'       => null,
@@ -134,11 +150,35 @@ class HotelLandingSetting extends ModelTenant
                     'stars'       => true,
                 ],
                 [
-                    'image'       => null,
-                    'title'       => 'Bienvenido',
-                    'subtitle'    => 'Disponibilidad en tiempo real',
-                    'button_text' => 'Reservar ahora',
+                    'image'       => self::SLIDE_DESIGNS[0],
+                    'title'       => 'Tu descanso empieza aquí',
+                    'subtitle'    => 'Habitaciones cómodas, atención cercana y reserva directa en línea.',
+                    'button_text' => 'Ver habitaciones',
+                    'button_link' => '#rooms-results',
+                    'stars'       => true,
+                ],
+                [
+                    'image'       => self::SLIDE_DESIGNS[1],
+                    'title'       => 'Habitaciones pensadas para descansar',
+                    'subtitle'    => 'Mira las fotos, los servicios y el precio de cada habitación antes de elegir.',
+                    'button_text' => 'Ver galería',
+                    'button_link' => '#gallery',
+                    'stars'       => true,
+                ],
+                [
+                    'image'       => self::SLIDE_DESIGNS[2],
+                    'title'       => 'Reserva directa, sin intermediarios',
+                    'subtitle'    => 'Precio real, confirmación inmediata y atención personalizada.',
+                    'button_text' => 'Consultar disponibilidad',
                     'button_link' => '#reservation-form',
+                    'stars'       => true,
+                ],
+                [
+                    'image'       => self::SLIDE_DESIGNS[3],
+                    'title'       => 'Estamos para ayudarte',
+                    'subtitle'    => 'Familias, grupos o viajes de trabajo: escríbenos y armamos tu estadía a la medida.',
+                    'button_text' => 'Contáctanos',
+                    'button_link' => '#contacto',
                     'stars'       => true,
                 ],
             ],
