@@ -46,53 +46,78 @@
                   <br>
                   <small>
                     El banner ocupa casi toda la pantalla, así que necesita una imagen alta.
-                    Con la medida anterior (1700×449) la foto salía ampliada y recortada por los lados.
                     Deja el motivo principal hacia el centro: en pantallas anchas se recorta un poco arriba y abajo.
+                    Cada diapositiva trae un <b>diseño incluido</b>; súbele tu propia foto o tu banner de temporada
+                    cuando lo tengas y se reemplaza al instante.
                   </small>
                 </p>
                 <div v-for="(slide, i) in form.slides" :key="'slide'+i" class="ls-item">
+                  <div class="ls-slide-head">
+                    <span class="ls-badge" :class="{ 'ls-badge--cover': i === 0 }">
+                      {{ i === 0 ? 'Portada' : 'Diapositiva ' + i }}
+                    </span>
+                    <small v-if="i === 0" class="text-muted">
+                      Entrada animada con el nombre del hotel (cielo + edificio). No usa imagen: sólo se muestra su botón.
+                    </small>
+                    <button v-if="i > 0" type="button" class="btn btn-xs btn-danger ls-slide-del" @click="remove(form.slides, i)">
+                      <i class="fa fa-trash"></i> Eliminar
+                    </button>
+                  </div>
                   <div class="row">
-                    <div class="col-md-4">
+                    <div class="col-md-4" v-if="i > 0">
                       <div class="ls-img" :style="bg(slide.image_url)">
                         <span v-if="!slide.image_url" class="ls-img__empty"><i class="fa fa-image"></i></span>
                       </div>
                       <div class="ls-img__actions">
                         <label class="btn btn-xs btn-custom">
-                          <i class="fa fa-upload"></i> Imagen
+                          <i class="fa fa-upload"></i> Subir imagen
                           <input type="file" accept="image/*" hidden @change="pickImage($event, slide, 'image')" />
                         </label>
                         <button v-if="slide.image" type="button" class="btn btn-xs btn-danger" @click="clearImage(slide, 'image', DEF.slide)">Quitar</button>
                       </div>
+                      <div class="ls-designs">
+                        <span class="ls-designs__label">Diseños incluidos</span>
+                        <div class="ls-designs__row">
+                          <button v-for="(d, di) in slideDesigns" :key="'d'+di" type="button"
+                                  class="ls-design" :class="{ 'is-active': slide.image === d }"
+                                  :style="bg(d)" :title="'Usar el diseño ' + (di + 1)"
+                                  @click="pickDesign(slide, d)"></button>
+                        </div>
+                      </div>
                     </div>
-                    <div class="col-md-8">
-                      <div class="form-group">
-                        <label>Título</label>
-                        <el-input v-model="slide.title" placeholder="Ej: Bienvenido (vacío = nombre del hotel)" />
-                      </div>
-                      <div class="form-group">
-                        <label>Subtítulo</label>
-                        <el-input v-model="slide.subtitle" />
-                      </div>
+                    <div :class="i > 0 ? 'col-md-8' : 'col-md-12'">
+                      <template v-if="i > 0">
+                        <div class="form-group">
+                          <label>Título</label>
+                          <el-input v-model="slide.title" placeholder="Ej: Bienvenido (vacío = nombre del hotel)" />
+                        </div>
+                        <div class="form-group">
+                          <label>Subtítulo</label>
+                          <el-input v-model="slide.subtitle" />
+                        </div>
+                      </template>
                       <div class="row">
                         <div class="col-md-6 form-group">
                           <label>Texto del botón</label>
-                          <el-input v-model="slide.button_text" />
+                          <el-input v-model="slide.button_text" placeholder="Vacío = sin botón" />
                         </div>
                         <div class="col-md-6 form-group">
                           <label>Enlace del botón</label>
                           <el-input v-model="slide.button_link" placeholder="#rooms-results" />
                         </div>
                       </div>
-                      <div class="ls-row-flex">
+                      <div class="ls-row-flex" v-if="i > 0">
                         <el-switch v-model="slide.stars" active-text="Mostrar estrellas" />
-                        <button type="button" class="btn btn-xs btn-danger" @click="remove(form.slides, i)">
-                          <i class="fa fa-trash"></i> Eliminar diapositiva
-                        </button>
                       </div>
                     </div>
                   </div>
                 </div>
-                <el-button size="small" @click="addSlide"><i class="fa fa-plus"></i> Añadir diapositiva</el-button>
+                <div class="ls-row-flex">
+                  <el-button size="small" @click="addSlide"><i class="fa fa-plus"></i> Añadir diapositiva</el-button>
+                  <el-button size="small" v-if="defaultSlides.length" @click="restoreDefaultSlides">
+                    <i class="fa fa-magic"></i> Restaurar las diapositivas incluidas
+                  </el-button>
+                </div>
               </el-tab-pane>
 
               <!-- ============ VENTAJAS ============ -->
@@ -368,10 +393,18 @@ export default {
       saving: false,
       form: {},
       colors: [],
+      defaultSlides: [],
       landingUrl: null,
       currentEstablishment: this.establishmentId,
+      // Diseños de portada incluidos (ver HotelLandingSetting::SLIDE_DESIGNS).
+      slideDesigns: [
+        "/landing-reservas/images/slides/default-1.svg",
+        "/landing-reservas/images/slides/default-2.svg",
+        "/landing-reservas/images/slides/default-3.svg",
+        "/landing-reservas/images/slides/default-4.svg",
+      ],
       DEF: {
-        slide: "/landing-reservas/images/slides/1700x449.gif",
+        slide: "/landing-reservas/images/slides/default-1.svg",
         parallax: "/landing-reservas/images/parallax/1900x911.gif",
         gallery: "/landing-reservas/images/gallery/800x504.gif",
         review: "/landing-reservas/images/reviews/100x100.gif",
@@ -397,6 +430,7 @@ export default {
         .then((res) => {
           this.landingUrl = res.data.landing_url;
           this.colors = res.data.colors || [];
+          this.defaultSlides = res.data.default_slides || [];
           this.form = this.normalize(res.data.config);
         })
         .catch((e) => this.axiosError(e))
@@ -448,10 +482,29 @@ export default {
       this.$set(target, key, null);
       this.$set(target, key + "_url", fallback);
     },
+    // Vuelve a las diapositivas de fábrica (portada + los 4 diseños incluidos).
+    restoreDefaultSlides() {
+      this.$confirm(
+        "Se reemplazarán las diapositivas actuales del slider por la portada y las 4 diapositivas incluidas. El resto de la web no cambia.",
+        "Restaurar diapositivas",
+        { confirmButtonText: "Restaurar", cancelButtonText: "Cancelar", type: "warning" }
+      ).then(() => {
+        this.$set(this.form, "slides", JSON.parse(JSON.stringify(this.defaultSlides)));
+        this.$message({ type: "success", message: "Diapositivas restauradas. Recuerda guardar los cambios." });
+      }).catch(() => {});
+    },
+    // Usa uno de los diseños incluidos como imagen de la diapositiva.
+    pickDesign(slide, url) {
+      this.$set(slide, "image", url);
+      this.$set(slide, "image_url", url);
+    },
     // -------- añadir / quitar --------
     remove(list, i) { list.splice(i, 1); },
     addSlide() {
-      this.form.slides.push({ image: null, image_url: this.DEF.slide, title: "", subtitle: "", button_text: "Ver habitaciones", button_link: "#rooms-results", stars: true });
+      // La nueva diapositiva estrena uno de los diseños incluidos (rotando),
+      // así nunca queda una diapositiva en blanco.
+      const design = this.slideDesigns[(this.form.slides.length - 1) % this.slideDesigns.length];
+      this.form.slides.push({ image: design, image_url: design, title: "", subtitle: "", button_text: "Ver habitaciones", button_link: "#rooms-results", stars: true });
     },
     addFeature() {
       this.form.features.push({ icon: "fa-star", title: "", text: "", link_text: "Ver más", link: "#" });
@@ -513,6 +566,16 @@ export default {
 .ls-img__empty { color: #b0bec5; font-size: 26px; }
 .ls-img__actions { display: flex; gap: 6px; justify-content: center; margin-top: 8px; }
 .ls-row-flex { display: flex; align-items: center; gap: 10px; }
+.ls-slide-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
+.ls-badge { display: inline-flex; align-items: center; padding: 3px 10px; border-radius: 100px; background: #e8f0ea; color: #4a6354; font-size: 11.5px; font-weight: 700; letter-spacing: .02em; }
+.ls-badge--cover { background: #eef1f5; color: #57606f; }
+.ls-slide-del { margin-left: auto; }
+.ls-designs { margin-top: 10px; }
+.ls-designs__label { display: block; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: #90a4ae; margin-bottom: 5px; }
+.ls-designs__row { display: flex; gap: 6px; }
+.ls-design { flex: 1 1 0; height: 34px; padding: 0; border: 2px solid transparent; border-radius: 5px; background: #eceff1 center/cover no-repeat; cursor: pointer; box-shadow: 0 0 0 1px #dde3e6; transition: transform .15s, border-color .15s; }
+.ls-design:hover { transform: translateY(-1px); }
+.ls-design.is-active { border-color: #5c7c68; box-shadow: 0 0 0 1px #5c7c68; }
 .ls-gallery { display: flex; flex-wrap: wrap; gap: 14px; margin-bottom: 14px; }
 .ls-gallery__cell { width: 170px; }
 .ls-subtitle { margin: 18px 0 10px; font-weight: 700; color: #2c3e50; border-bottom: 1px solid #eceff1; padding-bottom: 6px; }

@@ -42,11 +42,17 @@ class HotelLandingSettingController extends Controller
 
         $config = HotelLandingSetting::mergeDefaults($setting && is_array($setting->data) ? $setting->data : []);
 
+        // Diapositivas de fábrica (portada + los 4 diseños incluidos): sirven
+        // para que el editor pueda restaurarlas aunque el hotel ya tenga una
+        // configuración guardada de antes.
+        $defaultSlides = $this->withImageUrls(HotelLandingSetting::mergeDefaults([]))['slides'];
+
         return response()->json([
-            'success'     => true,
-            'config'      => $this->withImageUrls($config),
-            'colors'      => ['turquoise', 'blue', 'green', 'orange', 'purple', 'red', 'brown', 'black'],
-            'landing_url' => url('reservas'),
+            'success'        => true,
+            'config'         => $this->withImageUrls($config),
+            'default_slides' => $defaultSlides,
+            'colors'         => ['turquoise', 'blue', 'green', 'orange', 'purple', 'red', 'brown', 'black'],
+            'landing_url'    => url('reservas'),
         ], 200);
     }
 
