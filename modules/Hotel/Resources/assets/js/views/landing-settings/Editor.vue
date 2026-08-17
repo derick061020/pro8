@@ -47,7 +47,7 @@
                   <small>
                     El banner ocupa casi toda la pantalla, así que necesita una imagen alta.
                     Deja el motivo principal hacia el centro: en pantallas anchas se recorta un poco arriba y abajo.
-                    Cada diapositiva trae un <b>diseño incluido</b>; súbele tu propia foto o tu banner de temporada
+                    Cada diapositiva trae una <b>foto incluida</b>; súbele la del hotel o tu banner de temporada
                     cuando lo tengas y se reemplaza al instante.
                   </small>
                 </p>
@@ -57,7 +57,7 @@
                       {{ i === 0 ? 'Portada' : 'Diapositiva ' + i }}
                     </span>
                     <small v-if="i === 0" class="text-muted">
-                      Entrada animada con el nombre del hotel (cielo + edificio). No usa imagen: sólo se muestra su botón.
+                      Entrada animada con el nombre del hotel (cielo + edificio). <b>Sólo se muestra si no hay ninguna diapositiva</b>; con diapositivas, el banner arranca directamente con ellas.
                     </small>
                     <button v-if="i > 0" type="button" class="btn btn-xs btn-danger ls-slide-del" @click="remove(form.slides, i)">
                       <i class="fa fa-trash"></i> Eliminar
@@ -76,11 +76,11 @@
                         <button v-if="slide.image" type="button" class="btn btn-xs btn-danger" @click="clearImage(slide, 'image', DEF.slide)">Quitar</button>
                       </div>
                       <div class="ls-designs">
-                        <span class="ls-designs__label">Diseños incluidos</span>
+                        <span class="ls-designs__label">Fotos incluidas</span>
                         <div class="ls-designs__row">
                           <button v-for="(d, di) in slideDesigns" :key="'d'+di" type="button"
                                   class="ls-design" :class="{ 'is-active': slide.image === d }"
-                                  :style="bg(d)" :title="'Usar el diseño ' + (di + 1)"
+                                  :style="bg(d)" :title="'Usar la foto incluida ' + (di + 1)"
                                   @click="pickDesign(slide, d)"></button>
                         </div>
                       </div>
@@ -396,15 +396,15 @@ export default {
       defaultSlides: [],
       landingUrl: null,
       currentEstablishment: this.establishmentId,
-      // Diseños de portada incluidos (ver HotelLandingSetting::SLIDE_DESIGNS).
+      // Fotos incluidas (ver HotelLandingSetting::SLIDE_DESIGNS).
       slideDesigns: [
-        "/landing-reservas/images/slides/default-1.svg",
-        "/landing-reservas/images/slides/default-2.svg",
-        "/landing-reservas/images/slides/default-3.svg",
-        "/landing-reservas/images/slides/default-4.svg",
+        "/landing-reservas/images/slides/default-1.jpg",
+        "/landing-reservas/images/slides/default-2.jpg",
+        "/landing-reservas/images/slides/default-3.jpg",
+        "/landing-reservas/images/slides/default-4.jpg",
       ],
       DEF: {
-        slide: "/landing-reservas/images/slides/default-1.svg",
+        slide: "/landing-reservas/images/slides/default-1.jpg",
         parallax: "/landing-reservas/images/parallax/1900x911.gif",
         gallery: "/landing-reservas/images/gallery/800x504.gif",
         review: "/landing-reservas/images/reviews/100x100.gif",
@@ -485,7 +485,7 @@ export default {
     // Vuelve a las diapositivas de fábrica (portada + los 4 diseños incluidos).
     restoreDefaultSlides() {
       this.$confirm(
-        "Se reemplazarán las diapositivas actuales del slider por la portada y las 4 diapositivas incluidas. El resto de la web no cambia.",
+        "Se reemplazarán las diapositivas actuales del slider por las 4 diapositivas incluidas (más la portada de respaldo). El resto de la web no cambia.",
         "Restaurar diapositivas",
         { confirmButtonText: "Restaurar", cancelButtonText: "Cancelar", type: "warning" }
       ).then(() => {
@@ -493,7 +493,7 @@ export default {
         this.$message({ type: "success", message: "Diapositivas restauradas. Recuerda guardar los cambios." });
       }).catch(() => {});
     },
-    // Usa uno de los diseños incluidos como imagen de la diapositiva.
+    // Usa una de las fotos incluidas como imagen de la diapositiva.
     pickDesign(slide, url) {
       this.$set(slide, "image", url);
       this.$set(slide, "image_url", url);
@@ -501,8 +501,8 @@ export default {
     // -------- añadir / quitar --------
     remove(list, i) { list.splice(i, 1); },
     addSlide() {
-      // La nueva diapositiva estrena uno de los diseños incluidos (rotando),
-      // así nunca queda una diapositiva en blanco.
+      // La nueva diapositiva estrena una de las fotos incluidas (rotando), así
+      // nunca queda una diapositiva en blanco.
       const design = this.slideDesigns[(this.form.slides.length - 1) % this.slideDesigns.length];
       this.form.slides.push({ image: design, image_url: design, title: "", subtitle: "", button_text: "Ver habitaciones", button_link: "#rooms-results", stars: true });
     },

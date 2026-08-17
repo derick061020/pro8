@@ -6,7 +6,7 @@
     $hotelEmail   = $establishment->email ?? null;
     $hotelWeb     = $establishment->web_address ?? null;
     $hotelAddress = ($establishment->trade_address ?? null) ?: ($establishment->address ?? null);
-    $reserveHref  = $onLanding ? '#reservation-form' : url('/reservas').'#reservation-form';
+    $reserveHref  = $onLanding ? '#reservation-form' : url('/').'#reservation-form';
     $reserveClass = $onLanding ? 'nav-scroll' : '';
     $footerAbout  = $establishment->aditional_information ?? 'Te damos la bienvenida. Reserva tu estancia con nosotros y disfruta de una experiencia inolvidable.';
 @endphp

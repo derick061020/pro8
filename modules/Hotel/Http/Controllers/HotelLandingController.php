@@ -50,7 +50,10 @@ class HotelLandingController extends Controller
      */
     public function home(Request $request)
     {
-        if (auth()->check()) {
+        // El personal logueado que entra al dominio va a su panel, salvo que
+        // pida ver la web como la ve un cliente (?preview=1, que es el enlace
+        // "Ver web" del editor).
+        if (auth()->check() && !$request->boolean('preview')) {
             return redirect('/dashboard');
         }
 
