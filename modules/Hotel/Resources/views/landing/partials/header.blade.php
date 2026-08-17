@@ -3,13 +3,13 @@
     // launchbase/makai: barra blanca centrada, esquinas redondeadas y sombra en
     // capas, fija sobre el hero.
     // $onLanding = true  -> enlaces de ancla con scroll suave (misma página)
-    // $onLanding = false -> enlaces absolutos hacia /reservas#ancla
+    // $onLanding = false -> enlaces absolutos hacia la raíz (/#ancla)
     $onLanding   = $onLanding   ?? false;
     $activeNav   = $activeNav   ?? 'inicio';
     $hotelName   = $establishment->description ?? 'Hotel';
     $hotelPhone  = $establishment->telephone ?? null;
     $hotelLogo   = (!empty($establishment->logo)) ? asset('storage/uploads/logos/'.$establishment->logo) : null;
-    $base        = $onLanding ? '' : url('/reservas');
+    $base        = $onLanding ? '' : url('/');
     $scroll      = $onLanding ? 'nav-scroll' : '';
     $branches       = $establishments ?? collect();
     $currentBranch  = $establishmentId ?? ($establishment->id ?? null);
@@ -20,7 +20,7 @@
         ['label' => 'Inicio',       'href' => $onLanding ? '#top' : $base,  'active' => $activeNav === 'inicio'],
         ['label' => 'Habitaciones', 'href' => $base.'#rooms-results',       'active' => false],
         ['label' => 'Galería',      'href' => $base.'#gallery',             'active' => false],
-        ['label' => 'Blog',         'href' => url('/reservas/blog'),        'active' => $activeNav === 'blog'],
+        ['label' => 'Blog',         'href' => url('/blog'),                 'active' => $activeNav === 'blog'],
         ['label' => 'Contacto',     'href' => $base.'#contacto',            'active' => false],
     ];
 @endphp
@@ -33,7 +33,7 @@
 
     <!-- Izquierda: logo + nombre + selector de sucursal -->
     <div class="flex items-center gap-2.5 min-w-0 shrink-0">
-      <a href="{{ url('/reservas') }}" class="flex items-center gap-2.5 min-w-0">
+      <a href="{{ url('/') }}" class="flex items-center gap-2.5 min-w-0">
         @if($hotelLogo)
           <img src="{{ $hotelLogo }}" alt="{{ $hotelName }}" class="h-8 w-auto max-w-[130px] object-contain">
         @else
@@ -50,7 +50,7 @@
           <div class="px-4 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-ink-400">Elige una sucursal</div>
           @foreach($branches as $b)
             @php $branchAddress = $b->trade_address ?: $b->address; @endphp
-            <a href="{{ url('/reservas') }}?sucursal={{ $b->id }}" class="flex items-start gap-2.5 px-4 py-2.5 hover:bg-ink-50 transition {{ $b->id === $currentBranch ? 'bg-brand-tint' : '' }}">
+            <a href="{{ url('/?sucursal='.$b->id) }}" class="flex items-start gap-2.5 px-4 py-2.5 hover:bg-ink-50 transition {{ $b->id === $currentBranch ? 'bg-brand-tint' : '' }}">
               <i class="fa {{ $b->id === $currentBranch ? 'fa-check text-brand' : 'fa-building-o text-ink-400' }} mt-0.5 w-4 text-center"></i>
               <span class="min-w-0">
                 <span class="block text-[13px] font-medium {{ $b->id === $currentBranch ? 'text-brand-dark' : 'text-ink-900' }}">{{ $b->description }}</span>

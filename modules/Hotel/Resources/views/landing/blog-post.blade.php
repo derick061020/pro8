@@ -37,9 +37,9 @@
   <div class="bg-ink-950/72">
     <div class="max-w-4xl mx-auto px-6 pt-28 pb-16 text-white">
       <nav class="flex items-center gap-2 text-[13px] text-white/70 mb-4">
-        <a href="/reservas" class="hover:text-white">Inicio</a>
+        <a href="/" class="hover:text-white">Inicio</a>
         <i class="fa fa-angle-right text-[11px]"></i>
-        <a href="/reservas/blog" class="hover:text-white">Blog</a>
+        <a href="/blog" class="hover:text-white">Blog</a>
       </nav>
       <div class="flex flex-wrap items-center gap-4 text-[13px] text-white/80 mb-3">
         @if($pubDate)<span class="inline-flex items-center gap-1.5"><i class="fa fa-calendar text-brand"></i> {{ $pubDate->format('d/m/Y') }}</span>@endif
@@ -75,7 +75,7 @@
         @endif
       </div>
 
-      <a href="/reservas/blog" class="hb-btn hb-btn-ghost mt-8"><i class="fa fa-angle-left"></i> Volver al blog</a>
+      <a href="/blog" class="hb-btn hb-btn-ghost mt-8"><i class="fa fa-angle-left"></i> Volver al blog</a>
     </article>
 
     <!-- Aside -->
@@ -90,7 +90,7 @@
                 $rDate = $r->published_at ?: $r->created_at;
               @endphp
               <li>
-                <a href="{{ url('reservas/blog/'.$r->slug) }}" class="flex gap-3 group">
+                <a href="{{ url('blog/'.$r->slug) }}" class="flex gap-3 group">
                   <span class="w-16 h-16 rounded-lg bg-ink-100 bg-center bg-cover shrink-0" @if($rImg)style="background-image:url('{{ $rImg }}');"@endif></span>
                   <span class="min-w-0">
                     <span class="block text-[14px] font-medium text-ink-800 leading-snug group-hover:text-brand transition">{{ \Illuminate\Support\Str::limit($r->title, 50) }}</span>
@@ -106,7 +106,7 @@
       <div class="hb-card p-6 bg-brand-tint border-brand-soft">
         <h3 class="font-display font-semibold text-lg text-ink-900 mb-2">Reserva tu estancia</h3>
         <p class="text-[14px] text-ink-600 mb-4">Disponibilidad y precios en tiempo real.</p>
-        <a href="{{ url('/reservas') }}#reservation-form" class="hb-btn hb-btn-primary hb-btn-block">Reservar ahora</a>
+        <a href="{{ url('/') }}#reservation-form" class="hb-btn hb-btn-primary hb-btn-block">Reservar ahora</a>
       </div>
     </aside>
   </div>

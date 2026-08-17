@@ -44,9 +44,17 @@
      texto (no oscurece la foto alrededor). */
   .hr-title { font-family:'Inter Tight','Inter',sans-serif; font-size:clamp(33px,5.6vw,62px); font-weight:700; line-height:1.06; letter-spacing:-.025em; margin:0 auto 18px; max-width:14ch; text-shadow:0 2px 6px rgba(0,0,0,.45), 0 6px 34px rgba(0,0,0,.5); }
   .hr-subtitle { font-size:clamp(15px,2vw,20px); font-weight:400; max-width:600px; margin:0 auto; color:rgba(255,255,255,.95); text-shadow:0 1px 4px rgba(0,0,0,.5), 0 3px 20px rgba(0,0,0,.45); line-height:1.55; }
-  /* Botón de la diapositiva (texto y enlace configurables desde el panel). */
-  .hr-cta { margin-top:28px; }
+  /* Botón de la diapositiva (texto y enlace configurables desde el panel).
+     El texto lo escribe el hotel, así que el botón tiene que aguantar
+     etiquetas largas en pantallas estrechas: se permite el salto de línea y
+     nunca desborda el ancho disponible. */
+  .hr-cta { margin-top:28px; display:flex; justify-content:center; }
+  .hr-cta .hb-btn, .hr-hero-cta .hb-btn { max-width:min(100%, 340px); white-space:normal; text-align:center; line-height:1.25; }
   .hr-cta .hb-btn { box-shadow:0 12px 30px -14px rgba(0,0,0,.6); }
+  /* Sobre una foto, el botón translúcido necesita algo más de cuerpo para
+     leerse igual de bien en fondos claros y oscuros. */
+  .hr-cta .hb-btn-light { background:rgba(255,255,255,.18); border-color:rgba(255,255,255,.55); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); }
+  .hr-cta .hb-btn-light:hover { background:rgba(255,255,255,.3); }
 
   /* Wordmark gigante de la celda intro ("imagen con texto" makai). */
   .hr-wordmark { display:block; font-family:'Inter Tight','Inter',sans-serif; font-weight:800; text-transform:uppercase; font-size:clamp(42px,10.5vw,138px); line-height:.9; letter-spacing:-.01em; max-width:13ch; margin:0 auto 8px; text-wrap:balance;
@@ -121,8 +129,12 @@
   @keyframes hrCloudDrift { 0% { transform:translateX(-3%); } 100% { transform:translateX(3%); } }
 
   @media (max-width:640px) {
-    .hr-wordmark2 { top:35%;text-align: left!important;padding:0!important; font-size:clamp(28px,12vw,72px); }
-    .hr-building {         max-width: 250vw; width: 250vw !important; left:20%; margin-left:-100%; bottom:0; }
+    /* El nombre sube para dejar sitio al botón, que en móvil ya no puede ir
+       anclado al pie (se montaba encima del propio nombre). */
+    .hr-wordmark2 { top:21%; text-align:left!important; padding:0!important; font-size:clamp(28px,12vw,72px); }
+    .hr-building { max-width: 250vw; width: 250vw !important; left:20%; margin-left:-100%; bottom:0; }
+    .hr-hero-cta { bottom:auto; top:53%; padding:0 20px; }
+    .hr-hero-cta .hb-btn { max-width:100%; }
   }
 
   /* ===== Loader de marca (intro tipo Makai) ===== */
@@ -297,14 +309,17 @@
   /* ---- Móvil ---- */
   @media (max-width:640px) {
     .hr-stage { height:auto; min-height:0; }
-    .hr-cell { min-height:64vh; }
-    .hr-cell--hero { min-height:58vh; }
-    .hr-cell-caption { padding:112px 20px 108px; }
+    .hr-cell { min-height:70vh; }
+    .hr-cell--hero { min-height:66vh; }
+    /* El pie deja hueco para la píldora de navegación y para la tarjeta del
+       buscador, que sube 40px sobre el hero. */
+    .hr-cell-caption { padding:104px 20px 138px; }
     .hr-chip { margin-bottom:16px; }
     .hr-title { font-size:clamp(29px,8.5vw,40px); margin-bottom:14px; }
     .hr-subtitle { font-size:16px; }
+    .hr-cta { margin-top:22px; }
     .hr-wordmark { font-size:clamp(40px,15vw,72px); }
-    .hr-nav { bottom:64px; }
+    .hr-nav { bottom:78px; }
     .hr-scroll { display:none; }
     /* En móvil manda el deslizamiento con el dedo: las flechas ocuparían
        demasiado sobre la foto. */
@@ -350,19 +365,17 @@
 @include('hotel::landing.partials.header', ['onLanding' => true, 'activeNav' => 'inicio'])
 
 @php
-  // Garantizamos al menos una diapositiva aunque el tenant guarde la lista vacía.
-  $slides = !empty($cfg['slides']) && is_array($cfg['slides'])
-    ? $cfg['slides']
-    : [['image' => null, 'title' => '', 'subtitle' => 'Reserva tu estancia con nosotros', 'stars' => true]];
+  // Diapositivas configuradas. Por convención la 1ª entrada es la portada
+  // (composición cielo + edificio con el nombre del hotel) y de ella sólo se
+  // usa el botón; el resto son diapositivas de imagen.
+  $allSlides   = (!empty($cfg['slides']) && is_array($cfg['slides'])) ? array_values($cfg['slides']) : [];
+  $coverSlide  = $allSlides[0] ?? [];
+  $imageSlides = array_slice($allSlides, 1);
 
-  // La primera "slide" es la portada intro (imagen + wordmark del hotel);
-  // las siguientes continúan como slides normales.
-  $firstSlide = $slides[0];
-  $introImg   = HotelLandingSetting::imageUrl($firstSlide['image'] ?? null, HotelLandingSetting::DEFAULT_SLIDE);
-  $introSub   = trim($firstSlide['subtitle'] ?? '') !== '' ? $firstSlide['subtitle'] : 'Reserva tu estancia con nosotros';
-  $introStars = $firstSlide['stars'] ?? true;
-  $restSlides = array_slice($slides, 1);
-  $cellCount  = 1 + count($restSlides);
+  // Con diapositivas configuradas el hero muestra únicamente esas; la portada
+  // animada queda como respaldo para cuando no hay ninguna.
+  $showCover = count($imageSlides) === 0;
+  $cellCount = $showCover ? 1 : count($imageSlides);
 @endphp
 
 <!-- ===== Hero ===== -->
@@ -370,28 +383,30 @@
          aria-roledescription="carrusel" aria-label="Portada de {{ $hotelName }}">
   <div class="hr-track" id="hrTrack">
 
-    <!-- Celda 0: portada intro — composición por capas de Makai
-         (cielo · nubes · wordmark que cae · edificio que sube) -->
-    <div class="hr-cell hr-cell--hero hr-hero-makai is-active"
-         role="group" aria-roledescription="diapositiva" aria-label="1 de {{ $cellCount }}"
-         aria-hidden="false">
-      <img class="hr-sky" src="/landing-reservas/images/hero/SKY.png" alt="" aria-hidden="true">
-      <h1 class="hr-wordmark2">{{ $hotelName }}</h1>
-      <img class="hr-building" src="/landing-reservas/images/hero/catedral.png" alt="{{ $hotelName }}">
-      @if(!empty($firstSlide['button_text']))
-        <div class="hr-hero-cta hr-anim-up d2">
-          <a href="{{ $firstSlide['button_link'] ?: '#rooms-results' }}" class="nav-scroll hb-btn hb-btn-primary hb-btn-lg">
-            {{ $firstSlide['button_text'] }} <i class="fa fa-angle-right"></i>
-          </a>
-        </div>
-      @endif
-    </div>
+    @if($showCover)
+      <!-- Portada de respaldo: composición por capas de Makai
+           (cielo · nubes · wordmark que cae · edificio que sube) -->
+      <div class="hr-cell hr-cell--hero hr-hero-makai is-active"
+           role="group" aria-roledescription="diapositiva" aria-label="1 de 1"
+           aria-hidden="false">
+        <img class="hr-sky" src="/landing-reservas/images/hero/SKY.png" alt="" aria-hidden="true">
+        <h1 class="hr-wordmark2">{{ $hotelName }}</h1>
+        <img class="hr-building" src="/landing-reservas/images/hero/catedral.png" alt="{{ $hotelName }}">
+        @if(!empty($coverSlide['button_text']))
+          <div class="hr-hero-cta hr-anim-up d2">
+            <a href="{{ $coverSlide['button_link'] ?: '#rooms-results' }}" class="nav-scroll hb-btn hb-btn-primary hb-btn-lg">
+              {{ $coverSlide['button_text'] }} <i class="fa fa-angle-right"></i>
+            </a>
+          </div>
+        @endif
+      </div>
+    @endif
 
-    <!-- Celdas 1..n: slides.
-         La imagen de la primera diapositiva se precarga (fetchpriority alto) y
-         las demás se cargan de forma diferida cuando se acercan a pantalla,
-         para no penalizar el LCP con 5 fotos a pantalla completa. -->
-    @foreach($restSlides as $slide)
+    <!-- Diapositivas.
+         La imagen de la primera se precarga y las demás se cargan de forma
+         diferida cuando se acercan a pantalla, para no penalizar el LCP con
+         varias fotos a pantalla completa. -->
+    @foreach($imageSlides as $slide)
       @php
         $slideImg   = HotelLandingSetting::imageUrl($slide['image'] ?? null, HotelLandingSetting::DEFAULT_SLIDE);
         $slideTitle = trim($slide['title'] ?? '') !== '' ? $slide['title'] : $hotelName;
@@ -400,9 +415,9 @@
       @endphp
       {{-- aria-hidden ya viene en el HTML (no solo cuando arranca el JS): las
            diapositivas de fondo no deben leerse desde el primer pintado. --}}
-      <div class="hr-cell hr-cell--img"
-           role="group" aria-roledescription="diapositiva" aria-label="{{ $loop->index + 2 }} de {{ $cellCount }}"
-           aria-hidden="true">
+      <div class="hr-cell hr-cell--img {{ $eager ? 'is-active' : '' }}"
+           role="group" aria-roledescription="diapositiva" aria-label="{{ $loop->iteration }} de {{ $cellCount }}"
+           aria-hidden="{{ $eager ? 'false' : 'true' }}">
         <div class="hr-photo"
              data-bg="{{ $slideImg }}"
              @if($eager) style="background-image:url('{{ $slideImg }}');" @endif></div>
@@ -463,6 +478,8 @@
   if (!hero || !track) return;
 
   var cells = track.children, count = cells.length;
+  // La portada animada sólo está presente cuando no hay diapositivas.
+  var hasCover = !!(cells[0] && cells[0].classList.contains('hr-cell--hero'));
   var segs  = nav ? nav.querySelectorAll('.hr-seg') : [];
   var prevBtn = document.getElementById('hrPrev');
   var nextBtn = document.getElementById('hrNext');
@@ -496,7 +513,7 @@
     loadPhoto((i + 1) % count);
   }
 
-  function duration(i) { return i === 0 ? INTRO_MS : SLIDE_MS; }
+  function duration(i) { return (i === 0 && hasCover) ? INTRO_MS : SLIDE_MS; }
 
   function fill(seg, active, dur) {
     var f = seg.querySelector('.hr-seg-fill');
@@ -1006,21 +1023,21 @@
           $postDate  = optional($post->published_at)->format('d/m/Y');
         @endphp
         <article class="reveal hb-card overflow-hidden group transition duration-300 ease-makai hover:shadow-panel hover:-translate-y-1" style="--reveal-i:{{ $loop->index }}">
-          <a href="{{ url('reservas/blog/'.$post->slug) }}" class="relative block aspect-[16/10] bg-ink-100 overflow-hidden">
+          <a href="{{ url('blog/'.$post->slug) }}" class="relative block aspect-[16/10] bg-ink-100 overflow-hidden">
             <span class="absolute inset-0 bg-center bg-cover transition duration-500 group-hover:scale-105" style="background-image:url('{{ $postImage }}');"></span>
             @if($post->hasVideoCover())<i class="fa fa-play-circle absolute inset-0 m-auto w-max h-max text-white text-5xl drop-shadow-lg"></i>@endif
           </a>
           <div class="p-6">
             @if($postDate)<div class="text-[12px] font-semibold text-brand uppercase tracking-wide mb-2"><i class="fa fa-calendar"></i> {{ $postDate }}</div>@endif
-            <h3 class="font-display font-semibold text-lg text-ink-900 leading-snug mb-2"><a href="{{ url('reservas/blog/'.$post->slug) }}" class="hover:text-brand transition">{{ $post->title }}</a></h3>
+            <h3 class="font-display font-semibold text-lg text-ink-900 leading-snug mb-2"><a href="{{ url('blog/'.$post->slug) }}" class="hover:text-brand transition">{{ $post->title }}</a></h3>
             <p class="text-[14px] text-ink-500 leading-relaxed mb-3">{{ $post->excerpt ?: \Illuminate\Support\Str::limit(strip_tags($post->content), 110) }}</p>
-            <a href="{{ url('reservas/blog/'.$post->slug) }}" class="inline-flex items-center gap-1.5 text-[13px] font-semibold text-brand hover:text-brand-dark">Leer más <i class="fa fa-angle-right"></i></a>
+            <a href="{{ url('blog/'.$post->slug) }}" class="inline-flex items-center gap-1.5 text-[13px] font-semibold text-brand hover:text-brand-dark">Leer más <i class="fa fa-angle-right"></i></a>
           </div>
         </article>
       @endforeach
     </div>
     <div class="text-center mt-10">
-      <a href="{{ url('reservas/blog') }}" class="hb-btn hb-btn-ghost hb-btn-lg">Ver todo el blog</a>
+      <a href="{{ url('blog') }}" class="hb-btn hb-btn-ghost hb-btn-lg">Ver todo el blog</a>
     </div>
   </div>
 </section>

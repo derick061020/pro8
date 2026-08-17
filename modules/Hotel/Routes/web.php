@@ -7,20 +7,27 @@ $hostname = app(Hyn\Tenancy\Contracts\CurrentHostname::class);
 if ($hostname) {
   Route::domain($hostname->fqdn)->group(function () {
 
-    // Landing pública de reservas (sin autenticación). Cada tenant resuelve
-    // su propia base de datos por el dominio, así que la misma landing sirve a
-    // todos los tenants mostrando sus propias habitaciones.
-    // La web de reservas es ahora el index (/) del tenant: los visitantes ven
-    // la landing y los usuarios autenticados se redirigen al dashboard.
+    // Web pública de reservas (sin autenticación). Cada tenant resuelve su
+    // propia base de datos por el dominio, así que la misma web sirve a todos
+    // mostrando sus propias habitaciones.
+    //
+    // Vive en la raíz del dominio: la portada es "/" y el blog "/blog". Los
+    // usuarios autenticados que entran a "/" van a su panel.
     Route::get('/', 'HotelLandingController@home')->name('tenant.hotels.home');
-    Route::get('reservas', 'HotelLandingController@index')->name('tenant.hotels.landing');
+    Route::get('blog', 'HotelLandingController@blog')->name('tenant.hotels.blog');
+    Route::get('blog/{slug}', 'HotelLandingController@blogPost')->name('tenant.hotels.blog.post');
+
+    // Endpoints internos de la web (AJAX del buscador y de la reserva).
     Route::post('reservas/search', 'HotelLandingController@searchAvailability');
     Route::get('reservas/room/{id}', 'HotelLandingController@roomDetail');
     Route::get('reservas/document/{type}/{number}', 'HotelLandingController@documentLookup');
     Route::post('reservas/store', 'HotelLandingController@store');
-    // Blog público (sin autenticación).
-    Route::get('reservas/blog', 'HotelLandingController@blog')->name('tenant.hotels.blog');
-    Route::get('reservas/blog/{slug}', 'HotelLandingController@blogPost')->name('tenant.hotels.blog.post');
+
+    // Direcciones antiguas (/reservas...) -> raíz, para no romper los enlaces
+    // ya compartidos ni lo que tenga indexado el buscador.
+    Route::get('reservas', function () { return redirect('/', 301); })->name('tenant.hotels.landing');
+    Route::get('reservas/blog', function () { return redirect('/blog', 301); });
+    Route::get('reservas/blog/{slug}', function ($slug) { return redirect('/blog/'.$slug, 301); });
 
     Route::middleware(['auth', 'redirect.module', 'locked.tenant','check.email.verified'])
       ->prefix('hotels')
