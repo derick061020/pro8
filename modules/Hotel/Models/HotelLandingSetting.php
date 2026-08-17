@@ -37,8 +37,9 @@ class HotelLandingSetting extends ModelTenant
     const DEFAULT_ABOUT    = '/landing-reservas/images/tab/197x147.gif';
 
     /**
-     * Fotografías incluidas con el sistema para el slider principal
-     * (1920x1080, CC0 / dominio público; ver CREDITOS.md en esa carpeta).
+     * Fotografías incluidas con el sistema para el slider principal:
+     * Huancayo y el valle del Mantaro, 1920x1080 (ver CREDITOS.md en esa
+     * carpeta para autoría y licencia de cada una).
      * Se usan como diapositivas por defecto y el hotel puede reemplazarlas por
      * sus propias fotos o banners de temporada desde Hotel -> Personalizar web.
      */
@@ -151,32 +152,32 @@ class HotelLandingSetting extends ModelTenant
                 ],
                 [
                     'image'       => self::SLIDE_DESIGNS[0],
-                    'title'       => 'Tu descanso empieza aquí',
-                    'subtitle'    => 'Habitaciones cómodas, atención cercana y reserva directa en línea.',
+                    'title'       => 'Bienvenido a Huancayo',
+                    'subtitle'    => 'Descansa en el corazón del valle del Mantaro, con la atención de siempre.',
                     'button_text' => 'Ver habitaciones',
                     'button_link' => '#rooms-results',
                     'stars'       => true,
                 ],
                 [
                     'image'       => self::SLIDE_DESIGNS[1],
-                    'title'       => 'Habitaciones pensadas para descansar',
-                    'subtitle'    => 'Mira las fotos, los servicios y el precio de cada habitación antes de elegir.',
+                    'title'       => 'El valle te espera',
+                    'subtitle'    => 'Huaytapallana, lagunas y paisajes de altura: llega, descansa y sal a recorrer.',
                     'button_text' => 'Consultar disponibilidad',
                     'button_link' => '#reservation-form',
                     'stars'       => true,
                 ],
                 [
                     'image'       => self::SLIDE_DESIGNS[2],
-                    'title'       => 'Detalles que se agradecen',
-                    'subtitle'    => 'Empieza el día con calma: desayuno, buen café y todo listo para tu jornada.',
+                    'title'       => 'Tradición huanca a un paso',
+                    'subtitle'    => 'Ferias, artesanía y la mejor comida del valle, muy cerca del hospedaje.',
                     'button_text' => 'Ver galería',
                     'button_link' => '#gallery',
                     'stars'       => true,
                 ],
                 [
                     'image'       => self::SLIDE_DESIGNS[3],
-                    'title'       => 'Espacios para compartir',
-                    'subtitle'    => 'Familias, grupos o viajes de trabajo: escríbenos y armamos tu estadía a la medida.',
+                    'title'       => 'Reserva directa, sin intermediarios',
+                    'subtitle'    => 'Precio real, confirmación inmediata y atención personal de principio a fin.',
                     'button_text' => 'Contáctanos',
                     'button_link' => '#contacto',
                     'stars'       => true,
