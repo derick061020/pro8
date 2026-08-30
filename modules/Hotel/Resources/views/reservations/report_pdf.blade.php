@@ -37,6 +37,16 @@
         return $value ? substr((string) $value, 0, 5) : '';
     };
 
+    // Barra de proporción con caracteres de bloque. Es la única forma fiable
+    // en mPDF: no aplica el ancho porcentual a un div dentro de una celda, así
+    // que un div con fondo no llega a dibujarse.
+    $bar = function ($ratio, $segments = 20) {
+        $filled = (int) round(max(0, min(1, $ratio)) * $segments);
+        $filled = max(1, $filled);
+
+        return [str_repeat('█', $filled), str_repeat('░', max(0, $segments - $filled))];
+    };
+
     $periodLabel = $start->format('d/m/Y') === $end->format('d/m/Y')
         ? $start->format('d/m/Y')
         : $start->format('d/m/Y') . ' — ' . $end->format('d/m/Y');
@@ -51,6 +61,11 @@
         'Pagado'             => 'pill-ok',
         'Adelanto / parcial' => 'pill-warn',
         'Sin pagar'          => 'pill-bad',
+    ];
+
+    // "Adelanto / parcial" parte la línea en una columna estrecha.
+    $paymentShort = [
+        'Adelanto / parcial' => 'Parcial',
     ];
 
     $statusClass = [
@@ -112,16 +127,18 @@
         .kpi-hint { font-size: 6.2pt; color: #94a3b8; padding-top: 0.4mm; }
         .kpi-debt .kpi-value { color: #dc2626; }
 
-        /* ---------- Chips de filtros ---------- */
-        .filters { margin-top: 3mm; font-size: 6.9pt; color: #475569; }
-        .chip {
-            background-color: #f1f5f9; border: 0.3pt solid #e2e8f0;
-            padding: 0.9mm 1.8mm; color: #334155;
+        /* ---------- Filtros aplicados ---------- */
+        /* Bloque, no inline: mPDF sólo pinta fondos en elementos de bloque. */
+        .filters {
+            margin-top: 3.5mm; font-size: 7pt; color: #334155;
+            background-color: #f1f5f9; border-left: 1.8pt solid #94a3b8;
+            padding: 1.8mm 2.4mm;
         }
-        .chip b { color: #0f172a; }
+        .filters b { color: #0f172a; }
 
         /* ---------- Secciones ---------- */
         .section-title {
+            page-break-after: avoid;
             font-size: 8.4pt; font-weight: bold; color: #0f172a;
             text-transform: uppercase; letter-spacing: 0.9pt;
             border-left: 1.8pt solid #0d9488; padding-left: 2mm;
@@ -157,35 +174,40 @@
         .paid-ok { color: #059669; }
         .idx { color: #cbd5e1; font-size: 6.6pt; }
 
-        /* ---------- Píldoras de estado ---------- */
-        .pill {
-            font-size: 6.1pt; font-weight: bold; padding: 0.7mm 1.5mm;
-            text-transform: uppercase; letter-spacing: 0.3pt;
-        }
-        .pill-ok    { background-color: #ecfdf5; color: #047857; border: 0.3pt solid #a7f3d0; }
-        .pill-warn  { background-color: #fffbeb; color: #b45309; border: 0.3pt solid #fde68a; }
-        .pill-bad   { background-color: #fef2f2; color: #b91c1c; border: 0.3pt solid #fecaca; }
-        .pill-blue  { background-color: #eff6ff; color: #1d4ed8; border: 0.3pt solid #bfdbfe; }
-        .pill-teal  { background-color: #f0fdfa; color: #0f766e; border: 0.3pt solid #99f6e4; }
-        .pill-slate { background-color: #f1f5f9; color: #475569; border: 0.3pt solid #cbd5e1; }
+        /* ---------- Etiquetas de estado ----------
+           mPDF ignora el fondo de los elementos en línea, así que el estado se
+           distingue por color y grosor de la letra, no por una píldora. */
+        .pill { font-size: 6.3pt; font-weight: bold; text-transform: uppercase; letter-spacing: 0.4pt; }
+        .pill-ok    { color: #047857; }
+        .pill-warn  { color: #b45309; }
+        .pill-bad   { color: #b91c1c; }
+        .pill-blue  { color: #1d4ed8; }
+        .pill-teal  { color: #0f766e; }
+        .pill-slate { color: #64748b; }
 
-        /* ---------- Resúmenes lado a lado ---------- */
-        .split { width: 100%; border-collapse: separate; border-spacing: 4mm 0; }
-        .split > tr > td { vertical-align: top; }
-        table.mini { width: 100%; border-collapse: collapse; }
+        /* ---------- Tablas de resumen ---------- */
+        /* Los resúmenes son cortos: mejor pasarlos enteros a la página
+           siguiente que dejar una fila suelta con el total. */
+        table.mini { width: 100%; border-collapse: collapse; page-break-inside: avoid; }
         table.mini thead th {
             font-size: 6.2pt; text-transform: uppercase; letter-spacing: 0.5pt;
             color: #64748b; border-bottom: 0.7pt solid #cbd5e1;
-            padding: 1.2mm 1.2mm; text-align: left;
+            padding: 1.3mm 1.4mm; text-align: left;
         }
-        table.mini tbody td { padding: 1.3mm 1.2mm; border-bottom: 0.3pt solid #eef2f6; }
+        table.mini tbody td { padding: 1.5mm 1.4mm; border-bottom: 0.3pt solid #eef2f6; }
         table.mini tbody tr.peak td { background-color: #f0fdfa; }
         table.mini tfoot td {
-            border-top: 0.7pt solid #cbd5e1; padding: 1.3mm 1.2mm;
-            font-weight: bold; font-size: 7pt;
+            border-top: 0.7pt solid #94a3b8; padding: 1.5mm 1.4mm;
+            font-weight: bold; font-size: 7.2pt;
         }
-        .bar { background-color: #0d9488; height: 1.5mm; }
-        .bar-track { background-color: #e2e8f0; height: 1.5mm; }
+
+        /* Barra de proporción hecha con caracteres de bloque: mPDF no aplica
+           el ancho porcentual a un div dentro de una celda, así que una barra
+           "de verdad" (div con fondo) sale invisible. */
+        .bar      { font-size: 7pt; letter-spacing: -0.35pt; }
+        .bar-on   { color: #0d9488; }
+        .bar-soft { color: #64748b; }
+        .bar-off  { color: #e2e8f0; }
 
         .empty {
             border: 0.4pt dashed #cbd5e1; background-color: #f8fafc;
@@ -276,8 +298,9 @@
 
 @if($extraFilters->count())
     <div class="filters">
+        <b>Filtros aplicados:</b>
         @foreach($extraFilters as $label => $value)
-            <span class="chip"><b>{{ $label }}:</b> {{ $value }}</span>&nbsp;
+            {{ $label }}: <b>{{ $value }}</b>@if(!$loop->last) &nbsp;·&nbsp; @endif
         @endforeach
     </div>
 @endif
@@ -296,93 +319,113 @@
     @php
         $maxDayGuests = max(1, (int) $byDay->max('guests'));
         $peakGuests   = (int) $byDay->max('guests');
+        $maxCatTotal  = max(0.01, (float) $byCategory->max('total'));
     @endphp
 
-    <table class="split" style="margin-top: 4.5mm;">
-        <tr>
-            <td width="58%">
-                <div class="section-title">
-                    Ingresos por día
-                    <span class="section-note">— cuánta gente entra cada fecha</span>
-                </div>
-                <table class="mini">
-                    <thead>
-                        <tr>
-                            <th width="21%">Fecha</th>
-                            <th width="11%" class="ctr">Res.</th>
-                            <th width="11%" class="ctr">Hab.</th>
-                            <th width="13%" class="ctr">Huésp.</th>
-                            <th width="20%">Ocupación</th>
-                            <th width="24%" class="num">Importe</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach($byDay as $day)
-                            <tr class="{{ $day['guests'] === $peakGuests && $peakGuests > 0 ? 'peak' : '' }}">
-                                <td>
-                                    <span class="strong">{{ $shortDate($day['date']) }}</span>
-                                    <span class="muted">{{ $weekDay($day['date']) }}</span>
-                                </td>
-                                <td class="ctr">{{ $day['count'] }}</td>
-                                <td class="ctr">{{ $day['rooms'] }}</td>
-                                <td class="ctr strong">{{ $day['guests'] }}</td>
-                                <td>
-                                    @php $w = max(2, round(100 * $day['guests'] / $maxDayGuests)); @endphp
-                                    <table class="bar-track" width="100%" cellpadding="0" cellspacing="0">
-                                        <tr><td class="bar" width="{{ $w }}%"></td><td width="{{ 100 - $w }}%"></td></tr>
-                                    </table>
-                                </td>
-                                <td class="num">{{ $money($day['total']) }}</td>
-                            </tr>
-                        @endforeach
-                    </tbody>
-                    <tfoot>
-                        <tr>
-                            <td>Total</td>
-                            <td class="ctr">{{ $totals['count'] ?? 0 }}</td>
-                            <td class="ctr">{{ $totals['rooms'] ?? 0 }}</td>
-                            <td class="ctr">{{ $totals['guests'] ?? 0 }}</td>
-                            <td></td>
-                            <td class="num">{{ $money($totals['total'] ?? 0) }}</td>
-                        </tr>
-                    </tfoot>
-                </table>
-            </td>
-            <td width="42%">
-                <div class="section-title">
-                    Por tipo de habitación
-                    <span class="section-note">— reparto del periodo</span>
-                </div>
-                <table class="mini">
-                    <thead>
-                        <tr>
-                            <th width="40%">Tipo</th>
-                            <th width="14%" class="ctr">Res.</th>
-                            <th width="16%" class="ctr">Huésp.</th>
-                            <th width="30%" class="num">Importe</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach($byCategory as $cat)
-                            <tr>
-                                <td class="strong">{{ $cat['category'] }}</td>
-                                <td class="ctr">{{ $cat['count'] }}</td>
-                                <td class="ctr">{{ $cat['guests'] }}</td>
-                                <td class="num">{{ $money($cat['total']) }}</td>
-                            </tr>
-                        @endforeach
-                    </tbody>
-                    <tfoot>
-                        <tr>
-                            <td>Total</td>
-                            <td class="ctr">{{ $totals['count'] ?? 0 }}</td>
-                            <td class="ctr">{{ $totals['guests'] ?? 0 }}</td>
-                            <td class="num">{{ $money($totals['total'] ?? 0) }}</td>
-                        </tr>
-                    </tfoot>
-                </table>
-            </td>
-        </tr>
+    <div class="section-title" style="margin-top: 5mm;">
+        Ingresos por día
+        <span class="section-note">— cuánta gente entra cada fecha</span>
+    </div>
+
+    <table class="mini">
+        <thead>
+            <tr>
+                <th width="11%">Fecha</th>
+                <th width="6%">Día</th>
+                <th width="7%" class="ctr">Reservas</th>
+                <th width="7%" class="ctr">Habit.</th>
+                <th width="8%" class="ctr">Huéspedes</th>
+                <th width="6%" class="ctr">Adultos</th>
+                <th width="6%" class="ctr">Niños</th>
+                <th width="6%" class="ctr">Noches</th>
+                <th width="19%">Ocupación relativa</th>
+                <th width="12%" class="num">Importe</th>
+                <th width="12%" class="num">Por cobrar</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach($byDay as $day)
+                <tr class="{{ $day['guests'] === $peakGuests && $peakGuests > 0 ? 'peak' : '' }}">
+                    <td class="strong">{{ $shortDate($day['date']) }}</td>
+                    <td class="muted">{{ $weekDay($day['date']) }}</td>
+                    <td class="ctr">{{ $day['count'] }}</td>
+                    <td class="ctr">{{ $day['rooms'] }}</td>
+                    <td class="ctr strong">{{ $day['guests'] }}</td>
+                    <td class="ctr">{{ $day['adults'] }}</td>
+                    <td class="ctr">{{ $day['children'] ?: '—' }}</td>
+                    <td class="ctr">{{ $day['nights'] }}</td>
+                    <td>
+                        @php [$on, $off] = $bar($day['guests'] / $maxDayGuests); @endphp
+                        <span class="bar"><span class="bar-on">{{ $on }}</span><span class="bar-off">{{ $off }}</span></span>
+                    </td>
+                    <td class="num">{{ $money($day['total']) }}</td>
+                    <td class="num {{ $day['debt'] > 0 ? 'debt' : 'muted' }}">{{ $money($day['debt']) }}</td>
+                </tr>
+            @endforeach
+        </tbody>
+        <tfoot>
+            <tr>
+                <td colspan="2">Total del periodo</td>
+                <td class="ctr">{{ $totals['count'] ?? 0 }}</td>
+                <td class="ctr">{{ $totals['rooms'] ?? 0 }}</td>
+                <td class="ctr">{{ $totals['guests'] ?? 0 }}</td>
+                <td class="ctr">{{ $totals['adults'] ?? 0 }}</td>
+                <td class="ctr">{{ $totals['children'] ?? 0 }}</td>
+                <td class="ctr">{{ $totals['nights'] ?? 0 }}</td>
+                <td></td>
+                <td class="num">{{ $money($totals['total'] ?? 0) }}</td>
+                <td class="num">{{ $money($totals['debt'] ?? 0) }}</td>
+            </tr>
+        </tfoot>
+    </table>
+
+    <div class="section-title" style="margin-top: 5mm;">
+        Por tipo de habitación
+        <span class="section-note">— cómo se reparte el periodo</span>
+    </div>
+
+    <table class="mini">
+        <thead>
+            <tr>
+                <th width="24%">Tipo de habitación</th>
+                <th width="8%" class="ctr">Reservas</th>
+                <th width="9%" class="ctr">Huéspedes</th>
+                <th width="8%" class="ctr">Noches</th>
+                <th width="27%">Participación en el importe</th>
+                <th width="12%" class="num">Importe</th>
+                <th width="12%" class="num">% del total</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach($byCategory as $cat)
+                @php
+                    $pct = ($totals['total'] ?? 0) > 0 ? round(100 * $cat['total'] / $totals['total'], 1) : 0;
+                @endphp
+                <tr>
+                    <td class="strong">{{ $cat['category'] }}</td>
+                    <td class="ctr">{{ $cat['count'] }}</td>
+                    <td class="ctr">{{ $cat['guests'] }}</td>
+                    <td class="ctr">{{ $cat['nights'] }}</td>
+                    <td>
+                        @php [$on, $off] = $bar($cat['total'] / $maxCatTotal); @endphp
+                        <span class="bar"><span class="bar-soft">{{ $on }}</span><span class="bar-off">{{ $off }}</span></span>
+                    </td>
+                    <td class="num">{{ $money($cat['total']) }}</td>
+                    <td class="num muted">{{ $pct }}%</td>
+                </tr>
+            @endforeach
+        </tbody>
+        <tfoot>
+            <tr>
+                <td>Total</td>
+                <td class="ctr">{{ $totals['count'] ?? 0 }}</td>
+                <td class="ctr">{{ $totals['guests'] ?? 0 }}</td>
+                <td class="ctr">{{ $totals['nights'] ?? 0 }}</td>
+                <td></td>
+                <td class="num">{{ $money($totals['total'] ?? 0) }}</td>
+                <td class="num">100%</td>
+            </tr>
+        </tfoot>
     </table>
 
     {{-- ===================== DETALLE DE RESERVAS ===================== --}}
@@ -448,7 +491,7 @@
                         </div>
                     </td>
                     <td>
-                        <span class="pill {{ $paymentClass[$row['payment_state']] ?? 'pill-slate' }}">{{ $row['payment_state'] }}</span>
+                        <span class="pill {{ $paymentClass[$row['payment_state']] ?? 'pill-slate' }}">{{ $paymentShort[$row['payment_state']] ?? $row['payment_state'] }}</span>
                         @if(!empty($row['document_number']))
                             <div class="muted">{{ $row['document_number'] }}</div>
                         @endif
