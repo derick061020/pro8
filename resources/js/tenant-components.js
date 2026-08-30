@@ -272,6 +272,7 @@ import TenantHotelRent from '@viewsModuleHotel/rooms/Rent.vue'
 import TenantHotelRentAddProduct from '@viewsModuleHotel/rooms/AddProductToRoom.vue'
 import TenantHotelRentCheckout from '@viewsModuleHotel/rooms/Checkout.vue'
 import TenantHotelReservationCalendar from '@viewsModuleHotel/reservations/Calendar.vue'
+import TenantHotelReservationReport from '@viewsModuleHotel/reservations/Report.vue'
 
 // Trámite documentario
 import TenantDocumentaryOffices from '@viewsModuleDocumentary/offices/Offices.vue'
@@ -677,6 +678,7 @@ Vue.component('tenant-hotel-rent', TenantHotelRent)
 Vue.component('tenant-hotel-rent-add-product', TenantHotelRentAddProduct)
 Vue.component('tenant-hotel-rent-checkout', TenantHotelRentCheckout)
 Vue.component('tenant-hotel-reservation-calendar', TenantHotelReservationCalendar)
+Vue.component('tenant-hotel-reservation-report', TenantHotelReservationReport)
 
 // Trámite documentario
 Vue.component('tenant-documentary-offices', TenantDocumentaryOffices)

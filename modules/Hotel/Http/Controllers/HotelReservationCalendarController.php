@@ -626,7 +626,64 @@ class HotelReservationCalendarController extends Controller
      * Filtros adicionales: estado, categoría, habitación, medio de reserva y
      * estado de pago.
      */
+    /**
+     * Página del reporte de reservas: filtros arriba y la tabla en pantalla.
+     * Las descargas (PDF / Excel) salen de la misma página con los mismos
+     * filtros aplicados.
+     */
+    public function report()
+    {
+        $establishment = Establishment::find($this->currentEstablishmentId());
+
+        return view('hotel::reservations.report', compact('establishment'));
+    }
+
+    /**
+     * Datos del reporte para la página.
+     */
+    public function reportData(Request $request)
+    {
+        $report = $this->buildReservationReport($request);
+
+        return response()->json([
+            'success'     => true,
+            'records'     => $report['records'],
+            'totals'      => $report['totals'],
+            'by_day'      => $report['by_day'],
+            'by_category' => $report['by_category'],
+            'criterion'   => $report['criterion'],
+            'period'      => $report['period'],
+            'filters'     => $report['filters'],
+        ], 200);
+    }
+
+    /**
+     * Descarga del reporte: PDF con `format=pdf`, Excel en cualquier otro caso.
+     */
     public function exportReservations(Request $request)
+    {
+        $report = $this->buildReservationReport($request);
+
+        if ($request->get('format') === 'pdf') {
+            return $this->reservationsPdf($report);
+        }
+
+        return (new HotelReservationExport)
+            ->records($report['records'])
+            ->company($report['company'])
+            ->establishment($report['establishment'])
+            ->filters($report['filters'])
+            ->totals($report['totals'])
+            ->download($report['basename'] . '.xlsx');
+    }
+
+    /**
+     * Consulta y agrega el reporte de reservas.
+     *
+     * Es la única fuente de datos: la página, el Excel y el PDF salen de aquí,
+     * así que lo que se ve en pantalla es exactamente lo que se descarga.
+     */
+    private function buildReservationReport(Request $request)
     {
         $establishmentId = $this->currentEstablishmentId();
         $establishment   = Establishment::find($establishmentId);
@@ -811,43 +868,8 @@ class HotelReservationCalendarController extends Controller
             $filters['Estado de pago'] = $paymentStateLabels[$paymentFilter];
         }
 
-        $basename = 'Reporte_reservas_' . $startStr . ($startStr === $endStr ? '' : '_al_' . $endStr);
-
-        // Misma consulta y mismos filtros para los dos formatos: el PDF es la
-        // hoja para imprimir/mirar y el Excel el que se sigue trabajando.
-        if ($request->get('format') === 'pdf') {
-            return $this->reservationsPdf(
-                $records,
-                Company::first(),
-                $establishment,
-                $filters,
-                $totals,
-                $dateFieldLabels[$dateField],
-                $start,
-                $end,
-                $basename . '.pdf'
-            );
-        }
-
-        return (new HotelReservationExport)
-            ->records($records)
-            ->company(Company::first())
-            ->establishment($establishment)
-            ->filters($filters)
-            ->totals($totals)
-            ->download($basename . '.xlsx');
-    }
-
-    /**
-     * Versión PDF del reporte de reservas (A4 apaisado).
-     *
-     * Además del detalle, arma dos resúmenes que en Excel había que calcular a
-     * mano: cuántas personas y habitaciones entran cada día, y cómo se reparten
-     * por tipo de habitación.
-     */
-    private function reservationsPdf($records, $company, $establishment, array $filters, array $totals, $criterion, Carbon $start, Carbon $end, $filename)
-    {
-        // Resumen por día del criterio elegido (por defecto, fecha de ingreso).
+        // Resumen por día: cuánta gente y cuántas habitaciones entran cada
+        // fecha. Es el dato que se mira antes de abrir el sistema.
         $byDay = $records
             ->groupBy(function ($row) {
                 return substr((string) $row['input_date'], 0, 10);
@@ -885,17 +907,45 @@ class HotelReservationCalendarController extends Controller
             ->sortByDesc('count')
             ->values();
 
-        $html = view('hotel::reservations.report_pdf', [
+        return [
             'records'       => $records,
-            'company'       => $company,
-            'establishment' => $establishment,
-            'filters'       => $filters,
             'totals'        => $totals,
-            'criterion'     => $criterion,
+            'filters'       => $filters,
+            'by_day'        => $byDay,
+            'by_category'   => $byCategory,
+            'criterion'     => $dateFieldLabels[$dateField],
+            'period'        => $filters['Periodo'],
             'start'         => $start,
             'end'           => $end,
-            'byDay'         => $byDay,
-            'byCategory'    => $byCategory,
+            'company'       => Company::first(),
+            'establishment' => $establishment,
+            'basename'      => 'Reporte_reservas_' . $startStr . ($startStr === $endStr ? '' : '_al_' . $endStr),
+        ];
+    }
+
+    /**
+     * Versión PDF del reporte de reservas (A4 apaisado).
+     *
+     * Además del detalle, arma dos resúmenes que en Excel había que calcular a
+     * mano: cuántas personas y habitaciones entran cada día, y cómo se reparten
+     * por tipo de habitación.
+     */
+    /**
+     * Versión PDF del reporte (A4 apaisado), a partir del reporte ya armado.
+     */
+    private function reservationsPdf(array $report)
+    {
+        $html = view('hotel::reservations.report_pdf', [
+            'records'       => $report['records'],
+            'company'       => $report['company'],
+            'establishment' => $report['establishment'],
+            'filters'       => $report['filters'],
+            'totals'        => $report['totals'],
+            'criterion'     => $report['criterion'],
+            'start'         => $report['start'],
+            'end'           => $report['end'],
+            'byDay'         => $report['by_day'],
+            'byCategory'    => $report['by_category'],
         ])->render();
 
         // pcre.backtrack_limit por defecto se queda corto con tablas largas y
@@ -914,8 +964,10 @@ class HotelReservationCalendarController extends Controller
             'margin_footer' => 6,
         ]);
 
+        $filename = $report['basename'] . '.pdf';
+
         $pdf->SetTitle('Reporte de reservas');
-        $pdf->SetAuthor(optional($company)->name ?: 'Hotel');
+        $pdf->SetAuthor(optional($report['company'])->name ?: 'Hotel');
         $pdf->WriteHTML($html);
 
         return response(
