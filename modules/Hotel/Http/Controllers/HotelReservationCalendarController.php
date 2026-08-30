@@ -854,13 +854,15 @@ class HotelReservationCalendarController extends Controller
             })
             ->map(function ($rows, $date) {
                 return [
-                    'date'   => $date,
-                    'count'  => $rows->count(),
-                    'guests' => (int) $rows->sum('adults') + (int) $rows->sum('children'),
-                    'rooms'  => $rows->pluck('room')->filter()->unique()->count(),
-                    'nights' => (int) $rows->sum('duration'),
-                    'total'  => round($rows->sum('total'), 2),
-                    'debt'   => round($rows->sum('debt'), 2),
+                    'date'     => $date,
+                    'count'    => $rows->count(),
+                    'adults'   => (int) $rows->sum('adults'),
+                    'children' => (int) $rows->sum('children'),
+                    'guests'   => (int) $rows->sum('adults') + (int) $rows->sum('children'),
+                    'rooms'    => $rows->pluck('room')->filter()->unique()->count(),
+                    'nights'   => (int) $rows->sum('duration'),
+                    'total'    => round($rows->sum('total'), 2),
+                    'debt'     => round($rows->sum('debt'), 2),
                 ];
             })
             ->sortBy('date')
@@ -904,7 +906,7 @@ class HotelReservationCalendarController extends Controller
             'mode'          => 'utf-8',
             'format'        => 'A4-L',
             'default_font'  => 'dejavusanscondensed',
-            'margin_top'    => 34,
+            'margin_top'    => 28,
             'margin_bottom' => 16,
             'margin_left'   => 8,
             'margin_right'  => 8,
