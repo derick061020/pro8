@@ -1366,7 +1366,49 @@ export default {
                 this.form.payment_status = 'PAID';
             }
 
+            // La hora que se guarda debe ser la del check-in real, no la que
+            // se anotó al reservar. Va al final, cuando la duración ya se
+            // derivó del rango reservado.
+            this.applyRealCheckinTime();
+
             console.log('Datos de reserva cargados en el formulario');
+        },
+        /**
+         * Al hacer el check-in de una reserva, la hora de ingreso pasa a ser la
+         * de ese momento. La reserva guardaba una hora prevista (14:00, 12:00…)
+         * y era esa la que terminaba grabada como hora de entrada real.
+         *
+         * Sólo se toca la hora: la fecha de entrada y la salida son las que se
+         * pactaron, y cambiarlas alteraría las noches cobradas. Recepción puede
+         * corregir el campo a mano si hiciera falta.
+         */
+        applyRealCheckinTime() {
+            // La salida es la que se pactó en la reserva. El watcher de
+            // input_time la recalcula (y en renta por día la fuerza a las
+            // 12:00), así que se guarda para restaurarla donde no debe moverse.
+            const reservedOutputDate = this.form.output_date;
+            const reservedOutputTime = this.form.output_time;
+            const isHourly           = this.form.rental_period_type === 'hour';
+
+            this.form.input_time = moment().format('HH:mm');
+
+            // Por horas, la entrada define lo que se cobra: la salida SÍ se
+            // corre para respetar las horas contratadas (lo hace el watcher).
+            if (isHourly) return;
+
+            this.$nextTick(() => {
+                if (this.form.output_date === reservedOutputDate &&
+                    this.form.output_time === reservedOutputTime) {
+                    return;
+                }
+
+                // El guard evita que al restaurar la salida se recalcule la
+                // cantidad de noches.
+                this._skipDurationSync = true;
+                this.form.output_date = reservedOutputDate;
+                this.form.output_time = reservedOutputTime;
+                this.$nextTick(() => { this._skipDurationSync = false; });
+            });
         },
         async loadReservationForEdit(reservationId) {
             try {
