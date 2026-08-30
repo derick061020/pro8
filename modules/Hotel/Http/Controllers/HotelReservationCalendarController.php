@@ -771,6 +771,13 @@ class HotelReservationCalendarController extends Controller
             'debt'   => round($records->sum('debt'), 2),
             'nights' => (int) $records->sum('duration'),
             'count'  => $records->count(),
+            // Cuántas personas entran en el periodo: es el dato que se mira en
+            // la hoja impresa (recepción quiere saber cuántos ingresarán) antes
+            // de abrir el sistema.
+            'adults'   => (int) $records->sum('adults'),
+            'children' => (int) $records->sum('children'),
+            'guests'   => (int) $records->sum('adults') + (int) $records->sum('children'),
+            'rooms'    => $records->pluck('room')->filter()->unique()->count(),
         ];
 
         $dateFieldLabels = [
@@ -804,7 +811,23 @@ class HotelReservationCalendarController extends Controller
             $filters['Estado de pago'] = $paymentStateLabels[$paymentFilter];
         }
 
-        $filename = 'Reporte_reservas_' . $startStr . ($startStr === $endStr ? '' : '_al_' . $endStr) . '.xlsx';
+        $basename = 'Reporte_reservas_' . $startStr . ($startStr === $endStr ? '' : '_al_' . $endStr);
+
+        // Misma consulta y mismos filtros para los dos formatos: el PDF es la
+        // hoja para imprimir/mirar y el Excel el que se sigue trabajando.
+        if ($request->get('format') === 'pdf') {
+            return $this->reservationsPdf(
+                $records,
+                Company::first(),
+                $establishment,
+                $filters,
+                $totals,
+                $dateFieldLabels[$dateField],
+                $start,
+                $end,
+                $basename . '.pdf'
+            );
+        }
 
         return (new HotelReservationExport)
             ->records($records)
@@ -812,7 +835,95 @@ class HotelReservationCalendarController extends Controller
             ->establishment($establishment)
             ->filters($filters)
             ->totals($totals)
-            ->download($filename);
+            ->download($basename . '.xlsx');
+    }
+
+    /**
+     * Versión PDF del reporte de reservas (A4 apaisado).
+     *
+     * Además del detalle, arma dos resúmenes que en Excel había que calcular a
+     * mano: cuántas personas y habitaciones entran cada día, y cómo se reparten
+     * por tipo de habitación.
+     */
+    private function reservationsPdf($records, $company, $establishment, array $filters, array $totals, $criterion, Carbon $start, Carbon $end, $filename)
+    {
+        // Resumen por día del criterio elegido (por defecto, fecha de ingreso).
+        $byDay = $records
+            ->groupBy(function ($row) {
+                return substr((string) $row['input_date'], 0, 10);
+            })
+            ->map(function ($rows, $date) {
+                return [
+                    'date'   => $date,
+                    'count'  => $rows->count(),
+                    'guests' => (int) $rows->sum('adults') + (int) $rows->sum('children'),
+                    'rooms'  => $rows->pluck('room')->filter()->unique()->count(),
+                    'nights' => (int) $rows->sum('duration'),
+                    'total'  => round($rows->sum('total'), 2),
+                    'debt'   => round($rows->sum('debt'), 2),
+                ];
+            })
+            ->sortBy('date')
+            ->values();
+
+        // Resumen por tipo de habitación.
+        $byCategory = $records
+            ->groupBy(function ($row) {
+                return $row['category'] !== '' ? $row['category'] : 'Sin tipo';
+            })
+            ->map(function ($rows, $category) {
+                return [
+                    'category' => $category,
+                    'count'    => $rows->count(),
+                    'guests'   => (int) $rows->sum('adults') + (int) $rows->sum('children'),
+                    'nights'   => (int) $rows->sum('duration'),
+                    'total'    => round($rows->sum('total'), 2),
+                ];
+            })
+            ->sortByDesc('count')
+            ->values();
+
+        $html = view('hotel::reservations.report_pdf', [
+            'records'       => $records,
+            'company'       => $company,
+            'establishment' => $establishment,
+            'filters'       => $filters,
+            'totals'        => $totals,
+            'criterion'     => $criterion,
+            'start'         => $start,
+            'end'           => $end,
+            'byDay'         => $byDay,
+            'byCategory'    => $byCategory,
+        ])->render();
+
+        // pcre.backtrack_limit por defecto se queda corto con tablas largas y
+        // mPDF devuelve una página en blanco sin avisar.
+        ini_set('pcre.backtrack_limit', '50000000');
+
+        $pdf = new \Mpdf\Mpdf([
+            'mode'          => 'utf-8',
+            'format'        => 'A4-L',
+            'default_font'  => 'dejavusanscondensed',
+            'margin_top'    => 34,
+            'margin_bottom' => 16,
+            'margin_left'   => 8,
+            'margin_right'  => 8,
+            'margin_header' => 6,
+            'margin_footer' => 6,
+        ]);
+
+        $pdf->SetTitle('Reporte de reservas');
+        $pdf->SetAuthor(optional($company)->name ?: 'Hotel');
+        $pdf->WriteHTML($html);
+
+        return response(
+            $pdf->Output($filename, \Mpdf\Output\Destination::STRING_RETURN),
+            200,
+            [
+                'Content-Type'        => 'application/pdf',
+                'Content-Disposition' => 'inline; filename="' . $filename . '"',
+            ]
+        );
     }
 
     /**
