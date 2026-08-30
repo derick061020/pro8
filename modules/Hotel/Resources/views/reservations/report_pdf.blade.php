@@ -186,9 +186,11 @@
         .pill-slate { color: #64748b; }
 
         /* ---------- Tablas de resumen ---------- */
-        /* Los resúmenes son cortos: mejor pasarlos enteros a la página
-           siguiente que dejar una fila suelta con el total. */
-        table.mini { width: 100%; border-collapse: collapse; page-break-inside: avoid; }
+        table.mini { width: 100%; border-collapse: collapse; }
+        /* Un resumen corto se pasa entero a la página siguiente antes que dejar
+           una fila suelta con el total. Uno largo NO: forzarlo dejaría la
+           primera página medio vacía y se partiría igual. */
+        table.mini-keep { page-break-inside: avoid; }
         table.mini thead th {
             font-size: 6.2pt; text-transform: uppercase; letter-spacing: 0.5pt;
             color: #64748b; border-bottom: 0.7pt solid #cbd5e1;
@@ -320,6 +322,9 @@
         $maxDayGuests = max(1, (int) $byDay->max('guests'));
         $peakGuests   = (int) $byDay->max('guests');
         $maxCatTotal  = max(0.01, (float) $byCategory->max('total'));
+        // Sólo se mantienen sin partir los resúmenes que caben en una página.
+        $keepDay      = $byDay->count()      <= 16 ? ' mini-keep' : '';
+        $keepCategory = $byCategory->count() <= 16 ? ' mini-keep' : '';
     @endphp
 
     <div class="section-title" style="margin-top: 5mm;">
@@ -327,7 +332,7 @@
         <span class="section-note">— cuánta gente entra cada fecha</span>
     </div>
 
-    <table class="mini">
+    <table class="mini{{ $keepDay }}">
         <thead>
             <tr>
                 <th width="11%">Fecha</th>
@@ -384,7 +389,7 @@
         <span class="section-note">— cómo se reparte el periodo</span>
     </div>
 
-    <table class="mini">
+    <table class="mini{{ $keepCategory }}">
         <thead>
             <tr>
                 <th width="24%">Tipo de habitación</th>
