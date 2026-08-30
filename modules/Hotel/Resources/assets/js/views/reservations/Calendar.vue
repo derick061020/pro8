@@ -28,7 +28,7 @@
                     <button class="rcal-vbtn" title="Buscar" @click="toggleSearch">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
                     </button>
-                    <button class="rcal-vbtn" title="Exportar reservas a Excel" @click="openExport">
+                    <button class="rcal-vbtn" title="Reporte de reservas (PDF / Excel)" @click="openExport">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                     </button>
                     <button class="rcal-vbtn rcal-vbtn-add" title="Nueva reserva" @click="newReservation">
@@ -524,7 +524,7 @@
             </div>
         </el-dialog>
 
-        <!-- Exportar reservas a Excel (por día o por rango, con filtros) -->
+        <!-- Reporte de reservas en PDF o Excel (por día o por rango, con filtros) -->
         <el-dialog :visible.sync="showExport" width="560px" custom-class="rcal-modal" :show-close="true" append-to-body>
             <template slot="title">
                 <div class="rcal-modal-title"><span>Exportar reporte de reservas</span></div>
@@ -611,7 +611,12 @@
 
             <div slot="footer" class="rcal-modal-footer">
                 <el-button size="small" @click="showExport = false">Cancelar</el-button>
-                <el-button size="small" type="primary" @click="downloadExport">Descargar Excel</el-button>
+                <el-button size="small" @click="downloadExport('xlsx')">
+                    <i class="fa fa-file-excel-o"></i> Excel
+                </el-button>
+                <el-button size="small" type="primary" @click="downloadExport('pdf')">
+                    <i class="fa fa-file-pdf-o"></i> Descargar PDF
+                </el-button>
             </div>
         </el-dialog>
 
@@ -1805,7 +1810,9 @@ export default {
             const p = n => String(n).padStart(2, '0');
             return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
         },
-        downloadExport() {
+        // `format`: 'pdf' abre la hoja lista para imprimir, 'xlsx' baja la
+        // planilla. Los filtros y el rango son los mismos para los dos.
+        downloadExport(format = 'pdf') {
             const f = this.exportForm;
 
             if (!f.start) {
@@ -1827,6 +1834,10 @@ export default {
                     params.append(key, f[key]);
                 }
             });
+
+            if (format === 'pdf') {
+                params.append('format', 'pdf');
+            }
 
             window.open(`/hotels/reservations/calendar/export?${params.toString()}`, '_blank');
             this.showExport = false;

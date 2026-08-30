@@ -1142,6 +1142,13 @@
                                     <span class="change-user" v-if="change.user">
                                         <i class="fa fa-user-circle"></i> {{ change.user.name }}
                                     </span>
+                                    <span
+                                        v-if="historyAmount(change) !== null"
+                                        class="change-amount"
+                                        :class="historyAmount(change) < 0 ? 'change-amount--neg' : 'change-amount--pos'"
+                                    >
+                                        {{ historyAmount(change) < 0 ? '-' : '+' }} {{ formatMoney(Math.abs(historyAmount(change))) }}
+                                    </span>
                                 </div>
                                 <div class="change-details">
                                     <div v-if="change.change_type === 'CHECKIN'" class="change-detail">
@@ -1154,6 +1161,13 @@
                                         +{{ (change.new_values && change.new_values.added) || change.days || 0 }}
                                         {{ (change.new_values && change.new_values.unit) || 'noche(s)' }}
                                         · Nueva salida: {{ formatDateTime(change.new_values.output_date, change.new_values.output_time) }}
+                                        <span v-if="change.new_values && change.new_values.unit_price > 0" class="change-price-note">
+                                            {{ formatMoney(change.new_values.unit_price) }} c/u
+                                            <template v-if="(change.new_values.added || 0) > 1">
+                                                × {{ change.new_values.added }} =
+                                                <strong>{{ formatMoney(historyAmount(change) || 0) }}</strong>
+                                            </template>
+                                        </span>
                                     </div>
                                     <div v-else-if="change.change_type === 'DATE_EDIT'" class="change-detail">
                                         <span v-if="change.old_values.input_date !== change.new_values.input_date">
@@ -1171,9 +1185,29 @@
                                         <span class="badge badge-secondary">{{ change.old_values.room_name }}</span>
                                         <i class="fa fa-arrow-right mx-1"></i>
                                         <span class="badge badge-info">{{ change.new_values.room_name }}</span>
+                                        <span v-if="historyAmount(change)" class="change-price-note">
+                                            Diferencia de tarifa:
+                                            <strong>{{ formatMoney(Math.abs(historyAmount(change))) }}</strong>
+                                            {{ historyAmount(change) < 0 ? 'a favor del huésped' : 'por cobrar' }}
+                                        </span>
                                     </div>
                                     <div v-else-if="change.change_type === 'PRODUCT_ADD'" class="change-detail">
-                                        {{ ((change.new_values && change.new_values.products) || []).map(p => p.name + (p.quantity ? ' x' + p.quantity : '')).join(', ') }}
+                                        <div
+                                            v-for="(product, pi) in ((change.new_values && change.new_values.products) || [])"
+                                            :key="pi"
+                                            class="change-product-line"
+                                        >
+                                            <span class="change-product-name">
+                                                {{ product.name }}
+                                                <span v-if="product.quantity" class="change-product-qty">x{{ product.quantity }}</span>
+                                            </span>
+                                            <span class="change-product-price">
+                                                <span v-if="product.quantity > 1" class="change-product-unit">
+                                                    {{ formatMoney((product.total || 0) / product.quantity) }} c/u
+                                                </span>
+                                                <strong>{{ formatMoney(product.total || 0) }}</strong>
+                                            </span>
+                                        </div>
                                     </div>
                                 </div>
                                 <div class="change-actions mt-2">
@@ -4031,6 +4065,24 @@ export default {
                 this.$message.error('Error al registrar el cambio');
             }
         },
+        // Importe de un movimiento del historial. El backend ya guarda el
+        // monto en `price_difference` (total de la extensión, del producto o
+        // la diferencia de tarifa del cambio de habitación); aquí sólo se
+        // decide si vale la pena mostrarlo.
+        historyAmount(change) {
+            if (!change) return null;
+
+            const amount = parseFloat(change.price_difference);
+
+            if (isNaN(amount) || amount === 0) return null;
+
+            return amount;
+        },
+        formatMoney(value) {
+            const amount = parseFloat(value);
+
+            return `S/ ${(isNaN(amount) ? 0 : amount).toFixed(2)}`;
+        },
         getChangeTypeLabel(changeType) {
             const labels = {
                 'CHECKIN': 'Check-In',
@@ -4639,6 +4691,72 @@ td{
     padding: 8px;
     border-radius: 4px;
     font-weight: 600;
+}
+
+/* Importe del movimiento, al costado de la fecha y el usuario. */
+.change-amount {
+    margin-left: auto;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.change-amount--pos {
+    background: #ecfdf5;
+    color: #047857;
+    border: 1px solid #a7f3d0;
+}
+
+.change-amount--neg {
+    background: #fef2f2;
+    color: #b91c1c;
+    border: 1px solid #fecaca;
+}
+
+.change-price-note {
+    display: inline-block;
+    margin-left: 8px;
+    padding: 2px 8px;
+    border-radius: 4px;
+    background: #eef2ff;
+    color: #3730a3;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.change-product-line {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 12px;
+    padding: 3px 0;
+}
+
+.change-product-line + .change-product-line {
+    border-top: 1px dashed #e4e7ed;
+}
+
+.change-product-name {
+    color: #303133;
+}
+
+.change-product-qty {
+    color: #909399;
+    font-size: 12px;
+    margin-left: 4px;
+}
+
+.change-product-price {
+    white-space: nowrap;
+    color: #303133;
+}
+
+.change-product-unit {
+    color: #909399;
+    font-size: 12px;
+    margin-right: 6px;
 }
 
 .change-notes {
