@@ -179,8 +179,8 @@
             <div class="hrep-panels" v-if="records.length">
                 <div class="hrep-panel">
                     <div class="hrep-panel-title">
-                        Ingresos por día
-                        <small>cuánta gente entra cada fecha</small>
+                        {{ byDayTitle }}
+                        <small>{{ byDayHint }}</small>
                     </div>
                     <div class="hrep-panel-body">
                         <table class="hrep-mini">
@@ -372,6 +372,10 @@ export default {
             totals: {},
             byDay: [],
             byCategory: [],
+            // El rótulo del resumen diario depende del criterio de fecha
+            // (ingresos, salidas o registros): lo decide el servidor.
+            byDayTitle: 'Ingresos por día',
+            byDayHint: 'cuánta gente entra cada fecha',
             categories: [],
             rooms: [],
             origins: [
@@ -518,6 +522,8 @@ export default {
                 this.totals     = data.totals || {};
                 this.byDay      = data.by_day || [];
                 this.byCategory = data.by_category || [];
+                this.byDayTitle = data.by_day_title || 'Ingresos por día';
+                this.byDayHint  = data.by_day_hint || '';
                 this.page       = 1;
             } catch (e) {
                 this.$message.error('No se pudo cargar el reporte.');

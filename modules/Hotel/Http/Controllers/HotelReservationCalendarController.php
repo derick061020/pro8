@@ -160,15 +160,39 @@ class HotelReservationCalendarController extends Controller
      */
     private function computeReservationTotal(HotelRent $reservation)
     {
+        // Importe = cargos + mora. Es exactamente la base de la deuda, así que
+        // siempre se cumple  importe = pagado + deuda.
+        return round(
+            $this->chargeableItemsTotal($reservation) + (float) ($reservation->arrears ?? 0),
+            2
+        );
+    }
+
+    /**
+     * Suma de los items que son cargos reales de la reserva.
+     *
+     * Los items de tipo PAY NO son cargos: son adelantos/créditos, y su
+     * `item.total` guarda el monto entregado por el huésped (ver el "Adelanto
+     * de pago" que crea HotelRentController). Sumarlos inflaba el importe con
+     * el propio pago y rompía la identidad importe = pagado + deuda.
+     *
+     * Es la única suma de cargos del controlador: el importe y la deuda salen
+     * de aquí para que no puedan divergir.
+     */
+    private function chargeableItemsTotal(HotelRent $reservation)
+    {
         if (!$reservation->relationLoaded('items')) {
             $reservation->load('items');
         }
-        return (float) $reservation->items->sum(function ($item) {
-            $col = (float) $item->total;
-            if ($col > 0) return $col;
-            $json = is_object($item->item) ? (array) $item->item : ($item->item ?: []);
-            return (float) ($json['total'] ?? 0);
-        });
+
+        return (float) $reservation->items
+            ->filter(function ($item) { return $item->type !== 'PAY'; })
+            ->sum(function ($item) {
+                $col = (float) $item->total;
+                if ($col > 0) return $col;
+                $json = is_object($item->item) ? (array) $item->item : ($item->item ?: []);
+                return (float) ($json['total'] ?? 0);
+            });
     }
 
     /**
@@ -195,16 +219,9 @@ class HotelReservationCalendarController extends Controller
         }
         $paid = (float) $paid;
 
-        // Total facturable: items que no son de tipo PAY (los PAY son movimientos
-        // de pago, no cargos), tomando el total plano o el del JSON legacy.
-        $totalItems = (float) $reservation->items
-            ->filter(function ($i) { return $i->type !== 'PAY'; })
-            ->sum(function ($i) {
-                $col = (float) $i->total;
-                if ($col > 0) return $col;
-                $json = is_object($i->item) ? (array) $i->item : ($i->item ?: []);
-                return (float) ($json['total'] ?? 0);
-            });
+        // Misma suma de cargos que el importe (excluye los PAY, que son
+        // adelantos y no cargos).
+        $totalItems = $this->chargeableItemsTotal($reservation);
 
         $debt = round($totalItems - $paid + (float) ($reservation->arrears ?? 0), 2);
 
@@ -652,6 +669,8 @@ class HotelReservationCalendarController extends Controller
             'by_day'      => $report['by_day'],
             'by_category' => $report['by_category'],
             'criterion'   => $report['criterion'],
+            'by_day_title'=> $report['by_day_title'],
+            'by_day_hint' => $report['by_day_hint'],
             'period'      => $report['period'],
             'filters'     => $report['filters'],
         ], 200);
@@ -813,6 +832,9 @@ class HotelReservationCalendarController extends Controller
                 'travel_reason'      => $reservation->travel_reason,
                 'notes'              => $reservation->notes,
                 'created_at'         => optional($reservation->created_at)->format('d/m/Y H:i'),
+                // Fecha de registro en crudo: la agrupación por día la necesita
+                // cuando el criterio elegido es "fecha de registro".
+                'created_date'       => optional($reservation->created_at)->format('Y-m-d'),
             ];
         });
 
@@ -868,11 +890,26 @@ class HotelReservationCalendarController extends Controller
             $filters['Estado de pago'] = $paymentStateLabels[$paymentFilter];
         }
 
-        // Resumen por día: cuánta gente y cuántas habitaciones entran cada
-        // fecha. Es el dato que se mira antes de abrir el sistema.
+        // Resumen por día. Se agrupa por la MISMA fecha con la que se filtró:
+        // si el criterio es la salida, agrupar por la entrada mostraba días
+        // fuera del periodo elegido.
+        $groupField = [
+            'input'   => 'input_date',
+            'output'  => 'output_date',
+            'created' => 'created_date',
+            'stay'    => 'input_date',   // una estadía abarca varios días: se corta por la entrada
+        ][$dateField];
+
+        $byDayLabels = [
+            'input'   => ['Ingresos por día', 'cuánta gente entra cada fecha'],
+            'output'  => ['Salidas por día', 'cuánta gente sale cada fecha'],
+            'created' => ['Reservas registradas por día', 'cuándo se registró cada reserva'],
+            'stay'    => ['Ingresos por día', 'por fecha de entrada de cada estadía'],
+        ];
+
         $byDay = $records
-            ->groupBy(function ($row) {
-                return substr((string) $row['input_date'], 0, 10);
+            ->groupBy(function ($row) use ($groupField) {
+                return substr((string) $row[$groupField], 0, 10);
             })
             ->map(function ($rows, $date) {
                 return [
@@ -914,6 +951,8 @@ class HotelReservationCalendarController extends Controller
             'by_day'        => $byDay,
             'by_category'   => $byCategory,
             'criterion'     => $dateFieldLabels[$dateField],
+            'by_day_title'  => $byDayLabels[$dateField][0],
+            'by_day_hint'   => $byDayLabels[$dateField][1],
             'period'        => $filters['Periodo'],
             'start'         => $start,
             'end'           => $end,
@@ -946,6 +985,8 @@ class HotelReservationCalendarController extends Controller
             'end'           => $report['end'],
             'byDay'         => $report['by_day'],
             'byCategory'    => $report['by_category'],
+            'byDayTitle'    => $report['by_day_title'],
+            'byDayHint'     => $report['by_day_hint'],
         ])->render();
 
         // pcre.backtrack_limit por defecto se queda corto con tablas largas y
