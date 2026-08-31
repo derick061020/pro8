@@ -328,8 +328,8 @@
     @endphp
 
     <div class="section-title" style="margin-top: 5mm;">
-        Ingresos por día
-        <span class="section-note">— cuánta gente entra cada fecha</span>
+        {{ $byDayTitle ?? 'Ingresos por día' }}
+        <span class="section-note">— {{ $byDayHint ?? 'cuánta gente entra cada fecha' }}</span>
     </div>
 
     <table class="mini{{ $keepDay }}">
