@@ -369,10 +369,9 @@ class HotelCleaningController extends Controller
             $this->seedChecklist($cleaning->id);
 
             return response()->json([
-                'success'   => true,
-                'checklist' => $this->checklistPayload($cleaning->id),
-                'sections'  => HotelCleaningChecklistItem::SECTIONS,
-                'items'     => HotelCleaningChecklistItem::ITEMS,
+                'success'    => true,
+                'checklist'  => $this->checklistPayload($cleaning->id),
+                'definition' => HotelCleaningChecklistItem::CHECKLIST,
             ], 200);
 
         } catch (\Throwable $th) {
@@ -440,8 +439,8 @@ class HotelCleaningController extends Controller
 
         $rows = [];
 
-        foreach (array_keys(HotelCleaningChecklistItem::SECTIONS) as $section) {
-            foreach (array_keys(HotelCleaningChecklistItem::ITEMS) as $itemKey) {
+        foreach (HotelCleaningChecklistItem::CHECKLIST as $section => $definition) {
+            foreach (array_keys($definition['items']) as $itemKey) {
                 $rows[] = [
                     'hotel_cleaning_id' => $cleaningId,
                     'section'           => $section,
@@ -468,15 +467,7 @@ class HotelCleaningController extends Controller
             return null;
         }
 
-        $valid = [];
-
-        foreach (array_keys(HotelCleaningChecklistItem::SECTIONS) as $section) {
-            foreach (array_keys(HotelCleaningChecklistItem::ITEMS) as $itemKey) {
-                $valid[] = $section . ':' . $itemKey;
-            }
-        }
-
-        return array_values(array_intersect($raw, $valid));
+        return array_values(array_intersect($raw, HotelCleaningChecklistItem::validKeys()));
     }
 
     /**
@@ -492,10 +483,10 @@ class HotelCleaningController extends Controller
 
         $payload = [];
 
-        foreach (HotelCleaningChecklistItem::SECTIONS as $section => $sectionLabel) {
+        foreach (HotelCleaningChecklistItem::CHECKLIST as $section => $definition) {
             $rows = [];
 
-            foreach (HotelCleaningChecklistItem::ITEMS as $itemKey => $itemLabel) {
+            foreach ($definition['items'] as $itemKey => $itemLabel) {
                 $item = $items->get($section . ':' . $itemKey);
 
                 if (!$item) {
@@ -516,7 +507,7 @@ class HotelCleaningController extends Controller
 
             $payload[] = [
                 'section' => $section,
-                'label'   => $sectionLabel,
+                'label'   => $definition['label'],
                 'items'   => $rows,
             ];
         }
