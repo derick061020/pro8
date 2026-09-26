@@ -626,6 +626,30 @@
                 </el-select>
             </div>
             
+            <!-- Qué hay que hacer. Va todo marcado por defecto; se desmarca lo
+                 que no toque en esta habitación. -->
+            <div class="form-group">
+                <label class="control-label">Tareas de la limpieza</label>
+                <div class="clk-plan">
+                    <div v-for="sec in checklistSections" :key="sec.key" class="clk-plan-col">
+                        <div class="clk-plan-head">
+                            <el-checkbox
+                                :indeterminate="isSectionIndeterminate(sec.key)"
+                                :value="isSectionAllChecked(sec.key)"
+                                @change="toggleSection(sec.key, $event)"
+                            >{{ sec.label }}</el-checkbox>
+                        </div>
+                        <el-checkbox-group v-model="plannedChecklist" class="clk-plan-list">
+                            <el-checkbox
+                                v-for="it in checklistItems"
+                                :key="sec.key + ':' + it.key"
+                                :label="sec.key + ':' + it.key"
+                            >{{ it.label }}</el-checkbox>
+                        </el-checkbox-group>
+                    </div>
+                </div>
+            </div>
+
             <div class="form-group">
                 <label class="control-label">Notas (opcional)</label>
                 <el-input
@@ -646,6 +670,77 @@
                 >
                     Iniciar Limpieza
                 </el-button>
+            </span>
+        </el-dialog>
+
+        <!-- Completar limpieza: la encargada marca lo que fue haciendo. Cada
+             casilla guarda su hora en el momento de marcarla. -->
+        <el-dialog
+            :visible.sync="showFinalizeCleanModal"
+            width="560px"
+            :close-on-click-modal="false"
+            append-to-body
+            custom-class="clk-dialog"
+        >
+            <template slot="title">
+                <div class="clk-title">
+                    <span class="clk-title-main">Completar limpieza</span>
+                    <span v-if="finalizeCleanRoom" class="clk-title-room">
+                        Habitación {{ finalizeCleanRoom.name }}
+                    </span>
+                </div>
+            </template>
+
+            <div v-loading="loadingChecklist" class="clk-body">
+                <div class="clk-progress">
+                    <div class="clk-progress-bar">
+                        <div class="clk-progress-fill" :style="{ width: checklistProgress + '%' }"></div>
+                    </div>
+                    <span class="clk-progress-text">
+                        {{ checklistDoneCount }} de {{ checklistPlannedCount }} tareas
+                    </span>
+                </div>
+
+                <div class="clk-sections">
+                    <div v-for="sec in checklist" :key="sec.section" class="clk-section">
+                        <div class="clk-section-head">{{ sec.label }}</div>
+                        <div class="clk-rows">
+                            <label
+                                v-for="it in sec.items.filter(i => i.planned)"
+                                :key="it.id"
+                                class="clk-row"
+                                :class="{ 'clk-row-done': it.done }"
+                            >
+                                <el-checkbox
+                                    :value="it.done"
+                                    @change="toggleChecklistItem(it, $event)"
+                                >{{ it.label }}</el-checkbox>
+                                <span v-if="it.done && it.done_time" class="clk-row-time">
+                                    {{ it.done_time }}
+                                    <template v-if="it.done_by">· {{ it.done_by }}</template>
+                                </span>
+                            </label>
+                            <p v-if="!sec.items.filter(i => i.planned).length" class="clk-none">
+                                Sin tareas en esta sección.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <p v-if="checklistPendingCount > 0" class="clk-warning">
+                    Quedan {{ checklistPendingCount }}
+                    {{ checklistPendingCount === 1 ? 'tarea pendiente' : 'tareas pendientes' }}.
+                    Puedes completar igual si no hacían falta.
+                </p>
+            </div>
+
+            <span slot="footer" class="dialog-footer">
+                <el-button @click="showFinalizeCleanModal = false">Cancelar</el-button>
+                <el-button
+                    type="primary"
+                    :loading="loadingFinalizeClean"
+                    @click="confirmFinalizeClean"
+                >Completar limpieza</el-button>
             </span>
         </el-dialog>
 
@@ -1650,6 +1745,64 @@
 }
 
 /* ============================================================
+   CHECKLIST DE LIMPIEZA
+   ============================================================ */
+/* Planificación (modal de asignar limpiador) */
+.clk-plan { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.clk-plan-col {
+    border: 1px solid #e5e7eb; border-radius: 6px; padding: 10px 12px; background: #fbfcfd;
+}
+.clk-plan-head {
+    padding-bottom: 8px; margin-bottom: 8px; border-bottom: 1px solid #eef1f5;
+}
+.clk-plan-head .el-checkbox__label { font-weight: 700; color: #111827; }
+.clk-plan-list { display: flex; flex-direction: column; gap: 4px; }
+.clk-plan-list .el-checkbox { margin-right: 0; display: block; }
+
+/* Completado */
+.clk-title { display: flex; flex-direction: column; gap: 2px; }
+.clk-title-main { font-size: 16px; font-weight: 600; color: #111827; }
+.clk-title-room { font-size: 12.5px; color: #6b7280; }
+
+.clk-body { min-height: 120px; }
+
+.clk-progress { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+.clk-progress-bar {
+    flex: 1; height: 7px; border-radius: 999px; background: #eef1f5; overflow: hidden;
+}
+.clk-progress-fill {
+    height: 7px; border-radius: 999px; background: #10b981; transition: width .25s;
+}
+.clk-progress-text { font-size: 12px; color: #6b7280; white-space: nowrap; }
+
+.clk-sections { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+@media (max-width: 620px) { .clk-sections, .clk-plan { grid-template-columns: 1fr; } }
+
+.clk-section { border: 1px solid #e5e7eb; border-radius: 6px; overflow: hidden; }
+.clk-section-head {
+    padding: 8px 12px; background: #f8fafc; border-bottom: 1px solid #eef1f5;
+    font-size: 11.5px; font-weight: 700; color: #374151;
+    text-transform: uppercase; letter-spacing: .5px;
+}
+.clk-rows { padding: 6px 12px 10px; }
+
+.clk-row {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 8px; padding: 5px 0; margin: 0; cursor: pointer;
+}
+.clk-row + .clk-row { border-top: 1px solid #f6f8fa; }
+.clk-row-time { font-size: 11px; color: #9ca3af; white-space: nowrap; }
+.clk-row-done .el-checkbox__label { color: #059669; text-decoration: line-through; }
+
+.clk-none { margin: 6px 0; font-size: 12px; color: #b6bec9; }
+
+.clk-warning {
+    margin: 14px 0 0; padding: 8px 12px; border-radius: 6px;
+    background: #fffbeb; border-left: 3px solid #f59e0b;
+    font-size: 12.5px; color: #92400e;
+}
+
+/* ============================================================
    OBSERVACIONES — hilo de mensajes (estilo chatter)
    ============================================================ */
 .obs-title { display: flex; flex-direction: column; gap: 2px; }
@@ -2169,6 +2322,26 @@ export default {
             availableRates: [],
             selectedNewRate: null,
             showCleanerModal: false,
+            // Checklist de la limpieza: lo que se puso y lo que se cambió.
+            checklistSections: [
+                { key: 'placed',  label: 'Se puso' },
+                { key: 'changed', label: 'Se cambió' },
+            ],
+            checklistItems: [
+                { key: 'towels',       label: 'Toallas' },
+                { key: 'toilet_paper', label: 'Papel higiénico' },
+                { key: 'soap',         label: 'Jabón' },
+                { key: 'sheets',       label: 'Sábanas' },
+                { key: 'duvets',       label: 'Edredones' },
+                { key: 'pillows',      label: 'Cojines' },
+            ],
+            plannedChecklist: [],
+            showFinalizeCleanModal: false,
+            finalizeCleanRoom: null,
+            finalizeCleaning: null,
+            checklist: [],
+            loadingChecklist: false,
+            loadingFinalizeClean: false,
             cleaners: [],
             selectedCleaner: null,
             cleaningNotes: '',
@@ -2191,6 +2364,22 @@ export default {
         };
     },
     computed: {
+        /** Tareas planificadas del checklist de completado. */
+        checklistPlannedCount() {
+            return this.checklist.reduce(
+                (n, sec) => n + sec.items.filter(i => i.planned).length, 0);
+        },
+        checklistDoneCount() {
+            return this.checklist.reduce(
+                (n, sec) => n + sec.items.filter(i => i.planned && i.done).length, 0);
+        },
+        checklistPendingCount() {
+            return this.checklistPlannedCount - this.checklistDoneCount;
+        },
+        checklistProgress() {
+            if (!this.checklistPlannedCount) return 100;
+            return Math.round(100 * this.checklistDoneCount / this.checklistPlannedCount);
+        },
         canManageCleaning() {
             return this.userType === 'admin' || this.userType === 'limpiador';
         },
@@ -2432,6 +2621,7 @@ export default {
             this.selectedRoom = room;
             this.selectedCleaner = null;
             this.cleaningNotes = '';
+            this.resetPlannedChecklist();
             this.showCleanerModal = true;
             this.loadCleaners();
         },
@@ -2441,81 +2631,136 @@ export default {
             const isPendingCleaning = this.selectedRoom.status === 'LIMPIEZA' && !this.selectedRoom.has_cleaner_assigned;
             return isPendingCleaning ? 'Asignar Limpiador para Checkout' : 'Iniciar Limpieza Rápida';
         },
-        onFinalizeClean(room) {
-            const text = `Está a punto de terminar la limpieza de la habitación ${room.name}`;
-            this.$confirm(text, "Atención", {
-                confirmButtonText: "Si",
-                cancelButtonText: "No",
-                type: "warning",
-            })
-                .then(() => {
-                    this.loading = true;
-                    
-                    // Usar el endpoint de completar limpieza en lugar de cambiar estado directamente
-                    this.$http
-                        .get(`/hotels/reception/active-cleanings`)
-                        .then(response => {
-                            if (response.data.success) {
-                                // Buscar la limpieza activa para esta habitación
-                                const cleaning = response.data.cleanings.find(c => c.hotel_room_id == room.id);
-                                if (cleaning) {
-                                    // Completar la limpieza usando el endpoint adecuado
-                                    return this.$http.post(`/hotels/reception/complete-cleaning/${cleaning.id}`);
-                                } else {
-                                    // Si no hay limpieza activa, cambiar estado directamente
-                                    return this.$http.post(`/hotels/rooms/${room.id}/change-status`, {
-                                        status: "DISPONIBLE"
-                                    });
-                                }
+        /**
+         * Abre el checklist antes de dar la limpieza por terminada. Sustituye
+         * al confirm de sí/no: ahora la encargada marca qué hizo y cada casilla
+         * guarda su hora.
+         */
+        async onFinalizeClean(room) {
+            this.finalizeCleanRoom = room;
+            this.finalizeCleaning = null;
+            this.checklist = [];
+            this.showFinalizeCleanModal = true;
+
+            this.loadingChecklist = true;
+            try {
+                const { data } = await this.$http.get('/hotels/reception/active-cleanings');
+                const cleaning = (data.cleanings || []).find(c => c.hotel_room_id == room.id);
+
+                if (!cleaning) {
+                    // Sin limpieza activa no hay checklist que marcar: la
+                    // habitación se libera directamente al confirmar.
+                    this.loadingChecklist = false;
+                    return;
+                }
+
+                this.finalizeCleaning = cleaning;
+                const res = await this.$http.get(`/hotels/reception/cleaning/${cleaning.id}/checklist`);
+                this.checklist = res.data.checklist || [];
+            } catch (e) {
+                this.$message.error('No se pudo cargar el checklist de la limpieza');
+            } finally {
+                this.loadingChecklist = false;
+            }
+        },
+        /**
+         * Marca o desmarca una tarea. Se guarda al instante para que quede la
+         * hora real en que se hizo, no la del botón final.
+         */
+        async toggleChecklistItem(item, done) {
+            if (!this.finalizeCleaning) return;
+
+            const previous = item.done;
+            item.done = done; // respuesta inmediata en pantalla
+
+            try {
+                const { data } = await this.$http.put(
+                    `/hotels/reception/cleaning/${this.finalizeCleaning.id}/checklist/${item.id}`,
+                    { done }
+                );
+                this.checklist = data.checklist || this.checklist;
+            } catch (e) {
+                item.done = previous; // revertir si el guardado falló
+                this.$message.error(
+                    e.response?.data?.message || 'No se pudo guardar la tarea'
+                );
+            }
+        },
+        confirmFinalizeClean() {
+            const room = this.finalizeCleanRoom;
+            if (!room) return;
+
+            this.loadingFinalizeClean = true;
+            this.showFinalizeCleanModal = false;
+
+                this.loading = true;
+                
+                // Usar el endpoint de completar limpieza en lugar de cambiar estado directamente
+                this.$http
+                    .get(`/hotels/reception/active-cleanings`)
+                    .then(response => {
+                        if (response.data.success) {
+                            // Buscar la limpieza activa para esta habitación
+                            const cleaning = response.data.cleanings.find(c => c.hotel_room_id == room.id);
+                            if (cleaning) {
+                                // Completar la limpieza usando el endpoint adecuado
+                                return this.$http.post(`/hotels/reception/complete-cleaning/${cleaning.id}`);
+                            } else {
+                                // Si no hay limpieza activa, cambiar estado directamente
+                                return this.$http.post(`/hotels/rooms/${room.id}/change-status`, {
+                                    status: "DISPONIBLE"
+                                });
                             }
-                        })
-                        .then((response) => {
-                            // Usar el estado actualizado desde el backend
-                            if (response.data.success && response.data.cleaning) {
-                                // Obtener el estado actualizado de la habitación desde el backend
-                                this.$http.get(`/hotels/reception/rooms/${room.id}`)
-                                    .then(roomResponse => {
-                                        if (roomResponse.data.success) {
-                                            const updatedRoom = roomResponse.data.room;
-                                            this.items = this.items.map((r) => {
-                                                if (r.id === room.id) {
-                                                    return {
-                                                        ...r,
-                                                        status: updatedRoom.status,
-                                                        has_cleaner_assigned: false
-                                                    };
-                                                }
-                                                return r;
-                                            });
-                                        }
-                                    })
-                                    .catch(() => {
-                                        // Si hay error, actualizar con valores por defecto
-                                        room.has_cleaner_assigned = false;
+                        }
+                    })
+                    .then((response) => {
+                        // Usar el estado actualizado desde el backend
+                        if (response.data.success && response.data.cleaning) {
+                            // Obtener el estado actualizado de la habitación desde el backend
+                            this.$http.get(`/hotels/reception/rooms/${room.id}`)
+                                .then(roomResponse => {
+                                    if (roomResponse.data.success) {
+                                        const updatedRoom = roomResponse.data.room;
                                         this.items = this.items.map((r) => {
                                             if (r.id === room.id) {
-                                                return room;
+                                                return {
+                                                    ...r,
+                                                    status: updatedRoom.status,
+                                                    has_cleaner_assigned: false
+                                                };
                                             }
                                             return r;
                                         });
+                                    }
+                                })
+                                .catch(() => {
+                                    // Si hay error, actualizar con valores por defecto
+                                    room.has_cleaner_assigned = false;
+                                    this.items = this.items.map((r) => {
+                                        if (r.id === room.id) {
+                                            return room;
+                                        }
+                                        return r;
                                     });
-                            }
-                            
-                            this.$message({
-                                type: "success",
-                                message: response.data.message || 'Limpieza completada exitosamente',
-                            });
-                        })
-                        .catch((error) => {
-                            console.error('Error al finalizar limpieza:', error);
-                            this.$message({
-                                type: "error",
-                                message: 'Error al finalizar la limpieza',
-                            });
-                        })
-                        .finally(() => (this.loading = false));
-                })
-                .catch();
+                                });
+                        }
+                        
+                        this.$message({
+                            type: "success",
+                            message: response.data.message || 'Limpieza completada exitosamente',
+                        });
+                    })
+                    .catch((error) => {
+                        console.error('Error al finalizar limpieza:', error);
+                        this.$message({
+                            type: "error",
+                            message: 'Error al finalizar la limpieza',
+                        });
+                    })
+                    .finally(() => {
+                        this.loading = false;
+                        this.loadingFinalizeClean = false;
+                    });
         },
         onGoToCheckout(room) {
             window.location.href = `/hotels/reception/${room.rent.id}/rent/checkout`;
@@ -2738,6 +2983,7 @@ export default {
             this.selectedRoom = room;
             this.selectedCleaner = null;
             this.cleaningNotes = '';
+            this.resetPlannedChecklist();
             this.showCleanerModal = true;
             this.loadCleaners();
         },
@@ -3123,6 +3369,29 @@ export default {
                     this.loadingCleaners = false;
                 });
         },
+        /** Todas las casillas marcadas: es el valor por defecto al asignar. */
+        resetPlannedChecklist() {
+            const all = [];
+            this.checklistSections.forEach(sec => {
+                this.checklistItems.forEach(it => all.push(`${sec.key}:${it.key}`));
+            });
+            this.plannedChecklist = all;
+        },
+        isSectionAllChecked(sectionKey) {
+            return this.checklistItems.every(
+                it => this.plannedChecklist.includes(`${sectionKey}:${it.key}`));
+        },
+        isSectionIndeterminate(sectionKey) {
+            const n = this.checklistItems.filter(
+                it => this.plannedChecklist.includes(`${sectionKey}:${it.key}`)).length;
+            return n > 0 && n < this.checklistItems.length;
+        },
+        toggleSection(sectionKey, checked) {
+            const keys = this.checklistItems.map(it => `${sectionKey}:${it.key}`);
+            this.plannedChecklist = checked
+                ? Array.from(new Set([...this.plannedChecklist, ...keys]))
+                : this.plannedChecklist.filter(k => !keys.includes(k));
+        },
         confirmStartCleaning() {
             if (!this.selectedCleaner) {
                 this.$message.warning('Por favor seleccione un limpiador');
@@ -3139,7 +3408,8 @@ export default {
                 .post(endpoint, {
                     room_id: this.selectedRoom.id,
                     cleaner_id: this.selectedCleaner,
-                    notes: this.cleaningNotes || (isPendingCleaning ? 'Limpieza asignada desde checkout' : 'Limpieza rápida')
+                    notes: this.cleaningNotes || (isPendingCleaning ? 'Limpieza asignada desde checkout' : 'Limpieza rápida'),
+                    checklist: this.plannedChecklist
                 })
                 .then(response => {
                     if (response.data.success) {

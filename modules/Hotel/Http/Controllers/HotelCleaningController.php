@@ -11,6 +11,7 @@ use App\Models\Tenant\Establishment;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Modules\Hotel\Exports\HotelCleaningExport;
+use Modules\Hotel\Models\HotelCleaningChecklistItem;
 use Carbon\Carbon;
 
 class HotelCleaningController extends Controller
@@ -97,6 +98,10 @@ class HotelCleaningController extends Controller
                 'created_at' => now(),
                 'updated_at' => now()
             ]);
+
+            // Checklist de lo que hay que hacer, tal como lo dejó marcado quien
+            // asigna la limpieza (por defecto, todo).
+            $this->seedChecklist($cleaning, $this->normalizeChecklistSelection($request->input('checklist')));
 
             // Actualizar estado de la habitación
             $room->status = 'LIMPIEZA';
@@ -319,6 +324,11 @@ class HotelCleaningController extends Controller
                 ]);
             }
 
+            // Checklist de lo que hay que hacer. Si la limpieza ya existía (la
+            // que se crea sola al hacer checkout) puede que ya lo tenga: el
+            // sembrado no pisa lo que haya.
+            $this->seedChecklist($cleaning, $this->normalizeChecklistSelection($request->input('checklist')));
+
             // No cambiar el estado aquí, la habitación permanece en LIMPIEZA
             // hasta que se complete la limpieza
 
@@ -342,6 +352,176 @@ class HotelCleaningController extends Controller
                 'message' => 'Error al asignar limpiador: ' . $th->getMessage()
             ], 500);
         }
+    }
+
+    /**
+     * Checklist de una limpieza, agrupado por sección.
+     *
+     * Si la limpieza no tiene checklist (por ejemplo, la que se crea sola al
+     * hacer checkout), se siembra con todo marcado como pendiente por hacer:
+     * es el comportamiento por defecto que pidió recepción.
+     */
+    public function cleaningChecklist($cleaningId)
+    {
+        try {
+            $cleaning = HotelCleaning::findOrFail($cleaningId);
+
+            $this->seedChecklist($cleaning->id);
+
+            return response()->json([
+                'success'   => true,
+                'checklist' => $this->checklistPayload($cleaning->id),
+                'sections'  => HotelCleaningChecklistItem::SECTIONS,
+                'items'     => HotelCleaningChecklistItem::ITEMS,
+            ], 200);
+
+        } catch (\Throwable $th) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No se pudo cargar el checklist: ' . $th->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Marca o desmarca una casilla.
+     *
+     * Se guarda en el momento de marcarla, no al cerrar la limpieza: así queda
+     * la hora real en que la encargada terminó cada cosa, y no todas con la
+     * misma hora del botón final.
+     */
+    public function toggleChecklistItem($cleaningId, $itemId, Request $request)
+    {
+        try {
+            $cleaning = HotelCleaning::findOrFail($cleaningId);
+
+            if ($cleaning->status === 'completed') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'La limpieza ya fue completada: el checklist queda como registro.'
+                ], 400);
+            }
+
+            $item = HotelCleaningChecklistItem::where('hotel_cleaning_id', $cleaning->id)
+                ->findOrFail($itemId);
+
+            $done = $request->boolean('done');
+
+            $item->done    = $done;
+            $item->done_at = $done ? now() : null;
+            $item->done_by = $done ? auth()->id() : null;
+            $item->save();
+
+            return response()->json([
+                'success'   => true,
+                'checklist' => $this->checklistPayload($cleaning->id),
+            ], 200);
+
+        } catch (\Throwable $th) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No se pudo actualizar el checklist: ' . $th->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Crea las casillas de una limpieza.
+     *
+     * `$planned` es la lista de "seccion:articulo" que recepción dejó marcada al
+     * asignar. Si no llega nada, se planifica todo (el valor por defecto del
+     * formulario es con todo marcado). Se ejecuta una sola vez por limpieza.
+     */
+    private function seedChecklist($cleaningId, array $planned = null)
+    {
+        if (HotelCleaningChecklistItem::where('hotel_cleaning_id', $cleaningId)->exists()) {
+            return;
+        }
+
+        $rows = [];
+
+        foreach (array_keys(HotelCleaningChecklistItem::SECTIONS) as $section) {
+            foreach (array_keys(HotelCleaningChecklistItem::ITEMS) as $itemKey) {
+                $rows[] = [
+                    'hotel_cleaning_id' => $cleaningId,
+                    'section'           => $section,
+                    'item_key'          => $itemKey,
+                    // Sin selección explícita se planifica todo.
+                    'planned'           => $planned === null || in_array($section . ':' . $itemKey, $planned, true),
+                    'done'              => false,
+                    'created_at'        => now(),
+                    'updated_at'        => now(),
+                ];
+            }
+        }
+
+        HotelCleaningChecklistItem::insert($rows);
+    }
+
+    /**
+     * Normaliza la selección que manda el formulario a "seccion:articulo",
+     * descartando cualquier valor que no exista.
+     */
+    private function normalizeChecklistSelection($raw)
+    {
+        if (!is_array($raw)) {
+            return null;
+        }
+
+        $valid = [];
+
+        foreach (array_keys(HotelCleaningChecklistItem::SECTIONS) as $section) {
+            foreach (array_keys(HotelCleaningChecklistItem::ITEMS) as $itemKey) {
+                $valid[] = $section . ':' . $itemKey;
+            }
+        }
+
+        return array_values(array_intersect($raw, $valid));
+    }
+
+    /**
+     * El checklist listo para pintar: agrupado por sección y con la hora de
+     * cada casilla completada.
+     */
+    private function checklistPayload($cleaningId)
+    {
+        $items = HotelCleaningChecklistItem::with('doneByUser:id,name')
+            ->where('hotel_cleaning_id', $cleaningId)
+            ->get()
+            ->keyBy(fn ($i) => $i->section . ':' . $i->item_key);
+
+        $payload = [];
+
+        foreach (HotelCleaningChecklistItem::SECTIONS as $section => $sectionLabel) {
+            $rows = [];
+
+            foreach (HotelCleaningChecklistItem::ITEMS as $itemKey => $itemLabel) {
+                $item = $items->get($section . ':' . $itemKey);
+
+                if (!$item) {
+                    continue;
+                }
+
+                $rows[] = [
+                    'id'         => $item->id,
+                    'item_key'   => $itemKey,
+                    'label'      => $itemLabel,
+                    'planned'    => (bool) $item->planned,
+                    'done'       => (bool) $item->done,
+                    'done_at'    => optional($item->done_at)->format('Y-m-d H:i:s'),
+                    'done_time'  => optional($item->done_at)->format('H:i'),
+                    'done_by'    => optional($item->doneByUser)->name,
+                ];
+            }
+
+            $payload[] = [
+                'section' => $section,
+                'label'   => $sectionLabel,
+                'items'   => $rows,
+            ];
+        }
+
+        return $payload;
     }
 
     /**

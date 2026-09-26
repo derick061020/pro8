@@ -122,6 +122,9 @@ if ($hostname) {
             Route::post('start-cleaning', 'HotelCleaningController@startQuickCleaning');
             Route::post('assign-cleaner-start', 'HotelCleaningController@assignCleanerAndStart');
             Route::post('complete-cleaning/{id}', 'HotelCleaningController@completeCleaning');
+            // Checklist de la limpieza (qué se puso y qué se cambió, con su hora).
+            Route::get('cleaning/{id}/checklist', 'HotelCleaningController@cleaningChecklist');
+            Route::put('cleaning/{id}/checklist/{itemId}', 'HotelCleaningController@toggleChecklistItem');
             Route::get('active-cleanings', 'HotelCleaningController@getActiveCleanings');
             Route::get('room-cleaning-history/{roomId}', 'HotelCleaningController@getRoomCleaningHistory');
             Route::get('cleaner-assignments/{cleanerId}', 'HotelCleaningController@getCleanerAssignments');
