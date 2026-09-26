@@ -22,6 +22,9 @@ use Modules\Hotel\Models\HotelRentItem;
 use Modules\Hotel\Models\HotelBlogPost;
 use Modules\Hotel\Models\HotelLandingSetting;
 use Modules\Services\Data\DocumentApiResolver;
+// Vive en la base del sistema: sirve para saber si el dominio por el que se
+// entra es el del panel o uno de los dominios públicos del hotel.
+use App\Models\System\Client;
 
 /**
  * Landing pública de reservas de hotel.
@@ -37,6 +40,9 @@ use Modules\Services\Data\DocumentApiResolver;
  */
 class HotelLandingController extends Controller
 {
+    /** Resultado cacheado de isSystemHostname() para no repetir la consulta. */
+    private $isSystemHostname = null;
+
     /** Hora estándar de entrada/salida si la reserva no especifica otra. */
     const DEFAULT_INPUT_TIME  = '14:00';
     const DEFAULT_OUTPUT_TIME = '12:00';
@@ -50,6 +56,13 @@ class HotelLandingController extends Controller
      */
     public function home(Request $request)
     {
+        // El dominio del sistema (sistema.hotelbuendia.net) nunca muestra la
+        // web pública, ni siquiera con ?preview=1: ahí sólo se entra a
+        // trabajar. La web vive en los dominios propios del hotel.
+        if ($this->isSystemHostname()) {
+            return redirect(auth()->check() ? '/dashboard' : '/login');
+        }
+
         // El personal logueado que entra al dominio va a su panel, salvo que
         // pida ver la web como la ve un cliente (?preview=1, que es el enlace
         // "Ver web" del editor).
@@ -74,7 +87,47 @@ class HotelLandingController extends Controller
      */
     private function webEnabled()
     {
+        // En el dominio del sistema la web pública no existe, haya o no
+        // sucursales habilitadas. Así protege también al blog y a los
+        // endpoints del buscador y la reserva.
+        if ($this->isSystemHostname()) {
+            return false;
+        }
+
         return $this->enabledEstablishmentIds()->isNotEmpty();
+    }
+
+    /**
+     * ¿El dominio por el que se entra es el del sistema?
+     *
+     * Un tenant puede tener varios dominios: el que queda registrado en el
+     * cliente (sistema.hotelbuendia.net) es el del sistema, y los que se le
+     * añaden después apuntando al mismo tenant (hotelbuendia.net, www....) son
+     * la web pública del hotel. Antes no se distinguían y la portada pública
+     * salía también en el dominio de trabajo.
+     */
+    private function isSystemHostname()
+    {
+        if ($this->isSystemHostname !== null) {
+            return $this->isSystemHostname;
+        }
+
+        $current = app(\Hyn\Tenancy\Contracts\CurrentHostname::class);
+
+        if (!$current) {
+            // Sin hostname resuelto no hay web pública que servir.
+            return $this->isSystemHostname = true;
+        }
+
+        try {
+            $this->isSystemHostname = Client::where('hostname_id', $current->id)->exists();
+        } catch (\Throwable $th) {
+            // Ante cualquier problema se asume dominio de sistema: es preferible
+            // mandar al login que exponer la web donde no toca.
+            $this->isSystemHostname = true;
+        }
+
+        return $this->isSystemHostname;
     }
 
     /**

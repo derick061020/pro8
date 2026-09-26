@@ -52,10 +52,45 @@ class HotelLandingSettingController extends Controller
             'config'         => $this->withImageUrls($config),
             'default_slides' => $defaultSlides,
             'colors'         => ['turquoise', 'blue', 'green', 'orange', 'purple', 'red', 'brown', 'black'],
-            // La web vive en la raíz; con ?preview=1 el admin logueado la ve
-            // igual que un cliente en vez de rebotar al panel.
-            'landing_url'    => url('/?preview=1'),
+            // La web vive en la raíz del dominio PÚBLICO del hotel, no en el
+            // del sistema: desde aquí (sistema.…) un enlace a "/" rebotaría al
+            // panel. Con ?preview=1 el admin la ve igual que un cliente.
+            'landing_url'    => $this->publicLandingUrl(),
         ], 200);
+    }
+
+    /**
+     * URL de la web pública del hotel para el botón "Ver web".
+     *
+     * Un tenant puede tener varios dominios: el registrado en el cliente es el
+     * del sistema y los añadidos después (hotelbuendia.net, www....) son la web
+     * pública. Se prefiere el más corto, que es el dominio sin "www".
+     */
+    private function publicLandingUrl()
+    {
+        try {
+            $current = app(\Hyn\Tenancy\Contracts\CurrentHostname::class);
+
+            if ($current && $current->website_id) {
+                $systemHostnameIds = \App\Models\System\Client::whereNotNull('hostname_id')
+                    ->pluck('hostname_id')
+                    ->all();
+
+                $public = \Hyn\Tenancy\Models\Hostname::where('website_id', $current->website_id)
+                    ->whereNotIn('id', $systemHostnameIds ?: [0])
+                    ->pluck('fqdn')
+                    ->sortBy(fn ($fqdn) => strlen($fqdn))
+                    ->first();
+
+                if ($public) {
+                    return (request()->secure() ? 'https://' : 'http://') . $public . '/?preview=1';
+                }
+            }
+        } catch (\Throwable $th) {
+            // Se cae al dominio actual si algo falla al resolver los hostnames.
+        }
+
+        return url('/?preview=1');
     }
 
     /**
