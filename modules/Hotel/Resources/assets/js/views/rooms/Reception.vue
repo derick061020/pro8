@@ -649,35 +649,95 @@
             </span>
         </el-dialog>
 
-        <!-- Modal para ver/editar observaciones -->
+        <!-- Observaciones de la habitación: hilo de mensajes con autor y fecha.
+             Antes era un campo único que se sobrescribía en cada edición. -->
         <el-dialog
-            title="Observaciones del Registro"
             :visible.sync="showObservationsModal"
-            width="600px"
+            width="620px"
             :close-on-click-modal="false"
+            custom-class="obs-dialog"
+            append-to-body
         >
-            <div class="observations-container">
-                <div class="form-group">
-                    <label for="observations" class="form-label">Observaciones:</label>
-                    <el-input
-                        id="observations"
-                        type="textarea"
-                        :rows="6"
-                        placeholder="Ingrese las observaciones del registro..."
-                        v-model="observationsText"
-                    >
-                    </el-input>
+            <template slot="title">
+                <div class="obs-title">
+                    <span class="obs-title-main">Observaciones</span>
+                    <span v-if="selectedRoom" class="obs-title-room">
+                        Habitación {{ selectedRoom.name }}
+                        <template v-if="selectedRoom.rent && selectedRoom.rent.customer">
+                            · {{ selectedRoom.rent.customer.name }}
+                        </template>
+                    </span>
+                </div>
+            </template>
+
+            <div class="obs-body" v-loading="loadingObservations">
+                <!-- Redactor -->
+                <div class="obs-composer">
+                    <div class="obs-avatar obs-avatar-me">{{ initials(currentUserName) }}</div>
+                    <div class="obs-composer-main">
+                        <el-input
+                            type="textarea"
+                            :rows="3"
+                            resize="none"
+                            placeholder="Escribe una observación..."
+                            v-model="observationsText"
+                            @keydown.native.ctrl.enter="addObservation"
+                            @keydown.native.meta.enter="addObservation"
+                        ></el-input>
+                        <div class="obs-composer-actions">
+                            <span class="obs-hint">Ctrl + Enter para enviar</span>
+                            <el-button
+                                type="primary"
+                                size="small"
+                                :loading="sendingObservation"
+                                :disabled="!observationsText.trim()"
+                                @click="addObservation"
+                            >Enviar</el-button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Historial -->
+                <div class="obs-thread-title" v-if="observationNotes.length">
+                    Historial · {{ observationNotes.length }}
+                    {{ observationNotes.length === 1 ? 'observación' : 'observaciones' }}
+                </div>
+
+                <div class="obs-thread">
+                    <div v-for="note in observationNotes" :key="note.id" class="obs-note">
+                        <div class="obs-avatar" :class="{ 'obs-avatar-me': note.mine }">
+                            {{ initials(note.author) }}
+                        </div>
+                        <div class="obs-note-main">
+                            <div class="obs-note-head">
+                                <span class="obs-note-author">{{ note.author }}</span>
+                                <span class="obs-note-date" :title="note.created_at">
+                                    {{ relativeTime(note.created_at) }}
+                                </span>
+                                <button
+                                    v-if="note.can_delete"
+                                    class="obs-note-del"
+                                    title="Eliminar observación"
+                                    @click="removeObservation(note)"
+                                >
+                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6l-.9 12.1a2 2 0 0 1-2 1.9H7.9a2 2 0 0 1-2-1.9L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
+                                </button>
+                            </div>
+                            <div class="obs-note-body">{{ note.body }}</div>
+                        </div>
+                    </div>
+
+                    <div v-if="!observationNotes.length && !loadingObservations" class="obs-empty">
+                        <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                        </svg>
+                        <p>Todavía no hay observaciones en esta habitación.</p>
+                    </div>
                 </div>
             </div>
+
             <span slot="footer" class="dialog-footer">
-                <el-button @click="showObservationsModal = false">Cancelar</el-button>
-                <el-button
-                    type="primary"
-                    @click="saveObservations"
-                    :loading="loadingObservations"
-                >
-                    Guardar
-                </el-button>
+                <el-button @click="showObservationsModal = false">Cerrar</el-button>
             </span>
         </el-dialog>
 
@@ -1589,6 +1649,70 @@
     opacity: 1;
 }
 
+/* ============================================================
+   OBSERVACIONES — hilo de mensajes (estilo chatter)
+   ============================================================ */
+.obs-title { display: flex; flex-direction: column; gap: 2px; }
+.obs-title-main { font-size: 16px; font-weight: 600; color: #111827; }
+.obs-title-room { font-size: 12.5px; color: #6b7280; }
+
+.obs-dialog .el-dialog__body { padding: 16px 20px 8px; }
+
+.obs-body { min-height: 140px; }
+
+/* Redactor */
+.obs-composer { display: flex; gap: 10px; align-items: flex-start; }
+.obs-composer-main { flex: 1; min-width: 0; }
+.obs-composer-actions {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-top: 8px;
+}
+.obs-hint { font-size: 11px; color: #9ca3af; }
+
+/* Avatar con iniciales */
+.obs-avatar {
+    flex: 0 0 34px; width: 34px; height: 34px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    background: #e5e7eb; color: #4b5563;
+    font-size: 12px; font-weight: 700; letter-spacing: .3px;
+    user-select: none;
+}
+.obs-avatar-me { background: #e0e7ff; color: #4338ca; }
+
+/* Historial */
+.obs-thread-title {
+    margin: 18px 0 10px;
+    font-size: 11px; font-weight: 700; color: #6b7280;
+    text-transform: uppercase; letter-spacing: .6px;
+    border-top: 1px solid #eef1f5; padding-top: 14px;
+}
+.obs-thread { max-height: 340px; overflow-y: auto; padding-right: 4px; }
+
+.obs-note { display: flex; gap: 10px; padding: 10px 0; }
+.obs-note + .obs-note { border-top: 1px solid #f4f6f8; }
+.obs-note-main { flex: 1; min-width: 0; }
+
+.obs-note-head { display: flex; align-items: center; gap: 8px; }
+.obs-note-author { font-size: 13px; font-weight: 600; color: #111827; }
+.obs-note-date { font-size: 11.5px; color: #9ca3af; }
+
+.obs-note-del {
+    margin-left: auto; border: 0; background: transparent; cursor: pointer;
+    color: #cbd5e1; padding: 2px 4px; border-radius: 4px; line-height: 0;
+    transition: all .12s;
+}
+.obs-note-del:hover { color: #dc2626; background: #fef2f2; }
+
+.obs-note-body {
+    margin-top: 3px; font-size: 13.5px; color: #374151;
+    white-space: pre-wrap; word-break: break-word;
+}
+
+.obs-empty {
+    text-align: center; padding: 26px 10px; color: #b6bec9;
+}
+.obs-empty p { margin: 8px 0 0; font-size: 13px; }
+
 /* Tooltip para observaciones */
 .observation-tooltip {
     position: fixed;
@@ -1963,6 +2087,7 @@
 }
 </style>
 <script>
+import moment from 'moment';
 import ExtendTimeRoom from './partials/ExtendTimeRoom.vue';
 import ModalRoomRates from "./RoomRates.vue";
 import ReceptionExport from './partials/ReceptionExport.vue';
@@ -2022,6 +2147,10 @@ export default {
             showObservationsModal: false,
             observationsText: "",
             loadingObservations: false,
+            // Hilo de observaciones: cada mensaje con su autor y su fecha.
+            observationNotes: [],
+            sendingObservation: false,
+            currentUserName: "",
             // Modal: lista de reservas vigentes
             showReservationsListModal: false,
             reservationsListRoom: null,
@@ -2614,35 +2743,103 @@ export default {
         },
         onViewEditObservations(room) {
             this.selectedRoom = room;
-            this.observationsText = room.rent?.notes || "";
+            this.observationsText = "";
+            this.observationNotes = [];
             this.showObservationsModal = true;
+            this.loadObservationNotes();
         },
-        saveObservations() {
+        async loadObservationNotes() {
+            if (!this.selectedRoom?.rent?.id) return;
+
             this.loadingObservations = true;
-            this.$http
-                .put(`/hotels/reception/${this.selectedRoom.rent.id}/observations`, {
-                    notes: this.observationsText
-                })
-                .then((response) => {
-                    this.$message({
-                        type: "success",
-                        message: response.data.message || "Observaciones guardadas exitosamente",
-                    });
-                    // Actualizar las observaciones en el room local
-                    if (this.selectedRoom.rent) {
-                        this.selectedRoom.rent.notes = this.observationsText;
-                    }
-                    this.showObservationsModal = false;
-                })
-                .catch((error) => {
-                    this.$message({
-                        type: "error",
-                        message: error.response?.data?.message || "Error al guardar las observaciones",
-                    });
-                })
-                .finally(() => {
-                    this.loadingObservations = false;
+            try {
+                const { data } = await this.$http.get(
+                    `/hotels/reception/${this.selectedRoom.rent.id}/observations/notes`
+                );
+                this.observationNotes = data.notes || [];
+                this.currentUserName = data.current_user || "";
+            } catch (e) {
+                this.$message({
+                    type: "error",
+                    message: e.response?.data?.message || "No se pudo cargar el historial de observaciones",
                 });
+            } finally {
+                this.loadingObservations = false;
+            }
+        },
+        async addObservation() {
+            const body = this.observationsText.trim();
+            if (!body || this.sendingObservation) return;
+
+            this.sendingObservation = true;
+            try {
+                const { data } = await this.$http.post(
+                    `/hotels/reception/${this.selectedRoom.rent.id}/observations/notes`,
+                    { body }
+                );
+                this.observationNotes = data.notes || [];
+                this.observationsText = "";
+                // El indicador y el tooltip de la tarjeta leen rent.notes, que
+                // el servidor deja con la última observación.
+                if (this.selectedRoom.rent) {
+                    this.selectedRoom.rent.notes = data.notes_field || null;
+                }
+            } catch (e) {
+                this.$message({
+                    type: "error",
+                    message: e.response?.data?.message || "No se pudo guardar la observación",
+                });
+            } finally {
+                this.sendingObservation = false;
+            }
+        },
+        async removeObservation(note) {
+            try {
+                await this.$confirm("¿Eliminar esta observación?", "Confirmar", {
+                    confirmButtonText: "Eliminar",
+                    cancelButtonText: "Cancelar",
+                    type: "warning",
+                });
+            } catch (e) {
+                return; // cancelado
+            }
+
+            try {
+                const { data } = await this.$http.delete(
+                    `/hotels/reception/${this.selectedRoom.rent.id}/observations/notes/${note.id}`
+                );
+                this.observationNotes = data.notes || [];
+                if (this.selectedRoom.rent) {
+                    this.selectedRoom.rent.notes = data.notes_field || null;
+                }
+            } catch (e) {
+                this.$message({
+                    type: "error",
+                    message: e.response?.data?.message || "No se pudo eliminar la observación",
+                });
+            }
+        },
+        /** Iniciales para el avatar del mensaje. */
+        initials(name) {
+            const parts = (name || "?").trim().split(/\s+/).slice(0, 2);
+            return parts.map(p => p.charAt(0).toUpperCase()).join("") || "?";
+        },
+        /** "hace 5 min", "ayer 14:30", "12/09/2026 14:30". */
+        relativeTime(value) {
+            if (!value) return "";
+
+            const date = moment(value, "YYYY-MM-DD HH:mm:ss");
+            if (!date.isValid()) return value;
+
+            const minutes = moment().diff(date, "minutes");
+            if (minutes < 1) return "ahora mismo";
+            if (minutes < 60) return `hace ${minutes} min`;
+
+            const hours = moment().diff(date, "hours");
+            if (hours < 24 && date.isSame(moment(), "day")) return `hoy ${date.format("HH:mm")}`;
+            if (date.isSame(moment().subtract(1, "day"), "day")) return `ayer ${date.format("HH:mm")}`;
+
+            return date.format("DD/MM/YYYY HH:mm");
         },
         showObservationTooltip(room, event) {
             if (room.rent && room.rent.notes) {
