@@ -806,8 +806,9 @@
                         <div class="obs-note-main">
                             <div class="obs-note-head">
                                 <span class="obs-note-author">{{ note.author }}</span>
-                                <span class="obs-note-date" :title="note.created_at">
+                                <span class="obs-note-date">
                                     {{ relativeTime(note.created_at) }}
+                                    <span class="obs-note-exact">({{ exactDateTime(note.created_at) }})</span>
                                 </span>
                                 <button
                                     v-if="note.can_delete"
@@ -1848,6 +1849,7 @@
 .obs-note-head { display: flex; align-items: center; gap: 8px; }
 .obs-note-author { font-size: 13px; font-weight: 600; color: #111827; }
 .obs-note-date { font-size: 11.5px; color: #9ca3af; }
+.obs-note-exact { color: #c3cad4; }
 
 .obs-note-del {
     margin-left: auto; border: 0; background: transparent; cursor: pointer;
@@ -3079,7 +3081,11 @@ export default {
             const parts = (name || "?").trim().split(/\s+/).slice(0, 2);
             return parts.map(p => p.charAt(0).toUpperCase()).join("") || "?";
         },
-        /** "hace 5 min", "ayer 14:30", "12/09/2026 14:30". */
+        /**
+         * Antigüedad en lenguaje natural: "ahora mismo", "hace 5 min",
+         * "hace 3 h", "ayer", "hace 12 días"... La fecha y hora exactas van
+         * aparte, entre paréntesis, para no tener que pasar el ratón por encima.
+         */
         relativeTime(value) {
             if (!value) return "";
 
@@ -3091,10 +3097,24 @@ export default {
             if (minutes < 60) return `hace ${minutes} min`;
 
             const hours = moment().diff(date, "hours");
-            if (hours < 24 && date.isSame(moment(), "day")) return `hoy ${date.format("HH:mm")}`;
-            if (date.isSame(moment().subtract(1, "day"), "day")) return `ayer ${date.format("HH:mm")}`;
+            if (hours < 24) return `hace ${hours} h`;
 
-            return date.format("DD/MM/YYYY HH:mm");
+            const days = moment().diff(date, "days");
+            if (days === 1) return "ayer";
+            if (days < 30) return `hace ${days} días`;
+
+            const months = moment().diff(date, "months");
+            if (months < 12) return `hace ${months} ${months === 1 ? "mes" : "meses"}`;
+
+            const years = moment().diff(date, "years");
+            return `hace ${years} ${years === 1 ? "año" : "años"}`;
+        },
+        /** Fecha y hora exactas: "26/09/2026 17:14". */
+        exactDateTime(value) {
+            if (!value) return "";
+
+            const date = moment(value, "YYYY-MM-DD HH:mm:ss");
+            return date.isValid() ? date.format("DD/MM/YYYY HH:mm") : value;
         },
         showObservationTooltip(room, event) {
             if (room.rent && room.rent.notes) {
