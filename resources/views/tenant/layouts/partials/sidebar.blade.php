@@ -302,14 +302,11 @@ $showTransfer = collect($vc_module_levels)->intersect(['inventory', 'inventory_d
                                         <a class="nav-link" href="{{ url('hotels/rooms') }}">Habitaciones</a>
                                     </li>
                                 @endif
-                                <li
-                                    class="{{ (($firstLevel === 'hotels') && ($secondLevel === 'blog')) ? 'nav-active' : '' }}">
-                                    <a class="nav-link" href="{{ url('hotels/blog') }}">Blog</a>
-                                </li>
-                                <li
-                                    class="{{ (($firstLevel === 'hotels') && ($secondLevel === 'landing-settings')) ? 'nav-active' : '' }}">
-                                    <a class="nav-link" href="{{ url('hotels/landing-settings') }}">Personalizar web</a>
-                                </li>
+                                {{-- "Blog" y "Personalizar web" retirados junto con la web
+                                     pública de reservas: sólo servían para alimentarla y
+                                     configurarla, y su interruptor la reactivaba en el
+                                     dominio del sistema. El CRUD sigue en /hotels/blog y
+                                     /hotels/landing-settings si algún día se reactiva. --}}
 
                             </ul>
                         </li>

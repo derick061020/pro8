@@ -7,27 +7,36 @@ $hostname = app(Hyn\Tenancy\Contracts\CurrentHostname::class);
 if ($hostname) {
   Route::domain($hostname->fqdn)->group(function () {
 
-    // Web pública de reservas (sin autenticación). Cada tenant resuelve su
-    // propia base de datos por el dominio, así que la misma web sirve a todos
-    // mostrando sus propias habitaciones.
+    // WEB PÚBLICA DE RESERVAS RETIRADA.
     //
-    // Vive en la raíz del dominio: la portada es "/" y el blog "/blog". Los
-    // usuarios autenticados que entran a "/" van a su panel.
-    Route::get('/', 'HotelLandingController@home')->name('tenant.hotels.home');
-    Route::get('blog', 'HotelLandingController@blog')->name('tenant.hotels.blog');
-    Route::get('blog/{slug}', 'HotelLandingController@blogPost')->name('tenant.hotels.blog.post');
+    // El dominio del tenant es sólo el sistema: la raíz lleva al panel si hay
+    // sesión y al login si no. Antes esto dependía del interruptor
+    // `web_enabled` de cada sucursal, pero bastaba con que alguien lo volviera
+    // a encender desde "Personalizar web" para que la portada pública
+    // reapareciera en el dominio del sistema, así que la decisión ya no es
+    // configurable.
+    //
+    // El controlador y las vistas (HotelLandingController, hotel::landing.*)
+    // se conservan sin tocar: para reactivar la web basta con devolver estas
+    // rutas a sus métodos.
+    $toSystem = function () {
+        return redirect(auth()->check() ? '/dashboard' : '/login');
+    };
 
-    // Endpoints internos de la web (AJAX del buscador y de la reserva).
-    Route::post('reservas/search', 'HotelLandingController@searchAvailability');
-    Route::get('reservas/room/{id}', 'HotelLandingController@roomDetail');
-    Route::get('reservas/document/{type}/{number}', 'HotelLandingController@documentLookup');
-    Route::post('reservas/store', 'HotelLandingController@store');
+    Route::get('/', $toSystem)->name('tenant.hotels.home');
+    Route::get('blog', $toSystem)->name('tenant.hotels.blog');
+    Route::get('blog/{slug}', $toSystem)->name('tenant.hotels.blog.post');
 
-    // Direcciones antiguas (/reservas...) -> raíz, para no romper los enlaces
-    // ya compartidos ni lo que tenga indexado el buscador.
-    Route::get('reservas', function () { return redirect('/', 301); })->name('tenant.hotels.landing');
-    Route::get('reservas/blog', function () { return redirect('/blog', 301); });
-    Route::get('reservas/blog/{slug}', function ($slug) { return redirect('/blog/'.$slug, 301); });
+    // Direcciones antiguas y endpoints AJAX del buscador/reserva: se mantienen
+    // declarados para que un enlace viejo o un bot acaben en el login en vez de
+    // en un 404 del que no se entienda nada.
+    Route::get('reservas', $toSystem)->name('tenant.hotels.landing');
+    Route::get('reservas/blog', $toSystem);
+    Route::get('reservas/blog/{slug}', $toSystem);
+    Route::get('reservas/room/{id}', $toSystem);
+    Route::get('reservas/document/{type}/{number}', $toSystem);
+    Route::post('reservas/search', $toSystem);
+    Route::post('reservas/store', $toSystem);
 
     Route::middleware(['auth', 'redirect.module', 'locked.tenant','check.email.verified'])
       ->prefix('hotels')
