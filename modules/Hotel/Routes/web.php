@@ -109,6 +109,10 @@ if ($hostname) {
             Route::post('/{id}/rent/extend-time', 'HotelRentController@extendTime');
             Route::get('/{id}/rent/get-item', 'HotelReceptionController@getItem');
             Route::put('/{id}/observations', 'HotelRentController@updateObservations');
+            // Hilo de observaciones de la habitación (mensajes con autor y fecha).
+            Route::get('/{id}/observations/notes', 'HotelRentController@observationNotes');
+            Route::post('/{id}/observations/notes', 'HotelRentController@storeObservationNote');
+            Route::delete('/{id}/observations/notes/{noteId}', 'HotelRentController@destroyObservationNote');
             Route::get('checkout-tables', 'HotelRentController@checkoutTables');
             Route::get('rent-products-tables', 'HotelRentController@rentProductsTables');
             Route::get('report/{start}/{end}/{establishment_id}', 'HotelRentController@report');

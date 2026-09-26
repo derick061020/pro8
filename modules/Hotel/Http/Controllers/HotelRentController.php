@@ -16,6 +16,7 @@ use Modules\Hotel\Models\HotelRoom;
 use Modules\Hotel\Models\HotelRoomRate;
 use Modules\Hotel\Models\HotelRate;
 use Modules\Hotel\Models\HotelRentChange;
+use Modules\Hotel\Models\HotelRentNote;
 use App\Models\Tenant\Item;
 use App\Models\Tenant\Configuration;
 use App\Models\Tenant\Company;
@@ -1838,6 +1839,192 @@ class HotelRentController extends Controller
                 'message' => 'Ocurrió un error al actualizar las observaciones: ' . $th->getMessage()
             ], 500);
         }
+    }
+
+    /**
+     * Hilo de observaciones de la habitación.
+     *
+     * Antes era un campo único que se sobrescribía en cada edición: no se sabía
+     * quién había anotado qué ni cuándo, y cada cambio borraba lo anterior.
+     * Ahora cada observación es un mensaje con autor y fecha.
+     */
+    public function observationNotes($id)
+    {
+        try {
+            $rent = HotelRent::findOrFail($id);
+
+            $this->seedFirstNoteFromLegacyField($rent);
+
+            return response()->json([
+                'success'      => true,
+                'notes'        => $this->notesPayload($rent->id),
+                // Para la inicial del avatar del redactor.
+                'current_user' => optional(auth()->user())->name,
+            ], 200);
+
+        } catch (\Throwable $th) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No se pudo cargar el historial de observaciones: ' . $th->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Añade una observación al hilo.
+     */
+    public function storeObservationNote($id, Request $request)
+    {
+        $body = trim((string) $request->input('body'));
+
+        if ($body === '') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Escribe la observación antes de enviarla.'
+            ], 422);
+        }
+
+        try {
+            $rent = HotelRent::findOrFail($id);
+            $user = auth()->user();
+
+            $this->seedFirstNoteFromLegacyField($rent);
+
+            HotelRentNote::create([
+                'hotel_rent_id' => $rent->id,
+                'user_id'       => $user->id ?? null,
+                'user_name'     => $user->name ?? null,
+                'body'          => $body,
+            ]);
+
+            $this->syncLegacyNotesField($rent);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Observación agregada.',
+                'notes'   => $this->notesPayload($rent->id),
+                'notes_field' => $rent->notes,
+            ], 200);
+
+        } catch (\Throwable $th) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No se pudo guardar la observación: ' . $th->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Elimina una observación del hilo. Cada quien borra las suyas; quien
+     * administra habitaciones puede borrar cualquiera.
+     */
+    public function destroyObservationNote($id, $noteId)
+    {
+        try {
+            $rent = HotelRent::findOrFail($id);
+            $note = HotelRentNote::where('hotel_rent_id', $rent->id)->findOrFail($noteId);
+            $user = auth()->user();
+
+            $isOwner = $note->user_id && $user && (int) $note->user_id === (int) $user->id;
+            $isAdmin = $user && in_array($user->type, ['admin', 'superadmin'], true);
+
+            if (!$isOwner && !$isAdmin) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Sólo puedes eliminar tus propias observaciones.'
+                ], 403);
+            }
+
+            $note->delete();
+
+            $this->syncLegacyNotesField($rent);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Observación eliminada.',
+                'notes'   => $this->notesPayload($rent->id),
+                'notes_field' => $rent->notes,
+            ], 200);
+
+        } catch (\Throwable $th) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No se pudo eliminar la observación: ' . $th->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * El hilo, del más reciente al más antiguo.
+     */
+    private function notesPayload($rentId)
+    {
+        $userId = auth()->id();
+        $user   = auth()->user();
+        $isAdmin = $user && in_array($user->type, ['admin', 'superadmin'], true);
+
+        return HotelRentNote::with('user:id,name')
+            ->where('hotel_rent_id', $rentId)
+            ->orderBy('created_at', 'desc')
+            ->orderBy('id', 'desc')
+            ->get()
+            ->map(function (HotelRentNote $note) use ($userId, $isAdmin) {
+                return [
+                    'id'         => $note->id,
+                    'body'       => $note->body,
+                    'author'     => $note->author,
+                    'created_at' => optional($note->created_at)->format('Y-m-d H:i:s'),
+                    'mine'       => $note->user_id && $userId && (int) $note->user_id === (int) $userId,
+                    'can_delete' => $isAdmin || ($note->user_id && $userId && (int) $note->user_id === (int) $userId),
+                ];
+            })
+            ->values();
+    }
+
+    /**
+     * Pasa al hilo la observación que estuviera guardada en el campo antiguo.
+     *
+     * Así no se pierde lo ya escrito al estrenar el historial. Se hace una sola
+     * vez: en cuanto el hilo tiene mensajes, el campo pasa a ser un reflejo de
+     * ellos y deja de ser la fuente.
+     */
+    private function seedFirstNoteFromLegacyField(HotelRent $rent)
+    {
+        $legacy = trim((string) $rent->notes);
+
+        if ($legacy === '' || HotelRentNote::where('hotel_rent_id', $rent->id)->exists()) {
+            return;
+        }
+
+        // Los timestamps no son fillable: se fijan a mano para que el mensaje
+        // conserve la fecha del registro y no la de hoy. Eloquent respeta un
+        // created_at ya asignado al guardar.
+        $note = new HotelRentNote();
+        $note->hotel_rent_id = $rent->id;
+        $note->user_id       = null;
+        $note->user_name     = null;
+        $note->body          = $legacy;
+        $note->created_at    = $rent->created_at ?: now();
+        $note->updated_at    = $note->created_at;
+        $note->save();
+    }
+
+    /**
+     * Mantiene `hotel_rents.notes` con la última observación del hilo.
+     *
+     * De ese campo dependen el indicador y el tooltip de la tarjeta de
+     * recepción, el calendario y la columna Observaciones del reporte, así que
+     * se conserva en lugar de vaciarlo.
+     */
+    private function syncLegacyNotesField(HotelRent $rent)
+    {
+        $last = HotelRentNote::where('hotel_rent_id', $rent->id)
+            ->orderBy('created_at', 'desc')
+            ->orderBy('id', 'desc')
+            ->first();
+
+        $rent->notes = $last ? $last->body : null;
+        $rent->save();
     }
 
     /**
