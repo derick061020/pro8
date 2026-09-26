@@ -10,10 +10,10 @@ use Hyn\Tenancy\Traits\UsesTenantConnection;
 /**
  * Una casilla del checklist de una limpieza.
  *
- * El checklist es la misma lista de artículos repetida en dos secciones: lo que
- * SE PUSO (se repuso lo que faltaba) y lo que SE CAMBIÓ (se sustituyó lo usado).
- * Recepción marca al asignar qué hay que hacer, y la encargada va marcando lo
- * hecho; cada casilla guarda la hora exacta en que se completó.
+ * El checklist tiene dos secciones con artículos DISTINTOS: lo que SE PUSO
+ * (consumibles que se reponen) y lo que SE CAMBIÓ (ropa de cama y baño que se
+ * sustituye). Recepción marca al asignar qué hay que hacer, y la encargada va
+ * marcando lo hecho; cada casilla guarda la hora exacta en que se completó.
  */
 class HotelCleaningChecklistItem extends Model
 {
@@ -37,21 +37,43 @@ class HotelCleaningChecklistItem extends Model
         'done_at' => 'datetime',
     ];
 
-    /** Secciones del checklist, en el orden en que se muestran. */
-    const SECTIONS = [
-        'placed'  => 'Se puso',
-        'changed' => 'Se cambió',
+    /**
+     * Definición del checklist: cada sección con SUS artículos, en el orden en
+     * que se muestran. Es la única fuente: para añadir o quitar un artículo se
+     * toca aquí (el Vue tiene una copia sólo para el formulario de asignación).
+     */
+    const CHECKLIST = [
+        'placed' => [
+            'label' => 'Se puso',
+            'items' => [
+                'toilet_paper' => 'Papel higiénico',
+                'soap'         => 'Jabón',
+                'sheets'       => 'Sábanas',
+            ],
+        ],
+        'changed' => [
+            'label' => 'Se cambió',
+            'items' => [
+                'towels'  => 'Toallas',
+                'duvets'  => 'Edredones',
+                'pillows' => 'Cojines',
+            ],
+        ],
     ];
 
-    /** Artículos del checklist, en el orden en que se muestran. */
-    const ITEMS = [
-        'towels'       => 'Toallas',
-        'toilet_paper' => 'Papel higiénico',
-        'soap'         => 'Jabón',
-        'sheets'       => 'Sábanas',
-        'duvets'       => 'Edredones',
-        'pillows'      => 'Cojines',
-    ];
+    /** Todas las casillas posibles como "seccion:articulo". */
+    public static function validKeys()
+    {
+        $keys = [];
+
+        foreach (self::CHECKLIST as $section => $definition) {
+            foreach (array_keys($definition['items']) as $itemKey) {
+                $keys[] = $section . ':' . $itemKey;
+            }
+        }
+
+        return $keys;
+    }
 
     public function cleaning()
     {
@@ -65,11 +87,11 @@ class HotelCleaningChecklistItem extends Model
 
     public function getSectionLabelAttribute()
     {
-        return self::SECTIONS[$this->section] ?? $this->section;
+        return self::CHECKLIST[$this->section]['label'] ?? $this->section;
     }
 
     public function getItemLabelAttribute()
     {
-        return self::ITEMS[$this->item_key] ?? $this->item_key;
+        return self::CHECKLIST[$this->section]['items'][$this->item_key] ?? $this->item_key;
     }
 }

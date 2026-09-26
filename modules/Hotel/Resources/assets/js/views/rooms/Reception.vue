@@ -631,17 +631,17 @@
             <div class="form-group">
                 <label class="control-label">Tareas de la limpieza</label>
                 <div class="clk-plan">
-                    <div v-for="sec in checklistSections" :key="sec.key" class="clk-plan-col">
+                    <div v-for="sec in checklistPlan" :key="sec.key" class="clk-plan-col">
                         <div class="clk-plan-head">
                             <el-checkbox
-                                :indeterminate="isSectionIndeterminate(sec.key)"
-                                :value="isSectionAllChecked(sec.key)"
-                                @change="toggleSection(sec.key, $event)"
+                                :indeterminate="isSectionIndeterminate(sec)"
+                                :value="isSectionAllChecked(sec)"
+                                @change="toggleSection(sec, $event)"
                             >{{ sec.label }}</el-checkbox>
                         </div>
                         <el-checkbox-group v-model="plannedChecklist" class="clk-plan-list">
                             <el-checkbox
-                                v-for="it in checklistItems"
+                                v-for="it in sec.items"
                                 :key="sec.key + ':' + it.key"
                                 :label="sec.key + ':' + it.key"
                             >{{ it.label }}</el-checkbox>
@@ -2322,18 +2322,27 @@ export default {
             availableRates: [],
             selectedNewRate: null,
             showCleanerModal: false,
-            // Checklist de la limpieza: lo que se puso y lo que se cambió.
-            checklistSections: [
-                { key: 'placed',  label: 'Se puso' },
-                { key: 'changed', label: 'Se cambió' },
-            ],
-            checklistItems: [
-                { key: 'towels',       label: 'Toallas' },
-                { key: 'toilet_paper', label: 'Papel higiénico' },
-                { key: 'soap',         label: 'Jabón' },
-                { key: 'sheets',       label: 'Sábanas' },
-                { key: 'duvets',       label: 'Edredones' },
-                { key: 'pillows',      label: 'Cojines' },
+            // Checklist de la limpieza. Cada sección tiene SUS artículos: los
+            // consumibles se reponen ("se puso") y la ropa de cama y baño se
+            // sustituye ("se cambió"). Copia de la constante CHECKLIST del
+            // modelo HotelCleaningChecklistItem: si cambia allí, cambia aquí.
+            checklistPlan: [
+                {
+                    key: 'placed', label: 'Se puso',
+                    items: [
+                        { key: 'toilet_paper', label: 'Papel higiénico' },
+                        { key: 'soap',         label: 'Jabón' },
+                        { key: 'sheets',       label: 'Sábanas' },
+                    ],
+                },
+                {
+                    key: 'changed', label: 'Se cambió',
+                    items: [
+                        { key: 'towels',  label: 'Toallas' },
+                        { key: 'duvets',  label: 'Edredones' },
+                        { key: 'pillows', label: 'Cojines' },
+                    ],
+                },
             ],
             plannedChecklist: [],
             showFinalizeCleanModal: false,
@@ -3371,23 +3380,21 @@ export default {
         },
         /** Todas las casillas marcadas: es el valor por defecto al asignar. */
         resetPlannedChecklist() {
-            const all = [];
-            this.checklistSections.forEach(sec => {
-                this.checklistItems.forEach(it => all.push(`${sec.key}:${it.key}`));
-            });
-            this.plannedChecklist = all;
+            this.plannedChecklist = this.checklistPlan.flatMap(
+                sec => sec.items.map(it => `${sec.key}:${it.key}`));
         },
-        isSectionAllChecked(sectionKey) {
-            return this.checklistItems.every(
-                it => this.plannedChecklist.includes(`${sectionKey}:${it.key}`));
+        sectionKeys(sec) {
+            return sec.items.map(it => `${sec.key}:${it.key}`);
         },
-        isSectionIndeterminate(sectionKey) {
-            const n = this.checklistItems.filter(
-                it => this.plannedChecklist.includes(`${sectionKey}:${it.key}`)).length;
-            return n > 0 && n < this.checklistItems.length;
+        isSectionAllChecked(sec) {
+            return this.sectionKeys(sec).every(k => this.plannedChecklist.includes(k));
         },
-        toggleSection(sectionKey, checked) {
-            const keys = this.checklistItems.map(it => `${sectionKey}:${it.key}`);
+        isSectionIndeterminate(sec) {
+            const n = this.sectionKeys(sec).filter(k => this.plannedChecklist.includes(k)).length;
+            return n > 0 && n < sec.items.length;
+        },
+        toggleSection(sec, checked) {
+            const keys = this.sectionKeys(sec);
             this.plannedChecklist = checked
                 ? Array.from(new Set([...this.plannedChecklist, ...keys]))
                 : this.plannedChecklist.filter(k => !keys.includes(k));
