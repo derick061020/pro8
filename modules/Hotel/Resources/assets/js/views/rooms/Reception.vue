@@ -210,19 +210,22 @@
                                     <div class="room-top-right-elements">
                                         <!-- Contador regresivo -->
                                     <room-countdown v-if="ro.rent" :rent="ro.rent"></room-countdown>
-                                        <!-- Indicador de observaciones -->
-                                        <div 
-                                            v-if="ro.rent && ro.rent.notes" 
+                                        <!-- Indicador de observaciones: abre el hilo
+                                             completo. Antes era un tooltip al pasar el
+                                             ratón y sólo enseñaba la última. -->
+                                        <button
+                                            v-if="ro.rent && ro.rent.notes"
+                                            type="button"
                                             class="observations-indicator"
-                                            @mouseenter="showObservationTooltip(ro, $event)"
-                                            @mouseleave="hideObservationTooltip"
+                                            title="Ver observaciones"
+                                            @click.stop="onViewEditObservations(ro)"
                                         >
                                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                                 <circle cx="12" cy="12" r="10"></circle>
                                                 <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
                                                 <line x1="12" y1="17" x2="12.01" y2="17"></line>
                                             </svg>
-                                        </div>
+                                        </button>
                                     </div>
                                     <!---<p>
                                         <svg  xmlns="http://www.w3.org/2000/svg"  width="18"  height="18"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-calendar"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M4 7a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2v-12z" /><path d="M16 3v4" /><path d="M8 3v4" /><path d="M4 11h16" /><path d="M11 15h1" /><path d="M12 15v3" /></svg>
@@ -993,28 +996,6 @@
             </div>
         </el-dialog>
 
-        <!-- Tooltip para observaciones -->
-        <div 
-            v-if="observationTooltip.visible" 
-            class="observation-tooltip"
-            :style="{ left: observationTooltip.x + 'px', top: observationTooltip.y + 'px' }"
-        >
-            <div class="observation-tooltip-content">
-                <div class="observation-tooltip-header">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                        <polyline points="14 2 14 8 20 8"></polyline>
-                        <line x1="16" y1="13" x2="8" y2="13"></line>
-                        <line x1="16" y1="17" x2="8" y2="17"></line>
-                        <polyline points="10 9 9 9 8 9"></polyline>
-                    </svg>
-                    <strong>Observaciones</strong>
-                </div>
-                <div class="observation-tooltip-text">
-                    {{ observationTooltip.text }}
-                </div>
-            </div>
-        </div>
     </div>
 </template>
 <style>
@@ -1549,6 +1530,9 @@
 
 /* Indicador de observaciones */
 .observations-indicator {
+    /* Es un <button>: se anulan el padding y la apariencia del navegador. */
+    padding: 0;
+    appearance: none;
     right: 10px;
     width: 24px;
     height: 24px;
@@ -1713,6 +1697,8 @@
 
 /* Indicador de observaciones - ajustado para estar en el contenedor */
 .observations-indicator {
+    padding: 0;
+    appearance: none;
     width: 20px;
     height: 20px;
     background: rgba(255, 255, 255, 0.9);
@@ -1868,64 +1854,10 @@
 }
 .obs-empty p { margin: 8px 0 0; font-size: 13px; }
 
-/* Tooltip para observaciones */
-.observation-tooltip {
-    position: fixed;
-    z-index: 9999;
-    background: white;
-    border: 1px solid #e0e0e0;
-    border-radius: 8px;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
-    padding: 0;
-    max-width: 300px;
-    animation: fadeInTooltip 0.3s ease;
-}
-
-.observation-tooltip-content {
-    padding: 12px 16px;
-}
-
-.observation-tooltip-header {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-bottom: 8px;
-    color: #333;
-    font-size: 14px;
-    font-weight: 600;
-}
-
-.observation-tooltip-header svg {
-    color: #ff9800;
-}
-
-.observation-tooltip-text {
-    color: #666;
-    font-size: 13px;
-    line-height: 1.4;
-    word-wrap: break-word;
-    white-space: pre-wrap;
-}
-
-@keyframes fadeInTooltip {
-    from {
-        opacity: 0;
-        transform: translateY(-5px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
 /* Responsive: opciones del modal de habitación ocupada */
 @media (max-width: 768px) {
     .occupied-options-grid {
         grid-template-columns: 1fr;
-    }
-    .observation-tooltip {
-        max-width: 250px;
-        font-size: 12px;
     }
 }
 
@@ -2309,12 +2241,6 @@ export default {
             // Modal: lista de reservas vigentes
             showReservationsListModal: false,
             reservationsListRoom: null,
-            observationTooltip: {
-                visible: false,
-                text: '',
-                x: 0,
-                y: 0
-            },
             timeRemaining: {},
             countdownInterval: null,
             showChangeRoomModal: false,
@@ -3115,36 +3041,6 @@ export default {
 
             const date = moment(value, "YYYY-MM-DD HH:mm:ss");
             return date.isValid() ? date.format("DD/MM/YYYY HH:mm") : value;
-        },
-        showObservationTooltip(room, event) {
-            if (room.rent && room.rent.notes) {
-                // Calcular posición del tooltip
-                const rect = event.target.getBoundingClientRect();
-                const tooltipWidth = 300; // Ancho máximo del tooltip
-                const tooltipHeight = 150; // Altura estimada
-                
-                let x = rect.left + rect.width / 2 - tooltipWidth / 2;
-                let y = rect.bottom + 10;
-                
-                // Ajustar si se sale de la pantalla
-                if (x < 10) x = 10;
-                if (x + tooltipWidth > window.innerWidth - 10) {
-                    x = window.innerWidth - tooltipWidth - 10;
-                }
-                if (y + tooltipHeight > window.innerHeight - 10) {
-                    y = rect.top - tooltipHeight - 10;
-                }
-                
-                this.observationTooltip = {
-                    visible: true,
-                    text: room.rent.notes,
-                    x: x,
-                    y: y
-                };
-            }
-        },
-        hideObservationTooltip() {
-            this.observationTooltip.visible = false;
         },
         initializeCountdown() {
             // El contador visible (segundos) lo maneja ahora cada tarjeta con el
