@@ -812,17 +812,55 @@
                                 <span class="obs-note-date">
                                     {{ relativeTime(note.created_at) }}
                                     <span class="obs-note-exact">({{ exactDateTime(note.created_at) }})</span>
+                                    <span
+                                        v-if="note.edited"
+                                        class="obs-note-edited"
+                                        :title="'Editada el ' + exactDateTime(note.edited_at)"
+                                    >· editada</span>
                                 </span>
-                                <button
-                                    v-if="note.can_delete"
-                                    class="obs-note-del"
-                                    title="Eliminar observación"
-                                    @click="removeObservation(note)"
-                                >
-                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6l-.9 12.1a2 2 0 0 1-2 1.9H7.9a2 2 0 0 1-2-1.9L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
-                                </button>
+                                <span class="obs-note-actions" v-if="editingNoteId !== note.id">
+                                    <button
+                                        v-if="note.can_edit"
+                                        class="obs-note-act"
+                                        title="Editar observación"
+                                        @click="startEditObservation(note)"
+                                    >
+                                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>
+                                    </button>
+                                    <button
+                                        v-if="note.can_delete"
+                                        class="obs-note-act obs-note-del"
+                                        title="Eliminar observación"
+                                        @click="removeObservation(note)"
+                                    >
+                                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6l-.9 12.1a2 2 0 0 1-2 1.9H7.9a2 2 0 0 1-2-1.9L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
+                                    </button>
+                                </span>
                             </div>
-                            <div class="obs-note-body">{{ note.body }}</div>
+
+                            <!-- Edición en línea -->
+                            <div v-if="editingNoteId === note.id" class="obs-note-edit">
+                                <el-input
+                                    type="textarea"
+                                    :rows="3"
+                                    resize="none"
+                                    v-model="editingNoteBody"
+                                    @keydown.native.ctrl.enter="saveEditObservation(note)"
+                                    @keydown.native.meta.enter="saveEditObservation(note)"
+                                    @keydown.native.esc="cancelEditObservation"
+                                ></el-input>
+                                <div class="obs-note-edit-actions">
+                                    <el-button size="mini" @click="cancelEditObservation">Cancelar</el-button>
+                                    <el-button
+                                        size="mini"
+                                        type="primary"
+                                        :loading="savingEdit"
+                                        :disabled="!editingNoteBody.trim()"
+                                        @click="saveEditObservation(note)"
+                                    >Guardar</el-button>
+                                </div>
+                            </div>
+                            <div v-else class="obs-note-body">{{ note.body }}</div>
                         </div>
                     </div>
 
@@ -1837,12 +1875,21 @@
 .obs-note-date { font-size: 11.5px; color: #9ca3af; }
 .obs-note-exact { color: #c3cad4; }
 
-.obs-note-del {
-    margin-left: auto; border: 0; background: transparent; cursor: pointer;
+.obs-note-edited { color: #c3cad4; font-style: italic; }
+
+.obs-note-actions { margin-left: auto; display: flex; gap: 2px; }
+.obs-note-act {
+    border: 0; background: transparent; cursor: pointer;
     color: #cbd5e1; padding: 2px 4px; border-radius: 4px; line-height: 0;
     transition: all .12s;
 }
+.obs-note-act:hover { color: #4f46e5; background: #eef2ff; }
 .obs-note-del:hover { color: #dc2626; background: #fef2f2; }
+
+.obs-note-edit { margin-top: 6px; }
+.obs-note-edit-actions {
+    display: flex; justify-content: flex-end; gap: 6px; margin-top: 6px;
+}
 
 .obs-note-body {
     margin-top: 3px; font-size: 13.5px; color: #374151;
@@ -2237,6 +2284,9 @@ export default {
             // Hilo de observaciones: cada mensaje con su autor y su fecha.
             observationNotes: [],
             sendingObservation: false,
+            editingNoteId: null,
+            editingNoteBody: "",
+            savingEdit: false,
             currentUserName: "",
             // Modal: lista de reservas vigentes
             showReservationsListModal: false,
@@ -2928,6 +2978,7 @@ export default {
             this.selectedRoom = room;
             this.observationsText = "";
             this.observationNotes = [];
+            this.cancelEditObservation();
             this.showObservationsModal = true;
             this.loadObservationNotes();
         },
@@ -2974,6 +3025,42 @@ export default {
                 });
             } finally {
                 this.sendingObservation = false;
+            }
+        },
+        startEditObservation(note) {
+            this.editingNoteId = note.id;
+            this.editingNoteBody = note.body;
+        },
+        cancelEditObservation() {
+            this.editingNoteId = null;
+            this.editingNoteBody = "";
+        },
+        async saveEditObservation(note) {
+            const body = this.editingNoteBody.trim();
+            if (!body || this.savingEdit) return;
+
+            if (body === note.body) {   // sin cambios: no se molesta al servidor
+                this.cancelEditObservation();
+                return;
+            }
+
+            this.savingEdit = true;
+            try {
+                const { data } = await this.$http.put(
+                    `/hotels/reception/${this.selectedRoom.rent.id}/observations/notes/${note.id}`,
+                    { body }
+                );
+                this.observationNotes = data.notes || [];
+                if (this.selectedRoom.rent) {
+                    this.selectedRoom.rent.notes = data.notes_field || null;
+                }
+                this.cancelEditObservation();
+            } catch (e) {
+                this.$message.error(
+                    e.response?.data?.message || 'No se pudo editar la observación'
+                );
+            } finally {
+                this.savingEdit = false;
             }
         },
         async removeObservation(note) {
