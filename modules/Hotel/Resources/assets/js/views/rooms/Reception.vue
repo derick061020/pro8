@@ -1141,6 +1141,20 @@
     border: 0 !important;
     box-shadow: 0 4px 14px rgba(198, 40, 40, 0.38) !important;
 }
+/* Ocupada HOY: rojo mucho más intenso que el de las ocupaciones de días
+   anteriores, para que los ingresos de la jornada salten a la vista. Necesita
+   la misma especificidad que .occupied más la propia clase, si no el rojo base
+   gana por orden. */
+.room-container .room-el-card.occupied.occupied-today,
+.hotel-rooms .room-el-card.occupied.occupied-today.el-card {
+    background: linear-gradient(135deg, #ff1e3c 0%, #e00020 38%, #a3000f 72%, #6d0009 100%) !important;
+    border: 0 !important;
+    box-shadow: 0 6px 20px rgba(200, 0, 20, 0.55) !important;
+}
+.room-container .room-el-card.occupied.occupied-today .el-card__body {
+    background: transparent !important;
+}
+
 .room-container .room-el-card.occupied-last,
 .hotel-rooms .room-el-card.occupied-last.el-card {
     background: linear-gradient(135deg, #a855f7 0%, #6b21a8 100%) !important;
@@ -2846,6 +2860,12 @@ export default {
             // filteredItems, así no se golpea el backend al cambiar filtro.
             this.hotel_status_room = (status === "" || status == null) ? null : status;
         },
+        /** ¿El huésped entró hoy? Se compara sólo la fecha, no la hora. */
+        isOccupiedToday(ro) {
+            if (!ro.rent || !ro.rent.input_date) return false;
+
+            return String(ro.rent.input_date).substring(0, 10) === moment().format('YYYY-MM-DD');
+        },
         onGetColorStatus(ro) {
             const status = ro.status;
 
@@ -2893,7 +2913,11 @@ export default {
                     this.timeRemaining[ro.id].totalMs <= 3600000) {
                     return "occupied-soon occupied";
                 }
-                return "occupied";
+                // Ocupada HOY frente a ocupada de días anteriores: recepción
+                // necesita distinguir de un vistazo los ingresos de la jornada.
+                // Va después de las de vencimiento (moradas), que son más
+                // urgentes y deben seguir ganando.
+                return this.isOccupiedToday(ro) ? "occupied occupied-today" : "occupied";
             } else if (status === "LIMPIEZA") {
                 return "cleaning";
             }
