@@ -112,6 +112,7 @@ if ($hostname) {
             // Hilo de observaciones de la habitación (mensajes con autor y fecha).
             Route::get('/{id}/observations/notes', 'HotelRentController@observationNotes');
             Route::post('/{id}/observations/notes', 'HotelRentController@storeObservationNote');
+            Route::put('/{id}/observations/notes/{noteId}', 'HotelRentController@updateObservationNote');
             Route::delete('/{id}/observations/notes/{noteId}', 'HotelRentController@destroyObservationNote');
             Route::get('checkout-tables', 'HotelRentController@checkoutTables');
             Route::get('rent-products-tables', 'HotelRentController@rentProductsTables');

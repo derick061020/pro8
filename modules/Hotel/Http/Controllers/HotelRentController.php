@@ -1915,6 +1915,74 @@ class HotelRentController extends Controller
     }
 
     /**
+     * Edita una observación del hilo.
+     *
+     * Mismas reglas que el borrado: cada quien edita las suyas y quien
+     * administra habitaciones puede editar cualquiera. No se cambia el autor ni
+     * la fecha original; el mensaje queda marcado como editado.
+     */
+    public function updateObservationNote($id, $noteId, Request $request)
+    {
+        $body = trim((string) $request->input('body'));
+
+        if ($body === '') {
+            return response()->json([
+                'success' => false,
+                'message' => 'La observación no puede quedar vacía.'
+            ], 422);
+        }
+
+        try {
+            $rent = HotelRent::findOrFail($id);
+            $note = HotelRentNote::where('hotel_rent_id', $rent->id)->findOrFail($noteId);
+
+            if (!$this->canManageNote($note)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Sólo puedes editar tus propias observaciones.'
+                ], 403);
+            }
+
+            $note->body = $body;
+            $note->save();
+
+            $this->syncLegacyNotesField($rent);
+
+            return response()->json([
+                'success'     => true,
+                'message'     => 'Observación actualizada.',
+                'notes'       => $this->notesPayload($rent->id),
+                'notes_field' => $rent->notes,
+            ], 200);
+
+        } catch (\Throwable $th) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No se pudo editar la observación: ' . $th->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * ¿El usuario puede tocar esta observación? La suya siempre; el resto sólo
+     * quien administra.
+     */
+    private function canManageNote(HotelRentNote $note)
+    {
+        $user = auth()->user();
+
+        if (!$user) {
+            return false;
+        }
+
+        if ($note->user_id && (int) $note->user_id === (int) $user->id) {
+            return true;
+        }
+
+        return in_array($user->type, ['admin', 'superadmin'], true);
+    }
+
+    /**
      * Elimina una observación del hilo. Cada quien borra las suyas; quien
      * administra habitaciones puede borrar cualquiera.
      */
@@ -1923,12 +1991,8 @@ class HotelRentController extends Controller
         try {
             $rent = HotelRent::findOrFail($id);
             $note = HotelRentNote::where('hotel_rent_id', $rent->id)->findOrFail($noteId);
-            $user = auth()->user();
 
-            $isOwner = $note->user_id && $user && (int) $note->user_id === (int) $user->id;
-            $isAdmin = $user && in_array($user->type, ['admin', 'superadmin'], true);
-
-            if (!$isOwner && !$isAdmin) {
+            if (!$this->canManageNote($note)) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Sólo puedes eliminar tus propias observaciones.'
@@ -1960,22 +2024,28 @@ class HotelRentController extends Controller
     private function notesPayload($rentId)
     {
         $userId = auth()->id();
-        $user   = auth()->user();
-        $isAdmin = $user && in_array($user->type, ['admin', 'superadmin'], true);
 
         return HotelRentNote::with('user:id,name')
             ->where('hotel_rent_id', $rentId)
             ->orderBy('created_at', 'desc')
             ->orderBy('id', 'desc')
             ->get()
-            ->map(function (HotelRentNote $note) use ($userId, $isAdmin) {
+            ->map(function (HotelRentNote $note) use ($userId) {
+                // Se considera editada cuando updated_at se separó de
+                // created_at; así no hace falta una columna extra.
+                $edited = $note->created_at && $note->updated_at
+                    && $note->updated_at->diffInSeconds($note->created_at) > 1;
+
                 return [
                     'id'         => $note->id,
                     'body'       => $note->body,
                     'author'     => $note->author,
                     'created_at' => optional($note->created_at)->format('Y-m-d H:i:s'),
+                    'edited'     => (bool) $edited,
+                    'edited_at'  => $edited ? $note->updated_at->format('Y-m-d H:i:s') : null,
                     'mine'       => $note->user_id && $userId && (int) $note->user_id === (int) $userId,
-                    'can_delete' => $isAdmin || ($note->user_id && $userId && (int) $note->user_id === (int) $userId),
+                    'can_edit'   => $this->canManageNote($note),
+                    'can_delete' => $this->canManageNote($note),
                 ];
             })
             ->values();

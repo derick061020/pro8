@@ -210,19 +210,22 @@
                                     <div class="room-top-right-elements">
                                         <!-- Contador regresivo -->
                                     <room-countdown v-if="ro.rent" :rent="ro.rent"></room-countdown>
-                                        <!-- Indicador de observaciones -->
-                                        <div 
-                                            v-if="ro.rent && ro.rent.notes" 
+                                        <!-- Indicador de observaciones: abre el hilo
+                                             completo. Antes era un tooltip al pasar el
+                                             ratón y sólo enseñaba la última. -->
+                                        <button
+                                            v-if="ro.rent && ro.rent.notes"
+                                            type="button"
                                             class="observations-indicator"
-                                            @mouseenter="showObservationTooltip(ro, $event)"
-                                            @mouseleave="hideObservationTooltip"
+                                            title="Ver observaciones"
+                                            @click.stop="onViewEditObservations(ro)"
                                         >
                                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                                 <circle cx="12" cy="12" r="10"></circle>
                                                 <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
                                                 <line x1="12" y1="17" x2="12.01" y2="17"></line>
                                             </svg>
-                                        </div>
+                                        </button>
                                     </div>
                                     <!---<p>
                                         <svg  xmlns="http://www.w3.org/2000/svg"  width="18"  height="18"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-calendar"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M4 7a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2v-12z" /><path d="M16 3v4" /><path d="M8 3v4" /><path d="M4 11h16" /><path d="M11 15h1" /><path d="M12 15v3" /></svg>
@@ -809,17 +812,55 @@
                                 <span class="obs-note-date">
                                     {{ relativeTime(note.created_at) }}
                                     <span class="obs-note-exact">({{ exactDateTime(note.created_at) }})</span>
+                                    <span
+                                        v-if="note.edited"
+                                        class="obs-note-edited"
+                                        :title="'Editada el ' + exactDateTime(note.edited_at)"
+                                    >· editada</span>
                                 </span>
-                                <button
-                                    v-if="note.can_delete"
-                                    class="obs-note-del"
-                                    title="Eliminar observación"
-                                    @click="removeObservation(note)"
-                                >
-                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6l-.9 12.1a2 2 0 0 1-2 1.9H7.9a2 2 0 0 1-2-1.9L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
-                                </button>
+                                <span class="obs-note-actions" v-if="editingNoteId !== note.id">
+                                    <button
+                                        v-if="note.can_edit"
+                                        class="obs-note-act"
+                                        title="Editar observación"
+                                        @click="startEditObservation(note)"
+                                    >
+                                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>
+                                    </button>
+                                    <button
+                                        v-if="note.can_delete"
+                                        class="obs-note-act obs-note-del"
+                                        title="Eliminar observación"
+                                        @click="removeObservation(note)"
+                                    >
+                                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6l-.9 12.1a2 2 0 0 1-2 1.9H7.9a2 2 0 0 1-2-1.9L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
+                                    </button>
+                                </span>
                             </div>
-                            <div class="obs-note-body">{{ note.body }}</div>
+
+                            <!-- Edición en línea -->
+                            <div v-if="editingNoteId === note.id" class="obs-note-edit">
+                                <el-input
+                                    type="textarea"
+                                    :rows="3"
+                                    resize="none"
+                                    v-model="editingNoteBody"
+                                    @keydown.native.ctrl.enter="saveEditObservation(note)"
+                                    @keydown.native.meta.enter="saveEditObservation(note)"
+                                    @keydown.native.esc="cancelEditObservation"
+                                ></el-input>
+                                <div class="obs-note-edit-actions">
+                                    <el-button size="mini" @click="cancelEditObservation">Cancelar</el-button>
+                                    <el-button
+                                        size="mini"
+                                        type="primary"
+                                        :loading="savingEdit"
+                                        :disabled="!editingNoteBody.trim()"
+                                        @click="saveEditObservation(note)"
+                                    >Guardar</el-button>
+                                </div>
+                            </div>
+                            <div v-else class="obs-note-body">{{ note.body }}</div>
                         </div>
                     </div>
 
@@ -993,28 +1034,6 @@
             </div>
         </el-dialog>
 
-        <!-- Tooltip para observaciones -->
-        <div 
-            v-if="observationTooltip.visible" 
-            class="observation-tooltip"
-            :style="{ left: observationTooltip.x + 'px', top: observationTooltip.y + 'px' }"
-        >
-            <div class="observation-tooltip-content">
-                <div class="observation-tooltip-header">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                        <polyline points="14 2 14 8 20 8"></polyline>
-                        <line x1="16" y1="13" x2="8" y2="13"></line>
-                        <line x1="16" y1="17" x2="8" y2="17"></line>
-                        <polyline points="10 9 9 9 8 9"></polyline>
-                    </svg>
-                    <strong>Observaciones</strong>
-                </div>
-                <div class="observation-tooltip-text">
-                    {{ observationTooltip.text }}
-                </div>
-            </div>
-        </div>
     </div>
 </template>
 <style>
@@ -1549,6 +1568,9 @@
 
 /* Indicador de observaciones */
 .observations-indicator {
+    /* Es un <button>: se anulan el padding y la apariencia del navegador. */
+    padding: 0;
+    appearance: none;
     right: 10px;
     width: 24px;
     height: 24px;
@@ -1713,6 +1735,8 @@
 
 /* Indicador de observaciones - ajustado para estar en el contenedor */
 .observations-indicator {
+    padding: 0;
+    appearance: none;
     width: 20px;
     height: 20px;
     background: rgba(255, 255, 255, 0.9);
@@ -1851,12 +1875,21 @@
 .obs-note-date { font-size: 11.5px; color: #9ca3af; }
 .obs-note-exact { color: #c3cad4; }
 
-.obs-note-del {
-    margin-left: auto; border: 0; background: transparent; cursor: pointer;
+.obs-note-edited { color: #c3cad4; font-style: italic; }
+
+.obs-note-actions { margin-left: auto; display: flex; gap: 2px; }
+.obs-note-act {
+    border: 0; background: transparent; cursor: pointer;
     color: #cbd5e1; padding: 2px 4px; border-radius: 4px; line-height: 0;
     transition: all .12s;
 }
+.obs-note-act:hover { color: #4f46e5; background: #eef2ff; }
 .obs-note-del:hover { color: #dc2626; background: #fef2f2; }
+
+.obs-note-edit { margin-top: 6px; }
+.obs-note-edit-actions {
+    display: flex; justify-content: flex-end; gap: 6px; margin-top: 6px;
+}
 
 .obs-note-body {
     margin-top: 3px; font-size: 13.5px; color: #374151;
@@ -1868,64 +1901,10 @@
 }
 .obs-empty p { margin: 8px 0 0; font-size: 13px; }
 
-/* Tooltip para observaciones */
-.observation-tooltip {
-    position: fixed;
-    z-index: 9999;
-    background: white;
-    border: 1px solid #e0e0e0;
-    border-radius: 8px;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
-    padding: 0;
-    max-width: 300px;
-    animation: fadeInTooltip 0.3s ease;
-}
-
-.observation-tooltip-content {
-    padding: 12px 16px;
-}
-
-.observation-tooltip-header {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-bottom: 8px;
-    color: #333;
-    font-size: 14px;
-    font-weight: 600;
-}
-
-.observation-tooltip-header svg {
-    color: #ff9800;
-}
-
-.observation-tooltip-text {
-    color: #666;
-    font-size: 13px;
-    line-height: 1.4;
-    word-wrap: break-word;
-    white-space: pre-wrap;
-}
-
-@keyframes fadeInTooltip {
-    from {
-        opacity: 0;
-        transform: translateY(-5px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
 /* Responsive: opciones del modal de habitación ocupada */
 @media (max-width: 768px) {
     .occupied-options-grid {
         grid-template-columns: 1fr;
-    }
-    .observation-tooltip {
-        max-width: 250px;
-        font-size: 12px;
     }
 }
 
@@ -2305,16 +2284,13 @@ export default {
             // Hilo de observaciones: cada mensaje con su autor y su fecha.
             observationNotes: [],
             sendingObservation: false,
+            editingNoteId: null,
+            editingNoteBody: "",
+            savingEdit: false,
             currentUserName: "",
             // Modal: lista de reservas vigentes
             showReservationsListModal: false,
             reservationsListRoom: null,
-            observationTooltip: {
-                visible: false,
-                text: '',
-                x: 0,
-                y: 0
-            },
             timeRemaining: {},
             countdownInterval: null,
             showChangeRoomModal: false,
@@ -3002,6 +2978,7 @@ export default {
             this.selectedRoom = room;
             this.observationsText = "";
             this.observationNotes = [];
+            this.cancelEditObservation();
             this.showObservationsModal = true;
             this.loadObservationNotes();
         },
@@ -3048,6 +3025,42 @@ export default {
                 });
             } finally {
                 this.sendingObservation = false;
+            }
+        },
+        startEditObservation(note) {
+            this.editingNoteId = note.id;
+            this.editingNoteBody = note.body;
+        },
+        cancelEditObservation() {
+            this.editingNoteId = null;
+            this.editingNoteBody = "";
+        },
+        async saveEditObservation(note) {
+            const body = this.editingNoteBody.trim();
+            if (!body || this.savingEdit) return;
+
+            if (body === note.body) {   // sin cambios: no se molesta al servidor
+                this.cancelEditObservation();
+                return;
+            }
+
+            this.savingEdit = true;
+            try {
+                const { data } = await this.$http.put(
+                    `/hotels/reception/${this.selectedRoom.rent.id}/observations/notes/${note.id}`,
+                    { body }
+                );
+                this.observationNotes = data.notes || [];
+                if (this.selectedRoom.rent) {
+                    this.selectedRoom.rent.notes = data.notes_field || null;
+                }
+                this.cancelEditObservation();
+            } catch (e) {
+                this.$message.error(
+                    e.response?.data?.message || 'No se pudo editar la observación'
+                );
+            } finally {
+                this.savingEdit = false;
             }
         },
         async removeObservation(note) {
@@ -3115,36 +3128,6 @@ export default {
 
             const date = moment(value, "YYYY-MM-DD HH:mm:ss");
             return date.isValid() ? date.format("DD/MM/YYYY HH:mm") : value;
-        },
-        showObservationTooltip(room, event) {
-            if (room.rent && room.rent.notes) {
-                // Calcular posición del tooltip
-                const rect = event.target.getBoundingClientRect();
-                const tooltipWidth = 300; // Ancho máximo del tooltip
-                const tooltipHeight = 150; // Altura estimada
-                
-                let x = rect.left + rect.width / 2 - tooltipWidth / 2;
-                let y = rect.bottom + 10;
-                
-                // Ajustar si se sale de la pantalla
-                if (x < 10) x = 10;
-                if (x + tooltipWidth > window.innerWidth - 10) {
-                    x = window.innerWidth - tooltipWidth - 10;
-                }
-                if (y + tooltipHeight > window.innerHeight - 10) {
-                    y = rect.top - tooltipHeight - 10;
-                }
-                
-                this.observationTooltip = {
-                    visible: true,
-                    text: room.rent.notes,
-                    x: x,
-                    y: y
-                };
-            }
-        },
-        hideObservationTooltip() {
-            this.observationTooltip.visible = false;
         },
         initializeCountdown() {
             // El contador visible (segundos) lo maneja ahora cada tarjeta con el
