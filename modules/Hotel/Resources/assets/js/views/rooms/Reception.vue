@@ -2860,11 +2860,27 @@ export default {
             // filteredItems, así no se golpea el backend al cambiar filtro.
             this.hotel_status_room = (status === "" || status == null) ? null : status;
         },
-        /** ¿El huésped entró hoy? Se compara sólo la fecha, no la hora. */
+        /**
+         * ¿El registro es de la jornada de hoy?
+         *
+         * La jornada va de las 05:00 a las 23:59 del día en curso. Un ingreso
+         * de madrugada (p. ej. 01:00 con salida al mediodía) NO cuenta como
+         * ingreso del día: pertenece al turno de la noche anterior y se queda
+         * con el rojo normal.
+         */
         isOccupiedToday(ro) {
             if (!ro.rent || !ro.rent.input_date) return false;
 
-            return String(ro.rent.input_date).substring(0, 10) === moment().format('YYYY-MM-DD');
+            const fecha = String(ro.rent.input_date).substring(0, 10);
+            const hora  = String(ro.rent.input_time || '00:00').substring(0, 5);
+            const ingreso = moment(`${fecha} ${hora}`, 'YYYY-MM-DD HH:mm');
+
+            if (!ingreso.isValid()) return false;
+
+            const inicioJornada = moment().startOf('day').add(5, 'hours');  // hoy 05:00
+            const finJornada    = moment().endOf('day');                    // hoy 23:59:59
+
+            return ingreso.isSameOrAfter(inicioJornada) && ingreso.isSameOrBefore(finJornada);
         },
         onGetColorStatus(ro) {
             const status = ro.status;
