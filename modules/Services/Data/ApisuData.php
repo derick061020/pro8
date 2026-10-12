@@ -189,11 +189,18 @@ class ApisuData
 
         // El departamento va pegado al final de la calle y puede tener varias palabras
         $department = null;
+        $departmentName = '';
         foreach (Department::query()->get() as $row) {
-            $nombre = $this->normalize($row->description);
-            if ($cabezaNormal === $nombre || substr($cabezaNormal, -strlen($nombre) - 1) === ' ' . $nombre) {
-                if ($department === null || strlen($nombre) > strlen($this->normalize($department->description))) {
+            $nombres = [$this->normalize($row->description)];
+            if ($row->id === '07') {
+                // SUNAT escribe el Callao como "PROV. CONST. DEL CALLAO" también en el departamento
+                $nombres[] = 'PROV. CONST. DEL CALLAO';
+            }
+            foreach ($nombres as $nombre) {
+                $coincide = $cabezaNormal === $nombre || substr($cabezaNormal, -strlen($nombre) - 1) === ' ' . $nombre;
+                if ($coincide && strlen($nombre) > strlen($departmentName)) {
                     $department = $row;
+                    $departmentName = $nombre;
                 }
             }
         }
@@ -202,7 +209,7 @@ class ApisuData
             return [$direccion, []];
         }
 
-        $address = trim(mb_substr($cabeza, 0, mb_strlen($cabeza) - mb_strlen($department->description)));
+        $address = trim(mb_substr($cabeza, 0, mb_strlen($cabeza) - mb_strlen($departmentName)));
 
         // La colación del catálogo ignora mayúsculas y tildes
         $provinces = Province::query()->where('department_id', $department->id)->get();
