@@ -12,7 +12,6 @@ use Illuminate\Database\Query\Builder;
     use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
-use Modules\ApiPeruDev\Data\ServiceData;
 use Modules\FullSuscription\Http\Requests\PlanFullSuscriptionRequest;
     use Modules\FullSuscription\Http\Resources\SuscriptionPlansCollection;
     use Modules\FullSuscription\Http\Resources\SuscriptionPlansResource;
@@ -362,7 +361,7 @@ use Modules\Payment\Models\PaymentConfiguration;
                         ->first();
         if (!$person) {
             $type = strtolower(IdentityDocumentType::find($data['identity_document_type_id'])->description);
-            $service = new ServiceData;
+            $service = new \Modules\Services\Data\DocumentApiResolver();
             $person_data = $service->service($type, $data['number']);
 
             if (!$person_data['success']) {

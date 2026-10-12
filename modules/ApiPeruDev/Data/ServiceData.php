@@ -10,6 +10,7 @@ use App\Models\Tenant\Configuration as TenantConfig;
 use App\Models\System\TrackApiPeruServices as SystemTrackApiPeruService;
 use App\Models\Tenant\TrackApiPeruServices as TenantTrackApiPeruService;
 use Illuminate\Support\Facades\URL;
+use Modules\Services\Data\ApisuData;
 
 class ServiceData
 {
@@ -233,6 +234,26 @@ class ServiceData
                 'sale' => $exchange->sale
             ];
         }
+
+        // Primero la API SUNAT propia; apiperu queda de respaldo
+        $apisu = (new ApisuData())->exchange($date);
+        if ($apisu !== null) {
+            ExchangeRate::query()->create([
+                'date' => $apisu['date'],
+                'date_original' => $apisu['date_original'],
+                'sale_original' => $apisu['sale'],
+                'sale' => $apisu['sale'],
+                'purchase_original' => $apisu['purchase'],
+                'purchase' => $apisu['purchase'],
+            ]);
+
+            return [
+                'date' => $apisu['date'],
+                'purchase' => $apisu['purchase'],
+                'sale' => $apisu['sale']
+            ];
+        }
+
         $form_params = [
             'fecha' => $date,
         ];

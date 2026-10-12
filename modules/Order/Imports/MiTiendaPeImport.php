@@ -32,7 +32,6 @@
     use Maatwebsite\Excel\Concerns\Importable;
     use Maatwebsite\Excel\Concerns\ToCollection;
 
-    use Modules\ApiPeruDev\Data\ServiceData;
     use Modules\Order\Http\Controllers\OrderNoteController;
     use Modules\Order\Http\Requests\OrderNoteRequest;
     use Modules\Order\Models\ConfigurationMiTiendaPe;
@@ -617,7 +616,7 @@
 
         public static function getPersonData($number = null, $data = [])
         {
-            $service = new ServiceData();
+            $service = new \Modules\Services\Data\DocumentApiResolver();
             if (!empty($number)) {
                 $ruc = ['success' => false];
                 if (strlen($number) == 8) {

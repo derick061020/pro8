@@ -24,7 +24,6 @@ use Illuminate\Support\Facades\Validator;
 use Modules\Inventory\Models\InventoryConfiguration;
 use App\Http\Resources\Tenant\OrderCollection;
 use App\Models\Tenant\Promotion;
-use Modules\ApiPeruDev\Data\ServiceData;
 use App\Models\Tenant\Document;
 use Modules\Item\Models\Category;
 use App\Models\Tenant\Catalogs\Department;
@@ -892,7 +891,7 @@ class EcommerceController extends Controller
 
     public function searchDocument($type, $number)
     {
-        return (new ServiceData)->service($type, $number);
+        return (new \Modules\Services\Data\DocumentApiResolver())->service($type, $number);
     }
 
     public function getGoogleMaps()

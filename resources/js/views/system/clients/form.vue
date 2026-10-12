@@ -694,7 +694,7 @@
                         <div class="form-group">
                             <label class="control-label">API de consulta RUC / DNI</label>
                             <el-select v-model="form.ruc_api_provider" style="width: 100%">
-                                <el-option label="API del sistema (apiperu)" value="apiperu"></el-option>
+                                <el-option label="API SUNAT propia (apisu)" value="apisu"></el-option>
                                 <el-option label="SUNAT directo" value="sunat"></el-option>
                             </el-select>
                             <small class="form-text text-muted">
@@ -918,7 +918,7 @@ export default {
                 apps: [],
                 levels: [],
                 config_system_env: true,
-                ruc_api_provider: 'apiperu',
+                ruc_api_provider: 'apisu',
                 soap_send_id: '01',
                 soap_type_id: '01',
                 soap_username: null,

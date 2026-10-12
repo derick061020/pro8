@@ -11,16 +11,25 @@ use Modules\ApiPeruDev\Data\ServiceData;
  *
  * Resuelve, segun la configuracion del tenant (definida desde el admin), que API
  * usar como principal:
- *   - 'apiperu' => Modules\ApiPeruDev\Data\ServiceData  (la que ya esta en el sistema)
+ *   - 'apisu'   => Modules\Services\Data\ApisuData      (API SUNAT propia, la de por defecto)
  *   - 'sunat'   => Modules\Services\Data\SunatDirectData (consulta directa a SUNAT)
  *
- * Si la API principal no encuentra datos, automaticamente intenta con la otra
- * (y viceversa).
+ * 'apiperu' (Modules\ApiPeruDev\Data\ServiceData) ya no se elige como principal: los
+ * tenants que la tenian guardada pasan a apisu. Queda como ultimo respaldo.
+ *
+ * Si la API principal no encuentra datos, automaticamente intenta con las demas en orden.
  */
 class DocumentApiResolver
 {
+    const PROVIDER_APISU = 'apisu';
     const PROVIDER_APIPERU = 'apiperu';
     const PROVIDER_SUNAT = 'sunat';
+
+    /** Proveedores que se pueden elegir desde el admin */
+    const SELECTABLE = [self::PROVIDER_APISU, self::PROVIDER_SUNAT];
+
+    /** Orden de respaldo despues del principal */
+    const FALLBACK_ORDER = [self::PROVIDER_APISU, self::PROVIDER_SUNAT, self::PROVIDER_APIPERU];
 
     /**
      * @param string $type 'ruc' | 'dni'
@@ -31,23 +40,19 @@ class DocumentApiResolver
     public function service($type, $number)
     {
         $primary = $this->resolveProvider();
-        $secondary = ($primary === self::PROVIDER_SUNAT)
-            ? self::PROVIDER_APIPERU
-            : self::PROVIDER_SUNAT;
+        $providers = array_unique(array_merge([$primary], self::FALLBACK_ORDER));
 
-        $response = $this->callProvider($primary, $type, $number);
-        if ($this->isSuccessful($response)) {
-            return $response;
-        }
-
-        // Fallback automatico a la otra API.
-        $fallback = $this->callProvider($secondary, $type, $number);
-        if ($this->isSuccessful($fallback)) {
-            return $fallback;
+        $first = null;
+        foreach ($providers as $provider) {
+            $response = $this->callProvider($provider, $type, $number);
+            if ($this->isSuccessful($response)) {
+                return $response;
+            }
+            $first = $first ?? $response;
         }
 
         // Ninguna encontro datos: se devuelve la respuesta de la API principal.
-        return $response;
+        return $first;
     }
 
     /**
@@ -76,9 +81,18 @@ class DocumentApiResolver
             $provider = $systemConfiguration->ruc_api_provider ?? null;
         }
 
-        return ($provider === self::PROVIDER_SUNAT)
-            ? self::PROVIDER_SUNAT
-            : self::PROVIDER_APIPERU;
+        return self::normalizeProvider($provider);
+    }
+
+    /**
+     * Valor guardado => proveedor elegible. Lo que no sea 'sunat' (incluido el antiguo
+     * 'apiperu') es apisu.
+     *
+     * @return string
+     */
+    public static function normalizeProvider($provider)
+    {
+        return in_array($provider, self::SELECTABLE, true) ? $provider : self::PROVIDER_APISU;
     }
 
     /**
@@ -87,6 +101,10 @@ class DocumentApiResolver
     protected function callProvider($provider, $type, $number)
     {
         try {
+            if ($provider === self::PROVIDER_APISU) {
+                return (new ApisuData())->service($type, $number);
+            }
+
             if ($provider === self::PROVIDER_SUNAT) {
                 return (new SunatDirectData())->service($type, $number);
             }

@@ -397,7 +397,7 @@
                 ->first();
 
             $client->config_system_env = $config->config_system_env;
-            $client->ruc_api_provider = $config->ruc_api_provider ?? 'apiperu';
+            $client->ruc_api_provider = \Modules\Services\Data\DocumentApiResolver::normalizeProvider($config->ruc_api_provider ?? null);
 
             $client->smtp_host       = $config->smtp_host;
             $client->smtp_port       = $config->smtp_port;
@@ -584,9 +584,7 @@
                 $clientData = [
                     'plan' => json_encode($plan),
                     'config_system_env' => $request->config_system_env,
-                    'ruc_api_provider' => in_array($request->ruc_api_provider, ['apiperu', 'sunat'], true)
-                        ? $request->ruc_api_provider
-                        : 'apiperu',
+                    'ruc_api_provider' => \Modules\Services\Data\DocumentApiResolver::normalizeProvider($request->ruc_api_provider),
                     'limit_documents' => $plan->limit_documents,
                     'smtp_host' => $client->smtp_host,
                     'smtp_port' => $client->smtp_port,
@@ -893,9 +891,7 @@
                 'date_time_start' => date('Y-m-d H:i:s'),
                 'quantity_documents' => 0,
                 'config_system_env' => $request->config_system_env,
-                'ruc_api_provider' => in_array($request->ruc_api_provider, ['apiperu', 'sunat'], true)
-                    ? $request->ruc_api_provider
-                    : 'apiperu',
+                'ruc_api_provider' => \Modules\Services\Data\DocumentApiResolver::normalizeProvider($request->ruc_api_provider),
                 'login' => json_encode([
                     'type' => 'image',
                     'image' => $http.$fqdn.'/images/fondo-5.svg',

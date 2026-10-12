@@ -4,7 +4,6 @@ namespace Modules\Dispatch\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use App\Models\Tenant\Person;
-use Modules\ApiPeruDev\Data\ServiceData;
 use Modules\Dispatch\Http\Requests\DispatchAddressRequest;
 use Modules\Dispatch\Models\DispatchAddress;
 use Illuminate\Http\Request;
@@ -121,7 +120,7 @@ class DispatchAddressController extends Controller
                 'message' => 'No se encontró dirección'
             ];
         }
-        return (new ServiceData())->service($type, $person->number);
+        return (new \Modules\Services\Data\DocumentApiResolver())->service($type, $person->number);
     }
 
     public function getAddressByPerson($person_id)

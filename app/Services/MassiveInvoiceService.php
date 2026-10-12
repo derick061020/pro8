@@ -191,7 +191,7 @@ class MassiveInvoiceService
         ];
         
         try {
-            $serviceData = new \Modules\ApiPeruDev\Data\ServiceData();
+            $serviceData = new \Modules\Services\Data\DocumentApiResolver();
             $response = $serviceData->service($tipoComprobante === '03' ? 'dni' : 'ruc', $numero);
 
             if (isset($response['success']) && $response['success']) {

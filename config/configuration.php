@@ -5,6 +5,8 @@ return [
     'signature_uri' => env('SIGNATURE_URI_OSE', 'signatureFACTURALO'),
     'api_service_url' => env('API_SERVICE_URL'),
     'api_service_token' => env('API_SERVICE_TOKEN', false),
+    'apisu_url' => env('APISU_URL', 'https://apisu.hotelbuendia.net'),
+    'apisu_key' => env('APISU_KEY'),
     'sunat_alternate_server' => env('SUNAT_ALTERNATE_SERVER', false),
     'app_url_base' => env('APP_URL_BASE'),
     'multi_user_enabled' => env('MULTI_USER_ENABLED', false),

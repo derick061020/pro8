@@ -26,7 +26,6 @@ use Modules\Restaurant\Models\RestaurantItemOrderStatus;
 use Modules\Restaurant\Models\RestaurantStockProduct;
 use Modules\Restaurant\Services\RestaurantStockService;
 use Illuminate\Support\Facades\DB;
-use Modules\ApiPeruDev\Data\ServiceData;
 use App\Models\Tenant\Person;
 
 
@@ -349,7 +348,7 @@ class RestaurantController extends Controller
 
     public function searchDocument($type, $number)
     {
-        return (new ServiceData)->service($type, $number);
+        return (new \Modules\Services\Data\DocumentApiResolver())->service($type, $number);
     }
 
     // Cambiar mesa de un pedido a otra mesa
