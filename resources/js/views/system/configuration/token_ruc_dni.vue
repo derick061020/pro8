@@ -38,6 +38,37 @@
                 </div>
               </div>
             </div>
+
+            <hr>
+            <h4 class="mb-1">API SUNAT propia (apisu)</h4>
+            <p class="text-muted small mb-3">
+              Es la API principal de consulta RUC/DNI y tipo de cambio. El token se crea en el panel de apisu
+              (Tokens de API). Si lo dejas vacío se usa el del archivo .env del servidor.
+            </p>
+            <div class="row">
+              <div class="col-md-12">
+                <div class="form-group" :class="{'has-danger': errors.apisu_url}">
+                  <label class="control-label">URL</label>
+                  <el-input v-model="form.apisu_url" placeholder="https://apisu.hotelbuendia.net"></el-input>
+                  <small class="form-control-feedback" v-if="errors.apisu_url" v-text="errors.apisu_url[0]"></small>
+                </div>
+              </div>
+              <div class="col-md-12">
+                <div class="form-group" :class="{'has-danger': errors.apisu_key}">
+                  <label class="control-label">Token</label>
+                  <el-input v-model="form.apisu_key" :type="showApisuKey ? 'text' : 'password'" placeholder="sk_...">
+                    <el-button slot="append" @click="showApisuKey = !showApisuKey">{{ showApisuKey ? 'Ocultar' : 'Ver' }}</el-button>
+                  </el-input>
+                  <small class="form-control-feedback" v-if="errors.apisu_key" v-text="errors.apisu_key[0]"></small>
+                </div>
+              </div>
+              <div class="col-md-12">
+                <el-button size="small" :loading="testing_apisu" @click="testApisu">Probar conexión</el-button>
+                <span v-if="apisuResult" class="ml-2 small" :class="apisuResult.success ? 'text-success' : 'text-danger'">
+                  {{ apisuResult.message }}
+                </span>
+              </div>
+            </div>
           </div>
           <div class="form-actions text-end pt-2">
             <el-button type="primary" native-type="submit" :loading="loading_submit">Guardar</el-button>
@@ -57,6 +88,9 @@ export default {
       resource: "configurations",
       errors: {},
       form: {},
+      showApisuKey: false,
+      testing_apisu: false,
+      apisuResult: null,
     };
   },
   async created() {
@@ -65,6 +99,8 @@ export default {
     await this.$http.get(`/${this.resource}/apiruc`).then(response => {
         this.form.url_apiruc = response.data.url_apiruc;
         this.form.token_apiruc = response.data.token_apiruc;
+        this.form.apisu_url = response.data.apisu_url;
+        this.form.apisu_key = response.data.apisu_key;
 
         if (this.form.token_apiruc == 'false') {
           this.form.token_false = true;
@@ -77,8 +113,25 @@ export default {
       this.form = {
         url_apiruc: null,
         token_apiruc: null,
-        token_false: false
+        token_false: false,
+        apisu_url: null,
+        apisu_key: null
       };
+    },
+    testApisu() {
+      this.testing_apisu = true;
+      this.apisuResult = null;
+      this.$http
+        .post(`/${this.resource}/apisu/test`, { apisu_url: this.form.apisu_url, apisu_key: this.form.apisu_key })
+        .then(response => {
+          this.apisuResult = response.data;
+        })
+        .catch(() => {
+          this.apisuResult = { success: false, message: 'No se pudo hacer la prueba.' };
+        })
+        .then(() => {
+          this.testing_apisu = false;
+        });
     },
     submit() {
       this.loading_submit = true;

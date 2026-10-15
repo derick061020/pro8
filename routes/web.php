@@ -1113,6 +1113,7 @@ if ($hostname) {
             Route::get('status/memory', 'System\StatusController@memory')->name('system.status.memory');
             Route::get('status/cpu', 'System\StatusController@cpu')->name('system.status.cpu');
             Route::get('configurations/apiruc', 'System\ConfigurationController@apiruc');
+            Route::post('configurations/apisu/test', 'System\ConfigurationController@testApisu');
             Route::get('configurations/apkurl', 'System\ConfigurationController@apkurl');
             Route::post('configurations/emails', 'System\ConfigurationController@emails');
             Route::post('configurations/emails/test', 'System\ConfigurationController@testEmail');

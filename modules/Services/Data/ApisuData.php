@@ -2,6 +2,7 @@
 
 namespace Modules\Services\Data;
 
+use App\Models\System\Configuration as SystemConfiguration;
 use App\Models\Tenant\Catalogs\Department;
 use App\Models\Tenant\Catalogs\District;
 use App\Models\Tenant\Catalogs\Province;
@@ -24,20 +25,50 @@ class ApisuData
 
     public function __construct()
     {
+        [$url, $key] = self::credentials();
+
         $headers = ['Accept' => 'application/json'];
-        $key = config('configuration.apisu_key');
         if (!empty($key)) {
-            // Con la clave, la API no aplica el límite de consultas por IP
+            // Token del panel de apisu: identifica la cuenta y su plan
             $headers['X-API-Key'] = $key;
         }
 
         $this->client = new Client([
-            'base_uri' => rtrim(config('configuration.apisu_url'), '/'),
+            'base_uri' => rtrim($url, '/'),
             'http_errors' => false,
             'timeout' => 30,
             'connect_timeout' => 10,
             'headers' => $headers,
         ]);
+    }
+
+    /**
+     * URL y token: los de Sistema → Configuración → Consulta RUC/DNIe; si están
+     * vacíos, los del .env (APISU_URL / APISU_KEY).
+     *
+     * @return array{0: string, 1: ?string}
+     */
+    public static function credentials()
+    {
+        static $cached = null;
+        if ($cached !== null) {
+            return $cached;
+        }
+
+        $url = null;
+        $key = null;
+        try {
+            $configuration = SystemConfiguration::query()->first(['apisu_url', 'apisu_key']);
+            $url = $configuration->apisu_url ?? null;
+            $key = $configuration->apisu_key ?? null;
+        } catch (\Throwable $e) {
+            // Columnas aún sin migrar: se usa el .env
+        }
+
+        return $cached = [
+            $url ?: config('configuration.apisu_url'),
+            $key ?: config('configuration.apisu_key'),
+        ];
     }
 
     /**

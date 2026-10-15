@@ -106,6 +106,43 @@ class ConfigurationController extends Controller
         return [
             'url_apiruc' => $configuration->url_apiruc,
             'token_apiruc' => $configuration->token_apiruc,
+            'apisu_url' => $configuration->apisu_url ?: config('configuration.apisu_url'),
+            'apisu_key' => $configuration->apisu_key ?: config('configuration.apisu_key'),
+        ];
+    }
+
+    /**
+     * Prueba la URL y el token de apisu escritos en el formulario (aún sin
+     * guardar): consulta /me, que no gasta cuota, y devuelve plan y consumo.
+     */
+    public function testApisu(Request $request)
+    {
+        $url = rtrim((string) ($request->input('apisu_url') ?: config('configuration.apisu_url')), '/');
+        $key = (string) $request->input('apisu_key');
+
+        if ($key === '') {
+            return ['success' => false, 'message' => 'Escribe el token de apisu.'];
+        }
+
+        try {
+            $response = (new \GuzzleHttp\Client(['http_errors' => false, 'timeout' => 15, 'connect_timeout' => 8]))
+                ->get($url.'/api/v1/me', ['headers' => ['X-API-Key' => $key, 'Accept' => 'application/json']]);
+            $body = json_decode((string) $response->getBody(), true);
+        } catch (\Throwable $e) {
+            return ['success' => false, 'message' => 'No se pudo conectar con '.$url.': '.$e->getMessage()];
+        }
+
+        if (!is_array($body) || empty($body['ok'])) {
+            return ['success' => false, 'message' => $body['error'] ?? 'Respuesta inválida (HTTP '.$response->getStatusCode().')'];
+        }
+
+        $d = $body['datos'];
+        $limit = $d['consultasLimite'] === null ? 'ilimitadas' : number_format($d['consultasLimite']);
+
+        return [
+            'success' => true,
+            'message' => "Conectado. Cuenta {$d['cuenta']}, plan {$d['plan']}: {$d['consultasUsadas']} consultas usadas este mes de {$limit}.",
+            'data' => $d,
         ];
     }
 
