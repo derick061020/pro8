@@ -1,4 +1,12 @@
 {
+  "../../../../../../home/kira/Escritorio/projects/JUNIOR/pro8-main/node_modules/element-ui/lib/theme-chalk/fonts/element-icons.ttf": {
+    "file": "assets/element-icons-a30f5b3b.ttf",
+    "src": "../../../../../../home/kira/Escritorio/projects/JUNIOR/pro8-main/node_modules/element-ui/lib/theme-chalk/fonts/element-icons.ttf"
+  },
+  "../../../../../../home/kira/Escritorio/projects/JUNIOR/pro8-main/node_modules/element-ui/lib/theme-chalk/fonts/element-icons.woff": {
+    "file": "assets/element-icons-ab40a589.woff",
+    "src": "../../../../../../home/kira/Escritorio/projects/JUNIOR/pro8-main/node_modules/element-ui/lib/theme-chalk/fonts/element-icons.woff"
+  },
   "__plugin-vue2_normalizer-fcd81e8a.js": {
     "assets": [
       "assets/element-icons-ab40a589.woff",
@@ -49,14 +57,6 @@
     "isEntry": true,
     "src": "modules/Ecommerce/Resources/assets/js/frontend/cart-app.js"
   },
-  "node_modules/element-ui/lib/theme-chalk/fonts/element-icons.ttf": {
-    "file": "assets/element-icons-a30f5b3b.ttf",
-    "src": "node_modules/element-ui/lib/theme-chalk/fonts/element-icons.ttf"
-  },
-  "node_modules/element-ui/lib/theme-chalk/fonts/element-icons.woff": {
-    "file": "assets/element-icons-ab40a589.woff",
-    "src": "node_modules/element-ui/lib/theme-chalk/fonts/element-icons.woff"
-  },
   "resources/js/app.css": {
     "file": "assets/app-8be250b2.css",
     "src": "resources/js/app.css"
@@ -65,7 +65,7 @@
     "css": [
       "assets/app-8be250b2.css"
     ],
-    "file": "assets/app-110a584a.js",
+    "file": "assets/app-902d1af6.js",
     "imports": [
       "_vue-clipboard-9e0535ce.js",
       "__plugin-vue2_normalizer-fcd81e8a.js",
