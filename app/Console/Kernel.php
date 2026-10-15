@@ -25,6 +25,16 @@ class Kernel extends ConsoleKernel
     protected function schedule(Schedule $schedule) {
         $schedule->command('tenancy:run tenant:run')
             ->everyMinute();
+        // Autoenvío a SUNAT en todas las empresas (ver AutoEnvioSunatCommand).
+        // Facturas cada 30 min con reintento; resumen de boletas de madrugada y al
+        // mediodía (por si el primero falló); tickets de resúmenes cada hora.
+        $autoenvioLog = storage_path('logs/autoenvio.log');
+        $schedule->command('sunat:auto-envio facturas')->everyThirtyMinutes()
+            ->withoutOverlapping(25)->runInBackground()->appendOutputTo($autoenvioLog);
+        $schedule->command('sunat:auto-envio resumenes')->twiceDaily(1, 13)->timezone('America/Lima')
+            ->withoutOverlapping(60)->runInBackground()->appendOutputTo($autoenvioLog);
+        $schedule->command('sunat:auto-envio tickets')->hourlyAt(45)
+            ->withoutOverlapping(30)->runInBackground()->appendOutputTo($autoenvioLog);
         // Se ejecutara por hora guardando estado de cpu y memoria (windows/linux)
         $schedule->command('status:server')->everyMinute();
         // $schedule->command('order:payments')->everyMinute()->appendOutputTo(storage_path('logs/order_create.log'));

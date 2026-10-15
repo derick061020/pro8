@@ -14,6 +14,12 @@ class SendAllSunatCommand extends Command
 {
     use CommandTrait;
 
+    /** Facturas más antiguas que esto ya no se reintentan solas */
+    private const MAX_AGE_DAYS = 30;
+
+    /** Máximo por empresa y por ejecución */
+    private const BATCH = 100;
+
     /**
      * The name and signature of the console command.
      *
@@ -50,35 +56,55 @@ class SendAllSunatCommand extends Command
                 return;
             }
 
+            // Pendientes de envío: registrados (01) o enviados sin respuesta (03).
+            // No se filtra por success_sunat_shipping_status: antes un envío que
+            // fallaba quedaba marcado como hecho y no se volvía a intentar nunca.
             $documents = Document::query()
                 ->where('group_id', '01')
                 ->where('send_server', 0)
-                ->whereIn('state_type_id', ['01','03'])
-                // ->orWhere('sunat_shipping_status', '!=', '')
-                ->where('success_sunat_shipping_status', false)
+                ->whereIn('state_type_id', ['01', '03'])
+                ->where('date_of_issue', '>=', now()->subDays(self::MAX_AGE_DAYS)->format('Y-m-d'))
+                ->orderBy('id')
+                ->limit(self::BATCH)
                 ->get();
 
+            $sent = 0;
+            $failed = 0;
             foreach ($documents as $document) {
+                $label = "{$document->series}-{$document->number}";
                 try {
+                    // send() no lanza excepciones: si falla devuelve success=false
                     $response = DocumentController::send($document->id);
+                    $document->refresh();
+
+                    // Resuelto = SUNAT ya respondió: aceptado (05), observado (07) o rechazado (09)
+                    $resolved = in_array($document->state_type_id, ['05', '07', '09'], true);
 
                     $document->sunat_shipping_status = json_encode($response);
-                    $document->success_sunat_shipping_status = true;
+                    $document->success_sunat_shipping_status = $resolved;
                     $document->save();
+
+                    if ($resolved) {
+                        $sent++;
+                        $this->info("{$label}: estado {$document->state_type_id}");
+                    } else {
+                        $failed++;
+                        $this->warn("{$label}: sin respuesta de SUNAT, se reintentará — ".($response['message'] ?? ''));
+                    }
                 }
-                catch (\Exception $e) {
-
+                catch (\Throwable $e) {
+                    $failed++;
                     $document->success_sunat_shipping_status = false;
-
                     $document->sunat_shipping_status = json_encode([
-                        'sucess' => false,
+                        'success' => false,
                         'message' => $e->getMessage(),
-                        'payload' => $e
                     ]);
-
                     $document->save();
+                    $this->warn("{$label}: error, se reintentará — {$e->getMessage()}");
                 }
             }
+
+            $this->info("Facturas pendientes: {$documents->count()} · resueltas: {$sent} · por reintentar: {$failed}");
         }
         else {
             $this->info('The crontab is disabled');
