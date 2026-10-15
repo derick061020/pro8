@@ -24,9 +24,12 @@ use Illuminate\Support\Facades\Schema;
  */
 class AutoEnvioSunatCommand extends Command
 {
-    protected $signature = 'sunat:auto-envio {tipo=facturas : facturas | resumenes | tickets}';
+    protected $signature = 'sunat:auto-envio {tipo=facturas : facturas | resumenes | tickets} {--forzar : ignora la espera mínima entre ejecuciones}';
 
     protected $description = 'Autoenvío a SUNAT en todas las empresas (facturas, resúmenes de boletas o tickets)';
+
+    /** Segundos mínimos entre dos ejecuciones del mismo tipo */
+    private const MIN_INTERVAL = 300;
 
     private const COMMANDS = [
         'facturas' => 'online:send-all',
@@ -43,6 +46,25 @@ class AutoEnvioSunatCommand extends Command
 
             return 1;
         }
+
+        // El cron del servidor corre schedule:run una vez general y otra por cada
+        // empresa (tenancy:run schedule:run), así que esta tarea se dispara varias
+        // veces en el mismo minuto. Sólo la primera trabaja: las demás encuentran
+        // el candado tomado o una ejecución de hace menos de 5 minutos.
+        $lock = fopen(storage_path("framework/autoenvio-{$tipo}.lock"), 'c+');
+        if (!$lock || !flock($lock, LOCK_EX | LOCK_NB)) {
+            return 0;
+        }
+        $last = (int) trim((string) stream_get_contents($lock));
+        if ($last && time() - $last < self::MIN_INTERVAL && !$this->option('forzar')) {
+            flock($lock, LOCK_UN);
+
+            return 0;
+        }
+        ftruncate($lock, 0);
+        rewind($lock);
+        fwrite($lock, (string) time());
+        fflush($lock);
 
         $this->line('['.now()->format('Y-m-d H:i:s')."] {$tipo}");
         $environment = app(Environment::class);
@@ -70,6 +92,9 @@ class AutoEnvioSunatCommand extends Command
                 report($e);
             }
         }
+
+        flock($lock, LOCK_UN);
+        fclose($lock);
 
         return 0;
     }
