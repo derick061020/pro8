@@ -1126,6 +1126,9 @@ if ($hostname) {
             Route::get('configurations/column-visibility/{module}', 'System\ColumnVisibilityController@show');
             Route::post('configurations/column-visibility/{module}', 'System\ColumnVisibilityController@store');
 
+            // ssl: estado del certificado y de su renovación automática
+            Route::get('ssl', 'System\SslController@index')->name('system.ssl');
+
             // backup
             Route::get('backup', 'System\BackupController@index')->name('system.backup');
             Route::post('backup/db', 'System\BackupController@db')->name('system.backup.db');

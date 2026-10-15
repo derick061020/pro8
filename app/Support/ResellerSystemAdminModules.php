@@ -19,6 +19,7 @@ class ResellerSystemAdminModules
         'accounting' => 'Contabilidad',
         'auto-update' => 'Actualización',
         'backup' => 'Backup',
+        'ssl' => 'SSL',
         'information' => 'Información',
         'logs' => 'Logs',
         'reports' => 'Reportes',
