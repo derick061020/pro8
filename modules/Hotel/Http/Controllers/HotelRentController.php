@@ -409,6 +409,26 @@ class HotelRentController extends Controller
 				if ($reservationItemIds->isNotEmpty()) {
 					HotelRentItemPayment::whereIn('hotel_rent_item_id', $reservationItemIds)
 						->update(['hotel_rent_item_id' => $item->id]);
+
+					// La nota de venta / comprobante emitido desde la reserva pertenece
+					// a la habitación: pasa al ítem nuevo. Antes se perdía al borrar
+					// los ítems viejos, desaparecía del historial de comprobantes y la
+					// habitación volvía a figurar como pendiente de facturar.
+					$invoiced = HotelRentItem::whereIn('id', $reservationItemIds)
+						->where('type', 'HAB')
+						->where(function ($q) {
+							$q->whereNotNull('sale_note_id')->orWhereNotNull('document_id');
+						})
+						->orderByDesc('id')
+						->first(['sale_note_id', 'document_id']);
+					if ($invoiced) {
+						$item->sale_note_id = $invoiced->sale_note_id;
+						$item->document_id  = $invoiced->document_id;
+						$item->save();
+						if ($invoiced->sale_note_id) {
+							SaleNote::where('id', $invoiced->sale_note_id)->update(['hotel_rent_id' => $rent->id]);
+						}
+					}
 				}
 				// Reserva reutilizada: eliminar los ítems HAB originales (ya sin
 				// pagos) para no dejar dos ítems de habitación en la misma renta.

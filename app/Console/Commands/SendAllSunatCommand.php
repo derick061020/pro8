@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use Facades\App\Http\Controllers\Tenant\DocumentController;
 use Illuminate\Console\Command;
+use Modules\Document\Helpers\ConsultCdr;
 use App\Traits\CommandTrait;
 use App\Models\Tenant\{
     Configuration,
@@ -80,13 +81,30 @@ class SendAllSunatCommand extends Command
                     // Resuelto = SUNAT ya respondió: aceptado (05), observado (07) o rechazado (09)
                     $resolved = in_array($document->state_type_id, ['05', '07', '09'], true);
 
+                    // Si no quedó resuelto puede que SUNAT ya lo tenga: el caso típico es
+                    // el código 1033 "registrado previamente", que deja el comprobante
+                    // como "por regularizar" y se reintentaría para siempre. Se consulta
+                    // el CDR: si existe, ConsultCdr actualiza el estado (aceptado/observado).
+                    if (!$resolved) {
+                        try {
+                            (new ConsultCdr())->search($document);
+                            $document->refresh();
+                            $resolved = in_array($document->state_type_id, ['05', '07', '09'], true);
+                            if ($resolved) {
+                                $response['message'] = 'Recuperado con la consulta de CDR: ya estaba en SUNAT';
+                            }
+                        } catch (\Throwable $e) {
+                            // Sin CDR todavía: queda para el siguiente intento
+                        }
+                    }
+
                     $document->sunat_shipping_status = json_encode($response);
                     $document->success_sunat_shipping_status = $resolved;
                     $document->save();
 
                     if ($resolved) {
                         $sent++;
-                        $this->info("{$label}: estado {$document->state_type_id}");
+                        $this->info("{$label}: estado {$document->state_type_id}".(!empty($response['message']) ? " — {$response['message']}" : ''));
                     } else {
                         $failed++;
                         $this->warn("{$label}: sin respuesta de SUNAT, se reintentará — ".($response['message'] ?? ''));
