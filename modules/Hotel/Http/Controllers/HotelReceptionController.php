@@ -876,7 +876,21 @@ class HotelReceptionController extends Controller
                 ->first();
             $this->assertItemNotInvoiced($item);
             if ($item) {
-                $item->payments()->delete();
+                // El dinero ya se cobró: al revertir la extensión el pago no se borra,
+                // pasa a otra línea de habitación de la estadía y queda como vuelto a
+                // favor en el checkout. Sólo si no hay otra línea se elimina con ella.
+                $target = \Modules\Hotel\Models\HotelRentItem::where('hotel_rent_id', $rent->id)
+                    ->where('id', '!=', $item->id)
+                    ->where('type', 'HAB')
+                    ->orderByRaw('(document_id is null and sale_note_id is null) desc')
+                    ->orderByDesc('id')
+                    ->first();
+
+                if ($target) {
+                    $item->payments()->update(['hotel_rent_item_id' => $target->id]);
+                } else {
+                    $item->payments()->delete();
+                }
                 $item->delete();
             }
         }
