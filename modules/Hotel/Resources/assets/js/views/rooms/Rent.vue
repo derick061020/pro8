@@ -1184,11 +1184,16 @@ export default {
     },
     methods: {
         openNewPersonDialog() {
-            this.editPerson = false;
-            this.showDialogNewPerson = true;
+            this.clickNewPerson();
         },
         clickNewPerson() {
             this.editPerson = false;
+            // En recepción casi todos los huéspedes se registran con DNI: el
+            // formulario de cliente arranca en DNI (antes salía RUC).
+            this.input_person = {
+                ...(this.input_person || {}),
+                identity_document_type_id: (this.input_person && this.input_person.number && this.input_person.number.length === 11) ? '6' : '1',
+            };
             this.showDialogNewPerson = true;
         },
         clickEditPerson() {
@@ -1942,7 +1947,8 @@ export default {
                             this.showDialogNewPerson = true;
                             break;
                         default:
-                            this.input_person.identity_document_type_id = "6";
+                            // DNI por defecto; sólo 11 dígitos es RUC
+                            this.input_person.identity_document_type_id = "1";
                             this.showDialogNewPerson = true;
                             break;
                     }
