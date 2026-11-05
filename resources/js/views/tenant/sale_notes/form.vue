@@ -2688,9 +2688,18 @@ export default {
             return null;
         },
         setTotalDefaultPayment() {
-            if (this.form.payments.length > 0) {
+            if (this.form.payments.length === 0) return;
+
+            if (this.form.payments.length === 1) {
                 this.form.payments[0].payment = this.form.total;
+                return;
             }
+
+            // Con varios pagos el primero toma sólo lo que falta. Antes recibía el
+            // total completo y una nota pagada Yape 36.63 + Efectivo 3.37 = 40 se
+            // abría como Yape 40 + Efectivo 3.37 (pagos por encima del total).
+            const others = _.sumBy(this.form.payments.slice(1), p => parseFloat(p.payment) || 0);
+            this.form.payments[0].payment = _.round(Math.max(0, this.form.total - others), 2);
         },
         filterSeries() {
             this.form.series_id = null;
