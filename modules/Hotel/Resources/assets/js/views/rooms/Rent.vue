@@ -1244,7 +1244,7 @@ export default {
                                 this.form.customer = customer;
                                 this.form.customer_id = customer.id;
                                 // Agregar a la lista de clientes
-                                this.customers.push(customer);
+                                this.customers.push(this.asCustomerOption(customer));
                                 console.log('=== FORM ACTUALIZADO ===');
                                 console.log('this.form.customer:', this.form.customer);
                             } else {
@@ -1262,7 +1262,7 @@ export default {
                     this.form.customer_id = this.reservation.customer.id;
                     // Asegurar que el cliente esté en la lista
                     if (!this.customers.find(c => c.id === this.reservation.customer.id)) {
-                        this.customers.push(this.reservation.customer);
+                        this.customers.push(this.asCustomerOption(this.reservation.customer));
                     }
                     console.log('=== FORM ACTUALIZADO CON DATOS EXISTENTES ===');
                     console.log('this.form.customer:', this.form.customer);
@@ -1434,7 +1434,7 @@ export default {
                                     this.form.customer = customer;
                                     this.form.customer_id = customer.id;
                                     // Agregar a la lista de clientes
-                                    this.customers.push(customer);
+                                    this.customers.push(this.asCustomerOption(customer));
                                 } else {
                                     console.log('No se encontró cliente con ID:', customerId);
                                 }
@@ -1450,7 +1450,7 @@ export default {
                         this.form.customer_id = reservationData.customer.id;
                         // Asegurar que el cliente esté en la lista
                         if (!this.customers.find(c => c.id === reservationData.customer.id)) {
-                            this.customers.push(reservationData.customer);
+                            this.customers.push(this.asCustomerOption(reservationData.customer));
                         }
                     }
                 }
@@ -1854,6 +1854,16 @@ export default {
             this.rate_unit_value = rate.price;
             this.form.rate_price = rate.price;
             this.onUpdateTotalToPay();
+        },
+        /**
+         * El desplegable de clientes muestra `description`. El cliente guardado en
+         * la reserva sólo trae name/number, así que sin esto se veía el id ("456")
+         * en vez del nombre al hacer el check-in.
+         */
+        asCustomerOption(customer) {
+            if (!customer || customer.description) return customer;
+            const label = [customer.number, customer.name].filter(Boolean).join(' - ');
+            return { ...customer, description: label || String(customer.id) };
         },
         clickNewPerson() {
             this.editPerson = false;
