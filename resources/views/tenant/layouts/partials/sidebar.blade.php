@@ -273,6 +273,13 @@ $showTransfer = collect($vc_module_levels)->intersect(['inventory', 'inventory_d
                                         <a class="nav-link" href="{{ url('hotels/reservations/report') }}">Reporte de Reservas</a>
                                     </li>
                                 @endif
+                                {{-- Ingresos diarios por turno y método de pago: sólo administradores --}}
+                                @if(auth()->user() && auth()->user()->type === 'admin')
+                                    <li
+                                        class="{{ (($firstLevel === 'hotels') && ($secondLevel === 'income-report')) ? 'nav-active' : '' }}">
+                                        <a class="nav-link" href="{{ url('hotels/income-report') }}">Ingresos diarios</a>
+                                    </li>
+                                @endif
                                 @if(in_array('hotels_rates', $vc_module_levels))
                                     <li
                                         class="{{ (($firstLevel === 'hotels') && ($secondLevel === 'rates')) ? 'nav-active' : '' }}">
