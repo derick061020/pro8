@@ -20,6 +20,10 @@
                 </button>
             </div>
             <div class="dinc-range">
+                <button class="dinc-export" :disabled="loading || !turns.length" @click="exportExcel">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="19"/><line x1="15" y1="13" x2="9" y2="19"/></svg>
+                    Exportar Excel
+                </button>
                 <el-date-picker
                     v-model="range"
                     type="daterange"
@@ -225,6 +229,11 @@ export default {
                 this.loading = false;
             }
         },
+        exportExcel() {
+            if (!this.range || this.range.length !== 2) return;
+            const q = new URLSearchParams({ from: this.range[0], to: this.range[1] });
+            window.open(`/hotels/income-report/export?${q.toString()}`, '_blank');
+        },
         toggle(id) {
             this.$set(this.expanded, id, !this.expanded[id]);
         },
@@ -256,6 +265,9 @@ export default {
 .dinc-presets { display: flex; flex-wrap: wrap; gap: 6px; }
 .dinc-preset { border: 1px solid #d9d9d9; background: #fff; border-radius: 16px; padding: 4px 14px; font-size: 13px; cursor: pointer; }
 .dinc-preset.active { background: #1f6feb; border-color: #1f6feb; color: #fff; }
+.dinc-range { display: flex; gap: 8px; align-items: center; }
+.dinc-export { display: inline-flex; align-items: center; gap: 6px; border: 1px solid #1d7a3e; color: #1d7a3e; background: #fff; border-radius: 6px; padding: 5px 12px; font-size: 13px; cursor: pointer; }
+.dinc-export:disabled { opacity: .5; cursor: default; }
 .dinc-note { color: #6c757d; font-size: 12.5px; margin: 4px 0 14px; }
 .dinc-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; margin-bottom: 16px; }
 .dinc-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; padding: 10px 14px; display: flex; flex-direction: column; }
