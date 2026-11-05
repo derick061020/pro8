@@ -237,7 +237,10 @@ export default {
             return n === 0 ? '—' : n.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         },
         dayLabel(date) {
-            return moment(date, 'YYYY-MM-DD').locale('es').format('ddd DD/MM/YYYY');
+            // Intl y no moment: moment no tiene cargado el idioma español y mostraba "Mon", "Tue"…
+            const [y, m, d] = date.split('-').map(Number);
+            return new Intl.DateTimeFormat('es-PE', { weekday: 'short', day: '2-digit', month: '2-digit', year: 'numeric' })
+                .format(new Date(y, m - 1, d));
         },
         dateTime(value) {
             if (!value) return '—';
