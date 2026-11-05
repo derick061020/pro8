@@ -143,6 +143,7 @@ if ($hostname) {
         // Ingresos diarios por turno de caja y método de pago (sólo administradores)
         Route::get('income-report', 'HotelIncomeReportController@index')->name('tenant.hotels.income_report');
         Route::get('income-report/data', 'HotelIncomeReportController@data');
+        Route::get('income-report/export', 'HotelIncomeReportController@export');
 
         // Calendario de Reservas
         Route::prefix('reservations')->group(function () {

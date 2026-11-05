@@ -11,6 +11,7 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Modules\Finance\Models\GlobalPayment;
 use Modules\Finance\Models\IncomePayment;
+use Modules\Hotel\Exports\HotelIncomeExport;
 use Modules\Hotel\Models\HotelRentItemPayment;
 
 /**
@@ -191,6 +192,18 @@ class HotelIncomeReportController extends Controller
                 'total' => round(collect($turns)->sum('total'), 2),
             ],
         ];
+    }
+
+    /** Excel con los mismos datos que la pantalla */
+    public function export(Request $request)
+    {
+        abort_unless($this->isAdmin(), 403);
+
+        $report = $this->data($request);
+
+        return (new HotelIncomeExport)
+            ->report($report)
+            ->download('ingresos-diarios-'.$report['from'].'-a-'.$report['to'].'.xlsx');
     }
 
     /** Monto que cuenta como ingreso de ese pago (0 si no corresponde) */
