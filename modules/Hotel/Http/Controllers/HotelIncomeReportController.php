@@ -5,6 +5,7 @@ namespace Modules\Hotel\Http\Controllers;
 use App\Http\Controllers\Controller;
 use App\Models\Tenant\Cash;
 use App\Models\Tenant\DocumentPayment;
+use App\Models\Tenant\Establishment;
 use App\Models\Tenant\PaymentMethodType;
 use App\Models\Tenant\SaleNotePayment;
 use Carbon\Carbon;
@@ -54,10 +55,24 @@ class HotelIncomeReportController extends Controller
 
         $methods = PaymentMethodType::query()->get(['id', 'description'])->keyBy('id');
 
+        // Sucursal: una en particular o todas ('all'). Por defecto la del usuario.
+        $establishments = Establishment::query()->orderBy('id')->get(['id', 'description', 'address']);
+        $establishmentId = $request->input('establishment_id', optional(auth()->user())->establishment_id);
+        if ($establishmentId !== 'all' && !$establishments->contains('id', (int) $establishmentId)) {
+            $establishmentId = 'all';
+        }
+        $establishmentId = $establishmentId === 'all' ? null : (int) $establishmentId;
+
         // Una caja puede quedar abierta varios días: entra si estuvo abierta en
         // algún momento del periodo, y de ella sólo cuentan los pagos del periodo.
+        // La caja no guarda la sucursal: se toma la del cajero que la abrió
         $cashes = Cash::query()
-            ->with('user:id,name')
+            ->with('user:id,name,establishment_id')
+            ->when($establishmentId, function ($q) use ($establishmentId) {
+                $q->whereHas('user', function ($u) use ($establishmentId) {
+                    $u->where('establishment_id', $establishmentId);
+                });
+            })
             ->where('date_opening', '<=', $to->format('Y-m-d'))
             ->where(function ($q) use ($from) {
                 $q->whereNull('date_closed')->orWhere('date_closed', '>=', $from->format('Y-m-d'));
@@ -138,6 +153,7 @@ class HotelIncomeReportController extends Controller
                 'id' => $cash->id,
                 'date' => $cash->date_opening,
                 'cashier' => optional($cash->user)->name,
+                'establishment' => optional($establishments->firstWhere('id', optional($cash->user)->establishment_id))->description,
                 'opened_at' => trim($cash->date_opening.' '.$cash->time_opening),
                 'closed_at' => $cash->date_closed ? trim($cash->date_closed.' '.$cash->time_closed) : null,
                 'open' => (bool) $cash->state,
@@ -162,7 +178,7 @@ class HotelIncomeReportController extends Controller
 
         // Habitaciones ocupadas cada día, hayan pagado ese día o no (una estadía de
         // varias noches pagada al entrar sólo aparece como "cobrada" el primer día).
-        $occupied = $this->occupiedRoomsByDay($from, $to);
+        $occupied = $this->occupiedRoomsByDay($from, $to, $establishmentId);
         foreach (array_keys($occupied) as $day) {
             if (!isset($days[$day])) {
                 $days[$day] = ['date' => $day, 'cashes' => [], 'rooms' => [], 'by_method' => []];
@@ -194,9 +210,15 @@ class HotelIncomeReportController extends Controller
             })->values(),
             'turns' => $turns,
             'days' => $days,
+            'establishments' => $establishments->map(function ($e) {
+                return ['id' => $e->id, 'description' => $e->description];
+            })->values(),
+            'establishment_id' => $establishmentId ?? 'all',
             'rooms_now' => [
-                'occupied' => HotelRoom::query()->where('active', true)->where('status', 'OCUPADO')->count(),
-                'total' => HotelRoom::query()->where('active', true)->count(),
+                'occupied' => HotelRoom::query()->where('active', true)->where('status', 'OCUPADO')
+                    ->when($establishmentId, function ($q) use ($establishmentId) { $q->where('establishment_id', $establishmentId); })->count(),
+                'total' => HotelRoom::query()->where('active', true)
+                    ->when($establishmentId, function ($q) use ($establishmentId) { $q->where('establishment_id', $establishmentId); })->count(),
             ],
             'totals' => [
                 'by_method' => collect($turns)->reduce(function ($acc, $t) {
@@ -216,9 +238,12 @@ class HotelIncomeReportController extends Controller
      *
      * @return array<string, list<string>> fecha => nombres de habitación
      */
-    private function occupiedRoomsByDay(Carbon $from, Carbon $to): array
+    private function occupiedRoomsByDay(Carbon $from, Carbon $to, ?int $establishmentId = null): array
     {
         $rents = HotelRent::query()
+            ->when($establishmentId, function ($q) use ($establishmentId) {
+                $q->where('establishment_id', $establishmentId);
+            })
             ->with('room:id,name,establishment_id', 'room.establishment:id,description')
             ->where(function ($q) {
                 $q->where('is_reserve', false)->orWhereNull('is_reserve');
