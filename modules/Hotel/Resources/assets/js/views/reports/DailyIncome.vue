@@ -13,6 +13,13 @@
             </ol>
         </div>
 
+        <div v-if="establishments.length > 1" class="dinc-branches">
+            <button v-for="e in establishments" :key="e.id" class="dinc-branch" :class="{ active: establishmentId === e.id }" @click="selectBranch(e.id)">
+                {{ e.description }}
+            </button>
+            <button class="dinc-branch" :class="{ active: establishmentId === 'all' }" @click="selectBranch('all')">Todas</button>
+        </div>
+
         <div class="dinc-filters">
             <div class="dinc-presets">
                 <button v-for="p in presets" :key="p.key" class="dinc-preset" :class="{ active: activePreset === p.key }" @click="applyPreset(p.key)">
@@ -105,6 +112,7 @@
                             <tr>
                                 <th style="width:28px"></th>
                                 <th>Cajero</th>
+                                <th v-if="establishmentId === 'all'">Sucursal</th>
                                 <th>Apertura</th>
                                 <th>Cierre</th>
                                 <th class="text-end">Abrió con</th>
@@ -119,6 +127,7 @@
                             <tr :key="t.id" class="dinc-turn" @click="toggle(t.id)">
                                 <td class="text-center"><span class="dinc-caret" :class="{ open: expanded[t.id] }">▸</span></td>
                                 <td>{{ t.cashier || '—' }}</td>
+                                <td v-if="establishmentId === 'all'">{{ t.establishment || '—' }}</td>
                                 <td class="text-nowrap">{{ dateTime(t.opened_at) }}</td>
                                 <td class="text-nowrap">
                                     <span v-if="t.open" class="badge bg-success">Abierta</span>
@@ -186,6 +195,8 @@ export default {
             totals: { by_method: {}, total: 0 },
             expanded: {},
             roomsNow: { occupied: 0, total: 0 },
+            establishments: [],
+            establishmentId: null,
         };
     },
     computed: {
@@ -222,7 +233,11 @@ export default {
             if (!this.range || this.range.length !== 2) return;
             this.loading = true;
             try {
-                const { data } = await this.$http.get('/hotels/income-report/data', { params: { from: this.range[0], to: this.range[1] } });
+                const params = { from: this.range[0], to: this.range[1] };
+                if (this.establishmentId !== null) params.establishment_id = this.establishmentId;
+                const { data } = await this.$http.get('/hotels/income-report/data', { params });
+                this.establishments = data.establishments || [];
+                this.establishmentId = data.establishment_id;
                 this.methods = data.methods || [];
                 this.days = data.days || [];
                 this.turns = data.turns || [];
@@ -240,8 +255,14 @@ export default {
         },
         exportExcel() {
             if (!this.range || this.range.length !== 2) return;
-            const q = new URLSearchParams({ from: this.range[0], to: this.range[1] });
+            const q = new URLSearchParams({ from: this.range[0], to: this.range[1], establishment_id: this.establishmentId ?? 'all' });
             window.open(`/hotels/income-report/export?${q.toString()}`, '_blank');
+        },
+        selectBranch(id) {
+            if (this.establishmentId === id) return;
+            this.establishmentId = id;
+            this.expanded = {};
+            this.load();
         },
         toggle(id) {
             this.$set(this.expanded, id, !this.expanded[id]);
@@ -270,6 +291,9 @@ export default {
 </script>
 
 <style scoped>
+.dinc-branches { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.dinc-branch { border: 1px solid #c9ced6; background: #fff; border-radius: 6px; padding: 6px 16px; font-size: 13.5px; font-weight: 600; cursor: pointer; }
+.dinc-branch.active { background: #0f5132; border-color: #0f5132; color: #fff; }
 .dinc-filters { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; margin-bottom: 8px; }
 .dinc-presets { display: flex; flex-wrap: wrap; gap: 6px; }
 .dinc-preset { border: 1px solid #d9d9d9; background: #fff; border-radius: 16px; padding: 4px 14px; font-size: 13px; cursor: pointer; }

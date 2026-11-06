@@ -4,7 +4,7 @@
     $methodName = fn ($id) => optional($methods->firstWhere('id', $id))['description'] ?? 'Otros';
 @endphp
 <table>
-    <tr><td colspan="{{ $methods->count() + 5 }}"><b>INGRESOS DIARIOS</b> — del {{ \Carbon\Carbon::parse($report['from'])->format('d/m/Y') }} al {{ \Carbon\Carbon::parse($report['to'])->format('d/m/Y') }}</td></tr>
+    <tr><td colspan="{{ $methods->count() + 5 }}"><b>INGRESOS DIARIOS</b> — {{ $report['establishment_id'] === 'all' ? 'Todas las sucursales' : optional(collect($report['establishments'])->firstWhere('id', $report['establishment_id']))['description'] }} — del {{ \Carbon\Carbon::parse($report['from'])->format('d/m/Y') }} al {{ \Carbon\Carbon::parse($report['to'])->format('d/m/Y') }}</td></tr>
     <tr><td colspan="{{ $methods->count() + 5 }}">Dinero que entró a caja por método de pago. No descuenta gastos.</td></tr>
     <tr><td></td></tr>
 
