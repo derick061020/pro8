@@ -41,7 +41,8 @@
         </div>
 
         <p class="dinc-note">
-            Dinero que entró a caja cada día y en cada turno, por método de pago. Un turno es una apertura de caja hasta su cierre
+            "Ocupadas" son las habitaciones con huésped ese día y "Cobradas" las que pagaron ese día (una estadía de varias noches pagada
+            al entrar sólo se cobra el primer día). Dinero que entró a caja cada día y en cada turno, por método de pago. Un turno es una apertura de caja hasta su cierre
             (puede durar varios días); aquí sólo se suman sus pagos dentro del periodo elegido. No depende de los comprobantes: cuenta los pagos registrados
             (habitaciones, notas de venta, comprobantes y otros ingresos). No descuenta gastos.
         </p>
@@ -52,6 +53,10 @@
                 <div class="dinc-card dinc-card-total">
                     <span class="dinc-card-label">Total del periodo</span>
                     <span class="dinc-card-value">S/ {{ money(totals.total) }}</span>
+                </div>
+                <div class="dinc-card" title="Habitaciones marcadas como ocupadas en recepción en este momento">
+                    <span class="dinc-card-label">Ocupadas ahora</span>
+                    <span class="dinc-card-value">{{ roomsNow.occupied }} <small class="text-muted">de {{ roomsNow.total }}</small></span>
                 </div>
                 <div v-for="m in methods" :key="m.id" class="dinc-card">
                     <span class="dinc-card-label">{{ m.description }}</span>
@@ -68,7 +73,8 @@
                             <tr>
                                 <th>Fecha</th>
                                 <th class="text-center">Turnos</th>
-                                <th class="text-center">Habitaciones</th>
+                                <th class="text-center" title="Habitaciones con huésped ese día, hayan pagado ese día o no">Ocupadas</th>
+                                <th class="text-center" title="Habitaciones que pagaron ese día">Cobradas</th>
                                 <th v-for="m in methods" :key="m.id" class="text-end">{{ m.description }}</th>
                                 <th class="text-end">Total</th>
                             </tr>
@@ -77,12 +83,13 @@
                             <tr v-for="d in days" :key="d.date">
                                 <td class="text-nowrap">{{ dayLabel(d.date) }}</td>
                                 <td class="text-center">{{ d.turns }}</td>
+                                <td class="text-center fw-bold" :title="(d.occupied || []).join(', ')">{{ (d.occupied || []).length || '—' }}</td>
                                 <td class="text-center" :title="(d.rooms || []).join(', ')">{{ (d.rooms || []).length || '—' }}</td>
                                 <td v-for="m in methods" :key="m.id" class="text-end">{{ money(d.by_method[m.id]) }}</td>
                                 <td class="text-end fw-bold">{{ money(d.total) }}</td>
                             </tr>
                             <tr v-if="!days.length">
-                                <td :colspan="methods.length + 4" class="text-center text-muted py-4">No hay ingresos en este periodo.</td>
+                                <td :colspan="methods.length + 5" class="text-center text-muted py-4">No hay ingresos en este periodo.</td>
                             </tr>
                         </tbody>
                     </table>
@@ -178,6 +185,7 @@ export default {
             turns: [],
             totals: { by_method: {}, total: 0 },
             expanded: {},
+            roomsNow: { occupied: 0, total: 0 },
         };
     },
     computed: {
@@ -219,6 +227,7 @@ export default {
                 this.days = data.days || [];
                 this.turns = data.turns || [];
                 this.totals = data.totals || { by_method: {}, total: 0 };
+                this.roomsNow = data.rooms_now || { occupied: 0, total: 0 };
                 if (data.from && data.to && (data.from !== this.range[0] || data.to !== this.range[1])) {
                     this.range = [data.from, data.to];
                     this.$message.info('El periodo se limitó a 2 meses.');
