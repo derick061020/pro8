@@ -12,7 +12,9 @@ use Illuminate\Http\Request;
 use Modules\Finance\Models\GlobalPayment;
 use Modules\Finance\Models\IncomePayment;
 use Modules\Hotel\Exports\HotelIncomeExport;
+use Modules\Hotel\Models\HotelRent;
 use Modules\Hotel\Models\HotelRentItemPayment;
+use Modules\Hotel\Models\HotelRoom;
 
 /**
  * Hotel → Ingresos diarios (sólo administradores).
@@ -158,12 +160,22 @@ class HotelIncomeReportController extends Controller
             return [$rank($a), (string) $a] <=> [$rank($b), (string) $b];
         });
 
+        // Habitaciones ocupadas cada día, hayan pagado ese día o no (una estadía de
+        // varias noches pagada al entrar sólo aparece como "cobrada" el primer día).
+        $occupied = $this->occupiedRoomsByDay($from, $to);
+        foreach (array_keys($occupied) as $day) {
+            if (!isset($days[$day])) {
+                $days[$day] = ['date' => $day, 'cashes' => [], 'rooms' => [], 'by_method' => []];
+            }
+        }
+
         ksort($days);
-        $days = collect($days)->map(function ($d) {
+        $days = collect($days)->map(function ($d) use ($occupied) {
             return [
                 'date' => $d['date'],
                 'turns' => count($d['cashes']),
                 'rooms' => array_keys($d['rooms']),
+                'occupied' => $occupied[$d['date']] ?? [],
                 'by_method' => $d['by_method'],
                 'total' => round(array_sum($d['by_method']), 2),
             ];
@@ -182,6 +194,10 @@ class HotelIncomeReportController extends Controller
             })->values(),
             'turns' => $turns,
             'days' => $days,
+            'rooms_now' => [
+                'occupied' => HotelRoom::query()->where('active', true)->where('status', 'OCUPADO')->count(),
+                'total' => HotelRoom::query()->where('active', true)->count(),
+            ],
             'totals' => [
                 'by_method' => collect($turns)->reduce(function ($acc, $t) {
                     foreach ($t['by_method'] as $id => $amount) {
@@ -192,6 +208,50 @@ class HotelIncomeReportController extends Controller
                 'total' => round(collect($turns)->sum('total'), 2),
             ],
         ];
+    }
+
+    /**
+     * Por cada día del periodo, las habitaciones con una estadía en curso ese día
+     * (entrada <= día <= salida; no cuenta reservas sin check-in).
+     *
+     * @return array<string, list<string>> fecha => nombres de habitación
+     */
+    private function occupiedRoomsByDay(Carbon $from, Carbon $to): array
+    {
+        $rents = HotelRent::query()
+            ->with('room:id,name,establishment_id', 'room.establishment:id,description')
+            ->where(function ($q) {
+                $q->where('is_reserve', false)->orWhereNull('is_reserve');
+            })
+            ->where('input_date', '<=', $to->format('Y-m-d'))
+            ->where('output_date', '>=', $from->format('Y-m-d'))
+            ->get(['id', 'hotel_room_id', 'input_date', 'output_date']);
+
+        $result = [];
+        for ($day = $from->copy()->startOfDay(); $day->lte($to); $day->addDay()) {
+            $date = $day->format('Y-m-d');
+            $rooms = [];
+            foreach ($rents as $rent) {
+                $in = substr((string) $rent->getRawOriginal('input_date'), 0, 10);
+                $out = substr((string) $rent->getRawOriginal('output_date'), 0, 10);
+                if ($in <= $date && $out >= $date && $rent->room) {
+                    // Por id: la principal y la sucursal tienen habitaciones con el mismo número
+                    $rooms[$rent->room->id] = $rent->room;
+                }
+            }
+            if ($rooms) {
+                $repeated = collect($rooms)->countBy('name')->filter(function ($n) { return $n > 1; });
+                $names = collect($rooms)->map(function ($room) use ($repeated) {
+                    return $repeated->has($room->name)
+                        ? $room->name.' ('.(optional($room->establishment)->description ?? 'sucursal').')'
+                        : (string) $room->name;
+                })->values()->all();
+                natsort($names);
+                $result[$date] = array_values($names);
+            }
+        }
+
+        return $result;
     }
 
     /** Excel con los mismos datos que la pantalla */

@@ -4,13 +4,13 @@
     $methodName = fn ($id) => optional($methods->firstWhere('id', $id))['description'] ?? 'Otros';
 @endphp
 <table>
-    <tr><td colspan="{{ $methods->count() + 4 }}"><b>INGRESOS DIARIOS</b> — del {{ \Carbon\Carbon::parse($report['from'])->format('d/m/Y') }} al {{ \Carbon\Carbon::parse($report['to'])->format('d/m/Y') }}</td></tr>
-    <tr><td colspan="{{ $methods->count() + 4 }}">Dinero que entró a caja por método de pago. No descuenta gastos.</td></tr>
+    <tr><td colspan="{{ $methods->count() + 5 }}"><b>INGRESOS DIARIOS</b> — del {{ \Carbon\Carbon::parse($report['from'])->format('d/m/Y') }} al {{ \Carbon\Carbon::parse($report['to'])->format('d/m/Y') }}</td></tr>
+    <tr><td colspan="{{ $methods->count() + 5 }}">Dinero que entró a caja por método de pago. No descuenta gastos.</td></tr>
     <tr><td></td></tr>
 
-    <tr><td colspan="{{ $methods->count() + 4 }}"><b>POR DÍA</b></td></tr>
+    <tr><td colspan="{{ $methods->count() + 5 }}"><b>POR DÍA</b></td></tr>
     <tr>
-        <th><b>Fecha</b></th><th><b>Turnos</b></th><th><b>Habitaciones</b></th>
+        <th><b>Fecha</b></th><th><b>Turnos</b></th><th><b>Hab. ocupadas</b></th><th><b>Hab. cobradas</b></th>
         @foreach($methods as $m)<th><b>{{ $m['description'] }}</b></th>@endforeach
         <th><b>Total</b></th>
     </tr>
@@ -18,13 +18,14 @@
         <tr>
             <td>{{ \Carbon\Carbon::parse($d['date'])->format('d/m/Y') }}</td>
             <td>{{ $d['turns'] }}</td>
+            <td>{{ count($d['occupied'] ?? []) }}</td>
             <td>{{ count($d['rooms']) }}</td>
             @foreach($methods as $m)<td>{{ $money($d['by_method'][$m['id']] ?? 0) }}</td>@endforeach
             <td><b>{{ $money($d['total']) }}</b></td>
         </tr>
     @endforeach
     <tr>
-        <td><b>TOTAL</b></td><td></td><td></td>
+        <td><b>TOTAL</b></td><td></td><td></td><td></td>
         @foreach($methods as $m)<td><b>{{ $money($report['totals']['by_method'][$m['id']] ?? 0) }}</b></td>@endforeach
         <td><b>{{ $money($report['totals']['total']) }}</b></td>
     </tr>
