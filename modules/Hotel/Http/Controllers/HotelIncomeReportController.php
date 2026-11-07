@@ -7,9 +7,12 @@ use App\Models\Tenant\Cash;
 use App\Models\Tenant\DocumentPayment;
 use App\Models\Tenant\Establishment;
 use App\Models\Tenant\PaymentMethodType;
+use App\Models\Tenant\SaleNote;
 use App\Models\Tenant\SaleNotePayment;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Modules\Finance\Models\GlobalPayment;
 use Modules\Finance\Models\IncomePayment;
 use Modules\Hotel\Exports\HotelIncomeExport;
@@ -136,6 +139,10 @@ class HotelIncomeReportController extends Controller
                 $days[$day]['by_method'][$methodId] = round(($days[$day]['by_method'][$methodId] ?? 0) + $amount, 2);
 
                 $detail[] = [
+                    'id' => $global->id,
+                    // Sólo los pagos de habitación se quitan desde aquí; un comprobante
+                    // o nota de venta se anula en su propio módulo
+                    'removable' => $global->payment instanceof HotelRentItemPayment,
                     'time' => optional($global->payment->date_of_payment ?? $global->created_at)->format('Y-m-d H:i') ?? null,
                     'created_at' => optional($global->created_at)->format('Y-m-d H:i'),
                     'room' => $concept['room'],
@@ -214,12 +221,7 @@ class HotelIncomeReportController extends Controller
                 return ['id' => $e->id, 'description' => $e->description];
             })->values(),
             'establishment_id' => $establishmentId ?? 'all',
-            'rooms_now' => [
-                'occupied' => HotelRoom::query()->where('active', true)->where('status', 'OCUPADO')
-                    ->when($establishmentId, function ($q) use ($establishmentId) { $q->where('establishment_id', $establishmentId); })->count(),
-                'total' => HotelRoom::query()->where('active', true)
-                    ->when($establishmentId, function ($q) use ($establishmentId) { $q->where('establishment_id', $establishmentId); })->count(),
-            ],
+            'rooms_now' => $this->roomsNow($establishmentId),
             'totals' => [
                 'by_method' => collect($turns)->reduce(function ($acc, $t) {
                     foreach ($t['by_method'] as $id => $amount) {
@@ -230,6 +232,43 @@ class HotelIncomeReportController extends Controller
                 'total' => round(collect($turns)->sum('total'), 2),
             ],
         ];
+    }
+
+    /** Habitaciones ocupadas en este momento (estado de recepción), con sus nombres */
+    private function roomsNow(?int $establishmentId): array
+    {
+        $rooms = HotelRoom::query()
+            ->with('establishment:id,description')
+            ->where('active', true)
+            ->when($establishmentId, function ($q) use ($establishmentId) { $q->where('establishment_id', $establishmentId); })
+            ->get(['id', 'name', 'status', 'establishment_id']);
+        $occupied = $rooms->where('status', 'OCUPADO');
+
+        return [
+            'occupied' => $occupied->count(),
+            'total' => $rooms->count(),
+            'names' => $this->roomNames($occupied->all()),
+        ];
+    }
+
+    /**
+     * Nombres de habitación ordenados; si un número se repite entre sucursales se
+     * le agrega la sucursal ("5 (HOSPEDAJE BUENDIA I)").
+     *
+     * @param  array<HotelRoom> $rooms
+     * @return list<string>
+     */
+    private function roomNames(array $rooms): array
+    {
+        $repeated = collect($rooms)->countBy('name')->filter(function ($n) { return $n > 1; });
+        $names = collect($rooms)->map(function ($room) use ($repeated) {
+            return $repeated->has($room->name)
+                ? $room->name.' ('.(optional($room->establishment)->description ?? 'sucursal').')'
+                : (string) $room->name;
+        })->values()->all();
+        natsort($names);
+
+        return array_values($names);
     }
 
     /**
@@ -265,18 +304,51 @@ class HotelIncomeReportController extends Controller
                 }
             }
             if ($rooms) {
-                $repeated = collect($rooms)->countBy('name')->filter(function ($n) { return $n > 1; });
-                $names = collect($rooms)->map(function ($room) use ($repeated) {
-                    return $repeated->has($room->name)
-                        ? $room->name.' ('.(optional($room->establishment)->description ?? 'sucursal').')'
-                        : (string) $room->name;
-                })->values()->all();
-                natsort($names);
-                $result[$date] = array_values($names);
+                $result[$date] = $this->roomNames(array_values($rooms));
             }
         }
 
         return $result;
+    }
+
+    /**
+     * Quitar un pago de habitación registrado por error (p. ej. pusieron mal el
+     * precio, finalizaron la estadía y la volvieron a registrar con el precio
+     * correcto: el primer pago seguía sumando). Hace lo mismo que "Revertir pago"
+     * del checkout: borra el pago y su movimiento de caja, y el item vuelve a
+     * quedar pendiente.
+     */
+    public function removePayment($globalId)
+    {
+        abort_unless($this->isAdmin(), 403);
+
+        $global = GlobalPayment::query()->findOrFail($globalId);
+        $payment = $global->payment;
+        if (!$payment instanceof HotelRentItemPayment) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Sólo se pueden quitar pagos de habitaciones. Un comprobante o nota de venta se anula desde su listado.',
+            ], 422);
+        }
+
+        DB::connection('tenant')->transaction(function () use ($global, $payment) {
+            $item = $payment->associated_record_payment;
+            Log::info('Ingresos diarios: pago de hotel quitado', [
+                'user_id' => auth()->id(),
+                'payment_id' => $payment->id,
+                'amount' => $payment->payment,
+                'hotel_rent_item_id' => $payment->hotel_rent_item_id,
+                'hotel_rent_id' => optional($item)->hotel_rent_id,
+            ]);
+            $global->delete();
+            $payment->delete();
+            if ($item && $item->payment_status === 'PAID') {
+                $item->payment_status = 'PENDING';
+                $item->save();
+            }
+        });
+
+        return ['success' => true, 'message' => 'Pago quitado.'];
     }
 
     /** Excel con los mismos datos que la pantalla */
@@ -304,6 +376,16 @@ class HotelIncomeReportController extends Controller
             // Comprobante de una estadía: ese dinero ya está en el pago del hotel
             if (!$record || $record->hotel_rent_id || in_array($record->state_type_id, self::VOID_STATES, true)) {
                 return 0;
+            }
+            // Factura/boleta generada desde una nota de venta: el dinero ya se contó
+            // con la nota (o con el pago de la habitación, si la nota es del hotel).
+            // El comprobante nuevo no guarda la estadía y se contaba dos veces.
+            if ($payment instanceof DocumentPayment && $record->sale_note_id) {
+                $note = SaleNote::query()->find($record->sale_note_id);
+                if ($note && ($note->hotel_rent_id
+                    || (!in_array($note->state_type_id, self::VOID_STATES, true) && $note->payments()->sum('payment') > 0))) {
+                    return 0;
+                }
             }
         }
 
@@ -343,8 +425,15 @@ class HotelIncomeReportController extends Controller
         $customer = optional($record)->customer;
         $customerName = is_object($customer) ? ($customer->name ?? null) : (is_array($customer) ? ($customer['name'] ?? null) : null);
 
+        // Habitación del comprobante: la de su estadía, o la de la nota de venta de la que salió
+        $rentId = optional($record)->hotel_rent_id;
+        if (!$rentId && $payment instanceof DocumentPayment && optional($record)->sale_note_id) {
+            $rentId = optional(SaleNote::query()->find($record->sale_note_id, ['id', 'hotel_rent_id']))->hotel_rent_id;
+        }
+        $room = $rentId ? optional(optional(HotelRent::query()->with('room:id,name')->find($rentId, ['id', 'hotel_room_id']))->room)->name : null;
+
         return [
-            'room' => null,
+            'room' => $room ? (string) $room : null,
             'label' => trim($kind.' '.($record ? ($record->series ?? '').'-'.($record->number ?? '') : ''), ' -'),
             'customer' => $customerName,
         ];

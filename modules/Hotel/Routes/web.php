@@ -144,6 +144,7 @@ if ($hostname) {
         Route::get('income-report', 'HotelIncomeReportController@index')->name('tenant.hotels.income_report');
         Route::get('income-report/data', 'HotelIncomeReportController@data');
         Route::get('income-report/export', 'HotelIncomeReportController@export');
+        Route::post('income-report/payments/{globalId}/remove', 'HotelIncomeReportController@removePayment');
 
         // Calendario de Reservas
         Route::prefix('reservations')->group(function () {
