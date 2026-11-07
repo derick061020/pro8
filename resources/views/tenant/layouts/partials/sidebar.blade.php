@@ -240,7 +240,7 @@ $showTransfer = collect($vc_module_levels)->intersect(['inventory', 'inventory_d
                     <li class="nav-description">Módulos extras</li>
                     @endif --}}
                     @if(in_array('hotels', $vc_modules))
-                        <li class=" nav-parent {{ ($firstLevel === 'hotels') ? 'nav-active nav-expanded' : '' }}">
+                        <li class=" nav-parent {{ ($firstLevel === 'hotels' && $secondLevel !== 'income-report') ? 'nav-active nav-expanded' : '' }}">
                             <a class="nav-link" href="#">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
                                     fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
@@ -276,13 +276,6 @@ $showTransfer = collect($vc_module_levels)->intersect(['inventory', 'inventory_d
                                     <li
                                         class="{{ (($firstLevel === 'hotels') && ($secondLevel === 'reservations') && ($thridLevel === 'report')) ? 'nav-active' : '' }}">
                                         <a class="nav-link" href="{{ url('hotels/reservations/report') }}">Reporte de Reservas</a>
-                                    </li>
-                                @endif
-                                {{-- Ingresos diarios por turno y método de pago: sólo administradores --}}
-                                @if(auth()->user() && auth()->user()->type === 'admin')
-                                    <li
-                                        class="{{ (($firstLevel === 'hotels') && ($secondLevel === 'income-report')) ? 'nav-active' : '' }}">
-                                        <a class="nav-link" href="{{ url('hotels/income-report') }}">Ingresos diarios</a>
                                     </li>
                                 @endif
                                 @if(in_array('hotels_rates', $vc_module_levels))
@@ -802,6 +795,7 @@ $showTransfer = collect($vc_module_levels)->intersect(['inventory', 'inventory_d
                             'transactions',
                             'movements'
                         ]) ? 'nav-active nav-expanded' : ''}}
+                        {{ ($firstLevel === 'hotels' && $secondLevel === 'income-report') ? 'nav-active nav-expanded' : '' }}
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     {{ ($firstLevel === 'cash') ? 'nav-active nav-expanded' : '' }}
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     {{ ($firstLevel === 'bank_loan') ? 'nav-active nav-expanded' : '' }}">
                                             <a class="nav-link" href="#">
@@ -880,6 +874,13 @@ $showTransfer = collect($vc_module_levels)->intersect(['inventory', 'inventory_d
                                                         <a class="nav-link"
                                                             href="{{route('tenant.finances.payment_method_types.index')}}">Ingresos y
                                                             Egresos - M. Pago</a>
+                                                    </li>
+                                                @endif
+                                                {{-- Ingresos diarios del hotel (por turno de caja y método de pago): sólo administradores --}}
+                                                @if(auth()->user() && auth()->user()->type === 'admin' && in_array('hotels', $vc_modules))
+                                                    <li
+                                                        class="{{ (($firstLevel === 'hotels') && ($secondLevel === 'income-report')) ? 'nav-active' : '' }}">
+                                                        <a class="nav-link" href="{{ url('hotels/income-report') }}">Ingresos diarios</a>
                                                     </li>
                                                 @endif
                                                 @if(in_array('bank_loan', $vc_module_levels))
