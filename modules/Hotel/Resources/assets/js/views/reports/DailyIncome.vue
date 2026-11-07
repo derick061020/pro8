@@ -31,19 +31,19 @@
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="19"/><line x1="15" y1="13" x2="9" y2="19"/></svg>
                     Exportar Excel
                 </button>
-                <el-date-picker
-                    v-model="range"
-                    type="daterange"
-                    size="small"
-                    unlink-panels
-                    range-separator="a"
-                    start-placeholder="Desde"
-                    end-placeholder="Hasta"
-                    format="dd/MM/yyyy"
-                    value-format="yyyy-MM-dd"
-                    :clearable="false"
-                    @change="onRangeChange"
-                ></el-date-picker>
+                <!-- Dos calendarios separados: el de rango confundía (el segundo panel
+                     es sólo el mes siguiente, no la fecha final) -->
+                <label class="dinc-date">
+                    <span>Desde</span>
+                    <el-date-picker v-model="dateFrom" type="date" size="small" format="dd/MM/yyyy" value-format="yyyy-MM-dd"
+                        :clearable="false" placeholder="Desde" style="width:140px" @change="onFromChange"></el-date-picker>
+                </label>
+                <label class="dinc-date">
+                    <span>Hasta</span>
+                    <el-date-picker v-model="dateTo" type="date" size="small" format="dd/MM/yyyy" value-format="yyyy-MM-dd"
+                        :clearable="false" placeholder="Hasta" style="width:140px" :picker-options="{ disabledDate: beforeFrom }"
+                        @change="onToChange"></el-date-picker>
+                </label>
             </div>
         </div>
 
@@ -61,8 +61,8 @@
                     <span class="dinc-card-label">Total del periodo</span>
                     <span class="dinc-card-value">S/ {{ money(totals.total) }}</span>
                 </div>
-                <div class="dinc-card" title="Habitaciones marcadas como ocupadas en recepción en este momento">
-                    <span class="dinc-card-label">Ocupadas ahora</span>
+                <div class="dinc-card dinc-card-click" :class="{ active: showRoomsNow }" title="Ver qué habitaciones están ocupadas ahora" @click="showRoomsNow = !showRoomsNow">
+                    <span class="dinc-card-label">Ocupadas ahora <span class="dinc-caret" :class="{ open: showRoomsNow }">▸</span></span>
                     <span class="dinc-card-value">{{ roomsNow.occupied }} <small class="text-muted">de {{ roomsNow.total }}</small></span>
                 </div>
                 <div v-for="m in methods" :key="m.id" class="dinc-card">
@@ -71,9 +71,19 @@
                 </div>
             </div>
 
+            <div v-if="showRoomsNow" class="card dinc-block dinc-rooms-now">
+                <div class="card-body py-2">
+                    <b>Habitaciones ocupadas ahora ({{ roomsNow.occupied }})</b>
+                    <div class="dinc-chips">
+                        <span v-for="r in roomsNow.names || []" :key="r" class="dinc-chip">{{ r }}</span>
+                        <span v-if="!(roomsNow.names || []).length" class="text-muted">Ninguna.</span>
+                    </div>
+                </div>
+            </div>
+
             <!-- Por día -->
             <div class="card dinc-block">
-                <div class="card-header"><b>Por día</b></div>
+                <div class="card-header"><b>Por día</b> <small class="text-muted">· haga clic en un día para ver qué habitaciones estuvieron ocupadas</small></div>
                 <div class="table-responsive">
                     <table class="table table-sm mb-0 dinc-table">
                         <thead>
@@ -87,14 +97,30 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <tr v-for="d in days" :key="d.date">
-                                <td class="text-nowrap">{{ dayLabel(d.date) }}</td>
+                            <template v-for="d in days">
+                            <tr :key="d.date" class="dinc-turn" @click="toggleDay(d.date)">
+                                <td class="text-nowrap"><span class="dinc-caret" :class="{ open: expandedDays[d.date] }">▸</span> {{ dayLabel(d.date) }}</td>
                                 <td class="text-center">{{ d.turns }}</td>
                                 <td class="text-center fw-bold" :title="(d.occupied || []).join(', ')">{{ (d.occupied || []).length || '—' }}</td>
                                 <td class="text-center" :title="(d.rooms || []).join(', ')">{{ (d.rooms || []).length || '—' }}</td>
                                 <td v-for="m in methods" :key="m.id" class="text-end">{{ money(d.by_method[m.id]) }}</td>
                                 <td class="text-end fw-bold">{{ money(d.total) }}</td>
                             </tr>
+                            <tr v-if="expandedDays[d.date]" :key="d.date + '-rooms'" class="dinc-detail-row">
+                                <td :colspan="methods.length + 5">
+                                    <div class="dinc-day-rooms">
+                                        <b>Ocupadas ({{ (d.occupied || []).length }}):</b>
+                                        <span v-for="r in d.occupied || []" :key="'o' + r" class="dinc-chip" :class="{ paid: (d.rooms || []).includes(r) }">{{ r }}</span>
+                                        <span v-if="!(d.occupied || []).length" class="text-muted">ninguna</span>
+                                    </div>
+                                    <div class="dinc-day-rooms">
+                                        <b>Cobradas ese día ({{ (d.rooms || []).length }}):</b>
+                                        <span v-for="r in d.rooms || []" :key="'c' + r" class="dinc-chip paid">{{ r }}</span>
+                                        <span v-if="!(d.rooms || []).length" class="text-muted">ninguna</span>
+                                    </div>
+                                </td>
+                            </tr>
+                            </template>
                             <tr v-if="!days.length">
                                 <td :colspan="methods.length + 5" class="text-center text-muted py-4">No hay ingresos en este periodo.</td>
                             </tr>
@@ -147,17 +173,21 @@
                                 <td :colspan="methods.length + 7">
                                     <table class="table table-sm mb-0 dinc-detail">
                                         <thead>
-                                            <tr><th>Hora</th><th>Concepto</th><th>Huésped / cliente</th><th>Método</th><th class="text-end">Monto</th></tr>
+                                            <tr><th>Hora</th><th>Habitación</th><th>Concepto</th><th>Huésped / cliente</th><th>Método</th><th class="text-end">Monto</th><th></th></tr>
                                         </thead>
                                         <tbody>
                                             <tr v-for="(d, i) in t.detail" :key="i">
                                                 <td class="text-nowrap">{{ dateTime(d.created_at || d.time) }}</td>
+                                                <td class="fw-bold">{{ d.room || '—' }}</td>
                                                 <td>{{ d.concept }}</td>
                                                 <td>{{ d.customer || '—' }}</td>
                                                 <td>{{ methodName(d.method_id) }}</td>
                                                 <td class="text-end">{{ money(d.amount) }}</td>
+                                                <td class="text-end" style="width:70px">
+                                                    <button v-if="d.removable" class="dinc-remove" title="Quitar este pago (registrado por error)" @click.stop="removePayment(d)">Quitar</button>
+                                                </td>
                                             </tr>
-                                            <tr v-if="!t.detail.length"><td colspan="5" class="text-muted text-center">Sin ingresos en este turno.</td></tr>
+                                            <tr v-if="!t.detail.length"><td colspan="7" class="text-muted text-center">Sin ingresos en este turno.</td></tr>
                                         </tbody>
                                     </table>
                                 </td>
@@ -181,7 +211,8 @@ export default {
     data() {
         return {
             loading: false,
-            range: [moment().format('YYYY-MM-DD'), moment().format('YYYY-MM-DD')],
+            dateFrom: moment().format('YYYY-MM-DD'),
+            dateTo: moment().format('YYYY-MM-DD'),
             activePreset: 'today',
             presets: [
                 { key: 'today', label: 'Hoy' },
@@ -194,7 +225,9 @@ export default {
             turns: [],
             totals: { by_method: {}, total: 0 },
             expanded: {},
-            roomsNow: { occupied: 0, total: 0 },
+            expandedDays: {},
+            showRoomsNow: false,
+            roomsNow: { occupied: 0, total: 0, names: [] },
             establishments: [],
             establishmentId: null,
         };
@@ -222,18 +255,46 @@ export default {
                 week: [today.clone().startOf('isoWeek'), today.clone()],
                 month: [today.clone().startOf('month'), today.clone()],
             };
-            this.range = ranges[key].map((d) => d.format('YYYY-MM-DD'));
+            [this.dateFrom, this.dateTo] = ranges[key].map((d) => d.format('YYYY-MM-DD'));
             this.load();
         },
-        onRangeChange() {
+        beforeFrom(date) {
+            return this.dateFrom ? moment(date).format('YYYY-MM-DD') < this.dateFrom : false;
+        },
+        onFromChange() {
+            // Si la fecha inicial pasa a la final, la final la sigue (un solo día)
+            if (this.dateTo < this.dateFrom) this.dateTo = this.dateFrom;
             this.activePreset = null;
             this.load();
         },
+        onToChange() {
+            if (this.dateTo < this.dateFrom) this.dateFrom = this.dateTo;
+            this.activePreset = null;
+            this.load();
+        },
+        removePayment(d) {
+            const text = `¿Quitar el pago de S/ ${this.money(d.amount)} (${d.concept}${d.customer ? ' · ' + d.customer : ''})? `
+                + 'Úselo sólo si se registró por error: se borra el pago y sale también de la caja. No se puede deshacer.';
+            this.$confirm(text, 'Quitar pago', { confirmButtonText: 'Sí, quitar', cancelButtonText: 'Cancelar', type: 'warning' })
+                .then(async () => {
+                    try {
+                        const { data } = await this.$http.post(`/hotels/income-report/payments/${d.id}/remove`);
+                        this.$message.success(data.message || 'Pago quitado.');
+                        this.load();
+                    } catch (e) {
+                        this.$message.error(e.response?.data?.message || 'No se pudo quitar el pago.');
+                    }
+                })
+                .catch(() => {});
+        },
+        toggleDay(date) {
+            this.$set(this.expandedDays, date, !this.expandedDays[date]);
+        },
         async load() {
-            if (!this.range || this.range.length !== 2) return;
+            if (!this.dateFrom || !this.dateTo) return;
             this.loading = true;
             try {
-                const params = { from: this.range[0], to: this.range[1] };
+                const params = { from: this.dateFrom, to: this.dateTo };
                 if (this.establishmentId !== null) params.establishment_id = this.establishmentId;
                 const { data } = await this.$http.get('/hotels/income-report/data', { params });
                 this.establishments = data.establishments || [];
@@ -242,9 +303,11 @@ export default {
                 this.days = data.days || [];
                 this.turns = data.turns || [];
                 this.totals = data.totals || { by_method: {}, total: 0 };
-                this.roomsNow = data.rooms_now || { occupied: 0, total: 0 };
-                if (data.from && data.to && (data.from !== this.range[0] || data.to !== this.range[1])) {
-                    this.range = [data.from, data.to];
+                this.roomsNow = data.rooms_now || { occupied: 0, total: 0, names: [] };
+                this.expandedDays = {};
+                if (data.from && data.to && (data.from !== this.dateFrom || data.to !== this.dateTo)) {
+                    this.dateFrom = data.from;
+                    this.dateTo = data.to;
                     this.$message.info('El periodo se limitó a 2 meses.');
                 }
             } catch (e) {
@@ -254,8 +317,8 @@ export default {
             }
         },
         exportExcel() {
-            if (!this.range || this.range.length !== 2) return;
-            const q = new URLSearchParams({ from: this.range[0], to: this.range[1], establishment_id: this.establishmentId ?? 'all' });
+            if (!this.dateFrom || !this.dateTo) return;
+            const q = new URLSearchParams({ from: this.dateFrom, to: this.dateTo, establishment_id: this.establishmentId ?? 'all' });
             window.open(`/hotels/income-report/export?${q.toString()}`, '_blank');
         },
         selectBranch(id) {
@@ -298,7 +361,7 @@ export default {
 .dinc-presets { display: flex; flex-wrap: wrap; gap: 6px; }
 .dinc-preset { border: 1px solid #d9d9d9; background: #fff; border-radius: 16px; padding: 4px 14px; font-size: 13px; cursor: pointer; }
 .dinc-preset.active { background: #1f6feb; border-color: #1f6feb; color: #fff; }
-.dinc-range { display: flex; gap: 8px; align-items: center; }
+.dinc-range { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .dinc-export { display: inline-flex; align-items: center; gap: 6px; border: 1px solid #1d7a3e; color: #1d7a3e; background: #fff; border-radius: 6px; padding: 5px 12px; font-size: 13px; cursor: pointer; }
 .dinc-export:disabled { opacity: .5; cursor: default; }
 .dinc-note { color: #6c757d; font-size: 12.5px; margin: 4px 0 14px; }
@@ -316,4 +379,13 @@ export default {
 .dinc-caret.open { transform: rotate(90deg); }
 .dinc-detail-row > td { background: #fafbfc; }
 .dinc-detail { font-size: 12.5px; background: transparent; }
+.dinc-remove { border: 1px solid #dc3545; color: #dc3545; background: #fff; border-radius: 4px; padding: 1px 8px; font-size: 11.5px; cursor: pointer; }
+.dinc-remove:hover { background: #dc3545; color: #fff; }
+.dinc-date { display: inline-flex; align-items: center; gap: 5px; margin: 0; font-size: 12.5px; color: #555; }
+.dinc-card-click { cursor: pointer; }
+.dinc-card-click:hover, .dinc-card-click.active { border-color: #0f5132; }
+.dinc-chips, .dinc-day-rooms { display: flex; flex-wrap: wrap; gap: 5px; align-items: center; margin: 4px 0; font-size: 12.5px; }
+.dinc-day-rooms > b { margin-right: 4px; }
+.dinc-chip { display: inline-block; min-width: 30px; text-align: center; padding: 2px 8px; border-radius: 12px; background: #e9ecef; font-weight: 600; font-size: 12px; }
+.dinc-chip.paid { background: #d1e7dd; color: #0f5132; }
 </style>

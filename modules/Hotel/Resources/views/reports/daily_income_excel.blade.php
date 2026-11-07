@@ -12,7 +12,7 @@
     <tr>
         <th><b>Fecha</b></th><th><b>Turnos</b></th><th><b>Hab. ocupadas</b></th><th><b>Hab. cobradas</b></th>
         @foreach($methods as $m)<th><b>{{ $m['description'] }}</b></th>@endforeach
-        <th><b>Total</b></th>
+        <th><b>Total</b></th><th><b>Habitaciones ocupadas</b></th>
     </tr>
     @foreach($report['days'] as $d)
         <tr>
@@ -22,6 +22,7 @@
             <td>{{ count($d['rooms']) }}</td>
             @foreach($methods as $m)<td>{{ $money($d['by_method'][$m['id']] ?? 0) }}</td>@endforeach
             <td><b>{{ $money($d['total']) }}</b></td>
+            <td>{{ implode(', ', $d['occupied'] ?? []) }}</td>
         </tr>
     @endforeach
     <tr>
