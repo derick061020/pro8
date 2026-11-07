@@ -21,7 +21,7 @@ use Modules\Hotel\Models\HotelRentItemPayment;
 use Modules\Hotel\Models\HotelRoom;
 
 /**
- * Hotel → Ingresos diarios (sólo administradores).
+ * Finanzas → Ingresos diarios (permiso "Ingresos diarios" del usuario).
  *
  * Cuadro de cuánto dinero entró por cada turno de caja y cada día, separado por
  * método de pago (efectivo, Yape, Plin, tarjeta…), con el monto con el que abrió
@@ -439,8 +439,22 @@ class HotelIncomeReportController extends Controller
         ];
     }
 
+    /**
+     * Permiso "Ingresos diarios" de Finanzas (Usuarios → Permisos). Si el
+     * inquilino todavía no tiene ese permiso creado, sólo los administradores.
+     */
     private function isAdmin(): bool
     {
-        return optional(auth()->user())->type === 'admin';
+        $user = auth()->user();
+        if (!$user) {
+            return false;
+        }
+        $levelId = DB::connection('tenant')->table('module_levels')->where('value', 'finances_daily_income')->value('id');
+        if (!$levelId) {
+            return $user->type === 'admin';
+        }
+
+        return DB::connection('tenant')->table('module_level_user')
+            ->where('user_id', $user->id)->where('module_level_id', $levelId)->exists();
     }
 }
