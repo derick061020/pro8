@@ -1517,6 +1517,10 @@ export default {
                     ? 'PAID'
                     : 'DEBT';
 
+                // Método y destino del último pago registrado (p. ej. Yape).
+                // Sin esto el selector volvía al primero de la lista (Efectivo).
+                this.applyLastPayment(reservationData.last_payment);
+
                 // Establecer que es edición de reserva (no check-in)
                 this.form.is_edit_from_reservation = true;
                 this.form.reservation_id = reservationId;
@@ -1954,6 +1958,18 @@ export default {
             });
 
             await this.getPercentageIgv();
+        },
+        applyLastPayment(last) {
+            if (!last) return;
+            const sameId = (a, b) => String(a) === String(b);
+            const method = (this.payment_method_types || []).find(o => sameId(o.id, last.payment_method_type_id));
+            if (method) {
+                this.form.rent_payment.payment_method_type_id = method.id;
+            }
+            const destination = (this.payment_destinations || []).find(o => sameId(o.id, last.payment_destination_id));
+            if (destination) {
+                this.form.rent_payment.payment_destination_id = destination.id;
+            }
         },
         setDefaultDataPayments()
         {
