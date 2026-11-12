@@ -384,7 +384,8 @@ class HotelRentController extends Controller
 					$product['item']['description'] = $product['item']['description'] . $durationSuffix;
 				}
 				if (isset($product['item']['name_product_pdf']) && !empty($product['item']['name_product_pdf'])) {
-					$product['item']['name_product_pdf'] = $product['item']['name_product_pdf'] . $durationSuffix;
+					// En la misma línea que el nombre aunque venga en HTML (<p>…</p>)
+					$product['item']['name_product_pdf'] = HotelRentItem::pdfNameWithSuffix($product['item']['name_product_pdf'], $durationSuffix);
 				}
 			}
 
