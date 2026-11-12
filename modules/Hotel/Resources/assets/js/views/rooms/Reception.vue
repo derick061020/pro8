@@ -2937,11 +2937,6 @@ export default {
             } else if (status === "MANTENIMIENTO") {
                 return "maintenance";
             } else if (status === "OCUPADO") {
-                // Check if it's a monthly rental
-                if (ro.rent && ro.rent.rental_period_type === 'month') {
-                    return "occupied-monthly";
-                }
-                
                 // Check if countdown has reached 0
                 if (this.timeRemaining[ro.id] &&
                     this.timeRemaining[ro.id].days === 0 &&
@@ -2955,6 +2950,12 @@ export default {
                     this.timeRemaining[ro.id].totalMs > 0 &&
                     this.timeRemaining[ro.id].totalMs <= 3600000) {
                     return "occupied-soon occupied";
+                }
+                // Alquiler por mes: gris (plomo) mientras está vigente. Va
+                // DESPUÉS de las de vencimiento: si iba antes, un mes ya
+                // terminado seguía gris en vez de ponerse morado.
+                if (ro.rent && ro.rent.rental_period_type === 'month') {
+                    return "occupied-monthly";
                 }
                 // Ocupada HOY frente a ocupada de días anteriores: recepción
                 // necesita distinguir de un vistazo los ingresos de la jornada.
