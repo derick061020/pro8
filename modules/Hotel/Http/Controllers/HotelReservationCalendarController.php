@@ -542,6 +542,24 @@ class HotelReservationCalendarController extends Controller
 
         $payment = $this->computeReservationPayment($reservation);
 
+        // Último pago registrado: el formulario de edición lo usa para mostrar
+        // el método real (Yape, tarjeta…). Antes siempre abría en Efectivo.
+        $lastPayment = HotelRentItemPayment::with('global_payment')
+            ->whereIn('hotel_rent_item_id', $reservation->items->pluck('id'))
+            ->orderBy('id', 'desc')
+            ->first();
+        $lastPaymentOut = null;
+        if ($lastPayment) {
+            $gp = $lastPayment->global_payment;
+            $lastPaymentOut = [
+                'payment_method_type_id' => $lastPayment->payment_method_type_id,
+                'payment_destination_id' => ($gp && stripos((string) $gp->destination_type, 'BankAccount') !== false)
+                    ? $gp->destination_id
+                    : 'cash',
+                'reference'              => $lastPayment->reference,
+            ];
+        }
+
         $details = [
             'id'                  => $reservation->id,
             'customer'            => $customerDetails,
@@ -566,6 +584,7 @@ class HotelReservationCalendarController extends Controller
                 'debt'          => $payment['debt'],
                 'payment_state' => $payment['state'],
             ],
+            'last_payment'        => $lastPaymentOut,
             'status'              => $reservation->status,
             'adults'              => $reservation->adults,
             'children'            => $reservation->children,
