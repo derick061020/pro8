@@ -1,10 +1,8 @@
 <template>
-  <div
-    v-if="tr"
-    class="room-ring"
-    :class="['room-ring--' + tr.state]"
-    :title="tooltip"
-  >
+  <div v-if="tr" class="room-ring-wrap" :title="tooltip">
+    <!-- "Termina en:" desaparece al vencer (visibility, para no mover nada). -->
+    <div class="room-ring-caption" :class="{ 'is-hidden': tr.state === 'expired' }">Termina en:</div>
+    <div class="room-ring" :class="['room-ring--' + tr.state]">
     <svg class="room-ring__svg" viewBox="0 0 48 48" aria-hidden="true">
       <circle class="room-ring__track" cx="24" cy="24" :r="radius"></circle>
       <circle
@@ -19,6 +17,7 @@
     <div class="room-ring__text">
       <span class="room-ring__value">{{ tr.value }}</span>
       <span class="room-ring__label">{{ tr.label }}</span>
+    </div>
     </div>
   </div>
 </template>
@@ -149,6 +148,26 @@ export default {
 </script>
 
 <style scoped>
+.room-ring-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.room-ring-caption {
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 12px;
+  height: 12px;
+  white-space: nowrap;
+  color: #fff !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
+}
+.room-ring-caption.is-hidden {
+  visibility: hidden;
+}
+
 .room-ring {
   position: relative;
   width: 58px;
@@ -248,5 +267,6 @@ export default {
   .room-ring__label { font-size: 8px; }
   .room-ring--expired .room-ring__value { font-size: 8px; }
   .room-ring--expired .room-ring__label { font-size: 8px; }
+  .room-ring-caption { font-size: 9px; }
 }
 </style>

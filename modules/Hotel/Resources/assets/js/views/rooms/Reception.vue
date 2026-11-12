@@ -126,7 +126,7 @@
                                 v-if="ro.reservations_count > 0 && !(ro.is_active_reservation && ro.reservations_count === 1)"
                                 class="reservations-count-chip"
                                 :style="(!ro.has_reservation || ro.status !== 'DISPONIBLE') ? 'margin-top:40px;' : ''"
-                                :class="{ 'chip-on-reserved': ro.is_active_reservation }"
+                                :class="{ 'chip-on-reserved': ro.is_active_reservation, 'chip-below-ring': showsRing(ro) }"
                                 @click.stop="onOpenReservationsList(ro)"
                                 :title="`${ro.reservations_count} reserva${ro.reservations_count === 1 ? '' : 's'} vigente${ro.reservations_count === 1 ? '' : 's'} — clic para ver detalle`"
                             >
@@ -2618,6 +2618,12 @@ export default {
     },
     */
     methods: {
+        // La tarjeta muestra el círculo de cuenta regresiva (misma condición
+        // que el bloque del huésped + datos que necesita <room-countdown>).
+        showsRing(ro) {
+            return !!(ro && ro.rent && ro.rent.output_date && ro.rent.output_time
+                && (ro.status === 'OCUPADO' || (ro.is_active_reservation && ro.status === 'DISPONIBLE')));
+        },
         onAssignCleaner(room) {
             this.selectedRoom = room;
             this.selectedCleaner = null;
@@ -3843,6 +3849,22 @@ export default {
     .has-reservation .reservations-count-chip {
         top: 36px;
         right: 8px;
+    }
+}
+
+/* Con el círculo de cuenta regresiva ("Termina en:" + aro de 58px, desde
+   top:10px) el chip va justo debajo; si no, se montaba encima del círculo.
+   !important para ganarle al margin-top inline y a las reglas de arriba. */
+.room-el-card .reservations-count-chip.chip-below-ring {
+    top: 88px !important;
+    bottom: auto !important;
+    right: 10px !important;
+    margin-top: 0 !important;
+}
+@media (max-width: 576px) {
+    .room-el-card .reservations-count-chip.chip-below-ring {
+        top: 74px !important;
+        right: 8px !important;
     }
 }
 
