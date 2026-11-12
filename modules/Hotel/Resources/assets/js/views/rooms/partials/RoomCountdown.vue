@@ -100,7 +100,13 @@ export default {
       const diff = outputAt - now;
 
       if (diff <= 0) {
-        this.tr = { state: 'expired', fraction: 1, value: '0', label: 'vencido', full: '' };
+        // Debajo de "SALIDA" va cuánto se pasó: +3d, +2h, +15min.
+        const late = -diff;
+        const lateDays = Math.floor(late / 86400000);
+        const lateHours = Math.floor(late / 3600000);
+        const lateMinutes = Math.floor(late / 60000);
+        const label = lateDays >= 1 ? `+${lateDays}d` : (lateHours >= 1 ? `+${lateHours}h` : `+${lateMinutes}min`);
+        this.tr = { state: 'expired', fraction: 1, value: 'SALIDA', label, full: '' };
         return;
       }
 
@@ -210,9 +216,22 @@ export default {
 }
 .room-ring--expired .room-ring__track { stroke: rgba(239, 68, 68, 0.25); }
 .room-ring--expired .room-ring__arc { stroke: #ef4444; }
-.room-ring--expired .room-ring__text {
-  color: #dc2626;
-  text-shadow: none;
+/* !important: las tarjetas fuerzan `.card-rent span { color: white !important }`
+   y el texto quedaba blanco sobre blanco (círculo vacío). */
+.room-ring--expired .room-ring__text,
+.room-ring--expired .room-ring__text .room-ring__value,
+.room-ring--expired .room-ring__text .room-ring__label {
+  color: #dc2626 !important;
+  text-shadow: none !important;
+}
+.room-ring--expired .room-ring__value {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.2px;
+}
+.room-ring--expired .room-ring__label {
+  font-size: 10px;
+  font-weight: 700;
 }
 
 @keyframes room-ring-blink {
@@ -227,5 +246,7 @@ export default {
   }
   .room-ring__value { font-size: 13px; }
   .room-ring__label { font-size: 8px; }
+  .room-ring--expired .room-ring__value { font-size: 8px; }
+  .room-ring--expired .room-ring__label { font-size: 8px; }
 }
 </style>
