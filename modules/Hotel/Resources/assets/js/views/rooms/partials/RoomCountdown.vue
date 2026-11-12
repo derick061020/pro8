@@ -24,12 +24,13 @@
 </template>
 
 <script>
-// Círculo de cuenta regresiva de la estadía. El aro se vacía según el tiempo
-// que queda entre el ingreso y la salida; en el centro va la unidad que importa
+// Círculo de cuenta regresiva de la estadía. El aro se vacía en las últimas
+// 24 h antes de la salida; en el centro va la unidad que importa
 // (días, horas o minutos). Colores: verde con tiempo de sobra, amarillo cuando
 // faltan 2 h o menos, rojo parpadeando cuando ya pasó la hora de salida.
 // Mantiene su propio intervalo para que solo este componente se re-renderice.
 const WARNING_MS = 2 * 3600000;
+const FULL_RING_MS = 24 * 3600000;
 
 function parseDateTime(date, time, fallbackTime) {
   if (!date) return null;
@@ -75,9 +76,7 @@ export default {
     },
   },
   watch: {
-    // Si cambia la entrada o la salida (p. ej. tras una extensión), recalcular.
-    'rent.input_date'() { this.tick(); },
-    'rent.input_time'() { this.tick(); },
+    // Si cambia la salida (p. ej. tras una extensión), recalcular.
     'rent.output_date'() { this.tick(); },
     'rent.output_time'() { this.tick(); },
   },
@@ -105,10 +104,9 @@ export default {
         return;
       }
 
-      // Fracción restante respecto a la duración total de la estadía.
-      const inputAt = parseDateTime(r.input_date, r.input_time, '14:00');
-      const total = inputAt && outputAt > inputAt ? outputAt - inputAt : 24 * 3600000;
-      const fraction = Math.min(1, Math.max(0.02, diff / total));
+      // Escala fija: aro lleno con 24 h o más por delante. Así dos habitaciones
+      // con la misma hora de salida se ven iguales sin importar cuándo entraron.
+      const fraction = Math.min(1, Math.max(0.02, diff / FULL_RING_MS));
 
       const days = Math.floor(diff / 86400000);
       const hours = Math.floor((diff % 86400000) / 3600000);
@@ -147,8 +145,8 @@ export default {
 <style scoped>
 .room-ring {
   position: relative;
-  width: 48px;
-  height: 48px;
+  width: 58px;
+  height: 58px;
   flex: 0 0 auto;
   border-radius: 50%;
   background: rgba(0, 0, 0, 0.22);
@@ -193,12 +191,12 @@ export default {
 }
 
 .room-ring__value {
-  font-size: 13px;
+  font-size: 16px;
   font-weight: 700;
 }
 
 .room-ring__label {
-  font-size: 8px;
+  font-size: 10px;
   font-weight: 600;
   margin-top: 1px;
   opacity: 0.9;
@@ -224,10 +222,10 @@ export default {
 
 @media (max-width: 576px) {
   .room-ring {
-    width: 40px;
-    height: 40px;
+    width: 46px;
+    height: 46px;
   }
-  .room-ring__value { font-size: 11px; }
-  .room-ring__label { font-size: 7px; }
+  .room-ring__value { font-size: 13px; }
+  .room-ring__label { font-size: 8px; }
 }
 </style>
