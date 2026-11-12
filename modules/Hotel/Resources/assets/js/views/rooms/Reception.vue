@@ -123,10 +123,10 @@
                                  Se oculta cuando la habitación ya muestra el badge "Reservada"
                                  y solo existe esa reserva (sería redundante). -->
                             <div
-                                v-if="ro.reservations_count > 0 && !(ro.is_active_reservation && ro.reservations_count === 1)"
+                                v-if="showsReservationsChip(ro) && !showsRing(ro)"
                                 class="reservations-count-chip"
                                 :style="(!ro.has_reservation || ro.status !== 'DISPONIBLE') ? 'margin-top:40px;' : ''"
-                                :class="{ 'chip-on-reserved': ro.is_active_reservation, 'chip-below-ring': showsRing(ro) }"
+                                :class="{ 'chip-on-reserved': ro.is_active_reservation }"
                                 @click.stop="onOpenReservationsList(ro)"
                                 :title="`${ro.reservations_count} reserva${ro.reservations_count === 1 ? '' : 's'} vigente${ro.reservations_count === 1 ? '' : 's'} — clic para ver detalle`"
                             >
@@ -208,6 +208,22 @@
                                     </p>
                                     <!-- Contenedor para contador y tooltip en esquina superior derecha -->
                                     <div class="room-top-right-elements">
+                                        <!-- Con círculo, el chip de reservas va en esta misma fila
+                                             (a la izquierda) para no taparlo ni tapar al huésped. -->
+                                        <div
+                                            v-if="showsReservationsChip(ro) && showsRing(ro)"
+                                            class="reservations-count-chip chip-inline"
+                                            @click.stop="onOpenReservationsList(ro)"
+                                            :title="`${ro.reservations_count} reserva${ro.reservations_count === 1 ? '' : 's'} vigente${ro.reservations_count === 1 ? '' : 's'} — clic para ver detalle`"
+                                        >
+                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                                                <line x1="16" y1="2" x2="16" y2="6"></line>
+                                                <line x1="8" y1="2" x2="8" y2="6"></line>
+                                                <line x1="3" y1="10" x2="21" y2="10"></line>
+                                            </svg>
+                                            <span style="color:black!important;" class="reservations-count-num">{{ ro.reservations_count }}</span>
+                                        </div>
                                         <!-- Contador regresivo -->
                                     <room-countdown v-if="ro.rent" :rent="ro.rent"></room-countdown>
                                         <!-- Indicador de observaciones: abre el hilo
@@ -2620,6 +2636,11 @@ export default {
     methods: {
         // La tarjeta muestra el círculo de cuenta regresiva (misma condición
         // que el bloque del huésped + datos que necesita <room-countdown>).
+        // Chip-contador de reservas vigentes; se oculta si la habitación ya
+        // muestra "Reservada" y solo existe esa reserva (sería redundante).
+        showsReservationsChip(ro) {
+            return ro.reservations_count > 0 && !(ro.is_active_reservation && ro.reservations_count === 1);
+        },
         showsRing(ro) {
             return !!(ro && ro.rent && ro.rent.output_date && ro.rent.output_time
                 && (ro.status === 'OCUPADO' || (ro.is_active_reservation && ro.status === 'DISPONIBLE')));
@@ -3852,20 +3873,10 @@ export default {
     }
 }
 
-/* Con el círculo de cuenta regresiva ("Termina en:" + aro de 58px, desde
-   top:10px) el chip va justo debajo; si no, se montaba encima del círculo.
-   !important para ganarle al margin-top inline y a las reglas de arriba. */
-.room-el-card .reservations-count-chip.chip-below-ring {
-    top: 88px !important;
-    bottom: auto !important;
-    right: 10px !important;
-    margin-top: 0 !important;
-}
-@media (max-width: 576px) {
-    .room-el-card .reservations-count-chip.chip-below-ring {
-        top: 74px !important;
-        right: 8px !important;
-    }
+/* Chip de reservas dentro de la fila del círculo (flex): sin posición absoluta. */
+.room-el-card .room-top-right-elements .reservations-count-chip.chip-inline {
+    position: static !important;
+    margin: 0 !important;
 }
 
 /* Modal de reservas */
