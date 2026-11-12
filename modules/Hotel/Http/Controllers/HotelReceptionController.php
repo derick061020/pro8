@@ -533,7 +533,7 @@ class HotelReceptionController extends Controller
                             $nested['description'] = preg_replace($suffixRegex, '', $nested['description']) . $newSuffix;
                         }
                         if (!empty($nested['name_product_pdf'])) {
-                            $nested['name_product_pdf'] = preg_replace($suffixRegex, '', $nested['name_product_pdf']) . $newSuffix;
+                            $nested['name_product_pdf'] = \Modules\Hotel\Models\HotelRentItem::pdfNameWithSuffix($nested['name_product_pdf'], $newSuffix);
                         }
                         $json['item'] = $nested;
                     }

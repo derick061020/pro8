@@ -1483,6 +1483,10 @@ class HotelReservationCalendarController extends Controller
         $inner = $base['item'] ?? [];
         if (is_object($inner)) $inner = (array) $inner;
         if (!is_array($inner)) $inner = [];
+        // Nombre en PDF heredado con el sufijo fuera del párrafo: ponerlo en la misma línea
+        if (!empty($inner['name_product_pdf'])) {
+            $inner['name_product_pdf'] = HotelRentItem::pdfNameWithSuffix($inner['name_product_pdf']);
+        }
         $inner = array_merge($inner, [
             'id'               => $itemId,
             'item_id'          => $itemId,
