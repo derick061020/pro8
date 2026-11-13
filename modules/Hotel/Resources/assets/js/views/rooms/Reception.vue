@@ -278,21 +278,11 @@
                                     </span>
                                 </div>
                                 <div class="row" style="margin-right:0px;margin-left:0px;margin-top: auto;">
-                                    <div class="col-3" style="padding-left:0px;">
-                                        <button
-                                            title="Agregar productos"
-                                            class="btn btn-block btn-danger px-0 py-2 w-100"
-                                            data-toggle="tooltip"
-                                            @click="onGoToAddProducts(ro)"
-                                        >
-                                        <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-hotel-service"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M8.5 10a1.5 1.5 0 0 1 -1.5 -1.5a5.5 5.5 0 0 1 11 0v10.5a2 2 0 0 1 -2 2h-7a2 2 0 0 1 -2 -2v-2c0 -1.38 .71 -2.444 1.88 -3.175l4.424 -2.765c1.055 -.66 1.696 -1.316 1.696 -2.56a2.5 2.5 0 1 0 -5 0a1.5 1.5 0 0 1 -1.5 1.5z" /></svg> 
-                                        </button>
-                                    </div>
                                     <div
-                                        :class="['col-9', 'room-actions-right', {
+                                        :class="['col-12', 'room-actions-right', {
                                             'has-debt': (ro.status !== 'DISPONIBLE' || ro.is_active_reservation) && getRoomDebt(ro) > 0
                                         }]"
-                                        style="padding-right:0px;position:relative;"
+                                        style="padding-left:0px;padding-right:0px;position:relative;"
                                     >
                                         <!-- Deuda pendiente: en medio de los dos botones y ocupando
                                              todo el espacio libre; los botones se ajustan a su
@@ -301,7 +291,8 @@
                                             v-if="(ro.status !== 'DISPONIBLE' || ro.is_active_reservation) && getRoomDebt(ro) > 0"
                                             class="debt-indicator-btn"
                                         >
-                                            Debe: {{ getFormattedDebt(ro) }}
+                                            <svg class="debt-wallet-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M17 8v-3a1 1 0 0 0 -1 -1h-10a2 2 0 0 0 0 4h12a1 1 0 0 1 1 1v3m0 4v3a1 1 0 0 1 -1 1h-12a2 2 0 0 1 -2 -2v-12" /><path d="M20 12v4h-4a2 2 0 0 1 0 -4h4" /></svg>
+                                            <span class="debt-text">Debe: {{ getFormattedDebt(ro) }}</span>
                                         </span>
                                         <!-- Habitación reservada: el botón hace Check-in -->
                                         <button
@@ -329,6 +320,15 @@
                                             @click="showOccupiedModalWithDebug(ro)"
                                         >Ocupado
                                         <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-door-exit"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M13 12v.01" /><path d="M3 21h18" /><path d="M5 21v-16a2 2 0 0 1 2 -2h7.5m2.5 10.5v7.5" /><path d="M14 7h7m-3 -3l3 3l-3 3" /></svg>
+                                        </button>
+                                        <!-- Productos: botón blanco al costado de Ocupado -->
+                                        <button
+                                            title="Agregar productos"
+                                            class="btn btn-products-room py-2"
+                                            data-toggle="tooltip"
+                                            @click="onGoToAddProducts(ro)"
+                                        >
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M3 21l18 0" /><path d="M3 7v1a3 3 0 0 0 6 0v-1m0 1a3 3 0 0 0 6 0v-1m0 1a3 3 0 0 0 6 0v-1h-18l2 -4h14l2 4" /><path d="M5 21l0 -10.15" /><path d="M19 21l0 -10.15" /><path d="M9 21v-4a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v4" /></svg>
                                         </button>
                                     </div>
                                 </div>
@@ -1297,7 +1297,7 @@
     flex: 0 0 40px;
     max-width: 40px;
 }
-.room-container .room-el-card .card-rent > .row > .col-9 {
+.room-container .room-el-card .card-rent > .row > .col-12 {
     flex: 1 1 auto;
     max-width: 100%;
     width: auto;
@@ -1407,22 +1407,48 @@
 
 /* Fila de acciones de la habitación ocupada/reservada: el botón de estado
    (Ocupado / Reservado) ocupa todo el ancho disponible. */
-.room-container .room-el-card .card-rent > .row > .col-9.room-actions-right {
+.room-container .room-el-card .card-rent > .row > .col-12.room-actions-right {
     display: flex;
     align-items: stretch;
     gap: 6px;
 }
 
-.room-container .room-el-card .card-rent > .row > .col-9.room-actions-right > .btn {
+.room-container .room-el-card .card-rent > .row > .col-12.room-actions-right > .btn {
     flex: 1 1 auto;
     min-width: 0;
 }
 
 /* Con deuda, el botón de estado se ajusta a su texto (lo más angosto posible)
    para que el aviso de deuda se quede con todo el espacio libre. */
-.room-container .room-el-card .card-rent > .row > .col-9.room-actions-right.has-debt > .btn {
+.room-container .room-el-card .card-rent > .row > .col-12.room-actions-right.has-debt > .btn {
     flex: 0 0 auto;
     width: auto !important;
+}
+
+/* Deuda en blanco con texto rojo (pedido de Junior). Las tarjetas fuerzan
+   `.card-rent span { color: white !important }`, por eso el !important. */
+.debt-indicator-btn .debt-text,
+.debt-indicator-btn .debt-wallet-icon {
+    color: #dc2626 !important;
+}
+.debt-indicator-btn .debt-wallet-icon { flex-shrink: 0; }
+
+/* Productos: botón blanco cuadrado, ícono rojo, al final de la fila. */
+.room-container .room-el-card .card-rent > .row > .col-12.room-actions-right > .btn.btn-products-room {
+    flex: 0 0 44px;
+    width: 44px !important;
+    padding-left: 0;
+    padding-right: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: #ffffff !important;
+    color: #dc2626 !important;
+    border: 1px solid #ffffff !important;
+    border-radius: 8px;
+}
+.room-container .room-el-card .card-rent > .row > .col-12.room-actions-right > .btn.btn-products-room:hover {
+    background: #fef2f2 !important;
 }
 
 /* Aviso de deuda: el elemento más grande de la fila, en medio de los dos botones. */
@@ -1436,8 +1462,10 @@
     align-self: center;
     min-height: 30px;
     padding: 4px 8px;
-    background: #ff4757;
-    color: white;
+    background: #ffffff;
+    color: #dc2626 !important;
+    border: 2px solid #dc2626;
+    gap: 8px;
     border-radius: 8px;
     font-size: 15px;
     font-weight: 700;

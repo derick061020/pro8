@@ -44,6 +44,22 @@
                             <h4 class="mt-0"><b>
                                 {{ currentRent.customer.name }}</b>
                             </h4>
+                            <!-- Acompañantes (familiares) registrados en el ingreso -->
+                            <div v-if="companions.length" class="companions-box">
+                                <button type="button" class="companions-toggle" @click="showCompanions = !showCompanions">
+                                    <i :class="showCompanions ? 'fa fa-chevron-up' : 'fa fa-chevron-down'"></i>
+                                    Acompañantes ({{ companions.length }})
+                                </button>
+                                <ul v-show="showCompanions" class="companions-list">
+                                    <li v-for="(p, i) in companions" :key="i">
+                                        <span class="companion-name">{{ p.name || 'Sin nombre' }}</span>
+                                        <small class="text-muted">
+                                            <template v-if="p.number">{{ p.number }}</template>
+                                            <template v-if="p.type"> · {{ p.type === 'child' ? 'Niño' : 'Adulto' }}</template>
+                                        </small>
+                                    </li>
+                                </ul>
+                            </div>
                             <el-button 
                                 type="text" 
                                 size="mini" 
@@ -1362,6 +1378,16 @@ export default {
         },
     },
     computed: {
+        // data_persons llega como arreglo o como objeto {0:…,1:…} (el modelo lo
+        // castea a object). Se excluye al cliente principal si también figura.
+        companions() {
+            const raw = this.currentRent && this.currentRent.data_persons;
+            if (!raw) return [];
+            const list = Array.isArray(raw) ? raw : Object.values(raw);
+            const mainNumber = String((this.currentRent.customer && this.currentRent.customer.number) || '').trim();
+            return list.filter(p => p && (p.name || p.number)
+                && !(mainNumber && String(p.number || '').trim() === mainNumber));
+        },
         ...mapState([
             'config',
         ]),
@@ -1529,6 +1555,7 @@ export default {
     },
     data() {
         return {
+            showCompanions: false,
             title: "",
             currentRent: {},
             arrears: 0,
@@ -4204,6 +4231,38 @@ export default {
 </script>
 
 <style scoped>
+.companions-box {
+    margin-top: 4px;
+}
+.companions-toggle {
+    background: none;
+    border: 0;
+    padding: 0;
+    font-size: 13px;
+    font-weight: 600;
+    color: #2563eb;
+    cursor: pointer;
+}
+.companions-toggle i {
+    font-size: 11px;
+    margin-right: 4px;
+}
+.companions-list {
+    list-style: none;
+    margin: 6px 0 0;
+    padding: 6px 0 0;
+    border-top: 1px dashed #d1d5db;
+}
+.companions-list li {
+    display: flex;
+    flex-direction: column;
+    padding: 3px 0;
+    line-height: 1.25;
+}
+.companion-name {
+    font-weight: 600;
+    font-size: 13px;
+}
 .info-item {
     display: flex;
     align-items: center;
