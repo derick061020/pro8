@@ -146,7 +146,12 @@
     <div class="section">Check In-Out</div>
     <div class="policy policy-red">El ingreso es a partir de las {{ $fmtTime($rent->input_time) ?: '—' }} y la salida hasta las {{ $fmtTime($rent->output_time) ?: '—' }} del día indicado. Si necesita quedarse más tiempo, coordínelo con recepción.</div>
     <div class="section">Cambios y anulaciones</div>
-    <div class="policy">Para modificar o anular su reserva comuníquese con el hotel@if(optional($establishment)->telephone) al {{ $establishment->telephone }}@endif @if(optional($establishment)->email) o al correo {{ $establishment->email }}@endif.</div>
+    @php
+        $contact = [];
+        if (optional($establishment)->telephone) $contact[] = 'al ' . $establishment->telephone;
+        if (optional($establishment)->email) $contact[] = 'al correo ' . $establishment->email;
+    @endphp
+    <div class="policy">Para modificar o anular su reserva comuníquese con el hotel{{ $contact ? ' ' . implode(' o ', $contact) : '' }}.</div>
 </div>
 
 <table class="sign" width="100%" cellspacing="0" cellpadding="0">
