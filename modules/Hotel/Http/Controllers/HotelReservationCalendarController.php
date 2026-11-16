@@ -995,8 +995,24 @@ class HotelReservationCalendarController extends Controller
         $payment  = $this->computeReservationPayment($rent);
         $total    = (float) $this->computeReservationTotal($rent);
 
-        $establishment = Establishment::find($rent->establishment_id ?: $this->currentEstablishmentId());
+        $establishment = Establishment::with(['country', 'department', 'province', 'district'])
+            ->find($rent->establishment_id ?: $this->currentEstablishmentId());
         $company       = Company::first();
+
+        // "?prices=0" → constancia sin importes (para enviarla sin precios).
+        $showPrices = request('prices', '1') !== '0';
+
+        // Etiqueta del documento del titular según su tipo (antes siempre "DNI / RUC").
+        $docLabels = ['1' => 'DNI', '6' => 'RUC', '4' => 'Carnet de extranjería', '7' => 'Pasaporte'];
+        $docTypeId = isset($customer->identity_document_type_id) ? (string) $customer->identity_document_type_id : '';
+        if (isset($docLabels[$docTypeId])) {
+            $docLabel = $docLabels[$docTypeId];
+        } elseif ($docTypeId !== '' && ($docType = \App\Models\Tenant\Catalogs\IdentityDocumentType::find($docTypeId))) {
+            $docLabel = $docType->description;
+        } else {
+            $len = strlen(trim((string) ($customer->number ?? '')));
+            $docLabel = $len === 8 ? 'DNI' : ($len === 11 ? 'RUC' : 'Documento');
+        }
 
         $logoPath = (!empty($company->logo) && file_exists(public_path('storage/uploads/logos/' . $company->logo)))
             ? public_path('storage/uploads/logos/' . $company->logo)
@@ -1038,6 +1054,8 @@ class HotelReservationCalendarController extends Controller
             'rent'          => $rent,
             'code'          => $code,
             'customer'      => $customer,
+            'docLabel'      => $docLabel,
+            'showPrices'    => $showPrices,
             'room'          => $room,
             'company'       => $company,
             'establishment' => $establishment,
