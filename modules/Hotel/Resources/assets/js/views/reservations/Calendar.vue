@@ -414,11 +414,17 @@
                                @click="generateSaleNote">
                         Nota de venta
                     </el-button>
-                    <el-button size="small" type="primary" icon="el-icon-document"
-                               v-if="detail && detail.id"
-                               @click="openReservationVoucher">
+                    <!-- Clic = constancia con precios; menú = sin precios -->
+                    <el-dropdown v-if="detail && detail.id"
+                                 split-button size="small" type="primary"
+                                 style="margin-left: 10px;"
+                                 @click="openReservationVoucher(true)"
+                                 @command="openReservationVoucher(false)">
                         Constancia PDF
-                    </el-button>
+                        <el-dropdown-menu slot="dropdown">
+                            <el-dropdown-item command="no-prices">Sin precios</el-dropdown-item>
+                        </el-dropdown-menu>
+                    </el-dropdown>
                     <el-button size="small" type="danger"
                                v-if="isEditableStatus(detail && detail.status)"
                                @click="deleteReservation(detail)"
@@ -1570,9 +1576,10 @@ export default {
         // (el mismo del checkout: formatos, envío por correo/WhatsApp).
         // Constancia de reserva en PDF para enviar al huésped (se abre en otra
         // pestaña; desde ahí se descarga o se comparte).
-        openReservationVoucher() {
+        openReservationVoucher(withPrices = true) {
             if (!this.detail || !this.detail.id) return
-            window.open(`/hotels/reservations/calendar/${this.detail.id}/voucher`, '_blank')
+            const query = withPrices ? '' : '?prices=0'
+            window.open(`/hotels/reservations/calendar/${this.detail.id}/voucher${query}`, '_blank')
         },
         async generateSaleNote() {
             if (!this.detail || !this.detail.id) return

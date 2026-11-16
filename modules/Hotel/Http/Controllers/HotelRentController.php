@@ -1685,7 +1685,9 @@ class HotelRentController extends Controller
 		$customers = Person::with('addresses')
 			->whereType('customers')
 			->whereIsEnabled()
-			->whereIn('identity_document_type_id', [1, 4, 6])
+			// DNI, CE, RUC, pasaporte y demás documentos de extranjeros. Antes solo
+			// [1, 4, 6]: un huésped con pasaporte no aparecía al buscarlo.
+			->whereIn('identity_document_type_id', ['0', '1', '4', '6', '7', 'A', 'B', 'C', 'D', 'E'])
 			->orderBy('name');
 
 		// Sin término: devolver los primeros 20 (para que aparezca lista al
@@ -1697,7 +1699,12 @@ class HotelRentController extends Controller
 				if (is_numeric($query)) {
 					$customers = $customers->where('number', 'like', "%{$query}%");
 				} else {
-					$customers = $customers->where('name', 'like', "%{$query}%");
+					// Pasaporte/CE llevan letras (p. ej. RD8582515): buscar también
+					// por número, no solo por nombre.
+					$customers = $customers->where(function ($q) use ($query) {
+						$q->where('name', 'like', "%{$query}%")
+						  ->orWhere('number', 'like', "%{$query}%");
+					});
 				}
 			}
 		}

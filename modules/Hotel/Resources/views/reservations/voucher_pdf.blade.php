@@ -49,17 +49,30 @@
                 <img src="{{ $logoPath }}" style="max-height: 55px; max-width: 200px;"><br>
             @endif
             <span class="hotel-name">{{ $hotelName }}</span><br>
+            @php
+                $est = $establishment;
+                $location = $est ? array_filter([
+                    optional($est->district)->description,
+                    optional($est->province)->description,
+                    optional($est->department)->description,
+                    optional($est->country)->description,
+                ]) : [];
+                $tradeAddress = ($est && $est->trade_address && $est->trade_address !== '-') ? $est->trade_address : null;
+                $fiscalAddress = ($est && $est->address && $est->address !== '-') ? $est->address : null;
+            @endphp
             <span class="small muted">
-                @if(optional($company)->number) RUC {{ $company->number }} · @endif
-                {{ optional($establishment)->address }}
-                @if(optional($establishment)->telephone) · Tel. {{ $establishment->telephone }} @endif
-                @if(optional($establishment)->email) · {{ $establishment->email }} @endif
+                @if(optional($company)->number) RUC {{ $company->number }} @endif
+                {{ $fiscalAddress ? ' · ' . $fiscalAddress : '' }}<br>
+                @if($tradeAddress) Dirección comercial: {{ $tradeAddress }}<br> @endif
+                @if($location) {{ implode(' - ', $location) }}<br> @endif
+                @if(optional($est)->telephone) Tel. {{ $est->telephone }} @endif
+                @if(optional($est)->email) {{ optional($est)->telephone ? ' · ' : '' }}{{ $est->email }} @endif
             </span>
             <br><br>
             Estimado(a) huésped,<br><br>
             A continuación la constancia de su reserva de alojamiento.<br><br>
             <span class="label">Titular:</span> <b>{{ $customer->name ?? '-' }}</b><br>
-            <span class="label">DNI / RUC:</span> <b>{{ $customer->number ?? '-' }}</b><br>
+            <span class="label">{{ $docLabel }}:</span> <b>{{ $customer->number ?? '-' }}</b><br>
             @if(!empty($customer->telephone))<span class="label">Teléfono:</span> <b>{{ $customer->telephone }}</b><br>@endif
             <span class="label">Habitación:</span> <b>{{ $room ? $room->name : '-' }}@if($room && $room->category) - {{ $room->category->description }}@endif</b><br>
             <span class="label">Estadía:</span> <b>{{ $durationText }}</b><br>
@@ -92,9 +105,11 @@
         <td width="33%"><div class="date-title">Check-in</div></td>
         <td width="33%"><div class="date-title">Check-out</div></td>
         <td width="34%" rowspan="2" class="totals">
-            Total: {{ $money($total) }}<br>
-            Pagado: {{ $money($paid) }}<br>
-            <span class="{{ $debt > 0.009 ? 'debt' : '' }}">Saldo: {{ $money(max(0, $debt)) }}</span>
+            @if($showPrices)
+                Total: {{ $money($total) }}<br>
+                Pagado: {{ $money($paid) }}<br>
+                <span class="{{ $debt > 0.009 ? 'debt' : '' }}">Saldo: {{ $money(max(0, $debt)) }}</span>
+            @endif
         </td>
     </tr>
     <tr>
@@ -144,7 +159,7 @@
 
 <div class="box">
     <div class="section">Entrega de la habitación</div>
-    <div class="policy">Presente esta constancia (impresa o en el celular) y el DNI del titular al momento del ingreso. La habitación se entrega al titular de la reserva o a la persona que él indique.</div>
+    <div class="policy">Presente esta constancia (impresa o en el celular) y el documento de identidad del titular al momento del ingreso. La habitación se entrega al titular de la reserva o a la persona que él indique.</div>
     <div class="section">Check In-Out</div>
     <div class="policy policy-red">El ingreso es a partir de las {{ $fmtTime($rent->input_time) ?: '—' }} y la salida hasta las {{ $fmtTime($rent->output_time) ?: '—' }} del día indicado. Si necesita quedarse más tiempo, coordínelo con recepción.</div>
     <div class="section">Cambios y anulaciones</div>
