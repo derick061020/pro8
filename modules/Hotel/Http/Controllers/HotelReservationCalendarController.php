@@ -982,6 +982,101 @@ class HotelReservationCalendarController extends Controller
     }
 
     /**
+     * Constancia de reserva en PDF (A4, una página) para enviarla al huésped:
+     * código + QR, titular, habitación, fechas, importes, acompañantes,
+     * detalle de la habitación y condiciones. Pedido de Junior (2026-11-14).
+     */
+    public function reservationVoucher($id)
+    {
+        $rent = HotelRent::with(['room.category', 'items'])->findOrFail($id);
+
+        $customer = $rent->customer ?: (object) [];
+        $room     = $rent->room;
+        $payment  = $this->computeReservationPayment($rent);
+        $total    = (float) $this->computeReservationTotal($rent);
+
+        $establishment = Establishment::find($rent->establishment_id ?: $this->currentEstablishmentId());
+        $company       = Company::first();
+
+        $logoPath = (!empty($company->logo) && file_exists(public_path('storage/uploads/logos/' . $company->logo)))
+            ? public_path('storage/uploads/logos/' . $company->logo)
+            : null;
+
+        // Primera foto de la habitación (si tiene) como archivo local para mPDF.
+        $roomImagePath = null;
+        if ($room && is_array($room->images)) {
+            foreach ($room->images as $file) {
+                if (!is_string($file) || $file === '' || str_starts_with($file, 'http')) {
+                    continue;
+                }
+                $candidate = public_path('storage/uploads/hotel/rooms/' . basename($file));
+                if (file_exists($candidate)) {
+                    $roomImagePath = $candidate;
+                    break;
+                }
+            }
+        }
+
+        // Acompañantes registrados (data_persons llega como objeto {0:…}).
+        $companions = collect((array) ($rent->data_persons ?: []))
+            ->map(function ($p) { return (object) (array) $p; })
+            ->filter(function ($p) use ($customer) {
+                $name   = trim((string) ($p->name ?? ''));
+                $number = trim((string) ($p->number ?? ''));
+                if ($name === '' && $number === '') return false;
+                return !($number !== '' && $number === trim((string) ($customer->number ?? '')));
+            })
+            ->values();
+
+        $unitLabels = ['hour' => ['hora', 'horas'], 'month' => ['mes', 'meses']];
+        [$one, $many] = $unitLabels[$rent->rental_period_type] ?? ['noche', 'noches'];
+        $duration = (int) ($rent->duration ?: 1);
+
+        $code = 'R-' . str_pad((string) $rent->id, 6, '0', STR_PAD_LEFT);
+
+        $html = view('hotel::reservations.voucher_pdf', [
+            'rent'          => $rent,
+            'code'          => $code,
+            'customer'      => $customer,
+            'room'          => $room,
+            'company'       => $company,
+            'establishment' => $establishment,
+            'logoPath'      => $logoPath,
+            'roomImagePath' => $roomImagePath,
+            'companions'    => $companions,
+            'durationText'  => $duration . ' ' . ($duration === 1 ? $one : $many),
+            'total'         => $total,
+            'paid'          => (float) $payment['paid'],
+            'debt'          => (float) $payment['debt'],
+            'qrText'        => $code . ' | ' . ($customer->name ?? '') . ' | ' . ($room->name ?? '')
+                . ' | ' . $rent->input_date . ' > ' . $rent->output_date,
+        ])->render();
+
+        $pdf = new \Mpdf\Mpdf([
+            'mode'          => 'utf-8',
+            'format'        => 'A4',
+            'margin_top'    => 12,
+            'margin_bottom' => 12,
+            'margin_left'   => 14,
+            'margin_right'  => 14,
+        ]);
+
+        $filename = 'Reserva-' . $code . '.pdf';
+        $pdf->SetTitle('Constancia de reserva ' . $code);
+        $pdf->SetAuthor(optional($company)->name ?: 'Hotel');
+        $pdf->WriteHTML($html);
+
+        return response(
+            $pdf->Output($filename, \Mpdf\Output\Destination::STRING_RETURN),
+            200,
+            [
+                'Content-Type'        => 'application/pdf',
+                'Content-Disposition' => 'inline; filename="' . $filename . '"',
+            ]
+        );
+    }
+
+    /**
      * Versión PDF del reporte de reservas (A4 apaisado).
      *
      * Además del detalle, arma dos resúmenes que en Excel había que calcular a
