@@ -69,10 +69,12 @@
             @endif
         </td>
         <td width="34%" align="center">
-            <div class="code-title">Código de reserva</div>
-            <div class="code">{{ $code }}</div>
-            <barcode code="{{ $qrText }}" type="QR" size="1.1" error="M" disableborder="1" />
-            <div class="meta">
+            <div class="code-title" style="text-align: center;">Código de reserva</div>
+            <div class="code" style="text-align: center;">{{ $code }}</div>
+            <div style="text-align: center; margin-top: 4px;">
+                <barcode code="{{ $qrText }}" type="QR" size="1.1" error="M" disableborder="1" />
+            </div>
+            <div class="meta" style="text-align: center;">
                 @if($createdAt)
                     Fecha de reserva<br><b>{{ $fmtDate($createdAt) }}</b><br>
                     Hora de reserva<br><b>{{ $createdAt->format('h:i a') }}</b><br>
