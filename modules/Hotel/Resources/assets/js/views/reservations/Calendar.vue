@@ -414,6 +414,11 @@
                                @click="generateSaleNote">
                         Nota de venta
                     </el-button>
+                    <el-button size="small" type="primary" icon="el-icon-document"
+                               v-if="detail && detail.id"
+                               @click="openReservationVoucher">
+                        Constancia PDF
+                    </el-button>
                     <el-button size="small" type="danger"
                                v-if="isEditableStatus(detail && detail.status)"
                                @click="deleteReservation(detail)"
@@ -1563,6 +1568,12 @@ export default {
         },
         // Emite la nota de venta de la reserva y abre el modal de opciones
         // (el mismo del checkout: formatos, envío por correo/WhatsApp).
+        // Constancia de reserva en PDF para enviar al huésped (se abre en otra
+        // pestaña; desde ahí se descarga o se comparte).
+        openReservationVoucher() {
+            if (!this.detail || !this.detail.id) return
+            window.open(`/hotels/reservations/calendar/${this.detail.id}/voucher`, '_blank')
+        },
         async generateSaleNote() {
             if (!this.detail || !this.detail.id) return
             this.generatingSaleNote = true

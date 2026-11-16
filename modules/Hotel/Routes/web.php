@@ -153,6 +153,7 @@ if ($hostname) {
             Route::get('calendar/rooms', 'HotelReservationCalendarController@getRooms');
             Route::get('calendar/categories', 'HotelReservationCalendarController@getCategories');
             Route::get('calendar/{id}/details', 'HotelReservationCalendarController@getReservationDetails');
+            Route::get('calendar/{id}/voucher', 'HotelReservationCalendarController@reservationVoucher');
             Route::put('calendar/{id}/status', 'HotelReservationCalendarController@updateReservationStatus');
             Route::get('calendar/range', 'HotelReservationCalendarController@getReservationsByDateRange');
             // Página del reporte de reservas (filtros + tabla en pantalla) y sus
