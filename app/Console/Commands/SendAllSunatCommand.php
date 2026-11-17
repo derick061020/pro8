@@ -18,6 +18,9 @@ class SendAllSunatCommand extends Command
     /** Facturas más antiguas que esto ya no se reintentan solas */
     private const MAX_AGE_DAYS = 30;
 
+    /** Boletas: SUNAT las recibe hasta 7 días después de emitidas */
+    private const MAX_AGE_DAYS_BOLETAS = 7;
+
     /** Máximo por empresa y por ejecución */
     private const BATCH = 100;
 
@@ -60,11 +63,22 @@ class SendAllSunatCommand extends Command
             // Pendientes de envío: registrados (01) o enviados sin respuesta (03).
             // No se filtra por success_sunat_shipping_status: antes un envío que
             // fallaba quedaba marcado como hecho y no se volvía a intentar nunca.
+            // Boletas (grupo 02) también van una por una: así las ha venido enviando
+            // el hotel (aceptadas sin resumen diario). Antes solo entraban facturas
+            // y una boleta que no salía al emitirse se quedaba pendiente hasta que
+            // alguien la mandaba a mano. Las boletas solo dentro del plazo de SUNAT.
             $documents = Document::query()
-                ->where('group_id', '01')
+                ->where(function ($q) {
+                    $q->where(function ($f) {
+                        $f->where('group_id', '01')
+                          ->where('date_of_issue', '>=', now()->subDays(self::MAX_AGE_DAYS)->format('Y-m-d'));
+                    })->orWhere(function ($b) {
+                        $b->where('group_id', '02')
+                          ->where('date_of_issue', '>=', now()->subDays(self::MAX_AGE_DAYS_BOLETAS)->format('Y-m-d'));
+                    });
+                })
                 ->where('send_server', 0)
                 ->whereIn('state_type_id', ['01', '03'])
-                ->where('date_of_issue', '>=', now()->subDays(self::MAX_AGE_DAYS)->format('Y-m-d'))
                 ->orderBy('id')
                 ->limit(self::BATCH)
                 ->get();
@@ -122,7 +136,7 @@ class SendAllSunatCommand extends Command
                 }
             }
 
-            $this->info("Facturas pendientes: {$documents->count()} · resueltas: {$sent} · por reintentar: {$failed}");
+            $this->info("Comprobantes pendientes: {$documents->count()} · resueltas: {$sent} · por reintentar: {$failed}");
         }
         else {
             $this->info('The crontab is disabled');
