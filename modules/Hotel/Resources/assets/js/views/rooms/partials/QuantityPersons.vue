@@ -16,7 +16,7 @@
                         </el-button>
                         <thead>
                             <tr width="100%">
-                                <th>DNI/RUC</th>
+                                <th>N° documento (DNI / pasaporte)</th>
                                 <th>Apellidos y nombres</th>
                                 <th width="15%">Tipo</th>
                                 <th width="15%"><a href="#" @click.prevent="clickAddPerson" class="text-center font-weight-bold text-info">[+ Agregar]</a></th>
@@ -26,12 +26,12 @@
                             <tr v-for="(row, index) in persons" :key="index" width="100%" >
                                 <td>
                                     <div class="form-group mb-2 me-2"  >
-                                        <el-input @change="searchPerson(row,index)" @blur="duplicateDocument(row.number, index)" v-model="row.number"></el-input>
+                                        <el-input @change="searchPerson(row,index)" @blur="duplicateDocument(row.number, index)" v-model="row.number" placeholder="Número de documento"></el-input>
                                     </div>
                                 </td>
                                 <td>
                                     <div class="form-group mb-2 me-2" >
-                                        <el-input v-model="row.name"></el-input>
+                                        <el-input v-model="row.name" placeholder="Nombre completo"></el-input>
                                     </div>
                                 </td>
                                 <td>
@@ -137,6 +137,17 @@
                 // Emitir una copia nueva del array para forzar reactividad en el
                 // padre, evitando que Vue no detecte cambios cuando se mutan
                 // elementos del array por referencia compartida.
+                // Si escribieron el nombre en la columna del documento y el
+                // documento en la del nombre, se invierten solos.
+                const looksLikeDoc = s => /^[A-Za-z0-9-]{5,15}$/.test(s) && /\d/.test(s);
+                this.persons.forEach(p => {
+                    const number = String(p.number || '').trim();
+                    const name = String(p.name || '').trim();
+                    if (looksLikeDoc(name) && number && !/\d/.test(number)) {
+                        p.number = name;
+                        p.name = number;
+                    }
+                });
                 const personsCopy = this.persons.map(p => ({ ...p }));
                 await this.$emit('addRowPerson', personsCopy);
                 this.calculatePersonCounts();

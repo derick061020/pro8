@@ -215,6 +215,11 @@ class HotelReservationRelationController extends Controller
             $name = trim((string) ($p['name'] ?? ''));
             $number = trim((string) ($p['number'] ?? ''));
             if ($name === '' && $number === '') continue;
+            // Registrados al revés (el nombre en la columna del documento):
+            // "568012449" como nombre y "Rafael Perez" como documento.
+            if ($this->looksLikeDocNumber($name) && $number !== '' && !preg_match('/\d/', $number)) {
+                [$name, $number] = [$number, $name];
+            }
             if ($number !== '' && $number === $mainNumber) continue;
             $list[] = [
                 'name'    => $name !== '' ? $name : 'Sin nombre',
@@ -225,6 +230,11 @@ class HotelReservationRelationController extends Controller
         }
 
         return $list;
+    }
+
+    private function looksLikeDocNumber(string $s): bool
+    {
+        return (bool) preg_match('/^[A-Za-z0-9-]{5,15}$/', $s) && preg_match('/\d/', $s);
     }
 
     private function docLabel($typeId, string $number): string
