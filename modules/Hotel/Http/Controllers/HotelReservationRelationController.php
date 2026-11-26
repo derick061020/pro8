@@ -113,10 +113,10 @@ class HotelReservationRelationController extends Controller
             'format'        => 'A4-L',
             'default_font'  => 'dejavusanscondensed',
             'margin_top'    => 10,
-            'margin_bottom' => 12,
+            'margin_bottom' => 32,
             'margin_left'   => 10,
             'margin_right'  => 10,
-            'margin_footer' => 5,
+            'margin_footer' => 4,
         ]);
         $pdf->SetTitle('Relación de reservas');
         $pdf->SetAuthor(optional($data['company'])->name ?: 'Hotel');
