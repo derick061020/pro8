@@ -5,17 +5,17 @@
     .head td { vertical-align: middle; }
     .hotel-name { font-size: 13pt; font-weight: bold; }
     .hotel-data { font-size: 8.5pt; line-height: 1.45; }
-    .title { background: #2e7d32; color: #fff; font-size: 12pt; font-weight: bold; text-align: center; padding: 5px; }
+    .title { background: #4b5d73; color: #fff; font-size: 12pt; font-weight: bold; text-align: center; padding: 5px; }
     table.list { border-collapse: collapse; width: 100%; margin-top: 4px; }
-    table.list th { background: #2e7d32; color: #fff; font-size: 8.5pt; padding: 5px 4px; border: 1px solid #1b5e20; text-align: center; }
-    table.list td { border: 1px solid #9ccc9c; padding: 4px; font-size: 8.5pt; vertical-align: middle; }
-    tr.odd td { background: #e8f5e9; }
+    table.list th { background: #4b5d73; color: #fff; font-size: 8.5pt; padding: 5px 4px; border: 1px solid #3d4d60; text-align: center; }
+    table.list td { border: 1px solid #c3ccd6; padding: 4px; font-size: 8.5pt; vertical-align: middle; }
+    tr.odd td { background: #eef2f6; }
     td.c { text-align: center; }
     td.n { text-align: center; font-weight: bold; }
     .main { font-weight: bold; }
     .muted { color: #666; }
     .summary { margin-top: 8px; font-size: 8.5pt; }
-    .services { margin-top: 10px; font-size: 9pt; color: #2e7d32; font-weight: bold; }
+    .services { margin-top: 10px; font-size: 9pt; color: #4b5d73; font-weight: bold; }
 </style>
 </head>
 <body>

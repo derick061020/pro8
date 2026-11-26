@@ -13,10 +13,10 @@
         <tr><td colspan="8">Teléfono: {{ $establishment->telephone }}</td></tr>
     @endif
     <tr><td colspan="8"></td></tr>
-    <tr><td colspan="8" style="background-color: #2e7d32; color: #ffffff; font-weight: bold; text-align: center;">{{ $title }}</td></tr>
+    <tr><td colspan="8" style="background-color: #4b5d73; color: #ffffff; font-weight: bold; text-align: center;">{{ $title }}</td></tr>
     <tr>
         @foreach(['N°', 'NOMBRES Y APELLIDOS', 'DOCUMENTO', 'CHECK-IN', 'CHECK-OUT', 'ESTADÍA', 'CÓDIGO RESERVA', 'HABITACIÓN'] as $h)
-            <th style="background-color: #2e7d32; color: #ffffff; font-weight: bold; text-align: center;">{{ $h }}</th>
+            <th style="background-color: #4b5d73; color: #ffffff; font-weight: bold; text-align: center;">{{ $h }}</th>
         @endforeach
     </tr>
     @foreach($groups as $g)
