@@ -1508,11 +1508,43 @@ class HotelReservationCalendarController extends Controller
                 }
             }
 
+            // Si el cargo de la habitación ya tiene nota de venta o comprobante
+            // (o hay varios cargos tras un cambio de habitación), no se puede
+            // reescribir: antes se cambiaba la tarifa de la reserva igual y el
+            // cargo (lo que suma la constancia PDF y el checkout) se quedaba con
+            // el precio anterior. Ahora el precio no se toca y se avisa.
+            $priceWarning = null;
+            if (!$this->reservationHabItemIsEditable($rent)) {
+                $currentUnit = $this->reservationEffectiveUnitPrice($rent);
+                $newUnit = array_key_exists('rental_price', $updatable) ? (float) $updatable['rental_price'] : $currentUnit;
+                $rateChanged = isset($updatable['hotel_rate_id']) && $updatable['hotel_rate_id'] != $rent->hotel_rate_id;
+                if ($rateChanged || abs($newUnit - $currentUnit) > 0.009) {
+                    $priceWarning = 'El precio no se cambió porque la habitación ya tiene nota de venta o comprobante emitido.';
+                }
+                unset($updatable['rental_price'], $updatable['hotel_rate_id']);
+            }
+
             $rent->update($updatable);
 
             // Sincronizar el item HAB asociado (si es seguro hacerlo) para que
             // el checkout/factura refleje los nuevos datos de la reserva.
             $this->syncReservationHabItem($rent);
+
+            // Si se subió el precio de un cargo que ya estaba pagado, vuelve a
+            // quedar con deuda (la deuda real sale de la fórmula, no del estado).
+            $rent->load('items');
+            if ((float) $this->computeReservationPayment($rent)['debt'] > 0.009) {
+                HotelRentItem::where('hotel_rent_id', $rent->id)
+                    ->where('type', 'HAB')
+                    ->where('payment_status', 'PAID')
+                    ->whereNull('sale_note_id')
+                    ->whereNull('document_id')
+                    ->update(['payment_status' => 'DEBT']);
+                if ($rent->payment_status === 'PAID') {
+                    $rent->payment_status = 'DEBT';
+                    $rent->save();
+                }
+            }
 
             // Aplicar el estado de pago elegido en el formulario. Va DESPUÉS de
             // sincronizar el item para que el monto a cobrar use el total ya
@@ -1529,7 +1561,8 @@ class HotelReservationCalendarController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => 'Reserva actualizada correctamente.',
+                'message' => $priceWarning ? 'Reserva actualizada. ' . $priceWarning : 'Reserva actualizada correctamente.',
+                'warning' => $priceWarning,
                 'data'    => $rent,
             ]);
         } catch (\Throwable $th) {
@@ -1550,18 +1583,48 @@ class HotelReservationCalendarController extends Controller
      *  - Si ya hay múltiples items HAB (p.ej. tras un cambio de habitación)
      *    o si está pagado/facturado, no se toca (para no romper historial).
      */
+    /**
+     * El cargo de habitación de la reserva se puede reescribir: hay exactamente
+     * un item HAB y no tiene nota de venta ni comprobante.
+     */
+    private function reservationHabItemIsEditable(HotelRent $rent)
+    {
+        $habItems = $rent->items()->where('type', 'HAB')->get();
+
+        return $habItems->count() === 1
+            && empty($habItems->first()->sale_note_id)
+            && empty($habItems->first()->document_id);
+    }
+
+    /**
+     * Precio por noche que hoy cobra la reserva (rental_price o, si está vacío,
+     * el precio unitario guardado en el cargo de habitación).
+     */
+    private function reservationEffectiveUnitPrice(HotelRent $rent)
+    {
+        if ((float) $rent->rental_price > 0) {
+            return (float) $rent->rental_price;
+        }
+        $item = $rent->items()->where('type', 'HAB')->orderBy('id')->first();
+        if (!$item) {
+            return 0.0;
+        }
+        $json = is_object($item->item) ? (array) $item->item : ($item->item ?: []);
+
+        return (float) $item->unit_price > 0
+            ? (float) $item->unit_price
+            : (float) ($json['unit_price'] ?? $json['unit_price_value'] ?? 0);
+    }
+
     private function syncReservationHabItem(HotelRent $rent)
     {
-        $habItems = $rent->items()
-            ->where('type', 'HAB')
-            ->whereNull('sale_note_id')
-            ->whereNull('document_id')
-            ->where('payment_status', '!=', 'PAID')
-            ->get();
-
-        if ($habItems->count() !== 1) {
+        // Un cargo ya pagado (pero sin comprobante) también se actualiza: antes
+        // se saltaba y la reserva quedaba con la tarifa nueva y el cargo viejo.
+        // Lo pagado se conserva; la diferencia queda como deuda o saldo a favor.
+        if (!$this->reservationHabItemIsEditable($rent)) {
             return;
         }
+        $habItems = $rent->items()->where('type', 'HAB')->get();
         $item = $habItems->first();
 
         $room = HotelRoom::find($rent->hotel_room_id);
