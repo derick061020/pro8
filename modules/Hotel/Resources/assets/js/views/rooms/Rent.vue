@@ -1295,7 +1295,7 @@ export default {
 
             // Cargar personas
             if (this.reservation.data_persons) {
-                this.form.data_persons = this.reservation.data_persons;
+                this.form.data_persons = this.normalizePersons(this.reservation.data_persons);
             }
 
             // Cargar otros datos guardados en la reserva (placa, motivo, etc.)
@@ -1497,8 +1497,8 @@ export default {
                 
                 // Cargar personas
                 if (reservationData.data_persons) {
-                    this.form.data_persons = reservationData.data_persons;
-                    this.form.quantity_persons = reservationData.quantity_persons || 1;
+                    this.form.data_persons = this.normalizePersons(reservationData.data_persons);
+                    this.form.quantity_persons = this.form.data_persons.length || reservationData.quantity_persons || 1;
                 }
                 
                 // Cargar otros datos
@@ -1606,6 +1606,12 @@ export default {
                         payment: parseFloat(this.form.rent_payment.payment) || 0,
                     },
                 };
+
+                // Huéspedes: sin esto los acompañantes editados no se guardaban.
+                // Si la lista viene vacía no se manda, para no borrar los guardados.
+                const persons = this.normalizePersons(this.form.data_persons)
+                    .filter(p => String(p.number || '').trim() || String(p.name || '').trim());
+                if (persons.length) payload.data_persons = persons;
 
                 console.log('Actualizando reserva con payload:', payload);
 
@@ -2021,6 +2027,8 @@ export default {
             this.form.customer = {...this.customer};
             this.form.data_persons = [];
             this.form.data_persons.push({
+                identity_document_type_id: this.form.customer.identity_document_type_id
+                    ? String(this.form.customer.identity_document_type_id) : undefined,
                 number: this.form.customer.number,
                 name: this.form.customer.name,
                 type: 'adult'
@@ -2042,6 +2050,12 @@ export default {
         },
         clickAddPerson() {
             this.showDialogPersons = true
+        },
+        // data_persons puede llegar como objeto {0:…,1:…} (accessor del modelo).
+        normalizePersons(persons) {
+            if (!persons) return [];
+            const list = Array.isArray(persons) ? persons : Object.values(persons);
+            return list.filter(p => p && typeof p === 'object').map(p => ({ ...p }));
         },
         addRowPerson(persons) {
             // Reasignar como arreglo nuevo + forzar reactividad para que la
