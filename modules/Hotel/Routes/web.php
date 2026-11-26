@@ -160,6 +160,10 @@ if ($hostname) {
             // datos. Las descargas usan la misma consulta.
             Route::get('report', 'HotelReservationCalendarController@report')->name('tenant.hotels.report');
             Route::get('report/data', 'HotelReservationCalendarController@reportData');
+            // Relación de reservas: varias reservas marcadas en una sola lista (PDF/Excel)
+            Route::get('relation', 'HotelReservationRelationController@index')->name('tenant.hotels.relation');
+            Route::get('relation/records', 'HotelReservationRelationController@records');
+            Route::get('relation/download', 'HotelReservationRelationController@download');
             // Exportación del reporte de reservas (por día o por rango, con filtros)
             Route::get('calendar/export', 'HotelReservationCalendarController@exportReservations');
             // CRUD de reservas desde el calendario
