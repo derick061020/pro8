@@ -269,13 +269,17 @@ $showTransfer = collect($vc_module_levels)->intersect(['inventory', 'inventory_d
                                 @endif
                                 @if(in_array('hotels_rooms', $vc_module_levels))
                                     <li
-                                        class="{{ (($firstLevel === 'hotels') && ($secondLevel === 'reservations') && ($thridLevel !== 'report')) ? 'nav-active' : '' }}">
+                                        class="{{ (($firstLevel === 'hotels') && ($secondLevel === 'reservations') && !in_array($thridLevel, ['report', 'relation'])) ? 'nav-active' : '' }}">
                                         <a class="nav-link" href="{{ url('hotels/reservations/calendar') }}">Reservas</a>
                                     </li>
                                     {{-- Reporte de reservas: misma llave de permiso que el calendario. --}}
                                     <li
                                         class="{{ (($firstLevel === 'hotels') && ($secondLevel === 'reservations') && ($thridLevel === 'report')) ? 'nav-active' : '' }}">
                                         <a class="nav-link" href="{{ url('hotels/reservations/report') }}">Reporte de Reservas</a>
+                                    </li>
+                                    <li
+                                        class="{{ (($firstLevel === 'hotels') && ($secondLevel === 'reservations') && ($thridLevel === 'relation')) ? 'nav-active' : '' }}">
+                                        <a class="nav-link" href="{{ url('hotels/reservations/relation') }}">Relación de reservas</a>
                                     </li>
                                 @endif
                                 @if(in_array('hotels_rates', $vc_module_levels))
