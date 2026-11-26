@@ -589,6 +589,9 @@ class HotelReservationCalendarController extends Controller
             'adults'              => $reservation->adults,
             'children'            => $reservation->children,
             'quantity_persons'    => $reservation->quantity_persons,
+            // Huéspedes (titular + acompañantes). El accessor devuelve un objeto
+            // {0:…,1:…}; se manda como arreglo para que el formulario lo edite.
+            'data_persons'        => array_values((array) ($reservation->data_persons ?: [])),
             'towels'              => $reservation->towels,
             'license_plate'       => $reservation->license_plate,
             'travel_reason'       => $reservation->travel_reason,
@@ -1377,6 +1380,7 @@ class HotelReservationCalendarController extends Controller
             'rental_price'       => 'nullable|numeric|min:0',
             'duration'           => 'nullable|integer|min:1',
             'quantity_persons'   => 'nullable|integer|min:1',
+            'data_persons'       => 'nullable|array',
             'input_date'         => 'nullable|date_format:Y-m-d',
             'input_time'         => 'nullable|date_format:H:i',
             'output_date'        => 'nullable|date_format:Y-m-d',
@@ -1447,7 +1451,7 @@ class HotelReservationCalendarController extends Controller
             $updatable = array_intersect_key($validated, array_flip([
                 'customer_id', 'customer', 'notes', 'license_plate', 'travel_reason', 'reservation_origin',
                 'adults', 'children', 'towels', 'hotel_room_id', 'hotel_rate_id',
-                'rental_price', 'duration', 'quantity_persons', 'input_date', 'input_time',
+                'rental_price', 'duration', 'quantity_persons', 'data_persons', 'input_date', 'input_time',
                 'output_date', 'output_time', 'status',
             ]));
 

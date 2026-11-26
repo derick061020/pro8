@@ -1,6 +1,6 @@
 <template>
     <el-dialog :title="titleDialog"
-               width="50%"
+               width="65%"
                :visible="showDialog"
                @open="create"
                :close-on-click-modal="false"
@@ -16,7 +16,8 @@
                         </el-button>
                         <thead>
                             <tr width="100%">
-                                <th>N° documento (DNI / pasaporte)</th>
+                                <th width="17%">Tipo de documento</th>
+                                <th>N° documento</th>
                                 <th>Apellidos y nombres</th>
                                 <th width="15%">Tipo</th>
                                 <th width="15%"><a href="#" @click.prevent="clickAddPerson" class="text-center font-weight-bold text-info">[+ Agregar]</a></th>
@@ -24,6 +25,13 @@
                         </thead>
                         <tbody>
                             <tr v-for="(row, index) in persons" :key="index" width="100%" >
+                                <td>
+                                    <div class="form-group mb-2 me-2">
+                                        <el-select v-model="row.identity_document_type_id" placeholder="Tipo">
+                                            <el-option v-for="d in documentTypes" :key="d.id" :label="d.label" :value="d.id"></el-option>
+                                        </el-select>
+                                    </div>
+                                </td>
                                 <td>
                                     <div class="form-group mb-2 me-2"  >
                                         <el-input @change="searchPerson(row,index)" @blur="duplicateDocument(row.number, index)" v-model="row.number" placeholder="Número de documento"></el-input>
@@ -71,6 +79,14 @@
         data() {
             return {
                 titleDialog: 'Personas en la habitación',
+                // Mismos códigos SUNAT que usa el cliente (identity_document_type_id).
+                documentTypes: [
+                    { id: '1', label: 'DNI' },
+                    { id: '7', label: 'Pasaporte' },
+                    { id: '4', label: 'Carnet de extranjería' },
+                    { id: '6', label: 'RUC' },
+                    { id: '0', label: 'Otro' },
+                ],
                 loading: false,
                 errors: {},
                 form: {},
@@ -102,6 +118,32 @@
                 if(this.persons.length == 0){
                     this.clickAddPerson()
                 }
+                // Registros antiguos: corregir nombre/documento invertidos y
+                // deducir el tipo por el número.
+                this.persons.forEach(p => {
+                    this.fixSwapped(p);
+                    if (!p.identity_document_type_id) {
+                        this.$set(p, 'identity_document_type_id', this.guessDocType(p.number));
+                    }
+                });
+            },
+            // Si escribieron el nombre en la columna del documento y el
+            // documento en la del nombre, se invierten solos.
+            fixSwapped(p) {
+                const looksLikeDoc = s => /^[A-Za-z0-9-]{5,15}$/.test(s) && /\d/.test(s);
+                const number = String(p.number || '').trim();
+                const name = String(p.name || '').trim();
+                if (looksLikeDoc(name) && number && !/\d/.test(number)) {
+                    p.number = name;
+                    p.name = number;
+                }
+            },
+            guessDocType(number) {
+                const n = String(number || '').trim();
+                if (/^\d{8}$/.test(n)) return '1';
+                if (/^\d{11}$/.test(n)) return '6';
+                if (/[A-Za-z]/.test(n) && /\d/.test(n)) return '7';
+                return n ? '0' : '1';
             },
             async validatePersons(){
 
@@ -137,15 +179,10 @@
                 // Emitir una copia nueva del array para forzar reactividad en el
                 // padre, evitando que Vue no detecte cambios cuando se mutan
                 // elementos del array por referencia compartida.
-                // Si escribieron el nombre en la columna del documento y el
-                // documento en la del nombre, se invierten solos.
-                const looksLikeDoc = s => /^[A-Za-z0-9-]{5,15}$/.test(s) && /\d/.test(s);
                 this.persons.forEach(p => {
-                    const number = String(p.number || '').trim();
-                    const name = String(p.name || '').trim();
-                    if (looksLikeDoc(name) && number && !/\d/.test(number)) {
-                        p.number = name;
-                        p.name = number;
+                    this.fixSwapped(p);
+                    if (!p.identity_document_type_id) {
+                        this.$set(p, 'identity_document_type_id', this.guessDocType(p.number));
                     }
                 });
                 const personsCopy = this.persons.map(p => ({ ...p }));
@@ -156,6 +193,7 @@
             },
             clickAddPerson() {
                 this.persons.push({
+                    identity_document_type_id: '1',
                     number: null,
                     name:  '',
                     type: 'adult'
@@ -177,9 +215,12 @@
                 this.$emit('update:showDialog', false)
             },
             searchPerson(row,index) {
-                if(row.number!='' && row.number.length >=8 && row.number.length <=11){
-                    let type = row.number.length==8 ?'dni':'ruc';
-                    this.searchServiceNumberByType(type,row)
+                // Solo DNI y RUC se consultan en RENIEC/SUNAT.
+                const docType = row.identity_document_type_id || this.guessDocType(row.number);
+                if (docType === '1' && /^\d{8}$/.test(row.number || '')) {
+                    this.searchServiceNumberByType('dni', row)
+                } else if (docType === '6' && /^\d{11}$/.test(row.number || '')) {
+                    this.searchServiceNumberByType('ruc', row)
                 }
                 
             },

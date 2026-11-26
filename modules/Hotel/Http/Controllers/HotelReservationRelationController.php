@@ -223,7 +223,7 @@ class HotelReservationRelationController extends Controller
             if ($number !== '' && $number === $mainNumber) continue;
             $list[] = [
                 'name'    => $name !== '' ? $name : 'Sin nombre',
-                'doc'     => $this->docLabel(null, $number),
+                'doc'     => $this->docLabel($p['identity_document_type_id'] ?? null, $number),
                 'number'  => $number,
                 'is_main' => false,
             ];
